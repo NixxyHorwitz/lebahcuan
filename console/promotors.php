@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch active promotors
-$promotors = $pdo->query("SELECT id, username, email, referral_code, promotor_target_deposits, promotor_target_regs, promotor_salary_rate, is_referral_active FROM users WHERE is_promotor=1 ORDER BY username ASC")->fetchAll();
+$promotors = $pdo->query("SELECT id, username, email, referral_code, balance_wd, balance_dep, total_earned, promotor_target_deposits, promotor_target_regs, promotor_salary_rate, is_referral_active, created_at FROM users WHERE is_promotor=1 ORDER BY username ASC")->fetchAll();
 
 // Fetch potential promotors (non-promotors) for selection
 $eligible_users = $pdo->query("SELECT id, username FROM users WHERE is_promotor=0 ORDER BY username ASC")->fetchAll();
@@ -135,6 +135,329 @@ $logs = $pdo->query("
     JOIN users u ON u.id = pt.user_id 
     ORDER BY pt.date DESC, pt.percentage DESC
 ")->fetchAll();
+
+// Helper: Fast Deep Network & Commission Extraction
+function get_promotor_deep_network_fast(PDO $pdo, int $promotor_id): array {
+    $stmt = $pdo->prepare("SELECT id, username, email, whatsapp, referral_code, balance_wd, balance_dep, total_earned, created_at, is_promotor, is_referral_active FROM users WHERE id = ?");
+    $stmt->execute([$promotor_id]);
+    $promotor = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$promotor) {
+        return ['promotor' => null, 'members' => [], 'tree' => [], 'levels' => [], 'deposits' => [], 'direct_commissions' => [], 'network_commissions' => [], 'stats' => []];
+    }
+
+    // 1. Recursive level traversal
+    $all_members = []; // keyed by id
+    $levels = []; // level => [user_ids]
+    $current_level = 1;
+    $current_ref_codes = [$promotor['referral_code'] => ['id' => $promotor['id'], 'username' => $promotor['username']]];
+
+    while (!empty($current_ref_codes) && $current_level <= 20) {
+        $in_placeholders = implode(',', array_fill(0, count($current_ref_codes), '?'));
+        $sql = "SELECT u.id, u.username, u.email, u.whatsapp, u.referral_code, u.referred_by, u.balance_wd, u.balance_dep, u.total_earned, u.created_at, u.is_active,
+                       COALESCE(m.name, 'Free') as membership_name
+                FROM users u
+                LEFT JOIN memberships m ON u.membership_id = m.id
+                WHERE u.referred_by IN ($in_placeholders)
+                ORDER BY u.created_at ASC";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(array_keys($current_ref_codes));
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($rows)) {
+            break;
+        }
+
+        $next_ref_codes = [];
+        $levels[$current_level] = [];
+
+        foreach ($rows as $row) {
+            $upline_info = $current_ref_codes[$row['referred_by']] ?? ['id' => 0, 'username' => 'Unknown'];
+            $row['level'] = $current_level;
+            $row['is_direct'] = ($current_level === 1);
+            $row['upline_id'] = (int)$upline_info['id'];
+            $row['upline_username'] = $upline_info['username'];
+            $row['children'] = [];
+            $row['total_deposit_confirmed'] = 0.0;
+            $row['total_deposit_pending'] = 0.0;
+            $row['total_deposit_count'] = 0;
+            $row['total_wd_approved'] = 0.0;
+            $row['is_suspect_branch'] = false;
+
+            $all_members[$row['id']] = $row;
+            $levels[$current_level][] = $row['id'];
+
+            if (!empty($row['referral_code'])) {
+                $next_ref_codes[$row['referral_code']] = ['id' => $row['id'], 'username' => $row['username']];
+            }
+        }
+
+        $current_ref_codes = $next_ref_codes;
+        $current_level++;
+    }
+
+    $member_ids = array_keys($all_members);
+    $deposits = [];
+
+    // 2. Batch aggregation of deposits and withdrawals
+    if (!empty($member_ids)) {
+        $in_ids = implode(',', array_fill(0, count($member_ids), '?'));
+        
+        // Sum deposits by status
+        $dep_sum_stmt = $pdo->prepare("
+            SELECT user_id, status, SUM(amount) as total_amount, COUNT(*) as dep_count
+            FROM deposits
+            WHERE user_id IN ($in_ids)
+            GROUP BY user_id, status
+        ");
+        $dep_sum_stmt->execute($member_ids);
+        $dep_sums = $dep_sum_stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($dep_sums as $ds) {
+            $uid = (int)$ds['user_id'];
+            if (isset($all_members[$uid])) {
+                $all_members[$uid]['total_deposit_count'] += (int)$ds['dep_count'];
+                if ($ds['status'] === 'confirmed') {
+                    $all_members[$uid]['total_deposit_confirmed'] += (float)$ds['total_amount'];
+                } elseif ($ds['status'] === 'pending') {
+                    $all_members[$uid]['total_deposit_pending'] += (float)$ds['total_amount'];
+                }
+            }
+        }
+
+        // Sum withdrawals
+        $wd_sum_stmt = $pdo->prepare("
+            SELECT user_id, SUM(amount) as total_amount
+            FROM withdrawals
+            WHERE status = 'approved' AND user_id IN ($in_ids)
+            GROUP BY user_id
+        ");
+        $wd_sum_stmt->execute($member_ids);
+        $wd_sums = $wd_sum_stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($wd_sums as $ws) {
+            $uid = (int)$ws['user_id'];
+            if (isset($all_members[$uid])) {
+                $all_members[$uid]['total_wd_approved'] = (float)$ws['total_amount'];
+            }
+        }
+
+        // All deposits in network
+        $d_stmt = $pdo->prepare("
+            SELECT d.*, u.username, u.email, u.whatsapp, u.referral_code, u.referred_by
+            FROM deposits d
+            JOIN users u ON u.id = d.user_id
+            WHERE d.user_id IN ($in_ids)
+            ORDER BY d.created_at DESC
+        ");
+        $d_stmt->execute($member_ids);
+        $deposits_raw = $d_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($deposits_raw as $dr) {
+            $uid = (int)$dr['user_id'];
+            $mem = $all_members[$uid] ?? null;
+            $dr['level'] = $mem ? $mem['level'] : 1;
+            $dr['is_direct'] = $mem ? $mem['is_direct'] : false;
+            $dr['upline_username'] = $mem ? $mem['upline_username'] : '-';
+            $deposits[] = $dr;
+        }
+    }
+
+    // 3. Build hierarchical tree & link children
+    $tree = [];
+    foreach ($all_members as $id => &$member) {
+        if ($member['level'] === 1) {
+            $tree[$id] = &$member;
+        } else {
+            $parent_id = $member['upline_id'];
+            if (isset($all_members[$parent_id])) {
+                $all_members[$parent_id]['children'][$id] = &$member;
+            }
+        }
+    }
+    unset($member);
+
+    // 4. Calculate stats & detect self-referral/tuyul pattern
+    $total_direct_members = count($levels[1] ?? []);
+    $total_indirect_members = count($all_members) - $total_direct_members;
+    $total_all_members = count($all_members);
+
+    $direct_deposit_confirmed = 0;
+    $indirect_deposit_confirmed = 0;
+    $direct_deposit_pending = 0;
+    $indirect_deposit_pending = 0;
+    $direct_deposit_count = 0;
+    $indirect_deposit_count = 0;
+    $branched_suspect_count = 0;
+
+    foreach ($all_members as $id => &$m) {
+        if ($m['is_direct']) {
+            $direct_deposit_confirmed += (float)$m['total_deposit_confirmed'];
+            $direct_deposit_pending += (float)$m['total_deposit_pending'];
+            $direct_deposit_count += (int)$m['total_deposit_count'];
+            
+            // Suspect check: L1 has 0 deposit but has children with confirmed deposit
+            $has_child_dep = false;
+            if (!empty($m['children'])) {
+                foreach ($m['children'] as $child) {
+                    if ((float)$child['total_deposit_confirmed'] > 0) {
+                        $has_child_dep = true;
+                        break;
+                    }
+                }
+            }
+            if ((float)$m['total_deposit_confirmed'] <= 0 && $has_child_dep) {
+                $m['is_suspect_branch'] = true;
+                $branched_suspect_count++;
+            }
+        } else {
+            $indirect_deposit_confirmed += (float)$m['total_deposit_confirmed'];
+            $indirect_deposit_pending += (float)$m['total_deposit_pending'];
+            $indirect_deposit_count += (int)$m['total_deposit_count'];
+        }
+    }
+    unset($m);
+
+    $total_deposit_confirmed = $direct_deposit_confirmed + $indirect_deposit_confirmed;
+
+    // 5. Direct Commissions received by promotor
+    $c_stmt = $pdo->prepare("
+        SELECT rc.*, u.username as from_username
+        FROM referral_commissions rc
+        JOIN users u ON u.id = rc.from_user_id
+        WHERE rc.user_id = ?
+        ORDER BY rc.created_at DESC
+    ");
+    $c_stmt->execute([$promotor_id]);
+    $direct_commissions = $c_stmt->fetchAll(PDO::FETCH_ASSOC);
+    $direct_comm_total = array_sum(array_column($direct_commissions, 'amount'));
+
+    // 6. Network Commissions across downlines
+    $network_commissions = [];
+    $network_comm_total = 0;
+    if (!empty($member_ids)) {
+        $in_ids = implode(',', array_fill(0, count($member_ids), '?'));
+        $nc_stmt = $pdo->prepare("
+            SELECT rc.*, u_to.username as to_username, u_from.username as from_username
+            FROM referral_commissions rc
+            JOIN users u_to ON u_to.id = rc.user_id
+            JOIN users u_from ON u_from.id = rc.from_user_id
+            WHERE rc.user_id IN ($in_ids) OR rc.from_user_id IN ($in_ids)
+            ORDER BY rc.created_at DESC
+        ");
+        $nc_stmt->execute(array_merge($member_ids, $member_ids));
+        $network_commissions = $nc_stmt->fetchAll(PDO::FETCH_ASSOC);
+        $network_comm_total = array_sum(array_column($network_commissions, 'amount'));
+    }
+
+    return [
+        'promotor' => $promotor,
+        'members' => $all_members,
+        'tree' => $tree,
+        'levels' => $levels,
+        'deposits' => $deposits,
+        'direct_commissions' => $direct_commissions,
+        'network_commissions' => $network_commissions,
+        'stats' => [
+            'total_all_members' => $total_all_members,
+            'total_direct_members' => $total_direct_members,
+            'total_indirect_members' => $total_indirect_members,
+            'total_deposit_confirmed' => $total_deposit_confirmed,
+            'direct_deposit_confirmed' => $direct_deposit_confirmed,
+            'indirect_deposit_confirmed' => $indirect_deposit_confirmed,
+            'direct_deposit_pending' => $direct_deposit_pending,
+            'indirect_deposit_pending' => $indirect_deposit_pending,
+            'direct_deposit_count' => $direct_deposit_count,
+            'indirect_deposit_count' => $indirect_deposit_count,
+            'direct_comm_total' => $direct_comm_total,
+            'network_comm_total' => $network_comm_total,
+            'max_depth' => count($levels),
+            'branched_suspect_count' => $branched_suspect_count,
+        ]
+    ];
+}
+
+// Tree view renderer
+function render_network_tree_html(array $nodes, int $max_depth = 10, int $current_depth = 1): string {
+    if (empty($nodes)) return '';
+    $html = '<ul class="tree-root-list list-unstyled mb-0" style="padding-left:' . ($current_depth > 1 ? '24px' : '0') . '">';
+    foreach ($nodes as $node) {
+        $level = (int)$node['level'];
+        $has_children = !empty($node['children']);
+        $is_suspect = !empty($node['is_suspect_branch']);
+        
+        $level_badge_style = 'background:rgba(99,102,241,0.2);color:#818cf8;border:1px solid rgba(99,102,241,0.4);';
+        if ($level === 1) {
+            $level_badge_style = 'background:rgba(59,130,246,0.2);color:#60a5fa;border:1px solid rgba(59,130,246,0.4);';
+        } elseif ($level === 2) {
+            $level_badge_style = 'background:rgba(168,85,247,0.2);color:#c084fc;border:1px solid rgba(168,85,247,0.4);';
+        } elseif ($level === 3) {
+            $level_badge_style = 'background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);';
+        } elseif ($level >= 4) {
+            $level_badge_style = 'background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.4);';
+        }
+        
+        $dep_amount = (float)$node['total_deposit_confirmed'];
+        $dep_color = $dep_amount > 0 ? '#4CAF82' : '#666';
+        
+        $html .= '<li class="tree-item position-relative mb-2">';
+        $html .= '<div class="tree-node-box p-2 px-3 rounded d-flex align-items-center justify-content-between flex-wrap gap-2" style="background:#151824;border:1px solid ' . ($is_suspect ? '#d97706' : '#23283c') . ';transition:all .2s;">';
+        
+        // Left info
+        $html .= '<div class="d-flex align-items-center gap-2 flex-wrap">';
+        if ($has_children) {
+            $html .= '<button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 tree-toggle-btn" onclick="toggleTreeNode(this)" style="font-size:10px;line-height:1.2;height:20px;border-color:#3a405c;">▼</button>';
+        } else {
+            $html .= '<span style="display:inline-block;width:16px;text-align:center;color:#444;font-size:10px;">•</span>';
+        }
+        $html .= '<span class="badge rounded-pill" style="font-size:10.5px;padding:3px 8px;' . $level_badge_style . '">Level ' . $level . '</span>';
+        $html .= '<a href="users.php?search=' . urlencode($node['username']) . '" class="fw-bold text-white text-decoration-none" target="_blank" style="font-size:13.5px;">@' . htmlspecialchars($node['username']) . '</a>';
+        if (!empty($node['whatsapp'])) {
+            $html .= '<a href="https://wa.me/' . preg_replace('/\D/', '', $node['whatsapp']) . '" target="_blank" class="badge text-decoration-none" style="background:#1e382b;color:#4ade80;font-size:10.5px;border:1px solid #166534">📱 ' . htmlspecialchars($node['whatsapp']) . '</a>';
+        }
+        $html .= '<span class="badge" style="background:#1f2233;color:#94a3b8;font-size:10px;border:1px solid #2e344d;">' . htmlspecialchars($node['membership_name']) . '</span>';
+        
+        if ($is_suspect) {
+            $html .= '<span class="badge bg-warning text-dark fw-bold" style="font-size:10px;" title="Akun ini 0 depo namun downline-nya melakukan deposit"><i class="ph-bold ph-warning"></i> Indikasi Akun Bercabang / Tuyul</span>';
+        }
+        $html .= '</div>';
+        
+        // Right info
+        $html .= '<div class="d-flex align-items-center gap-3 flex-wrap" style="font-size:12px;">';
+        $html .= '<div><span style="color:#71717a;">Total Depo: </span><strong style="color:' . $dep_color . ';font-size:13px;">' . format_rp($dep_amount) . '</strong></div>';
+        if ((float)$node['total_wd_approved'] > 0) {
+            $html .= '<div><span style="color:#71717a;">WD: </span><strong style="color:#38bdf8;">' . format_rp((float)$node['total_wd_approved']) . '</strong></div>';
+        }
+        if ($has_children) {
+            $html .= '<span class="badge" style="background:#27273a;color:#cbd5e1;font-size:11px;"><i class="ph-bold ph-users-three"></i> ' . count($node['children']) . ' Downline</span>';
+        }
+        $html .= '<span style="color:#52525b;font-size:11px;">' . date('d/m/Y H:i', strtotime($node['created_at'])) . '</span>';
+        $html .= '</div>';
+        
+        $html .= '</div>';
+        
+        // Children branch
+        if ($has_children && $current_depth < $max_depth) {
+            $html .= '<div class="tree-sub-branch ps-3 border-start mt-2" style="border-color:#2a3048 !important;margin-left:14px;">';
+            $html .= render_network_tree_html($node['children'], $max_depth, $current_depth + 1);
+            $html .= '</div>';
+        }
+        
+        $html .= '</li>';
+    }
+    $html .= '</ul>';
+    return $html;
+}
+
+// Data fetching for Commission Panel tab
+$net_data = null;
+$selected_promotor_id = 0;
+if ($tab === 'commission_panel') {
+    $selected_promotor_id = (int)($_GET['promotor_id'] ?? 0);
+    if ($selected_promotor_id === 0 && !empty($promotors)) {
+        $selected_promotor_id = (int)$promotors[0]['id'];
+    }
+    if ($selected_promotor_id > 0) {
+        $net_data = get_promotor_deep_network_fast($pdo, $selected_promotor_id);
+    }
+}
 
 // Fetch referred members if tab is members
 $referred_members = [];
@@ -169,8 +492,8 @@ require __DIR__ . '/partials/header.php';
 
 <div class="mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
   <div>
-    <h5 class="mb-0 fw-bold">🚀 Manajemen Promotor</h5>
-    <div style="font-size:12px;color:#666;margin-top:2px">Kelola target, rate gaji, dan pembayaran promotor program</div>
+    <h5 class="mb-0 fw-bold">🚀 Manajemen Promotor &amp; Analisis Komisi</h5>
+    <div style="font-size:12px;color:#888;margin-top:2px">Kelola target, komisi jaringan mengakar (multi-tier), dan deteksi akun bercabang</div>
   </div>
   <?php if ($tab === 'list'): ?>
   <button class="btn btn-sm btn-primary text-white" onclick="openAddModal()" style="background:var(--brand);border-color:var(--brand)">
@@ -187,21 +510,22 @@ require __DIR__ . '/partials/header.php';
 
 <!-- Tabs navigation -->
 <div class="d-flex gap-2 mb-4 flex-wrap">
-  <a href="?tab=list" class="btn btn-sm <?= $tab==='list'?'text-white':'btn-secondary' ?>" style="<?= $tab==='list'?'background:var(--brand)':'' ?>">
+  <a href="?tab=list" class="btn btn-sm <?= $tab==='list'?'text-white':'btn-secondary' ?>" style="<?= $tab==='list'?'background:var(--brand);border-color:var(--brand)':'' ?>">
     🧑‍💼 Daftar Promotor
   </a>
-  <a href="?tab=scheme" class="btn btn-sm <?= $tab==='scheme'?'text-white':'btn-secondary' ?>" style="<?= $tab==='scheme'?'background:var(--brand)':'' ?>">
+  <a href="?tab=commission_panel<?= $selected_promotor_id > 0 ? '&promotor_id='.$selected_promotor_id : '' ?>" class="btn btn-sm <?= $tab==='commission_panel'?'text-white':'btn-secondary' ?>" style="<?= $tab==='commission_panel'?'background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:#6366f1;box-shadow:0 0 12px rgba(99,102,241,0.4)':'' ?>">
+    🌳 Panel Komisi &amp; Jaringan Mengakar
+  </a>
+  <a href="?tab=scheme" class="btn btn-sm <?= $tab==='scheme'?'text-white':'btn-secondary' ?>" style="<?= $tab==='scheme'?'background:var(--brand);border-color:var(--brand)':'' ?>">
     ⚙️ Skenario Komisi
   </a>
-  <a href="?tab=logs" class="btn btn-sm <?= $tab==='logs'?'text-white':'btn-secondary' ?>" style="<?= $tab==='logs'?'background:var(--brand)':'' ?>">
+  <a href="?tab=logs" class="btn btn-sm <?= $tab==='logs'?'text-white':'btn-secondary' ?>" style="<?= $tab==='logs'?'background:var(--brand);border-color:var(--brand)':'' ?>">
     📜 Riwayat Target &amp; Payout
   </a>
-  <a href="?tab=members" class="btn btn-sm <?= $tab==='members'?'text-white':'btn-secondary' ?>" style="<?= $tab==='members'?'background:var(--brand)':'' ?>">
+  <a href="?tab=members" class="btn btn-sm <?= $tab==='members'?'text-white':'btn-secondary' ?>" style="<?= $tab==='members'?'background:var(--brand);border-color:var(--brand)':'' ?>">
     👥 Member Promotor
   </a>
 </div>
-
-
 
 <?php if ($tab === 'list'): ?>
 <!-- LIST TAB -->
@@ -237,6 +561,9 @@ require __DIR__ . '/partials/header.php';
                 <td><?= number_format((int)$p['promotor_target_regs']) ?> member</td>
                 <td style="color: #FF6B35; font-weight: 700;"><?= format_rp((float)$p['promotor_salary_rate']) ?></td>
                 <td class="text-end">
+                  <a href="?tab=commission_panel&promotor_id=<?= $p['id'] ?>" class="btn btn-sm text-white me-1" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:6px;font-size:11px">
+                    🌳 Panel Jaringan
+                  </a>
                   <a href="?tab=members&promotor_id=<?= $p['id'] ?>" class="btn btn-sm btn-primary text-white me-1" style="border:none;border-radius:6px;font-size:11px">
                     👥 Downlines
                   </a>
@@ -266,6 +593,516 @@ require __DIR__ . '/partials/header.php';
     </div>
   </div>
 </div>
+
+<?php elseif ($tab === 'commission_panel'): ?>
+<!-- COMMISSION PANEL & DEEP NETWORK TAB -->
+<div class="row g-3 mb-4">
+  <!-- Promotor Selector & Profile Card -->
+  <div class="col-12">
+    <div class="c-card p-3" style="background:linear-gradient(135deg,rgba(26,29,45,0.9),rgba(20,22,34,0.95));border:1px solid #2e3352;border-radius:12px;">
+      <div class="row align-items-center g-3">
+        <div class="col-lg-4 col-md-6">
+          <label class="c-label mb-1" style="font-size:11.5px;color:#a5b4fc;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">
+            🔍 Pilih Promotor yang Ingin Dianalisis:
+          </label>
+          <select class="form-select form-select-sm" style="background:#0f111a;color:#fff;border-color:#4f46e5;font-weight:600;font-size:13.5px;padding:8px 12px;border-radius:8px;"
+                  onchange="location.href='?tab=commission_panel&promotor_id=' + this.value">
+            <?php if (empty($promotors)): ?>
+              <option value="">Belum ada promotor aktif</option>
+            <?php else: ?>
+              <?php foreach ($promotors as $pr): ?>
+                <option value="<?= $pr['id'] ?>" <?= $selected_promotor_id === (int)$pr['id'] ? 'selected' : '' ?>>
+                  👤 @<?= htmlspecialchars($pr['username']) ?> (Kode: <?= htmlspecialchars($pr['referral_code']) ?>)
+                </option>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </select>
+        </div>
+        
+        <?php if ($net_data && $net_data['promotor']): 
+          $p_info = $net_data['promotor'];
+        ?>
+        <div class="col-lg-8 col-md-6">
+          <div class="d-flex align-items-center justify-content-lg-end gap-3 flex-wrap" style="font-size:12.5px;">
+            <div class="p-2 px-3 rounded" style="background:#131522;border:1px solid #232742;">
+              <span class="text-muted d-block" style="font-size:10.5px;">Kode Referral</span>
+              <strong class="text-white" style="font-family:monospace;letter-spacing:1px;"><?= htmlspecialchars($p_info['referral_code']) ?></strong>
+            </div>
+            <div class="p-2 px-3 rounded" style="background:#131522;border:1px solid #232742;">
+              <span class="text-muted d-block" style="font-size:10.5px;">Saldo WD</span>
+              <strong style="color:#4CAF82;"><?= format_rp((float)$p_info['balance_wd']) ?></strong>
+            </div>
+            <div class="p-2 px-3 rounded" style="background:#131522;border:1px solid #232742;">
+              <span class="text-muted d-block" style="font-size:10.5px;">Total Earned</span>
+              <strong style="color:#FF6B35;"><?= format_rp((float)$p_info['total_earned']) ?></strong>
+            </div>
+            <div class="p-2 px-3 rounded" style="background:#131522;border:1px solid #232742;">
+              <span class="text-muted d-block" style="font-size:10.5px;">Status Referral</span>
+              <span class="badge <?= $p_info['is_referral_active'] ? 'bg-success' : 'bg-danger' ?>" style="font-size:10px;">
+                <?= $p_info['is_referral_active'] ? 'Aktif ✅' : 'Nonaktif 🛑' ?>
+              </span>
+            </div>
+          </div>
+        </div>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+</div>
+
+<?php if (!$net_data || !$net_data['promotor']): ?>
+<div class="c-card p-5 text-center text-muted">
+  <i class="ph-bold ph-user-circle-gear" style="font-size:48px;color:#555;margin-bottom:12px;display:block;"></i>
+  <h6>Belum ada Promotor yang dipilih atau terdaftar di sistem.</h6>
+  <p style="font-size:13px;">Tambahkan promotor terlebih dahulu melalui tab <strong>Daftar Promotor</strong>.</p>
+</div>
+<?php else: 
+  $stats = $net_data['stats'];
+?>
+
+<!-- Insight & Tuyul Alert Banner -->
+<?php if ($stats['branched_suspect_count'] > 0): ?>
+<div class="alert mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background:rgba(217,119,6,0.15);border:1px solid rgba(245,158,11,0.5);color:#fef3c7;border-radius:10px;font-size:13px;">
+  <div class="d-flex align-items-center gap-2">
+    <span style="font-size:20px;">⚠️</span>
+    <div>
+      <strong>Deteksi Akun Bercabang / Tuyul Ditemukan!</strong> Terdapat <strong><?= $stats['branched_suspect_count'] ?> member Level 1</strong> yang memiliki deposit Rp 0 (atau tidak deposit), namun akun turunan di bawahnya (Level 2+) aktif melakukan deposit sebesar total <strong><?= format_rp((float)$stats['indirect_deposit_confirmed']) ?></strong>.
+    </div>
+  </div>
+  <a href="#sec-members" class="btn btn-sm btn-warning text-dark fw-bold" onclick="$('#tab-members-btn').tab('show');">
+    Lihat Akun Terindikasi
+  </a>
+</div>
+<?php endif; ?>
+
+<!-- 6 KPI Stat Summary Cards -->
+<div class="row g-3 mb-4">
+  <!-- Total Omset Jaringan -->
+  <div class="col-xl-4 col-md-6">
+    <div class="c-card p-3 h-100" style="background:linear-gradient(135deg,#171926,#1b1f35);border:1px solid rgba(99,102,241,0.35);border-radius:12px;">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span style="font-size:11.5px;color:#a5b4fc;font-weight:700;text-transform:uppercase;">🌟 Grand Total Omset Jaringan</span>
+        <span class="badge" style="background:rgba(99,102,241,0.2);color:#818cf8;border:1px solid rgba(99,102,241,0.4);">L1 s/d L<?= $stats['max_depth'] ?></span>
+      </div>
+      <div class="fw-bold mb-1" style="font-size:24px;color:#fff;">
+        <?= format_rp((float)$stats['total_deposit_confirmed']) ?>
+      </div>
+      <div style="font-size:11.5px;color:#94a3b8;">
+        Langsung: <strong style="color:#4CAF82;"><?= format_rp((float)$stats['direct_deposit_confirmed']) ?></strong> &bull; Bercabang: <strong style="color:#c084fc;"><?= format_rp((float)$stats['indirect_deposit_confirmed']) ?></strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deposit Langsung (Tier 1) -->
+  <div class="col-xl-4 col-md-6">
+    <div class="c-card p-3 h-100" style="background:linear-gradient(135deg,#171926,#162723);border:1px solid rgba(16,185,129,0.3);border-radius:12px;">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span style="font-size:11.5px;color:#6ee7b7;font-weight:700;text-transform:uppercase;">🎯 Deposit Langsung (Tier 1)</span>
+        <span class="badge" style="background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.4);">Level 1</span>
+      </div>
+      <div class="fw-bold mb-1" style="font-size:24px;color:#4CAF82;">
+        <?= format_rp((float)$stats['direct_deposit_confirmed']) ?>
+      </div>
+      <div style="font-size:11.5px;color:#94a3b8;">
+        Total: <strong><?= $stats['direct_deposit_count'] ?> transaksi</strong> confirmed
+        <?php if ($stats['direct_deposit_pending'] > 0): ?>
+          <span style="color:#fbbf24;">(Pending: <?= format_rp((float)$stats['direct_deposit_pending']) ?>)</span>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deposit Bercabang (Tier 2+) -->
+  <div class="col-xl-4 col-md-6">
+    <div class="c-card p-3 h-100" style="background:linear-gradient(135deg,#171926,#231835);border:1px solid rgba(168,85,247,0.35);border-radius:12px;">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span style="font-size:11.5px;color:#d8b4fe;font-weight:700;text-transform:uppercase;">🌿 Deposit Bercabang (Tier 2+)</span>
+        <span class="badge" style="background:rgba(168,85,247,0.2);color:#c084fc;border:1px solid rgba(168,85,247,0.4);">Level 2+</span>
+      </div>
+      <div class="fw-bold mb-1" style="font-size:24px;color:#c084fc;">
+        <?= format_rp((float)$stats['indirect_deposit_confirmed']) ?>
+      </div>
+      <div style="font-size:11.5px;color:#94a3b8;">
+        Total: <strong><?= $stats['indirect_deposit_count'] ?> transaksi</strong> dari akun cabang / sub-downline
+      </div>
+    </div>
+  </div>
+
+  <!-- Total Anggota Jaringan -->
+  <div class="col-xl-4 col-md-6">
+    <div class="c-card p-3 h-100" style="background:linear-gradient(135deg,#171926,#1b2032);border:1px solid rgba(59,130,246,0.3);border-radius:12px;">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span style="font-size:11.5px;color:#93c5fd;font-weight:700;text-transform:uppercase;">👥 Total Downline Jaringan</span>
+        <span class="badge" style="background:rgba(59,130,246,0.2);color:#60a5fa;border:1px solid rgba(59,130,246,0.4);"><?= $stats['max_depth'] ?> Kedalaman Level</span>
+      </div>
+      <div class="fw-bold mb-1" style="font-size:24px;color:#60a5fa;">
+        <?= number_format($stats['total_all_members']) ?> <span style="font-size:14px;color:#94a3b8;">Member</span>
+      </div>
+      <div style="font-size:11.5px;color:#94a3b8;">
+        Direct L1: <strong class="text-white"><?= number_format($stats['total_direct_members']) ?></strong> &bull; Bercabang L2+: <strong style="color:#c084fc;"><?= number_format($stats['total_indirect_members']) ?></strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Komisi Referral -->
+  <div class="col-xl-4 col-md-6">
+    <div class="c-card p-3 h-100" style="background:linear-gradient(135deg,#171926,#291d17);border:1px solid rgba(255,107,53,0.3);border-radius:12px;">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span style="font-size:11.5px;color:#fdba74;font-weight:700;text-transform:uppercase;">💰 Komisi Referral</span>
+        <span class="badge" style="background:rgba(255,107,53,0.2);color:#FF6B35;border:1px solid rgba(255,107,53,0.4);">Histori Komisi</span>
+      </div>
+      <div class="fw-bold mb-1" style="font-size:24px;color:#FF6B35;">
+        <?= format_rp((float)$stats['direct_comm_total']) ?>
+      </div>
+      <div style="font-size:11.5px;color:#94a3b8;">
+        Diterima Promotor: <strong><?= format_rp((float)$stats['direct_comm_total']) ?></strong> &bull; Sub-Jaringan: <strong><?= format_rp((float)$stats['network_comm_total']) ?></strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deteksi Akun Tuyul / Sub-Branch -->
+  <div class="col-xl-4 col-md-6">
+    <div class="c-card p-3 h-100" style="background:linear-gradient(135deg,#171926,<?= $stats['branched_suspect_count'] > 0 ? '#2c1b12' : '#181b28' ?>);border:1px solid <?= $stats['branched_suspect_count'] > 0 ? 'rgba(245,158,11,0.4)' : '#2e3352' ?>;border-radius:12px;">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span style="font-size:11.5px;color:#fcd34d;font-weight:700;text-transform:uppercase;">⚠️ Akun Bercabang / Tuyul</span>
+        <span class="badge <?= $stats['branched_suspect_count'] > 0 ? 'bg-warning text-dark' : 'bg-secondary' ?>">
+          <?= $stats['branched_suspect_count'] > 0 ? 'Terdeteksi' : 'Aman' ?>
+        </span>
+      </div>
+      <div class="fw-bold mb-1" style="font-size:24px;color:<?= $stats['branched_suspect_count'] > 0 ? '#fbbf24' : '#94a3b8' ?>;">
+        <?= $stats['branched_suspect_count'] ?> <span style="font-size:14px;color:#94a3b8;">Akun L1</span>
+      </div>
+      <div style="font-size:11.5px;color:#94a3b8;">
+        Member L1 deposit 0 tapi downline di bawahnya aktif deposit.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sub Tabs / Section Navigation -->
+<ul class="nav nav-pills gap-2 mb-3" id="nav-pills-panel" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active btn-sm" id="tab-deposits-btn" data-bs-toggle="pill" data-bs-target="#sec-deposits" type="button" role="tab" style="font-size:12.5px;border-radius:8px;">
+      💳 Seluruh Transaksi Deposit (<?= count($net_data['deposits']) ?>)
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link btn-sm" id="tab-members-btn" data-bs-toggle="pill" data-bs-target="#sec-members" type="button" role="tab" style="font-size:12.5px;border-radius:8px;">
+      👥 Daftar Seluruh Downline Member (<?= count($net_data['members']) ?>)
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link btn-sm" id="tab-tree-btn" data-bs-toggle="pill" data-bs-target="#sec-tree" type="button" role="tab" style="font-size:12.5px;border-radius:8px;">
+      🌳 Struktur Pohon Mengakar (Tree View)
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link btn-sm" id="tab-comm-btn" data-bs-toggle="pill" data-bs-target="#sec-comm" type="button" role="tab" style="font-size:12.5px;border-radius:8px;">
+      💵 Riwayat Komisi Referral
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content" id="panelTabContent">
+  <!-- 1. DEPOSITS TAB -->
+  <div class="tab-pane fade show active" id="sec-deposits" role="tabpanel">
+    <div class="c-card">
+      <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="c-card-title">💳 Seluruh Transaksi Deposit di Jaringan Promotor</span>
+        <div class="d-flex gap-2">
+          <span class="badge" style="background:rgba(59,130,246,0.2);color:#60a5fa;border:1px solid rgba(59,130,246,0.4)">Langsung: <?= format_rp((float)$stats['direct_deposit_confirmed']) ?></span>
+          <span class="badge" style="background:rgba(168,85,247,0.2);color:#c084fc;border:1px solid rgba(168,85,247,0.4)">Bercabang: <?= format_rp((float)$stats['indirect_deposit_confirmed']) ?></span>
+        </div>
+      </div>
+      <div class="c-card-body p-3">
+        <div class="table-responsive">
+          <table class="c-table table table-dark table-striped table-hover mb-0" data-order='[[0, "desc"]]' style="font-size: 13px;">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Member (User)</th>
+                <th>Jalur / Hierarki</th>
+                <th>Nominal Deposit</th>
+                <th>Metode</th>
+                <th>Status</th>
+                <th>Waktu Transaksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (empty($net_data['deposits'])): ?>
+                <tr>
+                  <td colspan="7" class="text-center py-4 text-muted">Belum ada data transaksi deposit di jaringan ini.</td>
+                </tr>
+              <?php else: ?>
+                <?php foreach ($net_data['deposits'] as $dep): 
+                  $is_dir = (bool)$dep['is_direct'];
+                  $lvl = (int)$dep['level'];
+                ?>
+                  <tr style="vertical-align: middle;">
+                    <td>#<?= $dep['id'] ?></td>
+                    <td>
+                      <a href="users.php?search=<?= urlencode($dep['username']) ?>" target="_blank" class="fw-bold text-white text-decoration-none">
+                        @<?= htmlspecialchars($dep['username']) ?>
+                      </a>
+                      <?php if (!empty($dep['whatsapp'])): ?>
+                        <div style="font-size:11px;color:#888;">📱 <?= htmlspecialchars($dep['whatsapp']) ?></div>
+                      <?php endif; ?>
+                    </td>
+                    <td>
+                      <?php if ($is_dir): ?>
+                        <span class="badge" style="background:rgba(59,130,246,0.2);color:#60a5fa;border:1px solid rgba(59,130,246,0.4);padding:4px 8px;">
+                          🎯 Langsung (Level 1)
+                        </span>
+                      <?php else: ?>
+                        <span class="badge" style="background:rgba(168,85,247,0.2);color:#c084fc;border:1px solid rgba(168,85,247,0.4);padding:4px 8px;">
+                          🌿 Bercabang (Level <?= $lvl ?> via @<?= htmlspecialchars($dep['upline_username']) ?>)
+                        </span>
+                      <?php endif; ?>
+                    </td>
+                    <td>
+                      <strong style="color: <?= $dep['status'] === 'confirmed' ? '#4CAF82' : ($dep['status'] === 'pending' ? '#FF6B35' : '#888') ?>;font-size:13.5px;">
+                        <?= format_rp((float)$dep['amount']) ?>
+                      </strong>
+                    </td>
+                    <td><span class="badge b-neutral" style="font-size:11px;"><?= htmlspecialchars(strtoupper($dep['method'] ?? '-')) ?></span></td>
+                    <td>
+                      <?php if ($dep['status'] === 'confirmed'): ?>
+                        <span class="badge b-success" style="padding:4px 8px;">Confirmed ✅</span>
+                      <?php elseif ($dep['status'] === 'pending'): ?>
+                        <span class="badge b-warn" style="padding:4px 8px;">Pending ⏳</span>
+                      <?php else: ?>
+                        <span class="badge b-danger" style="padding:4px 8px;">Rejected ❌</span>
+                      <?php endif; ?>
+                    </td>
+                    <td style="color:#ccc;font-size:12px;"><?= date('d M Y H:i', strtotime($dep['created_at'])) ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. MEMBERS DIRECTORY TAB -->
+  <div class="tab-pane fade" id="sec-members" role="tabpanel">
+    <div class="c-card">
+      <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="c-card-title">👥 Direktori Seluruh Downline Member Mengakar (Total: <?= count($net_data['members']) ?> Member)</span>
+      </div>
+      <div class="c-card-body p-3">
+        <div class="table-responsive">
+          <table class="c-table table table-dark table-striped table-hover mb-0" data-order='[[0, "asc"]]' style="font-size: 13px;">
+            <thead>
+              <tr>
+                <th>Level</th>
+                <th>Member</th>
+                <th>Upline Sponsor</th>
+                <th>Membership</th>
+                <th>Total Depo (Confirmed)</th>
+                <th>Saldo WD</th>
+                <th>Status / Indikasi</th>
+                <th>Tgl Daftar</th>
+                <th class="text-end">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (empty($net_data['members'])): ?>
+                <tr>
+                  <td colspan="9" class="text-center py-4 text-muted">Belum ada downline member.</td>
+                </tr>
+              <?php else: ?>
+                <?php foreach ($net_data['members'] as $mem): 
+                  $lvl = (int)$mem['level'];
+                  $is_suspect = !empty($mem['is_suspect_branch']);
+                ?>
+                  <tr style="vertical-align: middle;">
+                    <td>
+                      <span class="badge <?= $lvl === 1 ? 'bg-primary' : ($lvl === 2 ? 'bg-info text-dark' : ($lvl === 3 ? 'bg-warning text-dark' : 'bg-danger')) ?>" style="padding:4px 8px;">
+                        L<?= $lvl ?>
+                      </span>
+                    </td>
+                    <td>
+                      <strong style="color:#fff;">@<?= htmlspecialchars($mem['username']) ?></strong>
+                      <div style="font-size:11px;color:#888;">
+                        <?= htmlspecialchars($mem['email']) ?>
+                        <?php if (!empty($mem['whatsapp'])): ?> &bull; 📱 <?= htmlspecialchars($mem['whatsapp']) ?><?php endif; ?>
+                      </div>
+                    </td>
+                    <td>
+                      <strong style="color:var(--brand);">@<?= htmlspecialchars($mem['upline_username']) ?></strong>
+                    </td>
+                    <td>
+                      <span class="badge b-neutral" style="font-size:11px;"><?= htmlspecialchars($mem['membership_name']) ?></span>
+                    </td>
+                    <td>
+                      <strong style="color: <?= (float)$mem['total_deposit_confirmed'] > 0 ? '#4CAF82' : '#777' ?>;">
+                        <?= format_rp((float)$mem['total_deposit_confirmed']) ?>
+                      </strong>
+                      <?php if ($mem['total_deposit_count'] > 0): ?>
+                        <div style="font-size:10.5px;color:#888;"><?= $mem['total_deposit_count'] ?>x deposit</div>
+                      <?php endif; ?>
+                    </td>
+                    <td style="color:#38bdf8;font-weight:600;"><?= format_rp((float)$mem['balance_wd']) ?></td>
+                    <td>
+                      <?php if ($is_suspect): ?>
+                        <span class="badge bg-warning text-dark fw-bold" style="font-size:10.5px;" title="Akun ini 0 depo namun memiliki downline yang melakukan deposit">
+                          ⚠️ Akun Tuyul / Sub-Branch
+                        </span>
+                      <?php elseif ((float)$mem['total_deposit_confirmed'] > 0): ?>
+                        <span class="badge bg-success" style="font-size:10.5px;">Aktif Depo ✅</span>
+                      <?php else: ?>
+                        <span class="badge bg-secondary" style="font-size:10.5px;">Belum Depo</span>
+                      <?php endif; ?>
+                    </td>
+                    <td style="color:#ccc;font-size:12px;"><?= date('d M Y H:i', strtotime($mem['created_at'])) ?></td>
+                    <td class="text-end">
+                      <a href="users.php?search=<?= urlencode($mem['username']) ?>" target="_blank" class="btn btn-sm btn-outline-info py-0 px-2" style="font-size:11.5px;border-radius:6px;">
+                        Detail ↗
+                      </a>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. TREE VIEW TAB -->
+  <div class="tab-pane fade" id="sec-tree" role="tabpanel">
+    <div class="c-card">
+      <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="c-card-title">🌳 Visualisasi Struktur Pohon Mengakar Promotor: @<?= htmlspecialchars($net_data['promotor']['username']) ?></span>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-outline-light" onclick="expandAllTree(true)" style="font-size:11px;border-radius:6px;">Buka Semua Cabang</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="expandAllTree(false)" style="font-size:11px;border-radius:6px;">Tutup Cabang</button>
+        </div>
+      </div>
+      <div class="c-card-body p-3">
+        <!-- Root node representation -->
+        <div class="p-3 mb-3 rounded" style="background:linear-gradient(135deg,#1e1b4b,#312e81);border:1px solid #4f46e5;">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-primary fs-6 px-3 py-1">👑 ROOT PROMOTOR</span>
+              <strong class="text-white fs-5">@<?= htmlspecialchars($net_data['promotor']['username']) ?></strong>
+              <code><?= htmlspecialchars($net_data['promotor']['referral_code']) ?></code>
+            </div>
+            <div class="d-flex align-items-center gap-3" style="font-size:13px;">
+              <div><span class="text-muted">Total Omset Jaringan: </span><strong style="color:#4CAF82;"><?= format_rp((float)$stats['total_deposit_confirmed']) ?></strong></div>
+              <div><span class="text-muted">Downline Total: </span><strong class="text-white"><?= $stats['total_all_members'] ?> Member</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <?php if (empty($net_data['tree'])): ?>
+          <div class="text-center py-4 text-muted">Belum ada downline yang terhubung dengan promotor ini.</div>
+        <?php else: ?>
+          <div class="tree-container p-2 rounded" style="background:#0f111a;border:1px solid #1e2235;max-height:750px;overflow-y:auto;">
+            <?= render_network_tree_html($net_data['tree']) ?>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. COMMISSIONS TAB -->
+  <div class="tab-pane fade" id="sec-comm" role="tabpanel">
+    <div class="c-card">
+      <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="c-card-title">💵 Riwayat Komisi Referral di Jaringan</span>
+        <span class="badge bg-success">Total: <?= format_rp((float)$stats['direct_comm_total'] + (float)$stats['network_comm_total']) ?></span>
+      </div>
+      <div class="c-card-body p-3">
+        <div class="table-responsive">
+          <table class="c-table table table-dark table-striped table-hover mb-0" data-order='[[0, "desc"]]' style="font-size: 13px;">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Penerima Komisi</th>
+                <th>Dari Member (Sumber)</th>
+                <th>Nominal Komisi</th>
+                <th>Kategori Komisi</th>
+                <th>Waktu</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php 
+              $all_comms = [];
+              foreach ($net_data['direct_commissions'] as $dc) {
+                  $dc['type'] = 'direct';
+                  $dc['to_username'] = $net_data['promotor']['username'];
+                  $all_comms[] = $dc;
+              }
+              foreach ($net_data['network_commissions'] as $nc) {
+                  $nc['type'] = 'network';
+                  $all_comms[] = $nc;
+              }
+              ?>
+              <?php if (empty($all_comms)): ?>
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">Belum ada transaksi komisi referral yang tercatat.</td>
+                </tr>
+              <?php else: ?>
+                <?php foreach ($all_comms as $c): ?>
+                  <tr style="vertical-align: middle;">
+                    <td>#<?= $c['id'] ?></td>
+                    <td>
+                      <strong style="color:var(--brand);">@<?= htmlspecialchars($c['to_username']) ?></strong>
+                    </td>
+                    <td>
+                      <strong style="color:#fff;">@<?= htmlspecialchars($c['from_username']) ?></strong>
+                    </td>
+                    <td>
+                      <strong style="color:#4CAF82;font-size:13.5px;"><?= format_rp((float)$c['amount']) ?></strong>
+                    </td>
+                    <td>
+                      <?php if ($c['type'] === 'direct'): ?>
+                        <span class="badge bg-success" style="padding:4px 8px;">Direct Promotor ✅</span>
+                      <?php else: ?>
+                        <span class="badge bg-info text-dark" style="padding:4px 8px;">Jaringan Turunan 🌿</span>
+                      <?php endif; ?>
+                    </td>
+                    <td style="color:#ccc;font-size:12px;"><?= date('d M Y H:i', strtotime($c['created_at'])) ?></td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleTreeNode(btn) {
+  const item = btn.closest('.tree-item');
+  const subBranch = item.querySelector('.tree-sub-branch');
+  if (subBranch) {
+    if (subBranch.style.display === 'none') {
+      subBranch.style.display = 'block';
+      btn.textContent = '▼';
+    } else {
+      subBranch.style.display = 'none';
+      btn.textContent = '▶';
+    }
+  }
+}
+
+function expandAllTree(open) {
+  document.querySelectorAll('.tree-sub-branch').forEach(function(el) {
+    el.style.display = open ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tree-toggle-btn').forEach(function(btn) {
+    btn.textContent = open ? '▼' : '▶';
+  });
+}
+</script>
+<?php endif; ?>
 
 <?php elseif ($tab === 'scheme'): ?>
 <!-- SCHEME & SIMULATION TAB -->
@@ -465,10 +1302,13 @@ setTimeout(runSim, 100);
     </div>
   </div>
 </div>
+
 <?php elseif ($tab === 'members'): ?>
 <!-- MEMBERS TAB -->
 <div class="c-card">
-  <div class="c-card-header"><span class="c-card-title">Member Referral Promotor</span></div>
+  <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span class="c-card-title">Member Referral Promotor (Direct Level 1)</span>
+  </div>
   <div class="c-card-body p-3">
     <div class="table-responsive">
       <table class="c-table table table-dark table-striped table-hover mb-0" data-order='[[4, "desc"]]' style="font-size: 13px;">
@@ -677,3 +1517,4 @@ function openPayoutModal(lid, uname, date, amount, pct) {
 </script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
+
