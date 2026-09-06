@@ -545,11 +545,7 @@ require __DIR__ . '/partials/header.php';
           </tr>
         </thead>
         <tbody>
-          <?php if (empty($promotors)): ?>
-            <tr>
-              <td colspan="6" class="text-center py-4 text-muted">Belum ada promotor aktif. Silakan tambahkan.</td>
-            </tr>
-          <?php else: ?>
+          <?php if (!empty($promotors)): ?>
             <?php foreach ($promotors as $p): ?>
               <tr style="vertical-align: middle;">
                 <td>
@@ -829,11 +825,7 @@ require __DIR__ . '/partials/header.php';
               </tr>
             </thead>
             <tbody>
-              <?php if (empty($net_data['deposits'])): ?>
-                <tr>
-                  <td colspan="7" class="text-center py-4 text-muted">Belum ada data transaksi deposit di jaringan ini.</td>
-                </tr>
-              <?php else: ?>
+              <?php if (!empty($net_data['deposits'])): ?>
                 <?php foreach ($net_data['deposits'] as $dep): 
                   $is_dir = (bool)$dep['is_direct'];
                   $lvl = (int)$dep['level'];
@@ -908,11 +900,7 @@ require __DIR__ . '/partials/header.php';
               </tr>
             </thead>
             <tbody>
-              <?php if (empty($net_data['members'])): ?>
-                <tr>
-                  <td colspan="9" class="text-center py-4 text-muted">Belum ada downline member.</td>
-                </tr>
-              <?php else: ?>
+              <?php if (!empty($net_data['members'])): ?>
                 <?php foreach ($net_data['members'] as $mem): 
                   $lvl = (int)$mem['level'];
                   $is_suspect = !empty($mem['is_suspect_branch']);
@@ -1042,11 +1030,7 @@ require __DIR__ . '/partials/header.php';
                   $all_comms[] = $nc;
               }
               ?>
-              <?php if (empty($all_comms)): ?>
-                <tr>
-                  <td colspan="6" class="text-center py-4 text-muted">Belum ada transaksi komisi referral yang tercatat.</td>
-                </tr>
-              <?php else: ?>
+              <?php if (!empty($all_comms)): ?>
                 <?php foreach ($all_comms as $c): ?>
                   <tr style="vertical-align: middle;">
                     <td>#<?= $c['id'] ?></td>
@@ -1101,6 +1085,15 @@ function expandAllTree(open) {
     btn.textContent = open ? '▼' : '▶';
   });
 }
+
+// Adjust DataTables layout on Bootstrap tab switch
+document.addEventListener('DOMContentLoaded', function () {
+  $('button[data-bs-toggle="pill"]').on('shown.bs.tab', function (e) {
+    if ($.fn.dataTable) {
+      $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+    }
+  });
+});
 </script>
 <?php endif; ?>
 
@@ -1322,11 +1315,7 @@ setTimeout(runSim, 100);
           </tr>
         </thead>
         <tbody>
-          <?php if (empty($referred_members)): ?>
-            <tr>
-              <td colspan="5" class="text-center py-4 text-muted">Belum ada member yang mendaftar dari referral promotor.</td>
-            </tr>
-          <?php else: ?>
+          <?php if (!empty($referred_members)): ?>
             <?php foreach ($referred_members as $rm): ?>
               <tr style="vertical-align: middle;">
                 <td>
@@ -1517,4 +1506,3 @@ function openPayoutModal(lid, uname, date, amount, pct) {
 </script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
-
