@@ -581,8 +581,10 @@ function track_pageview(PDO $pdo, string $path): void {
         $ua  = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 300);
         // Skip bots
         if (preg_match('/bot|crawl|spider|slurp|baidu|bing|google/i', $ua)) return;
-        $pdo->prepare("INSERT INTO page_views (path,ip_hash,referrer,user_agent) VALUES (?,?,?,?)")
-            ->execute([$path, $ip, $ref, $ua]);
+        
+        $userId = get_auth_cookie();
+        $pdo->prepare("INSERT INTO page_views (path,user_id,ip_hash,referrer,user_agent) VALUES (?,?,?,?,?)")
+            ->execute([$path, $userId, $ip, $ref, $ua]);
     } catch (\Throwable) {
         // Silently fail — never break user experience for analytics
     }
