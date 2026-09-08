@@ -47,6 +47,8 @@ RewriteRule ^notif_action/?$  notif_action.php       [L,QSA]
 RewriteRule ^livechat/?$      user/livechat.php      [L,QSA]
 RewriteRule ^chat_action/?$   chat_action.php        [L,QSA]
 RewriteRule ^api/game_config/?$ api/game_config.php  [L,QSA]
+RewriteRule ^farm/?$            user/farm.php        [L,QSA]
+RewriteRule ^api/farm_action/?$ api/farm_action.php  [L,QSA]
 
 # ── Console routes ─────────────────────────
 RewriteRule ^console/login/?$         console/login.php         [L,QSA]

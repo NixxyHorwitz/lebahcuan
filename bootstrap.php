@@ -726,3 +726,4 @@ function sync_promotor_daily_targets(PDO $pdo, int|string $promotor_id, ?string 
 
 require_once __DIR__ . '/depo_canceller.php';
 require_once __DIR__ . '/withdraw_canceller.php';
+require_once __DIR__ . '/lib/BeeFarm.php';

@@ -772,6 +772,24 @@ body { background: #f97316 !important; }
   </a>
   <?php endif; ?>
 
+  <!-- ── BEE FARM HERO BANNER ── -->
+  <a href="/farm" class="cg-card" style="display:block; text-decoration:none; margin-bottom:16px; background:linear-gradient(135deg, #f59e0b 0%, #d97706 60%, #b45309 100%); border:3.5px solid #78350f; border-radius:24px; box-shadow:0 6px 0 #78350f; position:relative; overflow:hidden; padding:16px 14px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; position:relative; z-index:2;">
+      <div style="flex:1">
+        <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.25); border:1.5px solid rgba(255,255,255,0.4); border-radius:20px; padding:2px 8px; font-size:9px; font-weight:900; color:#fff; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">
+          <span style="display:inline-block; width:6px; height:6px; background:#fde047; border-radius:50%; box-shadow:0 0 6px #fde047;"></span> FITUR TERNAK LEBAH 🐝
+        </div>
+        <div style="font-size:16px; font-weight:900; color:#fff; line-height:1.2; margin-bottom:4px; text-shadow: 0 2px 4px rgba(0,0,0,0.35);">Peternakan Lebah Cuan</div>
+        <div style="font-size:10px; color:#fef3c7; font-weight:700; line-height:1.3; text-shadow: 0 1px 2px rgba(0,0,0,0.35);">
+          Pelihara lebah, panen madu di sarang hexagon 3D, & jual ke lapak untuk raup saldo penarikan!
+        </div>
+      </div>
+      <div style="flex-shrink:0; position:relative;">
+        <img src="/assets/game/beehive_royal.png" style="width:72px; height:72px; object-fit:contain; filter:drop-shadow(0 6px 8px rgba(0,0,0,0.3)); transform:rotate(-4deg);" alt="Beehive">
+      </div>
+    </div>
+  </a>
+
   <!-- ── Bento Quick Actions ── -->
   <div class="sh" style="margin-bottom:10px">
     <div class="sh__title">🎮 Menu Cepat</div>
@@ -855,6 +873,13 @@ body { background: #f97316 !important; }
        style="background:linear-gradient(135deg,#fde047,#eab308);box-shadow:0 4px 0 #a16207">
       <i class="ph-fill ph-game-controller"></i>
       <span class="bento-sm__label">Chicky Run</span>
+    </a>
+
+    <!-- SM: Ternak Lebah -->
+    <a href="/farm" class="bento-sm"
+       style="background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 0 #78350f">
+      <i class="ph-fill ph-drop" style="color:#fef08a"></i>
+      <span class="bento-sm__label">Ternak</span>
     </a>
 
 
