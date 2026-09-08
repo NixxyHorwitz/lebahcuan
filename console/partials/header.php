@@ -41,87 +41,108 @@ $absolute_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon :
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
 <style>
 :root {
-  --brand: #FF6B35;
-  --sidebar-w: 240px;
-  --sidebar-bg: #131520;
-  --topbar-h: 58px;
+  --brand: #f59e0b;
+  --brand-hover: #d97706;
+  --sidebar-w: 250px;
+  --sidebar-bg: #0b0d17;
+  --topbar-h: 62px;
+  --card-bg: #111422;
+  --border-color: #1d2238;
 }
 *, *::before, *::after { font-family: 'Inter', sans-serif; box-sizing: border-box; }
-body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
+body { background: #080a12; color: #e2e8f0; min-height: 100vh; font-size: 13.5px; }
 
 /* ── Sidebar ── */
 .c-sidebar {
   position: fixed; top: 0; left: 0;
   width: var(--sidebar-w); height: 100vh;
   background: var(--sidebar-bg);
-  border-right: 1px solid #1f2235;
+  border-right: 1px solid var(--border-color);
   display: flex; flex-direction: column;
   z-index: 1050;
-  transition: transform .25s;
+  transition: transform .25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 4px 0 24px rgba(0,0,0,0.4);
 }
 .c-sidebar__logo {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 12px;
   padding: 18px 20px;
-  border-bottom: 1px solid #1f2235;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(255,255,255,0.02);
 }
 .c-sidebar__icon {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, #FF6B35, #FF8C42);
-  border-radius: 10px;
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-radius: 12px;
+  border: 1.5px solid #b45309;
   display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 10px rgba(245,158,11,0.3);
+  font-size: 20px;
+  flex-shrink: 0;
 }
-.c-sidebar__brand { font-size: 15px; font-weight: 800; color: #fff; line-height: 1.2; }
-.c-sidebar__sub { font-size: 10px; color: #666; }
-.c-sidebar__nav { flex: 1; overflow-y: auto; padding: 12px 10px; }
-.c-sidebar__label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #444; padding: 10px 10px 4px; }
+.c-sidebar__brand { font-size: 16px; font-weight: 800; color: #fff; line-height: 1.2; letter-spacing: -0.3px; }
+.c-sidebar__sub { font-size: 10.5px; color: #f59e0b; font-weight: 600; }
+.c-sidebar__nav { flex: 1; overflow-y: auto; padding: 12px 10px; scrollbar-width: thin; scrollbar-color: #1e243d transparent; }
+.c-sidebar__nav::-webkit-scrollbar { width: 4px; }
+.c-sidebar__nav::-webkit-scrollbar-thumb { background: #1e243d; border-radius: 4px; }
+.c-sidebar__label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: #505876; padding: 14px 12px 6px; }
 .c-nav-link {
   display: flex; align-items: center; gap: 10px;
-  padding: 9px 12px;
-  border-radius: 8px;
-  color: #888;
-  font-size: 13.5px;
-  font-weight: 500;
+  padding: 9.5px 12px;
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
   text-decoration: none;
   margin-bottom: 2px;
-  transition: all .18s;
+  transition: all .15s ease;
   position: relative;
 }
-.c-nav-link:hover { background: #1f2235; color: #ccc; }
-.c-nav-link.active { background: rgba(255,107,53,.15); color: var(--brand); font-weight: 700; }
+.c-nav-link:hover { background: rgba(255,255,255,0.05); color: #f8fafc; transform: translateX(3px); }
+.c-nav-link.active {
+  background: linear-gradient(90deg, rgba(245,158,11,0.18), rgba(245,158,11,0.05));
+  color: var(--brand); font-weight: 700;
+  border-left: 3.5px solid var(--brand);
+}
+.c-nav-link.active svg { color: var(--brand) !important; }
 .c-nav-link .badge-dot {
   margin-left: auto;
-  background: var(--brand);
+  background: #e11d48;
   color: #fff;
   font-size: 10px;
   font-weight: 800;
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: 10px;
   min-width: 20px;
   text-align: center;
 }
-.c-sidebar__footer { padding: 10px; border-top: 1px solid #1f2235; }
+.c-sidebar__footer { padding: 12px; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.2); }
 
 /* ── Topbar ── */
 .c-topbar {
   position: fixed; top: 0; left: var(--sidebar-w); right: 0;
   height: var(--topbar-h);
-  background: #131520;
-  border-bottom: 1px solid #1f2235;
+  background: rgba(14, 17, 29, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
   display: flex; align-items: center;
   padding: 0 24px;
-  gap: 12px;
+  gap: 14px;
   z-index: 1040;
   transition: left .25s;
 }
-.c-topbar__toggle { display: none; background: none; border: none; color: #888; cursor: pointer; padding: 4px; }
-.c-topbar__title { font-weight: 700; font-size: 15px; flex: 1; }
-.c-topbar__clock { font-size: 12px; color: #666; }
+.c-topbar__toggle {
+  display: none; background: #161a2b; border: 1px solid var(--border-color);
+  color: #f8fafc; cursor: pointer; padding: 7px; border-radius: 8px;
+}
+.c-topbar__title { font-weight: 700; font-size: 15px; flex: 1; color: #f8fafc; }
+.c-topbar__clock { font-size: 12px; color: #94a3b8; font-weight: 600; background: #121524; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border-color); }
 .c-topbar__avatar {
-  width: 34px; height: 34px;
-  background: var(--brand);
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-weight: 800; font-size: 14px; color: #fff;
+  border: 2px solid #b45309;
 }
 
 /* ── Main content ── */
@@ -134,15 +155,35 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
 .c-content { padding: 24px; }
 
 /* ── Cards ── */
-.c-card { background: #131520; border: 1px solid #1f2235; border-radius: 12px; overflow: hidden; }
-.c-card-header { padding: 16px 20px; border-bottom: 1px solid #1f2235; display: flex; align-items: center; justify-content: space-between; }
-.c-card-title { font-weight: 700; font-size: 14px; }
+.c-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  margin-bottom: 18px;
+}
+.c-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,0.015);
+}
+.c-card-title { font-weight: 700; font-size: 14.5px; color: #f8fafc; }
 .c-card-body { padding: 20px; }
 
 /* ── Stats ── */
-.c-stat { background: #131520; border: 1px solid #1f2235; border-radius: 12px; padding: 18px 20px; }
-.c-stat__val { font-size: 24px; font-weight: 800; }
-.c-stat__lbl { font-size: 12px; color: #666; margin-top: 2px; }
+.c-stat {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  transition: transform .2s, border-color .2s;
+}
+.c-stat:hover { transform: translateY(-2px); border-color: rgba(245,158,11,0.4); }
+.c-stat__val { font-size: 22px; font-weight: 800; color: #f8fafc; }
+.c-stat__lbl { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
 .c-stat__icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
 
 /* ── Table ── */
@@ -195,14 +236,23 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
 /* ── Backdrop (mobile) ── */
 .c-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1045; }
 
-/* ── Mobile ── */
+/* ── Mobile Responsive Optimizations ── */
 @media (max-width: 991px) {
   .c-sidebar { transform: translateX(-100%); }
   .c-sidebar.open { transform: translateX(0); }
-  .c-topbar { left: 0; }
+  .c-topbar { left: 0; padding: 0 16px; }
   .c-main { margin-left: 0; }
-  .c-topbar__toggle { display: block; }
+  .c-content { padding: 16px 14px; }
+  .c-topbar__toggle { display: flex; align-items: center; justify-content: center; }
   .c-backdrop.active { display: block; }
+}
+
+@media (max-width: 576px) {
+  .c-topbar__clock { display: none; }
+  .c-topbar__title { font-size: 13.5px; }
+  .c-stat { padding: 14px 14px; }
+  .c-stat__val { font-size: 18px; }
+  .c-stat__lbl { font-size: 10px; }
 }
 </style>
 </head>
@@ -212,13 +262,14 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
 
 <aside class="c-sidebar" id="sidebar">
   <div class="c-sidebar__logo">
-    <div class="c-sidebar__icon">
-      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+    <div class="c-sidebar__icon" style="font-size:22px;line-height:1">
+      🐝
     </div>
-    <div>
-      <div class="c-sidebar__brand">TontonCuan</div>
-      <div class="c-sidebar__sub">Admin Console</div>
+    <div style="flex:1;min-width:0">
+      <div class="c-sidebar__brand">LebahCuan</div>
+      <div class="c-sidebar__sub">Farm Console</div>
     </div>
+    <button type="button" class="btn-close btn-close-white d-lg-none" onclick="closeSidebar()" aria-label="Close" style="font-size:11px"></button>
   </div>
 
   <nav class="c-sidebar__nav">
@@ -227,6 +278,20 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
     <a href="/console/" class="c-nav-link <?= $activePage==='dashboard'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       Dashboard
+    </a>
+    <?php endif; ?>
+
+    <div class="c-sidebar__label" style="margin-top:8px">Sistem Ternak Lebah 🐝</div>
+    <?php if (staff_can('bee_farm')): ?>
+    <a href="/console/bee_farm.php" class="c-nav-link <?= $activePage==='bee_farm'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5z"/><path d="M12 22V12"/><path d="M21 7l-9 5L3 7"/></svg>
+      Kelola Ternak Lebah
+    </a>
+    <?php endif; ?>
+    <?php if (staff_can('bee_logs')): ?>
+    <a href="/console/bee_logs.php" class="c-nav-link <?= $activePage==='bee_logs'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Log Panen &amp; Jual Madu
     </a>
     <?php endif; ?>
     <?php if (staff_can('users')): ?>
