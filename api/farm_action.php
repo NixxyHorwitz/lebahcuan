@@ -16,8 +16,7 @@ $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 // CSRF check for mutating actions
 if (in_array($action, ['harvest_hive', 'sell_honey', 'buy_hive', 'buy_bee', 'buy_stall'], true)) {
-    $token = $_POST['_csrf'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-    if (!verify_csrf($token)) {
+    if (!csrf_verify()) {
         echo json_encode(['ok' => false, 'msg' => 'Token keamanan tidak valid atau telah kedaluwarsa. Silakan muat ulang halaman.']);
         exit;
     }

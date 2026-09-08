@@ -529,6 +529,77 @@ body { background: #fef08a !important; font-family: 'Nunito', sans-serif; overfl
   padding: 10px; text-align: center; margin-bottom: 12px;
 }
 .sell-calc-amt { font-size: 18px; font-weight: 900; color: #059669; }
+
+/* ════ THEMED BEE ALERT & CONFIRM MODAL ════ */
+.bee-dialog-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.bee-dialog-box {
+  background: linear-gradient(180deg, #fffdfa 0%, #fffbeb 100%);
+  border: 3.5px solid #78350f;
+  border-radius: 26px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.4), 0 8px 0 #78350f;
+  max-width: 370px; width: 100%;
+  padding: 26px 20px 22px;
+  text-align: center; position: relative;
+  animation: beeBounceIn 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes beeBounceIn {
+  0%   { opacity: 0; transform: scale(0.7) translateY(20px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.bee-dialog-badge {
+  width: 68px; height: 68px;
+  background: linear-gradient(135deg, #fef08a 0%, #f59e0b 60%, #d97706 100%);
+  border: 3.5px solid #78350f;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: -60px auto 14px;
+  font-size: 32px;
+  box-shadow: 0 8px 20px rgba(245,158,11,0.5), 0 4px 0 #78350f;
+}
+.bee-dialog-title {
+  font-size: 19px; font-weight: 900;
+  color: #78350f; margin-bottom: 8px;
+  line-height: 1.25;
+}
+.bee-dialog-message {
+  font-size: 13.5px; font-weight: 700;
+  color: #475569; margin-bottom: 22px;
+  line-height: 1.55; word-break: break-word;
+}
+.bee-dialog-actions {
+  display: flex; gap: 10px; justify-content: center;
+}
+.btn-bee-dialog {
+  flex: 1; padding: 12px 16px;
+  border-radius: 16px; font-size: 13.5px; font-weight: 900;
+  font-family: 'Nunito', sans-serif;
+  cursor: pointer; transition: all 0.12s ease;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 2.5px solid transparent;
+  outline: none;
+}
+.btn-bee-dialog:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.3) !important;
+}
+.btn-bee-dialog--cancel {
+  background: #f1f5f9; border-color: #94a3b8;
+  color: #475569; box-shadow: 0 4px 0 #94a3b8;
+}
+.btn-bee-dialog--confirm {
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  border-color: #78350f; color: #fff;
+  box-shadow: 0 4px 0 #78350f;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+}
 </style>
 
 <!-- ════ TOP HEADER ════ -->
@@ -940,11 +1011,116 @@ body { background: #fef08a !important; font-family: 'Nunito', sans-serif; overfl
   </div>
 </div>
 
+<!-- ════ THEMED BEE FARM DIALOG (ALERT & CONFIRM) ════ -->
+<div class="bee-dialog-backdrop" id="bee-dialog-backdrop">
+  <div class="bee-dialog-box" id="bee-dialog-box">
+    <div class="bee-dialog-badge" id="bee-dialog-badge">
+      <span id="bee-dialog-icon">🐝</span>
+    </div>
+    <div class="bee-dialog-title" id="bee-dialog-title">Informasi Peternakan</div>
+    <div class="bee-dialog-message" id="bee-dialog-message">Pesan peternakan lebah</div>
+    <div class="bee-dialog-actions" id="bee-dialog-actions"></div>
+  </div>
+</div>
+
 <script>
 const _csrf = '<?= csrf_token() ?>';
 let currentActiveHiveId = null;
 let currentHiveData = null;
 let activeStallPricePerMl = <?= (float)($active_stall['sell_price_per_ml'] ?? 0) ?>;
+
+// ════ THEMED BEE DIALOG CONTROLLER (REPLACES NATIVE ALERT/CONFIRM) ════
+function beeAlert(message, type = 'info', title = null) {
+  return new Promise((resolve) => {
+    const backdrop = document.getElementById('bee-dialog-backdrop');
+    const badge = document.getElementById('bee-dialog-badge');
+    const iconEl = document.getElementById('bee-dialog-icon');
+    const titleEl = document.getElementById('bee-dialog-title');
+    const msgEl = document.getElementById('bee-dialog-message');
+    const actionsEl = document.getElementById('bee-dialog-actions');
+
+    let defaultTitle = 'Informasi Peternakan';
+    let icon = '🐝';
+    let btnBg = 'linear-gradient(180deg, #f59e0b 0%, #d97706 100%)';
+    let btnBorder = '#78350f';
+    let badgeBg = 'linear-gradient(135deg, #fef08a 0%, #f59e0b 60%, #d97706 100%)';
+
+    if (type === 'success') {
+      defaultTitle = 'Berhasil! 🎉';
+      icon = '🍯';
+      btnBg = 'linear-gradient(180deg, #10b981 0%, #059669 100%)';
+      btnBorder = '#065f46';
+      badgeBg = 'linear-gradient(135deg, #a7f3d0 0%, #10b981 100%)';
+    } else if (type === 'error') {
+      defaultTitle = 'Perhatian! ⚠️';
+      icon = '🐝';
+      btnBg = 'linear-gradient(180deg, #ef4444 0%, #dc2626 100%)';
+      btnBorder = '#991b1b';
+      badgeBg = 'linear-gradient(135deg, #fecaca 0%, #ef4444 100%)';
+    } else if (type === 'warning') {
+      defaultTitle = 'Peringatan ⚠️';
+      icon = '⚠️';
+      btnBg = 'linear-gradient(180deg, #f59e0b 0%, #d97706 100%)';
+      btnBorder = '#78350f';
+      badgeBg = 'linear-gradient(135deg, #fef08a 0%, #f59e0b 100%)';
+    }
+
+    badge.style.background = badgeBg;
+    titleEl.innerText = title || defaultTitle;
+    msgEl.innerHTML = message;
+    iconEl.innerText = icon;
+
+    actionsEl.innerHTML = `
+      <button type="button" class="btn-bee-dialog" style="background:${btnBg};border-color:${btnBorder};box-shadow:0 4px 0 ${btnBorder};color:#fff;width:100%;" id="bee-dialog-btn-ok">
+        OK, Mengerti 👍
+      </button>
+    `;
+
+    backdrop.style.display = 'flex';
+
+    document.getElementById('bee-dialog-btn-ok').onclick = function() {
+      backdrop.style.display = 'none';
+      resolve(true);
+    };
+  });
+}
+
+function beeConfirm({ title = 'Konfirmasi', message, icon = '🐝', confirmText = 'Ya, Lanjutkan', cancelText = 'Batal' }) {
+  return new Promise((resolve) => {
+    const backdrop = document.getElementById('bee-dialog-backdrop');
+    const badge = document.getElementById('bee-dialog-badge');
+    const iconEl = document.getElementById('bee-dialog-icon');
+    const titleEl = document.getElementById('bee-dialog-title');
+    const msgEl = document.getElementById('bee-dialog-message');
+    const actionsEl = document.getElementById('bee-dialog-actions');
+
+    badge.style.background = 'linear-gradient(135deg, #fef08a 0%, #f59e0b 60%, #d97706 100%)';
+    titleEl.innerText = title;
+    msgEl.innerHTML = message;
+    iconEl.innerText = icon;
+
+    actionsEl.innerHTML = `
+      <button type="button" class="btn-bee-dialog btn-bee-dialog--cancel" id="bee-dialog-btn-cancel">
+        ${cancelText}
+      </button>
+      <button type="button" class="btn-bee-dialog btn-bee-dialog--confirm" id="bee-dialog-btn-confirm">
+        ${confirmText}
+      </button>
+    `;
+
+    backdrop.style.display = 'flex';
+
+    document.getElementById('bee-dialog-btn-cancel').onclick = function() {
+      backdrop.style.display = 'none';
+      resolve(false);
+    };
+
+    document.getElementById('bee-dialog-btn-confirm').onclick = function() {
+      backdrop.style.display = 'none';
+      resolve(true);
+    };
+  });
+}
 
 // Audio context untuk efek panen madu yang renyah
 function playHarvestSound() {
@@ -998,17 +1174,17 @@ function closeHiveInspectionOnBackdrop(e) {
 
 // Load data real-time sarang lebah via API
 function loadHiveDetails(hiveId) {
-  fetch(`/api/farm_action?action=get_hive_detail&hive_id=${hiveId}`)
+  fetch(`/api/farm_action.php?action=get_hive_detail&hive_id=${hiveId}`)
     .then(r => r.json())
     .then(res => {
       if (res.ok && res.data) {
         currentHiveData = res.data;
         renderHiveInterior(res.data);
       } else {
-        alert(res.msg || 'Gagal memuat isi kandang.');
+        beeAlert(res.msg || 'Gagal memuat isi kandang.', 'error');
       }
     })
-    .catch(() => alert('Terjadi kesalahan jaringan.'));
+    .catch(() => beeAlert('Terjadi kesalahan jaringan saat memuat isi kandang.', 'error'));
 }
 
 // Render tampilan isi sarang hexagon
@@ -1093,7 +1269,7 @@ function renderHiveInterior(data) {
 }
 
 // Panen madu dari modal
-function executeHarvestFromModal() {
+async function executeHarvestFromModal() {
   if (!currentActiveHiveId) return;
   const btn = document.getElementById('btn-modal-harvest');
   btn.disabled = true;
@@ -1104,34 +1280,25 @@ function executeHarvestFromModal() {
   fd.append('hive_id', currentActiveHiveId);
   fd.append('_csrf', _csrf);
 
-  fetch('/api/farm_action', { method: 'POST', body: fd })
-    .then(r => r.json())
-    .then(res => {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="ph-fill ph-drop"></i> Panen Madu Sekarang!';
-      if (res.ok) {
-        playHarvestSound();
-        if (typeof nToast === 'function') nToast(res.msg, 'success');
-        else alert(res.msg);
-
-        // Update stok madu di atas
-        document.getElementById('top-honey-stock').innerText = parseFloat(res.new_honey_stock).toFixed(1) + ' ml';
-
-        // Reload data modal
-        loadHiveDetails(currentActiveHiveId);
-
-        // Reload halaman setelah sejenak agar visual di kebun terupdate
-        setTimeout(() => location.reload(), 1500);
-      } else {
-        if (typeof nToast === 'function') nToast(res.msg, 'error');
-        else alert(res.msg);
-      }
-    })
-    .catch(() => {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="ph-fill ph-drop"></i> Panen Madu Sekarang!';
-      alert('Koneksi gagal, silakan coba lagi.');
-    });
+  try {
+    const r = await fetch('/api/farm_action.php', { method: 'POST', body: fd });
+    const res = await r.json();
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ph-fill ph-drop"></i> Panen Madu Sekarang!';
+    if (res.ok) {
+      playHarvestSound();
+      await beeAlert(res.msg, 'success', 'Panen Berhasil! 🍯');
+      document.getElementById('top-honey-stock').innerText = parseFloat(res.new_honey_stock).toFixed(1) + ' ml';
+      loadHiveDetails(currentActiveHiveId);
+      location.reload();
+    } else {
+      await beeAlert(res.msg || 'Gagal memproses panen madu.', 'error', 'Panen Gagal');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ph-fill ph-drop"></i> Panen Madu Sekarang!';
+    await beeAlert('Koneksi terputus saat memproses panen madu.', 'error');
+  }
 }
 
 // Beralih ke tab beli lebah dengan auto-select kandang saat ini
@@ -1159,13 +1326,23 @@ function setMaxSellAmount(honeyStock, dailyRemaining) {
 }
 
 // Submit penjualan madu
-function submitSellHoney() {
+async function submitSellHoney() {
   const input = document.getElementById('sell-amount-input');
   const amt = parseFloat(input.value) || 0;
   if (amt <= 0) {
-    alert('Silakan masukkan jumlah ml madu yang ingin dijual.');
+    await beeAlert('Silakan masukkan jumlah <strong>ml madu</strong> yang ingin dijual ke lapak.', 'warning', 'Jumlah Madu Kosong');
     return;
   }
+
+  const estTotal = Math.round(amt * activeStallPricePerMl);
+  const confirmed = await beeConfirm({
+    title: 'Jual Madu Murni',
+    icon: '💰',
+    message: `Jual <strong>${amt.toFixed(1)} ml madu</strong>? Estimasi cuan <strong style="color:#059669">Rp ${estTotal.toLocaleString('id-ID')}</strong> akan langsung masuk ke Saldo Penarikan.`,
+    confirmText: 'Jual Sekarang 💰',
+    cancelText: 'Batal'
+  });
+  if (!confirmed) return;
 
   const btn = document.getElementById('btn-sell-honey');
   btn.disabled = true;
@@ -1176,62 +1353,73 @@ function submitSellHoney() {
   fd.append('amount_ml', amt);
   fd.append('_csrf', _csrf);
 
-  fetch('/api/farm_action', { method: 'POST', body: fd })
-    .then(r => r.json())
-    .then(res => {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="ph-bold ph-hand-coins"></i> Jual Madu Sekarang';
-      if (res.ok) {
-        playHarvestSound();
-        if (typeof nToast === 'function') nToast(res.msg, 'success');
-        else alert(res.msg);
-        setTimeout(() => location.reload(), 1500);
-      } else {
-        if (typeof nToast === 'function') nToast(res.msg, 'error');
-        else alert(res.msg);
-      }
-    })
-    .catch(() => {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="ph-bold ph-hand-coins"></i> Jual Madu Sekarang';
-      alert('Koneksi gagal.');
-    });
+  try {
+    const r = await fetch('/api/farm_action.php', { method: 'POST', body: fd });
+    const res = await r.json();
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ph-bold ph-hand-coins"></i> Jual Madu Sekarang';
+    if (res.ok) {
+      playHarvestSound();
+      await beeAlert(res.msg, 'success', 'Penjualan Berhasil! 💰');
+      location.reload();
+    } else {
+      await beeAlert(res.msg || 'Gagal memproses penjualan madu.', 'error', 'Penjualan Gagal');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ph-bold ph-hand-coins"></i> Jual Madu Sekarang';
+    await beeAlert('Koneksi terputus saat memproses penjualan madu.', 'error');
+  }
 }
 
 // Beli Kandang
-function buyHive(hiveMasterId, name, price) {
-  if (!confirm(`Konfirmasi pembelian ${name} seharga Rp ${price.toLocaleString('id-ID')} menggunakan Saldo Deposit?`)) return;
+async function buyHive(hiveMasterId, name, price) {
+  const confirmed = await beeConfirm({
+    title: 'Beli Kandang Lebah',
+    icon: '🏡',
+    message: `Beli <strong>${name}</strong> seharga <span style="color:#d97706;font-weight:900;">Rp ${price.toLocaleString('id-ID')}</span> menggunakan Saldo Deposit?`,
+    confirmText: 'Beli Sekarang 🐝',
+    cancelText: 'Batal'
+  });
+  if (!confirmed) return;
 
   const fd = new FormData();
   fd.append('action', 'buy_hive');
   fd.append('hive_master_id', hiveMasterId);
   fd.append('_csrf', _csrf);
 
-  fetch('/api/farm_action', { method: 'POST', body: fd })
-    .then(r => r.json())
-    .then(res => {
-      if (res.ok) {
-        playHarvestSound();
-        if (typeof nToast === 'function') nToast(res.msg, 'success');
-        else alert(res.msg);
-        setTimeout(() => location.reload(), 1200);
-      } else {
-        alert(res.msg);
-      }
-    })
-    .catch(() => alert('Gagal memproses transaksi.'));
+  try {
+    const r = await fetch('/api/farm_action.php', { method: 'POST', body: fd });
+    const res = await r.json();
+    if (res.ok) {
+      playHarvestSound();
+      await beeAlert(res.msg, 'success', 'Kandang Siap! 🏡');
+      location.reload();
+    } else {
+      await beeAlert(res.msg || 'Gagal memproses pembelian kandang.', 'error', 'Pembelian Gagal');
+    }
+  } catch (err) {
+    await beeAlert('Terjadi kendala koneksi saat memproses transaksi.', 'error');
+  }
 }
 
 // Beli Lebah
-function buyBee(beeTypeId, name, price) {
+async function buyBee(beeTypeId, name, price) {
   const sel = document.getElementById('select-target-hive');
   if (!sel || !sel.value) {
-    alert('Silakan pilih kandang tujuan terlebih dahulu.');
+    await beeAlert('Silakan pilih <strong>kandang tujuan</strong> terlebih dahulu sebelum membeli lebah pekerja.', 'warning', 'Pilih Kandang');
     return;
   }
   const targetHiveId = sel.value;
 
-  if (!confirm(`Konfirmasi pembelian ${name} seharga Rp ${price.toLocaleString('id-ID')} ke kandang pilihan?`)) return;
+  const confirmed = await beeConfirm({
+    title: 'Adopsi Lebah Pekerja',
+    icon: '🐝',
+    message: `Beli <strong>${name}</strong> seharga <span style="color:#d97706;font-weight:900;">Rp ${price.toLocaleString('id-ID')}</span> untuk dimasukkan ke kandang pilihan?`,
+    confirmText: 'Adopsi Sekarang 🐝',
+    cancelText: 'Batal'
+  });
+  if (!confirmed) return;
 
   const fd = new FormData();
   fd.append('action', 'buy_bee');
@@ -1239,43 +1427,50 @@ function buyBee(beeTypeId, name, price) {
   fd.append('target_hive_id', targetHiveId);
   fd.append('_csrf', _csrf);
 
-  fetch('/api/farm_action', { method: 'POST', body: fd })
-    .then(r => r.json())
-    .then(res => {
-      if (res.ok) {
-        playHarvestSound();
-        if (typeof nToast === 'function') nToast(res.msg, 'success');
-        else alert(res.msg);
-        setTimeout(() => location.reload(), 1200);
-      } else {
-        alert(res.msg);
-      }
-    })
-    .catch(() => alert('Gagal memproses transaksi.'));
+  try {
+    const r = await fetch('/api/farm_action.php', { method: 'POST', body: fd });
+    const res = await r.json();
+    if (res.ok) {
+      playHarvestSound();
+      await beeAlert(res.msg, 'success', 'Lebah Siap Bekerja! 🐝');
+      location.reload();
+    } else {
+      await beeAlert(res.msg || 'Gagal membeli lebah pekerja.', 'error', 'Gagal Membeli');
+    }
+  } catch (err) {
+    await beeAlert('Terjadi kendala koneksi saat memproses transaksi.', 'error');
+  }
 }
 
 // Beli Lapak
-function buyStall(stallMasterId, name, price) {
-  if (!confirm(`Konfirmasi sewa/pembelian ${name} seharga Rp ${price.toLocaleString('id-ID')} menggunakan Saldo Deposit?`)) return;
+async function buyStall(stallMasterId, name, price) {
+  const confirmed = await beeConfirm({
+    title: 'Sewa Lapak Madu',
+    icon: '🏪',
+    message: `Sewa/Beli <strong>${name}</strong> seharga <span style="color:#d97706;font-weight:900;">Rp ${price.toLocaleString('id-ID')}</span> menggunakan Saldo Deposit?`,
+    confirmText: 'Sewa Lapak 🏪',
+    cancelText: 'Batal'
+  });
+  if (!confirmed) return;
 
   const fd = new FormData();
   fd.append('action', 'buy_stall');
   fd.append('stall_master_id', stallMasterId);
   fd.append('_csrf', _csrf);
 
-  fetch('/api/farm_action', { method: 'POST', body: fd })
-    .then(r => r.json())
-    .then(res => {
-      if (res.ok) {
-        playHarvestSound();
-        if (typeof nToast === 'function') nToast(res.msg, 'success');
-        else alert(res.msg);
-        setTimeout(() => location.reload(), 1200);
-      } else {
-        alert(res.msg);
-      }
-    })
-    .catch(() => alert('Gagal memproses transaksi.'));
+  try {
+    const r = await fetch('/api/farm_action.php', { method: 'POST', body: fd });
+    const res = await r.json();
+    if (res.ok) {
+      playHarvestSound();
+      await beeAlert(res.msg, 'success', 'Lapak Siap Digunakan! 🏪');
+      location.reload();
+    } else {
+      await beeAlert(res.msg || 'Gagal menyewa lapak.', 'error', 'Gagal Sewa');
+    }
+  } catch (err) {
+    await beeAlert('Terjadi kendala koneksi saat memproses transaksi.', 'error');
+  }
 }
 </script>
 
