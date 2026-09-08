@@ -117,13 +117,13 @@
       Level
     </a>
 
-    <!-- Center: PLAY button -->
-    <a href="/videos" class="nav-item nav-item--play <?= ($activePage??'')==='videos'?'active':'' ?>">
+    <!-- Center: TERNAK LEBAH button -->
+    <a href="/farm" class="nav-item nav-item--play <?= ($activePage??'')==='farm'?'active':'' ?>">
       <div class="nav-play-wrap">
-        <div class="nav-play-btn">
-          <i class="ph-fill ph-play"></i>
+        <div class="nav-play-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 4px 0 #78350f, 0 8px 20px rgba(217,119,6,0.4);">
+          <i class="ph-fill ph-drop" style="color:#fff !important; margin-left:0;"></i>
         </div>
-        <span class="nav-play-label">Tonton</span>
+        <span class="nav-play-label" style="<?= ($activePage??'')==='farm'?'color:#d97706;font-weight:900;':'' ?>">Ternak 🐝</span>
       </div>
     </a>
 
