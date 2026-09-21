@@ -172,6 +172,84 @@ class BeeFarm
     }
 
     /**
+     * Panen semua madu dari seluruh kandang aktif milik user
+     */
+    public static function harvestAll(PDO $pdo, int $user_id): array
+    {
+        $pdo->beginTransaction();
+        try {
+            $uStmt = $pdo->prepare("SELECT id, honey_stock FROM users WHERE id = ? FOR UPDATE");
+            $uStmt->execute([$user_id]);
+            $user = $uStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$user) {
+                $pdo->rollBack();
+                return ['ok' => false, 'msg' => 'Pengguna tidak ditemukan.'];
+            }
+
+            $hivesStmt = $pdo->prepare("
+                SELECT id FROM user_bee_hives
+                WHERE user_id = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW())
+                ORDER BY id ASC
+            ");
+            $hivesStmt->execute([$user_id]);
+            $hives = $hivesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($hives)) {
+                $pdo->rollBack();
+                return ['ok' => false, 'msg' => 'Kamu belum memiliki kandang lebah aktif.'];
+            }
+
+            $totalHarvested = 0.0;
+            $hivesHarvested = 0;
+
+            $updBees = $pdo->prepare("
+                UPDATE user_bees SET last_harvest_at = NOW()
+                WHERE hive_id = ? AND user_id = ? AND is_active = 1
+            ");
+            $logStmt = $pdo->prepare("
+                INSERT INTO bee_harvest_logs (user_id, hive_id, amount_ml, harvested_at)
+                VALUES (?, ?, ?, NOW())
+            ");
+
+            foreach ($hives as $h) {
+                $hId = (int)$h['id'];
+                $details = self::getHiveDetails($pdo, $hId, $user_id);
+                if (!$details) continue;
+
+                $amount = (float)($details['total_honey'] ?? 0);
+                if ($amount >= 0.1) {
+                    $totalHarvested += $amount;
+                    $hivesHarvested++;
+                    $updBees->execute([$hId, $user_id]);
+                    $logStmt->execute([$user_id, $hId, $amount]);
+                }
+            }
+
+            if ($totalHarvested < 0.1) {
+                $pdo->rollBack();
+                return ['ok' => false, 'msg' => 'Belum ada madu yang siap dipanen (minimal 0.1 ml).'];
+            }
+
+            $totalHarvested = round($totalHarvested, 2);
+            $newStock = round((float)$user['honey_stock'] + $totalHarvested, 2);
+            $updUser = $pdo->prepare("UPDATE users SET honey_stock = ? WHERE id = ?");
+            $updUser->execute([$newStock, $user_id]);
+
+            $pdo->commit();
+            return [
+                'ok' => true,
+                'msg' => "Panen akbar berhasil! " . number_format($totalHarvested, 2, ',', '.') . " ml madu dari {$hivesHarvested} sarang telah masuk ke stok.",
+                'harvested_ml' => $totalHarvested,
+                'new_honey_stock' => $newStock,
+                'hives_harvested' => $hivesHarvested,
+            ];
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            return ['ok' => false, 'msg' => 'Gagal memanen semua madu: ' . $e->getMessage()];
+        }
+    }
+
+    /**
      * Jual madu melalui lapak aktif user
      */
     public static function sellHoney(PDO $pdo, int $user_id, float $amount_ml): array

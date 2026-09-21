@@ -112,9 +112,9 @@
       <i class="<?= ($activePage??'')==='home'?'ph-fill':'ph-bold' ?> ph-house-simple"></i>
       Lobby
     </a>
-    <a href="/upgrade" class="nav-item <?= ($activePage??'')==='upgrade'?'active':'' ?>">
-      <i class="<?= ($activePage??'')==='upgrade'?'ph-fill':'ph-bold' ?> ph-crown-simple"></i>
-      Level
+    <a href="/videos" class="nav-item <?= ($activePage??'')==='videos'?'active':'' ?>">
+      <i class="<?= ($activePage??'')==='videos'?'ph-fill':'ph-bold' ?> ph-film-strip"></i>
+      Video
     </a>
 
     <!-- Center: TERNAK LEBAH button -->

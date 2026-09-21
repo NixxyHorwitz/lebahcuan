@@ -15,7 +15,7 @@ if (!$user) {
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 // CSRF check for mutating actions
-if (in_array($action, ['harvest_hive', 'sell_honey', 'buy_hive', 'buy_bee', 'buy_stall'], true)) {
+if (in_array($action, ['harvest_hive', 'harvest_all', 'sell_honey', 'buy_hive', 'buy_bee', 'buy_stall'], true)) {
     if (!csrf_verify()) {
         echo json_encode(['ok' => false, 'msg' => 'Token keamanan tidak valid atau telah kedaluwarsa. Silakan muat ulang halaman.']);
         exit;
@@ -36,6 +36,11 @@ switch ($action) {
     case 'harvest_hive':
         $hive_id = (int)($_POST['hive_id'] ?? 0);
         $res = BeeFarm::harvestHive($pdo, (int)$user['id'], $hive_id);
+        echo json_encode($res);
+        exit;
+
+    case 'harvest_all':
+        $res = BeeFarm::harvestAll($pdo, (int)$user['id']);
         echo json_encode($res);
         exit;
 
