@@ -609,6 +609,7 @@ body {
 .hive-inspection-vignette {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 1;
   background: radial-gradient(circle at center,
     rgba(45,20,5,0.82) 0%,
     rgba(30,12,3,0.92) 35%,
@@ -623,14 +624,14 @@ body {
   position: absolute;
   top: 18px; right: 18px;
   width: 44px; height: 44px;
-  background: rgba(255,255,255,0.1);
-  border: 2px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.3);
   border-radius: 50%;
   color: #fef3c7;
   font-size: 22px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  z-index: 10;
+  z-index: 100;
   transition: background 0.2s, transform 0.2s;
 }
 .hive-inspection-close:hover {
@@ -643,7 +644,7 @@ body {
   position: absolute;
   top: 22px; left: 0; right: 0;
   text-align: center;
-  z-index: 10;
+  z-index: 50;
 }
 .hive-inspection-title span {
   display: inline-flex; align-items: center; gap: 8px;
@@ -659,7 +660,7 @@ body {
 /* The organic honeycomb frame — central element */
 .hive-inspection-frame {
   position: relative;
-  z-index: 5;
+  z-index: 50;
   width: 290px;
   max-width: 85vw;
   animation: frameSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
