@@ -990,6 +990,7 @@ body {
               <div class="beehive-sprite-wrapper">
                 <img src="<?= htmlspecialchars($sprite) ?>" alt="<?= htmlspecialchars($uh['master_name']) ?>">
                 
+                <?php if ((int)($det['bee_count'] ?? 0) > 0): ?>
                 <!-- Worker Bees buzzing around the 3D hive -->
                 <div class="hive-swarming-bee swarm-bee-1">
                   <img src="/assets/game/bee_worker.png" alt="Bee">
@@ -997,6 +998,7 @@ body {
                 <div class="hive-swarming-bee swarm-bee-2">
                   <img src="/assets/game/bee_worker.png" alt="Bee">
                 </div>
+                <?php endif; ?>
               </div>
 
               <!-- Ground Grass Patch -->
