@@ -353,7 +353,9 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
   sun.shadow.camera.top = 20; sun.shadow.camera.bottom = -20;
   sun.shadow.bias = -0.0005;
   scene.add(sun);
-  scene.add(new THREE.DirectionalLight(0x88bbff, 0.3).translateTo ? sun : (() => { const l = new THREE.DirectionalLight(0x88ccff, 0.3); l.position.set(-8, 12, -8); return l; })());
+  const fillL = new THREE.DirectionalLight(0x88ccff, 0.3);
+  fillL.position.set(-8, 12, -8);
+  scene.add(fillL);
 
   // Visual sun + glow
   const sunV = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfffbe0 }));
@@ -445,7 +447,8 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
   }
   function mkPine(x, z, s) {
     const g = new THREE.Group();
-    g.add(Object.assign(new THREE.Mesh(new THREE.CylinderGeometry(0.06*s,0.1*s,0.8*s,5), new THREE.MeshStandardMaterial({ color: 0x6b4a30 })), { position: new THREE.Vector3(0, 0.4*s, 0) }));
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06*s,0.1*s,0.8*s,5), new THREE.MeshStandardMaterial({ color: 0x6b4a30 }));
+    trunk.position.set(0, 0.4*s, 0); trunk.castShadow = true; g.add(trunk);
     for (let i = 0; i < 4; i++) {
       const c = new THREE.Mesh(new THREE.ConeGeometry((0.55-i*0.1)*s, 0.55*s, 6), new THREE.MeshStandardMaterial({ color: 0x1a8a3a, roughness: 0.82 }));
       c.position.y = (0.8+i*0.42)*s; c.castShadow = true; g.add(c);
@@ -615,7 +618,9 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     const g = new THREE.Group();
     const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, transparent: true, opacity: 0.78 });
     [[0,0,0,0.8],[-0.6,0.1,0.1,0.6],[0.5,0.15,-0.1,0.7],[-0.2,-0.1,0.2,0.5],[0.7,0.05,0.15,0.45]].forEach(([ox,oy,oz,r]) => {
-      g.add(Object.assign(new THREE.Mesh(new THREE.SphereGeometry(r*s,6,5), m), { position: new THREE.Vector3(ox*s,oy*s,oz*s) }));
+      const sp = new THREE.Mesh(new THREE.SphereGeometry(r*s,6,5), m);
+      sp.position.set(ox*s, oy*s, oz*s);
+      g.add(sp);
     });
     g.position.set(x,y,z); g.userData.speed = 0.012+Math.random()*0.02;
     scene.add(g); return g;
