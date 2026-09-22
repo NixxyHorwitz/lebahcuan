@@ -363,12 +363,22 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
   const glowV = new THREE.Mesh(new THREE.SphereGeometry(4, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfff8dc, transparent: true, opacity: 0.12 }));
   glowV.position.copy(sunV.position); scene.add(glowV);
 
+  // ── GROUND ELEVATION HELPER ──
+  // Flat apiary meadow clearing in center (r <= 6.5), blending out to gentle hills (r >= 12)
+  function getGroundElevation(worldX, worldZ) {
+    const dist = Math.hypot(worldX, worldZ);
+    const blend = Math.min(1, Math.max(0, (dist - 6.5) / 5.5));
+    const localY = -worldZ;
+    const rawWave = Math.sin(worldX * 0.15) * 0.35 + Math.cos(localY * 0.2) * 0.25 + Math.sin(worldX * 0.5 + localY * 0.4) * 0.12;
+    return rawWave * blend;
+  }
+
   // ── GROUND — vibrant green ──
   const gGeo = new THREE.PlaneGeometry(100, 100, 80, 80);
   const gPos = gGeo.getAttribute('position');
   for (let i = 0; i < gPos.count; i++) {
     const x = gPos.getX(i), y = gPos.getY(i);
-    gPos.setZ(i, Math.sin(x * 0.15) * 0.3 + Math.cos(y * 0.2) * 0.25 + Math.sin(x * 0.5 + y * 0.4) * 0.1);
+    gPos.setZ(i, getGroundElevation(x, -y));
   }
   gGeo.computeVertexNormals();
   const ground = new THREE.Mesh(gGeo, new THREE.MeshStandardMaterial({ color: 0x38b764, roughness: 0.88 }));
@@ -376,15 +386,12 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
 
   // ── SMOOTH ORGANIC MOUNTAINS ──
   function createSmoothMountain(x, z, height, baseW, color) {
-    // Use LatheGeometry with a smooth curve profile
     const pts = [];
     const segments = 12;
     for (let i = 0; i <= segments; i++) {
       const t = i / segments;
-      // Smooth bell curve profile
       const r = baseW * (1 - Math.pow(t, 1.3));
       const y = t * height;
-      // Add organic wobble
       const wobble = Math.sin(t * 5 + x * 0.3 + z * 0.2) * baseW * 0.08;
       pts.push(new THREE.Vector2(Math.max(0.01, r + wobble), y));
     }
@@ -395,7 +402,6 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     m.rotation.y = Math.random() * Math.PI;
     scene.add(m);
 
-    // Snow on tall mountains
     if (height > 7) {
       const snowPts = [];
       for (let i = 0; i <= 6; i++) {
@@ -412,11 +418,10 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     return m;
   }
 
-  // Mountains ring — placed OUTSIDE the farm area, well away from hives
+  // Mountains ring — placed OUTSIDE the farm area
   const mtColors = [0x3a7d44, 0x4a8a54, 0x2d6b38, 0x558b5e, 0x1f5c2a];
   const mtFarColors = [0x2d5a36, 0x1a4d28, 0x3a6b42];
 
-  // Near ring (r=28-35)
   for (let i = 0; i < 20; i++) {
     const angle = (i / 20) * Math.PI * 2;
     const dist = 28 + Math.random() * 7;
@@ -424,7 +429,6 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     const w = 3 + Math.random() * 3;
     createSmoothMountain(Math.sin(angle) * dist, Math.cos(angle) * dist, h, w, mtColors[i % mtColors.length]);
   }
-  // Far ring (r=38-50)
   for (let i = 0; i < 14; i++) {
     const angle = (i / 14) * Math.PI * 2 + 0.15;
     const dist = 38 + Math.random() * 12;
@@ -456,7 +460,6 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     g.position.set(x, 0, z); scene.add(g);
   }
 
-  // Trees placed at dist > 7 so they don't block hives
   const treeSpots = [];
   for (let i = 0; i < 30; i++) {
     const angle = Math.random() * Math.PI * 2;
@@ -512,47 +515,146 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     sr.position.set(7+Math.cos(a)*1.7, 0.06, 5+Math.sin(a)*1.7); sr.scale.y = 0.5; scene.add(sr);
   }
 
-  // ── BEEHIVES (center area, well spaced) ──
+  // ── BEEHIVES (Proudly grounded, elevated, volumetric 3D) ──
   const hive3D = [], hiveWP = [];
 
   function mkBeehive() {
     const g = new THREE.Group();
-    // Legs
-    [[-0.38,-0.28],[0.38,-0.28],[-0.38,0.28],[0.38,0.28]].forEach(([lx,lz]) => {
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.35,4), new THREE.MeshStandardMaterial({ color: 0x6b4a30 }));
-      leg.position.set(lx, -0.12, lz); g.add(leg);
+
+    // 1. Garden Stone Foundation Pad (Tatakan batu agar tidak mendem ke tanah)
+    const pad = new THREE.Mesh(
+      new THREE.BoxGeometry(1.3, 0.06, 1.1),
+      new THREE.MeshStandardMaterial({ color: 0x78716c, roughness: 0.92 })
+    );
+    pad.position.y = 0.03; // sits exactly from y=0 to y=0.06
+    pad.receiveShadow = true;
+    pad.castShadow = true;
+    g.add(pad);
+
+    // 2. Wooden Legs (Kaki Kayu Kokoh)
+    const legH = 0.28;
+    const legY = 0.06 + (legH / 2); // 0.20
+    [[-0.42,-0.32],[0.42,-0.32],[-0.42,0.32],[0.42,0.32]].forEach(([lx,lz]) => {
+      const leg = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.042, 0.048, legH, 6),
+        new THREE.MeshStandardMaterial({ color: 0x5c3317, roughness: 0.85 })
+      );
+      leg.position.set(lx, legY, lz);
+      leg.castShadow = true;
+      g.add(leg);
     });
-    // Base
-    const base = new THREE.Mesh(new THREE.BoxGeometry(1.1,0.1,0.9), new THREE.MeshStandardMaterial({ color: 0x9b6b35, roughness: 0.82 }));
-    base.position.y = 0.06; base.castShadow = true; base.receiveShadow = true; g.add(base);
-    // 3 brood boxes — vibrant warm wood
-    const bCols = [0xd4a040, 0xe8b84a, 0xf0c860];
+
+    // 3. Bottom Floorboard / Base (Papan Dasar Sarang)
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(1.16, 0.08, 0.96),
+      new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.8 })
+    );
+    base.position.y = 0.34 + 0.04; // 0.38
+    base.castShadow = true;
+    base.receiveShadow = true;
+    g.add(base);
+
+    // 4. Brood & Honey Boxes (Tiga Kotak Sarang Kayu Bertekstur Hangat)
+    const bCols = [0xd97706, 0xf59e0b, 0xfbbf24];
+    const boxH = 0.34;
+    const boxStartY = 0.42;
     for (let i = 0; i < 3; i++) {
-      const box = new THREE.Mesh(new THREE.BoxGeometry(1.0,0.35,0.8), new THREE.MeshStandardMaterial({ color: bCols[i], roughness: 0.72, metalness: 0.03 }));
-      box.position.y = 0.3+i*0.37; box.castShadow = true; g.add(box);
-      const trim = new THREE.Mesh(new THREE.BoxGeometry(1.04,0.025,0.84), new THREE.MeshStandardMaterial({ color: 0x7a4a20 }));
-      trim.position.y = 0.12+i*0.37+0.18; g.add(trim);
+      const curY = boxStartY + (i * boxH) + (boxH / 2);
+      const box = new THREE.Mesh(
+        new THREE.BoxGeometry(1.02, boxH - 0.02, 0.82),
+        new THREE.MeshStandardMaterial({ color: bCols[i], roughness: 0.68, metalness: 0.04 })
+      );
+      box.position.y = curY;
+      box.castShadow = true;
+      box.receiveShadow = true;
+      g.add(box);
+
+      // Wooden rim trim
+      const trim = new THREE.Mesh(
+        new THREE.BoxGeometry(1.06, 0.03, 0.86),
+        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.75 })
+      );
+      trim.position.y = curY + (boxH / 2) - 0.015;
+      trim.castShadow = true;
+      g.add(trim);
+
+      // Side cleats/handles
+      [-0.52, 0.52].forEach(hx => {
+        const handle = new THREE.Mesh(
+          new THREE.BoxGeometry(0.03, 0.04, 0.28),
+          new THREE.MeshStandardMaterial({ color: 0x5c2d0e })
+        );
+        handle.position.set(hx, curY, 0);
+        g.add(handle);
+      });
     }
-    // Roof
-    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.72,0.38,4), new THREE.MeshStandardMaterial({ color: 0x8b5e3c, roughness: 0.8 }));
-    roof.position.y = 1.55; roof.rotation.y = Math.PI/4; roof.castShadow = true; g.add(roof);
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(1.12,0.05,0.92), new THREE.MeshStandardMaterial({ color: 0x7a4a20 }));
-    cap.position.y = 1.35; g.add(cap);
-    // Entrance
-    const ent = new THREE.Mesh(new THREE.CircleGeometry(0.09,8), new THREE.MeshStandardMaterial({ color: 0x0a0500 }));
-    ent.position.set(0, 0.38, 0.41); g.add(ent);
-    // Landing board
-    const lb = new THREE.Mesh(new THREE.BoxGeometry(0.24,0.02,0.16), new THREE.MeshStandardMaterial({ color: 0x9b6b35 }));
-    lb.position.set(0, 0.28, 0.48); lb.rotation.x = -0.15; g.add(lb);
+
+    // 5. Entrance Slit on bottom box
+    const ent = new THREE.Mesh(
+      new THREE.BoxGeometry(0.36, 0.04, 0.02),
+      new THREE.MeshBasicMaterial({ color: 0x050505 })
+    );
+    ent.position.set(0, 0.46, 0.42);
+    g.add(ent);
+
+    // 6. Landing board (Bantalan Hinggap Lebah)
+    const lb = new THREE.Mesh(
+      new THREE.BoxGeometry(0.40, 0.025, 0.18),
+      new THREE.MeshStandardMaterial({ color: 0xa16207, roughness: 0.75 })
+    );
+    lb.position.set(0, 0.42, 0.50);
+    lb.rotation.x = -0.12;
+    lb.castShadow = true;
+    g.add(lb);
+
+    // 7. Inner Cover / Ceiling Plafon
+    const cap = new THREE.Mesh(
+      new THREE.BoxGeometry(1.18, 0.05, 0.98),
+      new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.7 })
+    );
+    cap.position.y = 1.465;
+    cap.castShadow = true;
+    g.add(cap);
+
+    // 8. Pitched Weather Roof (Atap Pelana Anti Hujan)
+    const roof = new THREE.Mesh(
+      new THREE.ConeGeometry(0.82, 0.42, 4),
+      new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.65 })
+    );
+    roof.position.y = 1.70;
+    roof.rotation.y = Math.PI / 4;
+    roof.castShadow = true;
+    g.add(roof);
+
+    // Roof top ridge cap
+    const ridge = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 0.06, 0.12),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.6, roughness: 0.3 })
+    );
+    ridge.position.y = 1.92;
+    g.add(ridge);
+
     return g;
   }
 
+  // Centered grid arrangement on X and Z around (0, 0)
   function hivePos(idx, total) {
-    const spacing = 3.2, maxRow = 3;
-    const row = Math.floor(idx/maxRow), col = idx%maxRow;
-    const rowCount = Math.min(total - row*maxRow, maxRow);
-    const ox = -(rowCount-1)*spacing/2;
-    return { x: ox + col*spacing + (row%2===1 ? spacing*0.4 : 0), z: -1 + row*3.0 };
+    const maxCols = Math.min(Math.max(total, 1), 3);
+    const totalRows = Math.ceil(total / maxCols);
+    const row = Math.floor(idx / maxCols);
+    const col = idx % maxCols;
+    const itemsInThisRow = (row === totalRows - 1) ? (total - row * maxCols) : maxCols;
+
+    const spacingX = 3.6;
+    const spacingZ = 3.6;
+
+    const ox = -(itemsInThisRow - 1) * spacingX / 2;
+    const oz = -(totalRows - 1) * spacingZ / 2;
+
+    return {
+      x: ox + col * spacingX,
+      z: oz + row * spacingZ
+    };
   }
 
   HIVES_ARRAY.forEach((hive, idx) => {
@@ -562,7 +664,7 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     h.userData.hiveId = hive.id;
     scene.add(h);
     hive3D.push(h);
-    hiveWP.push(new THREE.Vector3(p.x, 2.0, p.z));
+    hiveWP.push(new THREE.Vector3(p.x, 2.25, p.z));
   });
 
   // ── BEES (only near hives that have bees) ──
@@ -583,7 +685,7 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
       const wm = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, side: THREE.DoubleSide });
       const wL = new THREE.Mesh(new THREE.PlaneGeometry(0.1,0.06), wm); wL.position.set(-0.06,0.04,0); wL.rotation.z = 0.3; g.add(wL);
       const wR = new THREE.Mesh(new THREE.PlaneGeometry(0.1,0.06), wm); wR.position.set(0.06,0.04,0); wR.rotation.z = -0.3; g.add(wR);
-      g.userData = { wL, wR, phase: Math.random()*Math.PI*2, speed: 0.6+Math.random()*1.2, radius: 0.8+Math.random()*1.5, h: 1.5+Math.random()*1.5, cx: p.x, cz: p.z };
+      g.userData = { wL, wR, phase: Math.random()*Math.PI*2, speed: 0.6+Math.random()*1.2, radius: 0.8+Math.random()*1.4, h: 0.9+Math.random()*0.8, cx: p.x, cz: p.z };
       scene.add(g); bees.push(g);
     }
   });
@@ -634,19 +736,23 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
   scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xfde047, size: 0.06, transparent: true, opacity: 0.6 })));
 
   // ══════════════════════════════════════════════════════════
-  // CINEMATIC CAMERA SYSTEM
+  // CINEMATIC CAMERA SYSTEM — EYE LEVEL, VOLUMETRIC 3D
   // ══════════════════════════════════════════════════════════
   let cineIdx = -1; // -1 = overview
   let cineZoom = 0; // 0=normal, negative=zoomed in
 
   // Camera target & current (for smooth lerp)
-  const camTarget = { x: 0, y: 10, z: 18, lx: 0, ly: 1, lz: 0 };
-  const camCurrent = { x: 0, y: 10, z: 18, lx: 0, ly: 1, lz: 0 };
+  const camTarget = { x: 0, y: 9.0, z: 16.0, lx: 0, ly: 1.0, lz: 0 };
+  const camCurrent = { x: 0, y: 9.0, z: 16.0, lx: 0, ly: 1.0, lz: 0 };
 
   function setCineOverview() {
     cineIdx = -1;
-    camTarget.x = 0; camTarget.y = 10 + cineZoom; camTarget.z = 18 + cineZoom;
-    camTarget.lx = 0; camTarget.ly = 1; camTarget.lz = 0;
+    camTarget.x = 0;
+    camTarget.y = 9.0 + cineZoom * 0.8;
+    camTarget.z = 16.0 + cineZoom * 0.8;
+    camTarget.lx = 0;
+    camTarget.ly = 1.0;
+    camTarget.lz = 0;
     updateCineUI();
   }
 
@@ -654,14 +760,14 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     if (idx < 0 || idx >= HIVES_ARRAY.length) return;
     cineIdx = idx;
     const p = hivePos(idx, HIVES_ARRAY.length);
-    // Camera positioned behind & above the hive, looking at it
-    const angle = Math.PI * 0.15; // slight side angle
-    const dist = 4.5 + cineZoom * 0.3;
+    // Camera positioned at 3/4 chest-height cinematic angle, looking across (not top-down)
+    const angle = Math.PI * 0.12; // ~22 degrees to the side
+    const dist = 3.4 + cineZoom * 0.35;
     camTarget.x = p.x + Math.sin(angle) * dist;
-    camTarget.y = 3.5 + cineZoom * 0.2;
+    camTarget.y = 1.35 + cineZoom * 0.15; // chest-height, frames hive with sky and mountains behind
     camTarget.z = p.z + Math.cos(angle) * dist;
     camTarget.lx = p.x;
-    camTarget.ly = 0.8;
+    camTarget.ly = 1.05; // looks right at hive center
     camTarget.lz = p.z;
     updateCineUI();
   }
@@ -694,8 +800,8 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     else if (cineIdx > 0) setCineHive(cineIdx - 1);
     else setCineOverview();
   };
-  window.cineZoomIn = function() { cineZoom = Math.max(-5, cineZoom - 1.5); if (cineIdx === -1) setCineOverview(); else setCineHive(cineIdx); };
-  window.cineZoomOut = function() { cineZoom = Math.min(5, cineZoom + 1.5); if (cineIdx === -1) setCineOverview(); else setCineHive(cineIdx); };
+  window.cineZoomIn = function() { cineZoom = Math.max(-4, cineZoom - 1.2); if (cineIdx === -1) setCineOverview(); else setCineHive(cineIdx); };
+  window.cineZoomOut = function() { cineZoom = Math.min(4, cineZoom + 1.2); if (cineIdx === -1) setCineOverview(); else setCineHive(cineIdx); };
 
   // Init camera
   setCineOverview();
@@ -712,7 +818,6 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
       if (ray.intersectObjects(hive3D[i].children, true).length > 0) {
         openHiveInspection(hive3D[i].userData.hiveId);
         hive3D[i].userData.bounceT = 0;
-        // Also focus cam on this hive
         setCineHive(i);
         break;
       }
@@ -724,6 +829,8 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     labelsC.innerHTML = '';
     hive3D.forEach((obj, i) => {
       const hive = HIVES_ARRAY[i]; if (!hive) return;
+      // In cinematic hive view, hide label on the active inspected hive to keep the view clean
+      if (cineIdx === i) return;
       const wp = hiveWP[i].clone(); wp.project(camera);
       if (wp.z > 1) return;
       const sx = (wp.x*container.clientWidth/2)+container.clientWidth/2;
@@ -738,6 +845,20 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     });
   }
 
+  // ── AUTO ASPECT RATIO CHECK ──
+  function checkResize() {
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    if (w > 0 && h > 0) {
+      const pr = Math.min(window.devicePixelRatio || 1, 2);
+      if (renderer.domElement.width !== Math.floor(w * pr) || renderer.domElement.height !== Math.floor(h * pr)) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h, false);
+      }
+    }
+  }
+
   // ── ANIMATE ──
   const clock = new THREE.Clock();
   const lookTarget = new THREE.Vector3();
@@ -746,8 +867,11 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     requestAnimationFrame(animate);
     const t = clock.getElapsedTime();
 
+    // Ensure aspect ratio is always 100% pixel-perfect (prevents gepeng/stretched viewport)
+    checkResize();
+
     // Smooth camera lerp
-    const lerpSpeed = 0.03;
+    const lerpSpeed = 0.04;
     camCurrent.x += (camTarget.x - camCurrent.x) * lerpSpeed;
     camCurrent.y += (camTarget.y - camCurrent.y) * lerpSpeed;
     camCurrent.z += (camTarget.z - camCurrent.z) * lerpSpeed;
@@ -755,9 +879,10 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
     camCurrent.ly += (camTarget.ly - camCurrent.ly) * lerpSpeed;
     camCurrent.lz += (camTarget.lz - camCurrent.lz) * lerpSpeed;
 
-    // Gentle cinematic sway
-    const swayX = Math.sin(t * 0.2) * 0.3;
-    const swayY = Math.cos(t * 0.15) * 0.15;
+    // Subtle cinematic handheld breath
+    const swayAmp = cineIdx === -1 ? 0.25 : 0.06;
+    const swayX = Math.sin(t * 0.25) * swayAmp;
+    const swayY = Math.cos(t * 0.18) * (swayAmp * 0.6);
 
     camera.position.set(camCurrent.x + swayX, camCurrent.y + swayY, camCurrent.z);
     lookTarget.set(camCurrent.lx, camCurrent.ly, camCurrent.lz);
