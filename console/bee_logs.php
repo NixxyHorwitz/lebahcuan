@@ -135,7 +135,7 @@ require __DIR__ . '/partials/header.php';
               </td>
               <td class="text-info fw-bold"><?= number_format((float)$sl['amount_ml'], 2, ',', '.') ?> ml</td>
               <td>Rp <?= number_format((float)$sl['price_per_ml'], 0, ',', '.') ?></td>
-              <td class="text-success fw-bold fs-7">
+              <td class="text-success fw-bold small">
                 +Rp <?= number_format((float)$sl['total_revenue'], 0, ',', '.') ?>
               </td>
             </tr>
@@ -178,7 +178,7 @@ require __DIR__ . '/partials/header.php';
                   <?= htmlspecialchars($hl['hive_name']) ?>
                 </span>
               </td>
-              <td class="text-warning fw-bold fs-7">
+              <td class="text-warning fw-bold small">
                 +<?= number_format((float)$hl['amount_ml'], 2, ',', '.') ?> ml
               </td>
             </tr>

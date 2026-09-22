@@ -165,7 +165,7 @@ require __DIR__ . '/partials/header.php';
   <div class="col-6 col-md-4 col-xl-2">
     <div class="c-stat">
       <div class="c-stat__lbl">Stok Madu Beredar</div>
-      <div class="c-stat__val text-amber"><?= number_format($statHoneySupply, 1) ?> <span class="fs-6">ml</span></div>
+      <div class="c-stat__val text-warning"><?= number_format($statHoneySupply, 1) ?> <span class="fs-6">ml</span></div>
       <div class="small text-muted mt-1"><i class="ph-bold ph-drop"></i> Di tangan user</div>
     </div>
   </div>
@@ -236,7 +236,7 @@ require __DIR__ . '/partials/header.php';
                 <div class="fw-bold text-white"><?= htmlspecialchars($h['name']) ?></div>
                 <div class="small text-muted"><?= htmlspecialchars($h['description']) ?></div>
               </td>
-              <td><span class="badge bg-primary fs-7"><?= (int)$h['max_slots'] ?> Lebah</span></td>
+              <td><span class="badge bg-primary small"><?= (int)$h['max_slots'] ?> Lebah</span></td>
               <td>
                 <?php if ((int)$h['bonus_speed_pct'] > 0): ?>
                   <span class="badge bg-warning text-dark fw-bold">+<?= (int)$h['bonus_speed_pct'] ?>% Speed</span>
@@ -296,7 +296,7 @@ require __DIR__ . '/partials/header.php';
                 <div class="small text-muted"><?= htmlspecialchars($b['description']) ?></div>
               </td>
               <td>
-                <span class="badge bg-success fs-7">
+                <span class="badge bg-success small">
                   <i class="ph-fill ph-drop"></i> +<?= number_format((float)$b['honey_per_hour'], 1) ?> ml / jam
                 </span>
               </td>
@@ -353,7 +353,7 @@ require __DIR__ . '/partials/header.php';
                 <div class="small text-muted"><?= htmlspecialchars($s['description']) ?></div>
               </td>
               <td>
-                <span class="badge bg-success fs-7">Rp <?= number_format((float)$s['sell_price_per_ml'], 0, ',', '.') ?> / ml</span>
+                <span class="badge bg-success small">Rp <?= number_format((float)$s['sell_price_per_ml'], 0, ',', '.') ?> / ml</span>
               </td>
               <td><span class="badge bg-info text-dark fw-bold"><?= number_format((float)$s['daily_max_ml'], 0) ?> ml / hari</span></td>
               <td class="text-warning fw-bold">Rp <?= number_format((float)$s['price'], 0, ',', '.') ?></td>
