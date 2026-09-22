@@ -215,7 +215,7 @@ body { background: #071a0c !important; font-family: 'Nunito', sans-serif; overfl
   <!-- Cinematic Camera Nav -->
   <?php if (count($user_hives) > 0): ?>
   <div class="cinema-nav">
-    <button class="cinema-btn" id="btnCinePrev" onclick="cinemaPrev()"><i class="ph-bold ph-caret-left"></i></button>
+    <button class="cinema-btn" id="btnCinePrev" onclick="cinePrev()"><i class="ph-bold ph-caret-left"></i></button>
     <div class="cinema-indicator">
       <div class="cinema-indicator-name" id="cineName">Overview</div>
       <div class="cinema-indicator-sub" id="cineSub">Lihat semua sarang</div>
