@@ -140,336 +140,473 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <style>
 /* ══════════════════════════════════════════════
-   DEPOSIT PAGE — AMBER HONEY THEME
+   DEPOSIT PAGE — LUXURIOUS AMBER HONEY THEME
    ══════════════════════════════════════════════ */
-.wd-page { padding: 0 0 20px; }
-/* ── TOP BANNER ── */
-.wd-top {
+.dep-page {
+  padding: 0 0 40px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ── TOP HERO BANNER ── */
+.dep-top-banner {
+  background: linear-gradient(135deg, #78350f 0%, #92400e 30%, #b45309 65%, #d97706 100%);
+  padding: 16px 14px 28px;
+  border-bottom: 4px solid #78350f;
+  box-shadow: 0 6px 20px rgba(120,53,15,0.28);
   position: relative;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  padding: 18px 14px 40px;
-  border-bottom: 3.5px solid #78350f;
-  box-shadow: 0 4px 0 #78350f;
-  z-index: 10;
+  overflow: hidden;
 }
-.wd-top::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1.5px, transparent 1.5px);
-  background-size: 16px 16px;
-  pointer-events: none;
+.dep-top-banner::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.18) 15%, transparent 16%), radial-gradient(rgba(255,255,255,0.18) 15%, transparent 16%);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+  opacity: 0.18; pointer-events: none;
 }
-.wd-top-flex {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  z-index: 2;
+.dep-top-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; position: relative; z-index: 2;
 }
-.wd-back {
-  background: #fde68a;
-  border: 2px solid #78350f;
-  color: #78350f;
-  width: 36px; height: 36px;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; text-decoration: none;
-  box-shadow: 0 3px 0 #78350f;
-  transition: transform 0.1s;
-}
-.wd-back:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
-
-.wd-notice {
-  background: #fffbeb;
-  border: 2px solid #78350f;
-  border-radius: 14px;
-  padding: 8px 14px;
-  box-shadow: 0 3px 0 #78350f;
-  display: flex; gap: 8px; align-items: center;
-  position: relative;
-  margin-top: 4px;
-}
-.wd-notice-icon { font-size: 18px; flex-shrink: 0; }
-.wd-notice-txt {
-  font-size: 12px; font-weight: 900; color: #78350f; line-height: 1.2;
-}
-
-@keyframes buzzyFloat {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-4px) rotate(3deg); }
-}
-
-/* ── BODY ── */
-.wd-body {
-  flex: 1;
-  background-color: #fef8ee !important;
-  background-image: radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px) !important;
-  background-size: 16px 16px !important;
-  padding: 16px 14px 100px;
-  position: relative;
-}
-
-/* ── SALDO ROW / CURRENT BANK ROW ── */
-.wd-bank-card { 
-  background: linear-gradient(135deg, #fffbeb, #fef3c7); 
-  border: 3px solid #78350f; 
-  box-shadow: 0 5px 0 #78350f; 
-  border-radius: 18px; 
-  padding: 16px; 
-  margin-bottom: 20px; 
-  position: relative; 
-  z-index: 2; 
-  display: flex; 
-  align-items: center; 
-  gap: 14px; 
-}
-.wd-saldo-icon { 
-  width: 52px; height: 52px; 
-  background: #fde68a; 
-  border: 2.5px solid #78350f; 
-  border-radius: 16px; 
-  display: flex; align-items: center; justify-content: center; 
-  font-size: 26px; 
-  box-shadow: 0 3px 0 #78350f; 
-  flex-shrink: 0; 
-}
-.wd-saldo-lbl { font-size: 11px; font-weight: 900; color: #92400e; margin-bottom: 2px; letter-spacing: 0.5px; text-transform: uppercase; }
-.wd-saldo-val { font-size: 22px; font-weight: 900; color: #78350f; letter-spacing: -0.5px; display:flex; align-items:center; gap:8px;}
-
-/* ── ALERTS ── */
-.wd-alert { padding: 12px 14px; border-radius: 14px; font-size: 11.5px; font-weight: 800; display: flex; gap: 8px; align-items: center; margin-bottom: 14px; border: 2.5px solid #78350f; line-height: 1.35; position: relative; z-index: 2; box-shadow: 0 3px 0 #78350f; }
-.wd-alert--err { background: #fee2e2; color: #991b1b; border-color: #dc2626; box-shadow: 0 3px 0 #dc2626; }
-.wd-alert--warn { background: #fffbeb; color: #78350f; }
-.wd-alert--succ { background: #ecfdf5; color: #065f46; border-color: #059669; box-shadow: 0 3px 0 #059669; }
-.wd-alert--info { background: #fef3c7; color: #78350f; }
-.wd-alert-icon { font-size: 18px; flex-shrink: 0; }
-
-/* ── Segmented Tabs ── */
-.dep-tabs { display: flex; background: #fffbeb; border-radius: 16px; padding: 4px; margin-bottom: 16px; border: 2.5px solid #78350f; box-shadow: 0 3px 0 #78350f; position: relative; z-index: 2;}
-.dep-tab { flex: 1; text-align: center; padding: 10px; font-size: 12px; font-weight: 900; color: #92400e; cursor: pointer; border-radius: 12px; transition: all 0.2s; display:flex; align-items:center; justify-content:center; gap:6px; }
-.dep-tab.active { background: #f59e0b; color: #78350f; box-shadow: 0 3px 0 #78350f; border: 2px solid #78350f; }
-.dep-tab.active i { color: #78350f; }
-
-/* ── Form Card ── */
-.dep-form-card { display: none; position: relative; z-index: 2;}
-.dep-form-card.active { display: block; animation: fadein 0.3s ease; }
-@keyframes fadein { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-/* ── Bank Account Info ── */
-.dep-rek { background: #fffbeb; border: 2.5px solid #78350f; border-radius: 16px; padding: 14px; margin-bottom: 16px; text-align: center; box-shadow: 0 4px 0 #78350f; }
-.dep-rek__lbl { font-size: 10px; color: #92400e; font-weight: 900; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-.dep-rek__bank { font-size: 14px; font-weight: 900; color: #d97706; }
-.dep-rek__num { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin: 4px 0; color: #78350f; }
-.dep-rek__name { font-size: 11px; color: #92400e; font-weight: 800; }
-.dep-rek__copy {
-  margin-top: 10px; width: 100%;
-  background: #fde68a; border: 2px solid #78350f; border-radius: 10px;
-  padding: 8px; font-size: 11px; font-weight: 900; color: #78350f;
-  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+.dep-back-btn {
+  background: #ffffff; border: 2.5px solid #78350f; border-radius: 12px;
+  width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+  color: #78350f; font-size: 18px; text-decoration: none;
   box-shadow: 0 3px 0 #78350f; transition: transform 0.1s;
 }
-.dep-rek__copy:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
-
-/* ── Amount Input (Chunky) ── */
-.wd-input-grp { margin-bottom: 14px; position: relative; z-index: 2; }
-.wd-input-grp label { display: block; font-size: 11.5px; font-weight: 900; color: #78350f; margin-bottom: 6px; padding-left: 2px; }
-.dep-amount-inner { display: flex; align-items: center; justify-content: flex-start; gap: 8px; background: #ffffff; border: 2.5px solid #78350f; border-radius: 14px; padding: 12px 16px; box-shadow: 0 4px 0 #78350f; }
-.dep-amount-prefix { font-size: 16px; font-weight: 900; color: #d97706; }
-.dep-amount-input {
-  width: 100%; background: transparent; border: none;
-  font-size: 16px; font-weight: 900; color: #78350f;
-  font-family: inherit; outline: none; text-align: left;
-  padding: 0; margin: 0; box-sizing: border-box;
+.dep-back-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+.dep-title-pill {
+  background: #ffffff; border: 2.5px solid #78350f; border-radius: 14px;
+  padding: 6px 14px; font-size: 13px; font-weight: 900; color: #78350f;
+  box-shadow: 0 3px 0 #78350f; display: flex; align-items: center; gap: 6px;
 }
 
-.wd-submit-btn {
-  width: 100%;
-  background: #10b981;
-  border: 3px solid #065f46;
-  border-radius: 18px;
-  padding: 14px;
-  font-size: 15px;
-  font-weight: 900;
-  color: #fff;
-  box-shadow: 0 4px 0 #065f46;
-  cursor: pointer;
+/* Mascot Dialogue */
+.dep-mascot-row {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.96); border: 2.5px solid #78350f;
+  border-radius: 16px; padding: 10px 12px; box-shadow: 0 3px 0 #78350f;
+  position: relative; z-index: 2;
+}
+.dep-mascot-avatar {
+  width: 44px; height: 44px; flex-shrink: 0;
+  animation: buzzyBob 3s ease-in-out infinite;
+}
+.dep-mascot-avatar img { width: 100%; height: 100%; object-fit: contain; }
+@keyframes buzzyBob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(3deg); }
+}
+.dep-mascot-text {
+  font-size: 11px; font-weight: 800; color: #78350f; line-height: 1.35;
+}
+.dep-mascot-text strong { color: #b45309; }
+
+/* ── BODY ── */
+.dep-body {
+  padding: 16px 14px 100px;
+}
+
+/* ── SALDO BELI CARD (HERO CARD) ── */
+.dep-balance-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fffbeb 40%, #fef3c7 100%);
+  border: 3.5px solid #78350f;
+  border-radius: 20px;
+  box-shadow: 0 6px 0 #78350f, 0 12px 24px rgba(120,53,15,0.15);
+  padding: 16px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.dep-balance-card::before {
+  content: ''; position: absolute; right: -15px; bottom: -15px;
+  width: 90px; height: 90px; opacity: 0.12; pointer-events: none;
+  background: url('/assets/game/honey_jar.png') no-repeat center center / contain;
+}
+.dep-bal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.dep-bal-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #fde68a; border: 1.5px solid #78350f;
+  padding: 2px 8px; border-radius: 8px; font-size: 9.5px; font-weight: 900;
+  color: #78350f; text-transform: uppercase;
+}
+.dep-bal-status {
+  font-size: 10px; font-weight: 900; color: #059669;
+  display: flex; align-items: center; gap: 4px;
+}
+.dep-bal-main {
+  font-size: 26px; font-weight: 900; color: #78350f; line-height: 1.15;
+  margin-bottom: 4px; font-family: 'Nunito', sans-serif;
+  display: flex; align-items: baseline; gap: 4px;
+}
+.dep-bal-main .curr { font-size: 16px; color: #d97706; }
+.dep-bal-sub {
+  font-size: 10.5px; font-weight: 800; color: #92400e;
+}
+
+/* ── ALERTS ── */
+.dep-alert {
+  padding: 11px 13px; border-radius: 14px; font-size: 11.5px; font-weight: 800;
+  display: flex; gap: 8px; align-items: center; margin-bottom: 14px;
+  border: 2.5px solid #78350f; line-height: 1.35; box-shadow: 0 3px 0 #78350f;
+}
+.dep-alert--err  { background: #fee2e2; color: #991b1b; border-color: #dc2626; box-shadow: 0 3px 0 #dc2626; }
+.dep-alert--warn { background: #fffbeb; color: #78350f; }
+.dep-alert--succ { background: #ecfdf5; color: #065f46; border-color: #059669; box-shadow: 0 3px 0 #059669; }
+.dep-alert--info { background: #fef3c7; color: #78350f; }
+.dep-alert-icon { font-size: 18px; flex-shrink: 0; }
+
+/* ── METHOD TABS (CAPSULES) ── */
+.dep-tabs {
+  display: flex; background: #ffffff; border-radius: 16px; padding: 5px;
+  margin-bottom: 16px; border: 2.5px solid #78350f; box-shadow: 0 4px 0 #78350f;
+  gap: 6px;
+}
+.dep-tab {
+  flex: 1; text-align: center; padding: 10px; font-size: 12px; font-weight: 900;
+  color: #78350f; cursor: pointer; border-radius: 12px; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  border: 2px solid transparent;
+}
+.dep-tab.active {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #78350f; border-color: #78350f; box-shadow: 0 3px 0 #78350f;
+}
+
+/* ── FORM CONTAINER ── */
+.dep-form-card { display: none; }
+.dep-form-card.active { display: block; animation: depFadeIn 0.25s ease; }
+@keyframes depFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── INPUT AMOUNT ── */
+.dep-input-grp { margin-bottom: 14px; }
+.dep-input-lbl {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 11.5px; font-weight: 900; color: #78350f; margin-bottom: 6px;
+}
+.dep-amount-inner {
+  display: flex; align-items: center; gap: 8px; background: #ffffff;
+  border: 2.5px solid #78350f; border-radius: 16px; padding: 12px 14px;
+  box-shadow: 0 4px 0 #78350f; transition: border-color 0.2s;
+}
+.dep-amount-inner:focus-within { border-color: #d97706; }
+.dep-amount-prefix { font-size: 18px; font-weight: 900; color: #d97706; }
+.dep-amount-input {
+  width: 100%; background: transparent; border: none; font-size: 18px;
+  font-weight: 900; color: #78350f; outline: none; font-family: 'Nunito', sans-serif;
+}
+
+/* ── QUICK CHIPS GRID ── */
+.dep-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin-bottom: 16px;
+}
+.dep-amt-btn {
+  background: #ffffff; border: 2px solid #78350f; border-radius: 12px;
+  padding: 10px 4px; text-align: center; cursor: pointer;
+  box-shadow: 0 3px 0 #78350f; transition: transform 0.1s, background 0.15s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.dep-amt-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+.dep-amt-btn.active {
+  background: #fde68a; border-color: #78350f; box-shadow: 0 3px 0 #78350f;
+  transform: translateY(1px);
+}
+.dep-amt-val { font-size: 11.5px; font-weight: 900; color: #78350f; }
+
+/* ── BANK REKENING BOX ── */
+.dep-rek-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 3px solid #78350f; border-radius: 18px; padding: 14px;
+  margin-bottom: 16px; box-shadow: 0 4px 0 #78350f; position: relative;
+}
+.dep-rek-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #78350f; color: #fef08a; padding: 2px 7px; border-radius: 6px;
+  font-size: 9px; font-weight: 900; text-transform: uppercase; margin-bottom: 6px;
+}
+.dep-rek-bank { font-size: 14px; font-weight: 900; color: #b45309; }
+.dep-rek-num {
+  font-family: monospace; font-size: 21px; font-weight: 900; color: #78350f;
+  letter-spacing: 1.5px; margin: 4px 0;
+}
+.dep-rek-name { font-size: 11.5px; font-weight: 800; color: #92400e; margin-bottom: 10px; }
+.dep-rek-copy-btn {
+  width: 100%; background: #ffffff; border: 2px solid #78350f; border-radius: 12px;
+  padding: 9px; font-size: 11px; font-weight: 900; color: #78350f; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  box-shadow: 0 3px 0 #78350f; transition: transform 0.1s;
+}
+.dep-rek-copy-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+
+/* ── FILE UPLOAD ── */
+.dep-file-box {
+  background: #ffffff; border: 2.5px dashed #d97706; border-radius: 16px;
+  padding: 14px; text-align: center; margin-bottom: 16px;
+}
+.dep-file-lbl {
+  display: block; font-size: 11.5px; font-weight: 900; color: #78350f; margin-bottom: 8px;
+}
+.dep-file-input {
+  width: 100%; font-size: 11px; font-weight: 800; color: #78350f;
+}
+
+/* ── SUBMIT BUTTONS ── */
+.dep-btn-submit {
+  width: 100%; padding: 14px; border-radius: 18px; font-size: 15px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: 3px solid #78350f; cursor: pointer; font-family: 'Nunito', sans-serif;
   transition: transform 0.1s;
 }
-.wd-submit-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #065f46; }
-.wd-submit-btn.blue-btn { background: #f59e0b; border-color: #78350f; color: #78350f; box-shadow: 0 4px 0 #78350f; }
-.wd-submit-btn.blue-btn:active { box-shadow: 0 1px 0 #78350f; }
+.dep-btn-submit:active { transform: translateY(3px); box-shadow: 0 1px 0 #78350f !important; }
+.dep-btn-submit--qris {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #fff; box-shadow: 0 5px 0 #78350f; text-shadow: 0 1px 2px #78350f;
+}
+.dep-btn-submit--bank {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff; border-color: #064e3b; box-shadow: 0 5px 0 #064e3b;
+  text-shadow: 0 1px 2px #064e3b;
+}
 
-/* ── History ── */
-.hist-wrap { margin-top: 24px; border-top: 2.5px dashed #fde68a; padding-top: 16px; position:relative; z-index:2; }
-.hist-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.hist-head h3 { font-size: 14px; font-weight: 900; color: #78350f; margin: 0; display:flex; align-items:center; gap:6px;}
-.hist-head a { font-size: 10.5px; font-weight: 900; color: #78350f; text-decoration: none; background: #fde68a; padding: 6px 12px; border-radius: 10px; border: 2px solid #78350f; box-shadow: 0 3px 0 #78350f; transition: transform 0.1s;}
-.hist-head a:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+/* ── HISTORY ── */
+.hist-wrap {
+  margin-top: 24px; border-top: 2.5px dashed #fde68a; padding-top: 18px;
+}
+.hist-head {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+}
+.hist-head h3 {
+  font-size: 13.5px; font-weight: 900; color: #78350f; margin: 0;
+  display: flex; align-items: center; gap: 6px;
+}
+.hist-head a {
+  font-size: 11px; font-weight: 900; color: #78350f; text-decoration: none;
+  background: #fde68a; padding: 5px 12px; border-radius: 10px; border: 2px solid #78350f;
+  box-shadow: 0 2px 0 #78350f;
+}
 .hist-list { display: flex; flex-direction: column; gap: 10px; }
-.hist-card { background: #fff; border: 2.5px solid #78350f; border-radius: 14px; padding: 12px; box-shadow: 0 3px 0 #78350f; display: flex; align-items: center; gap: 10px; }
-.hist-card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border:2px solid #78350f; background:#fef3c7; color:#78350f; }
+.hist-card {
+  background: #ffffff; border: 2.5px solid #78350f; border-radius: 16px;
+  padding: 12px; box-shadow: 0 3px 0 #78350f; display: flex; align-items: center; gap: 10px;
+}
+.hist-card-icon {
+  width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0; border: 2px solid #78350f;
+}
 .hist-card-body { flex: 1; min-width: 0; }
-.hist-card-amt { font-size: 14px; font-weight: 900; color: #78350f; letter-spacing: -0.5px; margin-bottom: 2px; }
-.hist-card-date { font-size: 10px; font-weight: 800; color: #92400e; }
-.hist-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-.hist-badge { font-size: 9px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; border:1.5px solid;}
-
-.dep-badge.pending { background: #fef08a; color: #78350f; border-color:#78350f; }
-.dep-badge.confirmed { background: #bbf7d0; color: #14532d; border-color:#16a34a; }
-.dep-badge.rejected { background: #fecaca; color: #7f1d1d; border-color:#dc2626; }
-.dep-badge.error { background: #fecaca; color: #7f1d1d; border-color:#dc2626; }
+.hist-card-amt { font-size: 14.5px; font-weight: 900; color: #78350f; line-height: 1.2; }
+.hist-card-date { font-size: 10px; font-weight: 800; color: #92400e; margin-top: 2px; }
+.hist-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.hist-badge {
+  font-size: 9.5px; font-weight: 900; padding: 3px 8px; border-radius: 8px;
+  text-transform: uppercase; border: 1.5px solid;
+}
+.dep-badge.pending   { background: #fef3c7; color: #78350f; border-color: #f59e0b; }
+.dep-badge.confirmed { background: #dcfce7; color: #14532d; border-color: #16a34a; }
+.dep-badge.rejected  { background: #fee2e2; color: #7f1d1d; border-color: #dc2626; }
+.dep-badge.error     { background: #fee2e2; color: #7f1d1d; border-color: #dc2626; }
 </style>
 
-<div class="wd-page">
-  <!-- TOP BANNER -->
-  <div class="wd-top">
-    <div class="wd-top-flex">
-      <a href="/home" class="wd-back"><i class="ph-bold ph-caret-left"></i></a>
-      <div class="wd-notice">
-        <div class="wd-notice-icon">🍯</div>
-        <div class="wd-notice-txt">Isi Saldo Beli</div>
+<div class="dep-page">
+  <!-- TOP HERO BANNER -->
+  <div class="dep-top-banner">
+    <div class="dep-top-nav">
+      <a href="/home" class="dep-back-btn" title="Kembali ke Beranda">
+        <i class="ph-bold ph-caret-left"></i>
+      </a>
+      <div class="dep-title-pill">
+        <i class="ph-fill ph-wallet" style="color:#d97706;"></i>
+        <span>Isi Saldo Beli</span>
       </div>
+      <div style="width:38px;"></div> <!-- Spacer -->
     </div>
-    <div class="wd-dog-mascot" style="position:absolute; bottom:-6px; right:14px; z-index:5;">
-      <img src="/assets/game/bee_worker.png" alt="Buzzy" style="width:48px; height:48px; object-fit:contain; filter:drop-shadow(0 3px 2px rgba(0,0,0,0.25)); animation:buzzyFloat 2.5s ease-in-out infinite;">
+
+    <!-- Mascot Dialogue -->
+    <div class="dep-mascot-row">
+      <div class="dep-mascot-avatar">
+        <img src="/assets/game/bee_worker.png" alt="Buzzy Lebah">
+      </div>
+      <div class="dep-mascot-text">
+        Hai! Buzzy siap bantu isi saldo belimu. Saldo ini bisa kamu pakai untuk <strong>sewa sarang & beli bibit lebah</strong>!
+      </div>
     </div>
   </div>
 
-  <div class="wd-body">
-    
-    <!-- SALDO ROW -->
-    <div class="wd-bank-card">
-      <div class="wd-saldo-icon">🍯</div>
-      <div>
-        <div class="wd-saldo-lbl">Saldo Beli Saat Ini</div>
-        <div class="wd-saldo-val"><?= format_rp((float)$user['balance_dep']) ?></div>
+  <div class="dep-body">
+    <!-- SALDO BELI CARD (HERO DISPLAY) -->
+    <div class="dep-balance-card">
+      <div class="dep-bal-header">
+        <span class="dep-bal-tag"><i class="ph-fill ph-drop" style="color:#d97706;"></i> Dompet Pembelian</span>
+        <span class="dep-bal-status"><i class="ph-fill ph-shield-check"></i> Aktif</span>
+      </div>
+      <div class="dep-bal-main">
+        <span class="curr">Rp</span>
+        <span><?= number_format((float)$user['balance_dep'], 0, ',', '.') ?></span>
+      </div>
+      <div class="dep-bal-sub">
+        Saldo Beli dapat digunakan untuk belanja sarang dan booster peternakan.
       </div>
     </div>
 
-      <div class="wd-alert-icon">💡</div>
-      <div style="flex:1">Minimal top up <strong><?= format_rp($min_deposit) ?></strong>.</div>
+    <!-- MINIMUM DEPOSIT ALERT -->
+    <div class="dep-alert dep-alert--info">
+      <div class="dep-alert-icon">💡</div>
+      <div style="flex:1;">
+        Minimal top up adalah <strong><?= format_rp($min_deposit) ?></strong>. Saldo diproses cepat & aman.
+      </div>
     </div>
 
+    <!-- FLASH MESSAGES -->
     <?php if ($flash): ?>
-    <div class="wd-alert wd-alert--<?= $flashType === 'error' ? 'err' : 'succ' ?>">
-      <div class="wd-alert-icon"><?= $flashType === 'error' ? '❌' : '✨' ?></div>
-      <div style="flex:1"><?= htmlspecialchars($flash) ?></div>
+    <div class="dep-alert dep-alert--<?= $flashType === 'error' ? 'err' : 'succ' ?>">
+      <div class="dep-alert-icon"><?= $flashType === 'error' ? '❌' : '✨' ?></div>
+      <div style="flex:1;"><?= htmlspecialchars($flash) ?></div>
     </div>
     <?php endif; ?>
 
     <?php if (!$bank_enabled && (!$qris_enabled || empty($qris_raw))): ?>
-    <div class="wd-alert wd-alert--err">
-      <div class="wd-alert-icon">⚠️</div>
-      <div style="flex:1">Tidak ada metode deposit aktif. Hubungi admin.</div>
+    <div class="dep-alert dep-alert--err">
+      <div class="dep-alert-icon">⚠️</div>
+      <div style="flex:1;">Tidak ada metode deposit yang aktif saat ini. Silakan hubungi admin.</div>
     </div>
     <?php else: ?>
 
-    <!-- SEGMENTED TABS -->
+    <!-- METHOD TABS -->
     <div class="dep-tabs">
       <?php if ($qris_enabled && !empty($qris_raw)): ?>
       <div class="dep-tab" id="tab-qris" onclick="switchForm('qris')">
-        <i class="ph-bold ph-qr-code"></i> QRIS
+        <i class="ph-bold ph-qr-code" style="font-size:16px;"></i>
+        <span>QRIS Otomatis</span>
       </div>
       <?php endif; ?>
       <?php if ($bank_enabled): ?>
       <div class="dep-tab" id="tab-bank" onclick="switchForm('bank')">
-        <i class="ph-bold ph-bank"></i> Bank Transfer
+        <i class="ph-bold ph-bank" style="font-size:16px;"></i>
+        <span>Transfer Bank</span>
       </div>
       <?php endif; ?>
     </div>
 
     <?php if ($qris_enabled && !empty($qris_raw)): ?>
-    <!-- QRIS FORM -->
+    <!-- ── QRIS FORM ── -->
     <div class="dep-form-card" id="form-qris">
       <form method="POST">
         <?= csrf_field() ?>
         <input type="hidden" name="form_token" value="<?= htmlspecialchars($_form_token) ?>">
         <input type="hidden" name="action" value="submit_qris">
-        
-        <div class="wd-input-grp">
-          <label>Nominal Top Up</label>
+
+        <div class="dep-input-grp">
+          <div class="dep-input-lbl">
+            <span>Nominal Top Up</span>
+            <span style="font-size:10px;color:#92400e;">Min. <?= format_rp($min_deposit) ?></span>
+          </div>
           <div class="dep-amount-inner">
             <span class="dep-amount-prefix">Rp</span>
             <input class="dep-amount-input" id="qris-amount" type="number" name="amount" min="<?= $min_deposit ?>" step="any" placeholder="<?= number_format($min_deposit,0,'','') ?>" required>
           </div>
         </div>
-        
+
+        <!-- Quick Amount Chips -->
         <div class="dep-grid">
-          <?php foreach ([10000,25000,50000,100000,200000,500000] as $q): ?>
-          <div class="dep-amt-btn" onclick="setAmt('qris',<?= $q ?>, this)">
+          <?php foreach ([10000, 25000, 50000, 100000, 200000, 500000] as $q): ?>
+          <div class="dep-amt-btn" onclick="setAmt('qris', <?= $q ?>, this)">
             <div class="dep-amt-val"><?= format_rp($q) ?></div>
           </div>
           <?php endforeach; ?>
         </div>
-        
+
         <?php if ($u_enabled): ?>
         <input type="hidden" name="unique_code" value="<?= $unique_code ?>">
         <?php endif; ?>
 
-        <div class="wd-alert wd-alert--info" style="margin-bottom:16px;">
-          <div class="wd-alert-icon"><i class="ph-fill ph-lightning" style="color:#fff"></i></div>
-          <div style="flex:1;">Klik Lanjut untuk bayar instan pakai QRIS.</div>
+        <div class="dep-alert dep-alert--warn" style="margin-bottom:16px;">
+          <div class="dep-alert-icon">⚡</div>
+          <div style="flex:1;">
+            Dukung semua e-wallet (DANA, OVO, GoPay, ShopeePay) & M-Banking. Pembayaran terverifikasi otomatis dalam detik!
+          </div>
         </div>
-        <button type="submit" class="wd-submit-btn blue-btn no-dbl-submit">
-          <i class="ph-bold ph-qr-code"></i> Lanjut Bayar QRIS
+
+        <button type="submit" class="dep-btn-submit dep-btn-submit--qris no-dbl-submit">
+          <i class="ph-fill ph-qr-code" style="font-size:20px;"></i>
+          <span>Lanjut Bayar dengan QRIS</span>
+          <i class="ph-bold ph-arrow-right"></i>
         </button>
       </form>
     </div>
     <?php endif; ?>
 
     <?php if ($bank_enabled): ?>
-    <!-- BANK FORM -->
+    <!-- ── BANK TRANSFER FORM ── -->
     <div class="dep-form-card" id="form-bank">
-      <div class="dep-rek">
-        <div class="dep-rek__lbl">Rekening Tujuan</div>
-        <div class="dep-rek__bank">Bank <?= htmlspecialchars($bankName) ?></div>
-        <div class="dep-rek__num" id="rek-num"><?= htmlspecialchars($bankAccount) ?></div>
-        <div class="dep-rek__name">a.n. <?= htmlspecialchars($bankHolder) ?></div>
-        <button type="button" class="dep-rek__copy" onclick="copyRek()"><i class="ph-bold ph-copy"></i> Salin Nomor Rekening</button>
+      <!-- Rekening Tujuan Box -->
+      <div class="dep-rek-card">
+        <div class="dep-rek-tag"><i class="ph-bold ph-bank"></i> Rekening Resmi LebahCuan</div>
+        <div class="dep-rek-bank">Bank <?= htmlspecialchars($bankName) ?></div>
+        <div class="dep-rek-num" id="rek-num"><?= htmlspecialchars($bankAccount) ?></div>
+        <div class="dep-rek-name">Atas Nama: <?= htmlspecialchars($bankHolder) ?></div>
+        <button type="button" class="dep-rek-copy-btn" onclick="copyRek()">
+          <i class="ph-bold ph-copy"></i>
+          <span>Salin Nomor Rekening</span>
+        </button>
       </div>
 
       <form method="POST" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <input type="hidden" name="form_token" value="<?= htmlspecialchars($_form_token) ?>">
         <input type="hidden" name="action" value="submit_bank">
-        
-        <div class="wd-input-grp">
-          <label>Nominal Top Up</label>
+
+        <div class="dep-input-grp">
+          <div class="dep-input-lbl">
+            <span>Nominal Ditransfer</span>
+            <span style="font-size:10px;color:#92400e;">Min. <?= format_rp($min_deposit) ?></span>
+          </div>
           <div class="dep-amount-inner">
             <span class="dep-amount-prefix">Rp</span>
             <input class="dep-amount-input" id="bank-amount" type="number" name="amount" min="<?= $min_deposit ?>" step="any" placeholder="<?= number_format($min_deposit,0,'','') ?>" required>
           </div>
         </div>
-        
+
+        <!-- Quick Amount Chips -->
         <div class="dep-grid">
-          <?php foreach ([10000,25000,50000,100000,200000,500000] as $q): ?>
-          <div class="dep-amt-btn" onclick="setAmt('bank',<?= $q ?>, this)">
+          <?php foreach ([10000, 25000, 50000, 100000, 200000, 500000] as $q): ?>
+          <div class="dep-amt-btn" onclick="setAmt('bank', <?= $q ?>, this)">
             <div class="dep-amt-val"><?= format_rp($q) ?></div>
           </div>
           <?php endforeach; ?>
         </div>
-        
+
         <?php if ($u_enabled): ?>
         <input type="hidden" name="unique_code" value="<?= $unique_code ?>">
         <?php endif; ?>
 
-        <div class="dep-file-wrap">
-          <label class="dep-file-lbl">Upload Bukti Transfer (JPG/PNG)</label>
-          <input class="dep-file" type="file" name="proof" accept="image/*" required>
+        <!-- Bukti Transfer Upload Box -->
+        <div class="dep-file-box">
+          <label class="dep-file-lbl">
+            <i class="ph-bold ph-camera" style="font-size:16px;color:#d97706;"></i>
+            Upload Bukti Transfer (JPG / PNG / WEBP)
+          </label>
+          <input class="dep-file-input" type="file" name="proof" accept="image/*" required>
         </div>
-        <button type="submit" class="wd-submit-btn no-dbl-submit"><i class="ph-bold ph-paper-plane-tilt"></i> Kirim Bukti</button>
+
+        <button type="submit" class="dep-btn-submit dep-btn-submit--bank no-dbl-submit">
+          <i class="ph-bold ph-paper-plane-tilt" style="font-size:18px;"></i>
+          <span>Kirim Bukti Transfer</span>
+        </button>
       </form>
     </div>
     <?php endif; ?>
     <?php endif; ?>
 
-    <!-- RIWAYAT (Paling Bawah) -->
+    <!-- ── RIWAYAT TOP UP ── -->
     <?php if (!empty($deps)): ?>
     <div class="hist-wrap">
       <div class="hist-head">
-        <h3><i class="ph-fill ph-clock-counter-clockwise"></i> Riwayat Top Up</h3>
-        <a href="/history">Semua →</a>
+        <h3><i class="ph-fill ph-clock-counter-clockwise" style="color:#d97706;"></i> Riwayat Top Up Terakhir</h3>
+        <a href="/history">Lihat Semua →</a>
       </div>
       <div class="hist-list">
         <?php foreach ($deps as $d): ?>
@@ -481,17 +618,19 @@ require dirname(__DIR__) . '/partials/header.php';
           elseif ($st === 'rejected') $bclass = 'rejected';
           ?>
           <div class="hist-card">
-            <div class="hist-card-icon" style="background:<?= $d['method']==='qris'?'#d1fae5':'#dbeafe' ?>;color:<?= $d['method']==='qris'?'#059669':'#2563eb' ?>;border-color:<?= $d['method']==='qris'?'#86efac':'#93c5fd' ?>;">
+            <div class="hist-card-icon" style="background:<?= $d['method']==='qris'?'#dcfce7':'#fef3c7' ?>;color:<?= $d['method']==='qris'?'#15803d':'#b45309' ?>;border-color:#78350f;">
               <i class="<?= $d['method']==='qris' ? 'ph-bold ph-qr-code' : 'ph-bold ph-bank' ?>"></i>
             </div>
             <div class="hist-card-body">
               <div class="hist-card-amt"><?= format_rp((float)$d['amount']) ?></div>
-              <div class="hist-card-date"><?= strtoupper($d['method']) ?> · <?= date('d M H:i', strtotime($d['created_at'])) ?></div>
+              <div class="hist-card-date"><?= strtoupper($d['method']) ?> · <?= date('d M Y, H:i', strtotime($d['created_at'])) ?> WIB</div>
             </div>
             <div class="hist-card-right">
               <span class="hist-badge dep-badge <?= $bclass ?>"><?= ucfirst($d['status']) ?></span>
               <?php if ($st === 'pending' && $d['method'] === 'qris'): ?>
-              <a href="/pay?id=<?= $d['id'] ?>" style="display:inline-block; margin-top:4px; font-size:10px; font-weight:900; color:#fff; background:#3b82f6; padding:6px 10px; border-radius:8px; text-decoration:none; box-shadow:0 3px 0 #1d4ed8;"><i class="ph-bold ph-arrow-right"></i> Bayar</a>
+              <a href="/pay?id=<?= $d['id'] ?>" style="display:inline-flex;align-items:center;gap:3px;margin-top:4px;font-size:10px;font-weight:900;color:#fff;background:#0284c7;padding:4px 8px;border-radius:8px;text-decoration:none;border:1.5px solid #78350f;box-shadow:0 2px 0 #78350f;">
+                <span>Bayar</span> <i class="ph-bold ph-arrow-right"></i>
+              </a>
               <?php endif; ?>
             </div>
           </div>
@@ -509,10 +648,10 @@ function switchForm(id) {
   const forms = document.querySelectorAll('.dep-form-card');
   tabs.forEach(t => t.classList.remove('active'));
   forms.forEach(f => f.classList.remove('active'));
-  
+
   const targetTab = document.getElementById('tab-' + id);
   const targetForm = document.getElementById('form-' + id);
-  
+
   if (targetTab) targetTab.classList.add('active');
   if (targetForm) targetForm.classList.add('active');
 }
@@ -533,7 +672,13 @@ function setAmt(type, v, btn) {
 
 function copyRek() {
   const t = document.getElementById('rek-num').textContent.trim();
-  nToast.copy ? nToast.copy(t, 'Nomor rekening') : navigator.clipboard.writeText(t);
+  if (typeof nToast !== 'undefined' && nToast.copy) {
+    nToast.copy(t, 'Nomor rekening');
+  } else {
+    navigator.clipboard.writeText(t).then(() => {
+      alert('Nomor rekening disalin: ' + t);
+    });
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
