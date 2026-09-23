@@ -126,98 +126,126 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
 <title><?= htmlspecialchars($video['title']) ?>  </title>
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'].'/assets/css/app.css') ?: time() ?>">
 <style>
-/* ── Watch page overrides ── */
+/* ── Watch page overrides — Amber Honey Theme ── */
+body {
+  background-color: #fef8ee !important;
+  background-image: radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px) !important;
+  background-size: 16px 16px !important;
+}
 .watch-topbar {
-  position:sticky;top:0;z-index:100;
-  background:#fff;border-bottom:2.5px solid #1A1A1A;
-  padding:0 16px;height:52px;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  position:sticky; top:0; z-index:100;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border-bottom: 3px solid #78350f;
+  padding: 0 16px; height: 54px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  box-shadow: 0 3px 0 #78350f;
 }
 .back-btn {
-  display:flex;align-items:center;gap:6px;
-  color:#1A1A1A;text-decoration:none;font-weight:800;font-size:14px;
+  display: flex; align-items: center; gap: 6px;
+  color: #78350f; background: #fde68a; border: 2px solid #78350f;
+  border-radius: 12px; padding: 5px 12px;
+  text-decoration: none; font-weight: 900; font-size: 13px;
+  box-shadow: 0 2px 0 #78350f;
+  transition: transform 0.1s;
 }
-/* Clean video wrapper — NO overlays */
+.back-btn:active { transform: translateY(2px); box-shadow: none; }
+
+.watch-topbar__bal {
+  background: #78350f; color: #fde68a; border: 2px solid #fff;
+  border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 900;
+  display: inline-flex; align-items: center; gap: 5px;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+}
+
+/* Clean video wrapper */
 .yt-wrapper {
-  position:relative;
-  background:#000;
-  aspect-ratio:16/9;
-  width:100%;
+  position: relative;
+  background: #000;
+  aspect-ratio: 16/9;
+  width: 100%;
 }
 .yt-wrapper iframe {
-  position:absolute;inset:0;
-  width:100%;height:100%;
-  border:none;
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  border: none;
 }
-/* Timer bar — below the video, not ON it */
+
+/* Timer bar */
 .watch-progress-bar {
-  height:6px;
-  background:#e0e0e0;
-  border-bottom:2px solid #1A1A1A;
-  overflow:hidden;
+  height: 8px;
+  background: #fde68a;
+  border-bottom: 2.5px solid #78350f;
+  overflow: hidden;
 }
 .watch-progress-fill {
-  height:100%;width:0%;
-  background:var(--mint);
-  transition:width 1s linear;
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+  transition: width 1s linear;
 }
-.watch-progress-fill.done { background:#22C55E; }
+.watch-progress-fill.done { background: #10b981; }
 
 .watch-status {
-  background:#fff;
-  border-bottom:2.5px solid #1A1A1A;
-  padding:10px 16px;
-  display:flex;align-items:center;justify-content:space-between;gap:8px;
-  font-size:13px;font-weight:800;
+  background: #fffbeb;
+  border-bottom: 2.5px solid #78350f;
+  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-size: 13px; font-weight: 800;
 }
 .watch-status__timer {
-  display:flex;align-items:center;gap:8px;
+  display: flex; align-items: center; gap: 10px;
 }
 .timer-badge {
-  width:38px;height:38px;
-  border-radius:50%;
-  border:2.5px solid #1A1A1A;
-  box-shadow:2px 2px 0 #1A1A1A;
-  display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:900;
-  background:var(--yellow);
-  flex-shrink:0;
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  border: 2.5px solid #78350f;
+  box-shadow: 0 3px 0 #78350f;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 900;
+  background: #fde68a;
+  color: #78350f;
+  flex-shrink: 0;
 }
-.watch-status__hint { color:#666;font-size:12px; }
+.watch-status__hint { color: #92400e; font-size: 11.5px; font-weight: 700; margin-top: 1px; }
+
 /* ── Page loader ── */
 #page-loader{
-  position:fixed;inset:0;z-index:9999;
-  background:var(--white,#fff);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
-  transition:opacity .35s;
+  position: fixed; inset: 0; z-index: 9999;
+  background: #fef8ee;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  transition: opacity .35s;
 }
-#page-loader.hidden{opacity:0;pointer-events:none}
+#page-loader.hidden{ opacity: 0; pointer-events: none; }
 .loader-spinner{
-  width:48px;height:48px;
-  border:4px solid #e0e0e0;
-  border-top-color:#1A1A1A;
-  border-radius:50%;
-  animation:spin .7s linear infinite;
+  width: 52px; height: 52px;
+  border: 5px solid #fde68a;
+  border-top-color: #d97706;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
-.loader-label{font-size:13px;font-weight:800;color:#555}
+.loader-label{ font-size: 13px; font-weight: 900; color: #78350f; }
 </style>
 </head>
 <body>
 <!-- Page loader -->
 <div id="page-loader">
+  <div style="width:64px;height:64px;background:#fde68a;border:3px solid #78350f;border-radius:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 #78350f;margin-bottom:8px;">
+    <img src="/assets/game/bee_worker.png" alt="Buzzy" style="width:48px;height:48px;object-fit:contain;">
+  </div>
   <div class="loader-spinner"></div>
-  <div class="loader-label"><i class="ph-bold ph-hourglass-high" style="color:var(--brand);font-size:16px;vertical-align:middle"></i> Memuat video...</div>
+  <div class="loader-label"><i class="ph-bold ph-hourglass-high" style="color:#d97706;font-size:16px;vertical-align:middle"></i> Memuat video misi...</div>
 </div>
 <div class="app-shell">
 
   <!-- Topbar -->
   <div class="watch-topbar">
     <a href="/videos" class="back-btn">
-      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-      Kembali
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><polyline points="15 18 9 12 15 6"/></svg>
+      Misi Video
     </a>
-    <div class="topbar__balance" title="Saldo Penarikan"><?= format_rp((float)$user['balance_wd']) ?></div>
+    <div class="watch-topbar__bal" title="Saldo Siap Tarik">
+      <i class="ph-fill ph-wallet"></i> <?= format_rp((float)$user['balance_wd']) ?>
+    </div>
   </div>
 
   <!-- Player -->
@@ -235,14 +263,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
     <div class="watch-status__timer">
       <div class="timer-badge" id="timer-badge">
         <?php if ($canWatch): ?>
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         <?php else: ?>–<?php endif; ?>
       </div>
       <div>
-        <div id="status-text">
-          <?php if ($already_watched): ?><i class="ph-bold ph-check-circle" style="color:var(--green)"></i> Sudah ditonton hari ini
-          <?php elseif ($watch_today >= $watch_limit): ?><i class="ph-bold ph-warning-circle" style="color:var(--orange)"></i> Limit tonton habis
-          <?php else: ?><i class="ph-bold ph-play-circle" style="color:var(--blue)"></i> Putar video untuk mulai hitung waktu<?php endif; ?>
+        <div id="status-text" style="color: #78350f; font-weight: 900;">
+          <?php if ($already_watched): ?><i class="ph-bold ph-check-circle" style="color:#10b981"></i> Sudah ditonton hari ini
+          <?php elseif ($watch_today >= $watch_limit): ?><i class="ph-bold ph-warning-circle" style="color:#dc2626"></i> Limit tonton habis
+          <?php else: ?><i class="ph-bold ph-play-circle" style="color:#d97706"></i> Putar video untuk mulai hitung waktu<?php endif; ?>
         </div>
         <div class="watch-status__hint" id="status-hint">
           <?php if ($canWatch): ?>Reward: <?= format_rp((float)$video['reward_amount']) ?> setelah <?= $video['watch_duration'] ?>s<?php endif; ?>
@@ -251,26 +279,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
     </div>
     <?php if (!$already_watched && $watch_today < $watch_limit): ?>
     <div id="claim-wrap" style="display:none">
-      <button id="claim-btn" class="btn btn--green btn--sm" onclick="claimReward()" style="display:flex;align-items:center;gap:4px">
-        <i class="ph-bold ph-gift" style="color:var(--yellow);font-size:16px"></i> Klaim
+      <button id="claim-btn" onclick="claimReward()" style="display:flex;align-items:center;gap:6px;background:#10b981;color:#fff;border:2.5px solid #065f46;box-shadow:0 3px 0 #065f46;font-size:13px;font-weight:900;padding:8px 14px;border-radius:12px;cursor:pointer;">
+        <i class="ph-bold ph-gift" style="color:#fde047;font-size:16px"></i> Klaim Cuan
       </button>
     </div>
     <?php elseif ($watch_today >= $watch_limit): ?>
-    <a href="/upgrade" class="btn btn--primary btn--sm" style="display:flex;align-items:center;gap:4px"><i class="ph-bold ph-crown" style="color:var(--yellow);font-size:16px"></i> Upgrade</a>
+    <a href="/upgrade" style="display:flex;align-items:center;gap:5px;background:#f59e0b;color:#78350f;border:2px solid #78350f;box-shadow:0 3px 0 #78350f;font-weight:900;font-size:12px;padding:6px 12px;border-radius:10px;text-decoration:none;">
+      <i class="ph-bold ph-crown" style="font-size:15px"></i> Upgrade VIP
+    </a>
     <?php endif; ?>
   </div>
 
-  <!-- Video info -->
+  <!-- Video info & Mascot Tips -->
   <div style="padding:16px">
-    <h1 style="font-size:16px;font-weight:800;line-height:1.45;margin-bottom:10px"><?= htmlspecialchars($video['title']) ?></h1>
+    <h1 style="font-size:16px;font-weight:900;line-height:1.4;margin-bottom:10px;color:#78350f;"><?= htmlspecialchars($video['title']) ?></h1>
     <div style="display:flex;flex-wrap:wrap;gap:8px">
-      <span class="badge badge--brand"><i class="ph-bold ph-gift" style="color:var(--yellow)"></i> <?= format_rp((float)$video['reward_amount']) ?></span>
-      <span class="badge badge--neutral"><i class="ph-bold ph-clock" style="color:var(--sky)"></i> <?= $video['watch_duration'] ?>s minimum</span>
-      <span class="badge badge--neutral"><i class="ph-bold ph-eye" style="color:var(--brand)"></i> <?= number_format((int)$video['total_watches']) ?>× ditonton</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;background:#fef3c7;border:1.5px solid #78350f;color:#78350f;font-weight:900;font-size:11px;padding:4px 10px;border-radius:12px;box-shadow:0 2px 0 #78350f;"><i class="ph-bold ph-coins" style="color:#d97706"></i> +<?= format_rp((float)$video['reward_amount']) ?></span>
+      <span style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #78350f;color:#78350f;font-weight:900;font-size:11px;padding:4px 10px;border-radius:12px;box-shadow:0 2px 0 #78350f;"><i class="ph-bold ph-clock" style="color:#d97706"></i> <?= $video['watch_duration'] ?>s minimum</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #78350f;color:#78350f;font-weight:900;font-size:11px;padding:4px 10px;border-radius:12px;box-shadow:0 2px 0 #78350f;"><i class="ph-bold ph-eye" style="color:#d97706"></i> <?= number_format((int)$video['total_watches']) ?>× ditonton</span>
     </div>
+
+    <!-- Mascot Buzzy Encouragement Card -->
+    <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 2.5px solid #78350f; border-radius: 16px; box-shadow: 0 4px 0 #78350f; padding: 12px 14px; margin-top: 14px; display: flex; align-items: center; gap: 12px;">
+      <div style="width: 44px; height: 44px; background: #fde68a; border: 2px solid #78350f; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 0 #78350f;">
+        <img src="/assets/game/bee_worker.png" alt="Buzzy" style="width: 36px; height: 36px; object-fit: contain;">
+      </div>
+      <div style="font-size: 11.5px; font-weight: 800; color: #78350f; line-height: 1.4;">
+        <b>Buzzy si Lebah Cuan:</b> Tonton video sampai timer 0 detik ya! Setelah selesai, tekan tombol hijau <b>Klaim Cuan</b> agar saldo langsung masuk.
+      </div>
+    </div>
+
     <?php if ($already_watched): ?>
-    <div class="alert alert--success" style="margin-top:12px;display:flex;align-items:center;gap:4px"><i class="ph-bold ph-check-circle" style="font-size:16px"></i> Kamu sudah menonton dan menerima reward hari ini!</div>
-    <a href="/videos" class="btn btn--ghost btn--full" style="margin-top:8px">← Lihat Video Lain</a>
+    <div class="alert alert--success" style="margin-top:12px;display:flex;align-items:center;gap:6px;background:#ecfdf5;border:2.5px solid #065f46;color:#065f46;font-weight:900;border-radius:14px;box-shadow:0 3px 0 #065f46;padding:12px;">
+      <i class="ph-bold ph-check-circle" style="font-size:20px"></i> Kamu sudah menonton dan menerima reward video ini hari ini!
+    </div>
+    <a href="/videos" style="display:block;text-align:center;background:#fff;border:2.5px solid #78350f;border-radius:14px;padding:10px;color:#78350f;font-weight:900;text-decoration:none;box-shadow:0 3px 0 #78350f;margin-top:10px;">
+      ← Pilih Video Lainnya
+    </a>
     <?php endif; ?>
   </div>
 
@@ -287,37 +332,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
   $other_videos = $others->fetchAll();
   ?>
   <?php if (!empty($other_videos)): ?>
-  <div style="padding:0 16px 16px">
-    <div style="font-size:14px;font-weight:900;margin-bottom:10px;padding-top:4px;border-top:2px solid #1A1A1A">
-      <i class="ph-fill ph-film-strip" style="color:var(--brand);font-size:16px;vertical-align:middle"></i> Video Lainnya
+  <div style="padding:0 16px 24px">
+    <div style="font-size:14px;font-weight:900;margin-bottom:12px;padding-top:10px;border-top:2.5px dashed #fde68a;color:#78350f;display:flex;align-items:center;gap:6px;">
+      <i class="ph-fill ph-film-strip" style="color:#d97706;font-size:18px;"></i> Rekomendasi Video Lainnya
     </div>
     <?php foreach ($other_videos as $ov):
       $ov_done    = (bool)$ov['watched_today'];
       $ov_blocked = !$ov_done && ($watch_today >= $watch_limit);
       $ov_href    = ($ov_done || $ov_blocked) ? '#' : '/watch?id=' . $ov['id'];
     ?>
-    <a href="<?= $ov_href ?>" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1.5px solid #eee;text-decoration:none;color:inherit;<?= ($ov_done || $ov_blocked) ? 'opacity:.6;pointer-events:none' : '' ?>">
-      <div style="position:relative;flex-shrink:0;width:96px;height:54px;border-radius:8px;overflow:hidden;border:2px solid #1A1A1A">
+    <a href="<?= $ov_href ?>" style="display:flex;align-items:center;gap:12px;padding:10px;margin-bottom:8px;background:#fff;border:2px solid #78350f;border-radius:14px;box-shadow:0 3px 0 #78350f;text-decoration:none;color:inherit;<?= ($ov_done || $ov_blocked) ? 'opacity:.65;pointer-events:none' : '' ?>">
+      <div style="position:relative;flex-shrink:0;width:96px;height:54px;border-radius:8px;overflow:hidden;border:2px solid #78350f;background:#000;">
         <img src="<?= yt_thumb($ov['youtube_id']) ?>" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.src='https://img.youtube.com/vi/<?= $ov['youtube_id'] ?>/hqdefault.jpg'">
         <?php if ($ov_done): ?>
-        <div style="position:absolute;inset:0;background:rgba(34,197,94,.7);display:flex;align-items:center;justify-content:center">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <div style="position:absolute;inset:0;background:rgba(16,185,129,.75);display:flex;align-items:center;justify-content:center">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <?php else: ?>
-        <div style="position:absolute;inset:0;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center">
-          <svg width="14" height="14" fill="#fff" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <div style="position:absolute;inset:0;background:rgba(120,53,15,.25);display:flex;align-items:center;justify-content:center">
+          <svg width="18" height="18" fill="#fff" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </div>
         <?php endif; ?>
       </div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:800;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical"><?= htmlspecialchars($ov['title']) ?></div>
-        <div style="font-size:11px;color:#666;margin-top:3px;font-weight:700">
-          <?= $ov_done ? '<i class="ph-bold ph-check-circle" style="color:var(--green)"></i> Selesai' : '<i class="ph-bold ph-gift" style="color:var(--yellow)"></i> ' . format_rp((float)$ov['reward_amount']) ?>
+        <div style="font-size:12px;font-weight:900;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;color:#78350f;"><?= htmlspecialchars($ov['title']) ?></div>
+        <div style="font-size:11px;color:#92400e;margin-top:4px;font-weight:800;display:flex;align-items:center;gap:6px;">
+          <?= $ov_done ? '<span style="color:#10b981;font-weight:900;"><i class="ph-bold ph-check-circle"></i> Selesai</span>' : '<span style="color:#d97706;font-weight:900;"><i class="ph-bold ph-coins"></i> +' . format_rp((float)$ov['reward_amount']) . '</span>' ?>
+          <span style="color:#b45309;font-size:10px;">• <?= $ov['watch_duration'] ?>s</span>
         </div>
       </div>
     </a>
     <?php endforeach; ?>
-    <a href="/videos" class="btn btn--ghost btn--full" style="margin-top:12px;font-size:13px">Lihat Semua Video →</a>
+    <a href="/videos" style="display:block;text-align:center;background:#f59e0b;color:#78350f;border:2.5px solid #78350f;border-radius:14px;padding:10px;font-size:12.5px;font-weight:900;text-decoration:none;box-shadow:0 3px 0 #78350f;margin-top:12px;">Lihat Semua Video Misi →</a>
   </div>
   <?php endif; ?>
 </div>

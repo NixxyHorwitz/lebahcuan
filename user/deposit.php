@@ -140,30 +140,24 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <style>
 /* ══════════════════════════════════════════════
-   DEPOSIT PAGE — CASUAL GAME STYLE (V4)
+   DEPOSIT PAGE — AMBER HONEY THEME
    ══════════════════════════════════════════════ */
-body {
-  background: #f97316 !important;
-  color: #0f172a;
-}
 .wd-page { padding: 0 0 20px; }
-
 /* ── TOP BANNER ── */
 .wd-top {
   position: relative;
-  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
-  padding: 16px 14px 40px;
-  border-bottom: 4px solid #1e3a8a;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  padding: 18px 14px 40px;
+  border-bottom: 3.5px solid #78350f;
+  box-shadow: 0 4px 0 #78350f;
   z-index: 10;
 }
 .wd-top::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.1) 2px, transparent 2px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 2px, transparent 2px);
-  background-size: 30px 20px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1.5px, transparent 1.5px);
+  background-size: 16px 16px;
   pointer-events: none;
 }
 .wd-top-flex {
@@ -174,78 +168,88 @@ body {
   z-index: 2;
 }
 .wd-back {
-  background: rgba(255,255,255,0.2);
-  border: 2px solid rgba(255,255,255,0.4);
-  color: #fff;
+  background: #fde68a;
+  border: 2px solid #78350f;
+  color: #78350f;
   width: 36px; height: 36px;
   border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; text-decoration: none;
+  box-shadow: 0 3px 0 #78350f;
+  transition: transform 0.1s;
 }
+.wd-back:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+
 .wd-notice {
-  background: #fef08a;
-  border: 2px solid #ca8a04;
-  border-radius: 12px;
-  padding: 6px 12px;
-  box-shadow: 0 4px 0 #ca8a04;
-  display: flex; gap: 6px; align-items: center;
+  background: #fffbeb;
+  border: 2px solid #78350f;
+  border-radius: 14px;
+  padding: 8px 14px;
+  box-shadow: 0 3px 0 #78350f;
+  display: flex; gap: 8px; align-items: center;
   position: relative;
   margin-top: 4px;
 }
-.wd-notice::after {
-  content: '';
-  position: absolute;
-  right: -8px; top: 12px;
-  border-width: 6px;
-  border-style: solid;
-  border-color: transparent transparent transparent #fef08a;
-}
-.wd-notice-icon { font-size: 16px; flex-shrink: 0; }
+.wd-notice-icon { font-size: 18px; flex-shrink: 0; }
 .wd-notice-txt {
-  font-size: 11px; font-weight: 800; color: #854d0e; line-height: 1.2;
+  font-size: 12px; font-weight: 900; color: #78350f; line-height: 1.2;
 }
-.wd-dog-mascot {
-  position: absolute;
-  bottom: -4px; right: 14px;
-  font-size: 46px; line-height: 1;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
-  z-index: 5;
+
+@keyframes buzzyFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(3deg); }
 }
 
 /* ── BODY ── */
 .wd-body {
   flex: 1;
-  background: #f97316;
+  background-color: #fef8ee !important;
+  background-image: radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px) !important;
+  background-size: 16px 16px !important;
   padding: 16px 14px 100px;
   position: relative;
 }
-.wd-body::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(circle, rgba(255,255,255,0.08) 10%, transparent 10%),
-              radial-gradient(circle, rgba(255,255,255,0.08) 10%, transparent 10%);
-  background-size: 50px 50px; background-position: 0 0, 25px 25px;
-  pointer-events: none;
-}
 
 /* ── SALDO ROW / CURRENT BANK ROW ── */
-.wd-bank-card { background: linear-gradient(135deg, #1e3a8a, #3b82f6); border: 3px solid #1e40af; box-shadow: 0 5px 0 #1e3a8a; border-radius: 16px; padding: 16px; margin-bottom: 20px; position: relative; z-index: 2; display: flex; align-items: center; gap: 14px; }
-.wd-saldo-icon { width: 50px; height: 50px; background: #fffbeb; border: 3px solid #fde047; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 4px 0 #ca8a04; flex-shrink: 0; }
-.wd-saldo-lbl { font-size: 11px; font-weight: 900; color: rgba(255,255,255,0.7); margin-bottom: 2px; letter-spacing: 0.5px; text-transform: uppercase; }
-.wd-saldo-val { font-size: 24px; font-weight: 900; color: #fff; text-shadow: 0 2px 0 #9a3412, 0 4px 6px rgba(0,0,0,0.3); font-style: italic; letter-spacing: -0.5px; display:flex; align-items:center; gap:8px;}
+.wd-bank-card { 
+  background: linear-gradient(135deg, #fffbeb, #fef3c7); 
+  border: 3px solid #78350f; 
+  box-shadow: 0 5px 0 #78350f; 
+  border-radius: 18px; 
+  padding: 16px; 
+  margin-bottom: 20px; 
+  position: relative; 
+  z-index: 2; 
+  display: flex; 
+  align-items: center; 
+  gap: 14px; 
+}
+.wd-saldo-icon { 
+  width: 52px; height: 52px; 
+  background: #fde68a; 
+  border: 2.5px solid #78350f; 
+  border-radius: 16px; 
+  display: flex; align-items: center; justify-content: center; 
+  font-size: 26px; 
+  box-shadow: 0 3px 0 #78350f; 
+  flex-shrink: 0; 
+}
+.wd-saldo-lbl { font-size: 11px; font-weight: 900; color: #92400e; margin-bottom: 2px; letter-spacing: 0.5px; text-transform: uppercase; }
+.wd-saldo-val { font-size: 22px; font-weight: 900; color: #78350f; letter-spacing: -0.5px; display:flex; align-items:center; gap:8px;}
 
 /* ── ALERTS ── */
-.wd-alert { padding: 10px 12px; border-radius: 12px; font-size: 11px; font-weight: 800; display: flex; gap: 8px; align-items: center; margin-bottom: 12px; border: 2px solid; line-height: 1.3; position: relative; z-index: 2; }
-.wd-alert--err { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
-.wd-alert--warn { background: #fffbeb; color: #9a3412; border: 2px solid #c2410c; box-shadow: 0 3px 0 #c2410c; }
-.wd-alert--succ { background: #f0fdf4; color: #166534; border-color: #86efac; }
-.wd-alert--info { background: #1e3a8a; color: #fff; border: 2px solid #1e40af; box-shadow: 0 3px 0 #1e40af; }
+.wd-alert { padding: 12px 14px; border-radius: 14px; font-size: 11.5px; font-weight: 800; display: flex; gap: 8px; align-items: center; margin-bottom: 14px; border: 2.5px solid #78350f; line-height: 1.35; position: relative; z-index: 2; box-shadow: 0 3px 0 #78350f; }
+.wd-alert--err { background: #fee2e2; color: #991b1b; border-color: #dc2626; box-shadow: 0 3px 0 #dc2626; }
+.wd-alert--warn { background: #fffbeb; color: #78350f; }
+.wd-alert--succ { background: #ecfdf5; color: #065f46; border-color: #059669; box-shadow: 0 3px 0 #059669; }
+.wd-alert--info { background: #fef3c7; color: #78350f; }
 .wd-alert-icon { font-size: 18px; flex-shrink: 0; }
 
 /* ── Segmented Tabs ── */
-.dep-tabs { display: flex; background: #c2410c; border-radius: 16px; padding: 4px; margin-bottom: 16px; border: 3px solid #9a3412; position: relative; z-index: 2;}
-.dep-tab { flex: 1; text-align: center; padding: 10px; font-size: 12px; font-weight: 900; color: #f97316; cursor: pointer; border-radius: 10px; transition: all 0.2s; display:flex; align-items:center; justify-content:center; gap:6px; }
-.dep-tab.active { background: #ffffff; color: #9a3412; box-shadow: 0 4px 0 #9a3412; border: 2px solid #ca8a04; }
-.dep-tab.active i { color: #ea580c; }
+.dep-tabs { display: flex; background: #fffbeb; border-radius: 16px; padding: 4px; margin-bottom: 16px; border: 2.5px solid #78350f; box-shadow: 0 3px 0 #78350f; position: relative; z-index: 2;}
+.dep-tab { flex: 1; text-align: center; padding: 10px; font-size: 12px; font-weight: 900; color: #92400e; cursor: pointer; border-radius: 12px; transition: all 0.2s; display:flex; align-items:center; justify-content:center; gap:6px; }
+.dep-tab.active { background: #f59e0b; color: #78350f; box-shadow: 0 3px 0 #78350f; border: 2px solid #78350f; }
+.dep-tab.active i { color: #78350f; }
 
 /* ── Form Card ── */
 .dep-form-card { display: none; position: relative; z-index: 2;}
@@ -253,101 +257,68 @@ body {
 @keyframes fadein { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ── Bank Account Info ── */
-.dep-rek { background: #fffbeb; border: 3px solid #fde047; border-radius: 14px; padding: 14px; margin-bottom: 16px; text-align: center; box-shadow: 0 4px 0 #ca8a04; }
-.dep-rek__lbl { font-size: 10px; color: #9a3412; font-weight: 900; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-.dep-rek__bank { font-size: 13px; font-weight: 900; color: #ea580c; }
-.dep-rek__num { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin: 4px 0; color: #7c2d12; }
-.dep-rek__name { font-size: 11px; color: #b45309; font-weight: 800; }
+.dep-rek { background: #fffbeb; border: 2.5px solid #78350f; border-radius: 16px; padding: 14px; margin-bottom: 16px; text-align: center; box-shadow: 0 4px 0 #78350f; }
+.dep-rek__lbl { font-size: 10px; color: #92400e; font-weight: 900; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.dep-rek__bank { font-size: 14px; font-weight: 900; color: #d97706; }
+.dep-rek__num { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin: 4px 0; color: #78350f; }
+.dep-rek__name { font-size: 11px; color: #92400e; font-weight: 800; }
 .dep-rek__copy {
   margin-top: 10px; width: 100%;
-  background: #fef08a; border: 2px solid #ea580c; border-radius: 10px;
-  padding: 8px; font-size: 11px; font-weight: 900; color: #9a3412;
+  background: #fde68a; border: 2px solid #78350f; border-radius: 10px;
+  padding: 8px; font-size: 11px; font-weight: 900; color: #78350f;
   cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
-  box-shadow: 0 3px 0 #ea580c; transition: transform 0.1s;
+  box-shadow: 0 3px 0 #78350f; transition: transform 0.1s;
 }
-.dep-rek__copy:active { transform: translateY(3px); box-shadow: 0 0 0 #ea580c; }
+.dep-rek__copy:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
 
 /* ── Amount Input (Chunky) ── */
 .wd-input-grp { margin-bottom: 14px; position: relative; z-index: 2; }
-.wd-input-grp label { display: block; font-size: 11px; font-weight: 900; color: #fff; text-shadow: 0 1px 0 #c2410c; margin-bottom: 6px; padding-left: 4px; }
-.dep-amount-inner { display: flex; align-items: center; justify-content: flex-start; gap: 8px; background: #ffffff; border: 3px solid #c2410c; border-radius: 14px; padding: 12px 16px; box-shadow: 0 4px 0 #9a3412; }
-.dep-amount-prefix { font-size: 16px; font-weight: 900; color: #c2410c; }
+.wd-input-grp label { display: block; font-size: 11.5px; font-weight: 900; color: #78350f; margin-bottom: 6px; padding-left: 2px; }
+.dep-amount-inner { display: flex; align-items: center; justify-content: flex-start; gap: 8px; background: #ffffff; border: 2.5px solid #78350f; border-radius: 14px; padding: 12px 16px; box-shadow: 0 4px 0 #78350f; }
+.dep-amount-prefix { font-size: 16px; font-weight: 900; color: #d97706; }
 .dep-amount-input {
   width: 100%; background: transparent; border: none;
-  font-size: 16px; font-weight: 900; color: #7c2d12;
+  font-size: 16px; font-weight: 900; color: #78350f;
   font-family: inherit; outline: none; text-align: left;
   padding: 0; margin: 0; box-sizing: border-box;
 }
-.dep-amount-input::placeholder { color: #f59e0b; opacity: 0.8; }
 
-/* ── Amount Grid (Pills) ── */
-.dep-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
-.dep-amt-btn {
-  background: #fff; border: 3px solid #ffedd5; border-radius: 12px;
-  padding: 12px 10px; text-align: center; cursor: pointer; transition: all 0.1s; 
-  box-shadow: 0 4px 0 rgba(0,0,0,0.05); outline: none;
-}
-.dep-amt-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #9a3412; }
-.dep-amt-btn.active { background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-color: #60a5fa; box-shadow: 0 4px 0 #1e3a8a; }
-.dep-amt-btn.active:active { transform: translateY(4px); box-shadow: 0 0 0 #1e3a8a; }
-.dep-amt-val { font-size: 13px; font-weight: 900; color: #9a3412; letter-spacing: -0.5px; }
-.dep-amt-btn.active .dep-amt-val { color: #fff; }
-
-/* ── File Upload ── */
-.dep-file-wrap { margin-bottom: 16px; }
-.dep-file-lbl { font-size: 11px; font-weight: 900; color: #fff; text-shadow: 0 1px 0 #c2410c; margin-bottom: 6px; padding-left: 4px; display: block; text-align: left; }
-.dep-file {
-  width: 100%; background: #fff;
-  border: 3px dashed #ffedd5; border-radius: 14px;
-  padding: 12px; font-size: 11px; font-weight: 800; color: #c2410c;
-  cursor: pointer; box-sizing: border-box; text-align: center;
-}
-.dep-file::file-selector-button { background: #fde047; border: 2px solid #ca8a04; border-radius: 8px; padding: 6px 10px; margin-right: 10px; font-weight: 900; color: #9a3412; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 0 #ca8a04; }
-.dep-file::file-selector-button:active { transform:translateY(2px); box-shadow:none; }
-
-/* ── Submit Button ── */
 .wd-submit-btn {
   width: 100%;
-  background: linear-gradient(180deg, #4ade80, #16a34a);
-  border: none;
-  border-radius: 16px;
-  padding: 16px;
-  font-size: 18px;
+  background: #10b981;
+  border: 3px solid #065f46;
+  border-radius: 18px;
+  padding: 14px;
+  font-size: 15px;
   font-weight: 900;
   color: #fff;
-  text-shadow: 0 2px 2px rgba(0,0,0,0.3);
-  box-shadow: 0 6px 0 #14532d, inset 0 2px 4px rgba(255,255,255,0.5);
+  box-shadow: 0 4px 0 #065f46;
   cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.1s;
-  position: relative;
-  z-index: 2;
+  transition: transform 0.1s;
 }
-.wd-submit-btn:active:not(:disabled) {
-  transform: translateY(6px);
-  box-shadow: 0 0 0 #14532d, inset 0 2px 4px rgba(255,255,255,0.5);
-}
-.wd-submit-btn.blue-btn { background: linear-gradient(180deg, #3b82f6, #1d4ed8); box-shadow: 0 6px 0 #1e3a8a, inset 0 2px 4px rgba(255,255,255,0.5); }
-.wd-submit-btn.blue-btn:active:not(:disabled) { box-shadow: 0 0 0 #1e3a8a, inset 0 2px 4px rgba(255,255,255,0.5); }
+.wd-submit-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #065f46; }
+.wd-submit-btn.blue-btn { background: #f59e0b; border-color: #78350f; color: #78350f; box-shadow: 0 4px 0 #78350f; }
+.wd-submit-btn.blue-btn:active { box-shadow: 0 1px 0 #78350f; }
 
 /* ── History ── */
-.hist-wrap { margin-top: 24px; border-top: 3px dashed rgba(255,255,255,0.2); padding-top: 16px; position:relative; z-index:2; }
+.hist-wrap { margin-top: 24px; border-top: 2.5px dashed #fde68a; padding-top: 16px; position:relative; z-index:2; }
 .hist-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.hist-head h3 { font-size: 14px; font-weight: 900; color: #fff; margin: 0; display:flex; align-items:center; gap:6px; text-shadow:0 1px 0 #c2410c;}
-.hist-head a { font-size: 10px; font-weight: 900; color: #fff; text-decoration: none; background: #ea580c; padding: 6px 10px; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 3px 0 #c2410c; transition: transform 0.1s; text-shadow:none;}
-.hist-head a:active { transform: translateY(3px); box-shadow: 0 0 0 #c2410c; }
+.hist-head h3 { font-size: 14px; font-weight: 900; color: #78350f; margin: 0; display:flex; align-items:center; gap:6px;}
+.hist-head a { font-size: 10.5px; font-weight: 900; color: #78350f; text-decoration: none; background: #fde68a; padding: 6px 12px; border-radius: 10px; border: 2px solid #78350f; box-shadow: 0 3px 0 #78350f; transition: transform 0.1s;}
+.hist-head a:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
 .hist-list { display: flex; flex-direction: column; gap: 10px; }
-.hist-card { background: #fffbeb; border: 3px solid #fde047; border-radius: 14px; padding: 12px; box-shadow: 0 4px 0 #ca8a04; display: flex; align-items: center; gap: 10px; }
-.hist-card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border:2px solid; }
+.hist-card { background: #fff; border: 2.5px solid #78350f; border-radius: 14px; padding: 12px; box-shadow: 0 3px 0 #78350f; display: flex; align-items: center; gap: 10px; }
+.hist-card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border:2px solid #78350f; background:#fef3c7; color:#78350f; }
 .hist-card-body { flex: 1; min-width: 0; }
-.hist-card-amt { font-size: 14px; font-weight: 900; color: #7c2d12; letter-spacing: -0.5px; margin-bottom: 2px; }
-.hist-card-date { font-size: 10px; font-weight: 800; color: #b45309; }
+.hist-card-amt { font-size: 14px; font-weight: 900; color: #78350f; letter-spacing: -0.5px; margin-bottom: 2px; }
+.hist-card-date { font-size: 10px; font-weight: 800; color: #92400e; }
 .hist-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-.hist-badge { font-size: 9px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; border:2px solid;}
+.hist-badge { font-size: 9px; font-weight: 900; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; border:1.5px solid;}
 
-.dep-badge.pending { background: #fef08a; color: #9a3412; border-color:#fde047; }
-.dep-badge.confirmed { background: #bbf7d0; color: #14532d; border-color:#86efac; }
-.dep-badge.rejected { background: #fecaca; color: #7f1d1d; border-color:#fca5a5; }
-.dep-badge.error { background: #fecaca; color: #7f1d1d; border-color:#fca5a5; }
+.dep-badge.pending { background: #fef08a; color: #78350f; border-color:#78350f; }
+.dep-badge.confirmed { background: #bbf7d0; color: #14532d; border-color:#16a34a; }
+.dep-badge.rejected { background: #fecaca; color: #7f1d1d; border-color:#dc2626; }
+.dep-badge.error { background: #fecaca; color: #7f1d1d; border-color:#dc2626; }
 </style>
 
 <div class="wd-page">
@@ -356,25 +327,26 @@ body {
     <div class="wd-top-flex">
       <a href="/home" class="wd-back"><i class="ph-bold ph-caret-left"></i></a>
       <div class="wd-notice">
-        <div class="wd-notice-icon">💎</div>
-        <div class="wd-notice-txt">Isi Saldo</div>
+        <div class="wd-notice-icon">🍯</div>
+        <div class="wd-notice-txt">Isi Saldo Beli</div>
       </div>
     </div>
-    <div class="wd-dog-mascot">🐶💰</div>
+    <div class="wd-dog-mascot" style="position:absolute; bottom:-6px; right:14px; z-index:5;">
+      <img src="/assets/game/bee_worker.png" alt="Buzzy" style="width:48px; height:48px; object-fit:contain; filter:drop-shadow(0 3px 2px rgba(0,0,0,0.25)); animation:buzzyFloat 2.5s ease-in-out infinite;">
+    </div>
   </div>
 
   <div class="wd-body">
     
     <!-- SALDO ROW -->
     <div class="wd-bank-card">
-      <div class="wd-saldo-icon">💰</div>
+      <div class="wd-saldo-icon">🍯</div>
       <div>
         <div class="wd-saldo-lbl">Saldo Beli Saat Ini</div>
         <div class="wd-saldo-val"><?= format_rp((float)$user['balance_dep']) ?></div>
       </div>
     </div>
 
-    <div class="wd-alert wd-alert--warn">
       <div class="wd-alert-icon">💡</div>
       <div style="flex:1">Minimal top up <strong><?= format_rp($min_deposit) ?></strong>.</div>
     </div>

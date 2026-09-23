@@ -17,7 +17,7 @@ $_favicon    = setting($pdo, 'favicon_path', '');
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<meta name="theme-color" content="#ea580c">
+<meta name="theme-color" content="#d97706">
 <title><?= htmlspecialchars(($pageTitle ?? '') ? $pageTitle . ' — ' . $_seo_title : $_seo_title) ?></title>
 <?php if ($_seo_desc): ?><meta name="description" content="<?= htmlspecialchars($_seo_desc) ?>"><?php endif; ?>
 <?php if ($_seo_kw):   ?><meta name="keywords"    content="<?= htmlspecialchars($_seo_kw) ?>"><?php endif; ?>
@@ -62,9 +62,15 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
 html, body { margin: 0; padding: 0; width: 100%; overflow-x: hidden; }
 body {
   font-family: 'Nunito', 'Inter', sans-serif !important;
-  background: #f97316 !important;
-  padding-bottom: 80px !important;
+  background: #fef8ee !important;
+  background-image:
+    radial-gradient(#fde68a 1.8px, transparent 1.8px),
+    radial-gradient(#fde68a 1.8px, transparent 1.8px) !important;
+  background-size: 28px 28px !important;
+  background-position: 0 0, 14px 14px !important;
+  padding-bottom: 96px !important;
   -webkit-font-smoothing: antialiased;
+  color: #451a03;
 }
 i[class^="ph-"] {
   display: inline-flex;
@@ -74,16 +80,15 @@ i[class^="ph-"] {
 }
 .app-shell { width: 100%; max-width: 480px; margin: 0 auto; }
 
-/* ══ TOPBAR ══ */
+/* ══ TOPBAR — AMBER HONEY GRADIENT ══ */
 .topbar {
   position: sticky; top: 0; z-index: 1000;
   width: 100%;
-  height: auto !important; /* FIX OVERFLOW: Prevent fixed height */
-  min-height: 54px;
-  background: linear-gradient(135deg, #ea580c 0%, #f97316 60%, #fb923c 100%);
-  border-bottom: 4px solid #c2410c;
-  box-shadow: 0 4px 0 #9a3412;
-  /* Use flex-column so row2 is always below row1 */
+  height: auto !important;
+  min-height: 56px;
+  background: linear-gradient(135deg, #b45309 0%, #d97706 40%, #f59e0b 80%, #fbbf24 100%);
+  border-bottom: 4px solid #78350f;
+  box-shadow: 0 4px 0 #451a03;
   display: flex;
   flex-direction: column;
 }
@@ -93,8 +98,8 @@ i[class^="ph-"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
-  height: 54px;
+  padding: 0 14px;
+  height: 56px;
   width: 100%;
   flex-shrink: 0;
 }
@@ -103,42 +108,46 @@ i[class^="ph-"] {
   display: flex; align-items: center; gap: 8px;
   font-weight: 900; font-size: 19px;
   color: #fff; text-decoration: none; flex-shrink: 0;
-  text-shadow: 0 2px 0 rgba(0,0,0,0.15);
+  text-shadow: 0 2px 0 #78350f;
 }
 .topbar__logo-box {
-  width: 36px; height: 36px;
+  width: 38px; height: 38px;
   background: #fff;
-  border: 2.5px solid #fde68a;
-  border-radius: 12px;
+  border: 2.5px solid #78350f;
+  border-radius: 13px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px; box-shadow: 0 4px 0 #d97706; flex-shrink: 0;
+  font-size: 18px; box-shadow: 0 3px 0 #78350f; flex-shrink: 0;
 }
-.topbar__logo span em { font-style: normal; color: #fde68a; }
+.topbar__logo span em { font-style: normal; color: #fef08a; }
 
 .topbar__actions {
-  display: flex; align-items: center; gap: 7px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
 }
 .topbar__bell {
   position: relative;
   width: 38px; height: 38px;
-  background: rgba(255,255,255,0.18);
-  border: 2px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.22);
+  border: 2px solid rgba(255,255,255,0.45);
   border-radius: 13px;
   display: flex; align-items: center; justify-content: center;
   color: #fff; font-size: 19px; text-decoration: none;
-  box-shadow: 0 3px 0 rgba(0,0,0,0.12);
+  box-shadow: 0 3px 0 rgba(120,53,15,0.3);
   flex-shrink: 0;
+  transition: transform 0.1s;
 }
+.topbar__bell:active { transform: translateY(2px); }
 .topbar__avatar {
   width: 38px; height: 38px;
-  background: linear-gradient(135deg, #fde68a, #f59e0b);
-  color: #92400e;
-  border: 2.5px solid #fff;
+  background: #fff;
+  color: #78350f;
+  border: 2.5px solid #78350f;
   border-radius: 13px;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 900; font-size: 17px; text-decoration: none;
-  box-shadow: 0 4px 0 #d97706; flex-shrink: 0;
+  font-weight: 900; font-size: 16px; text-decoration: none;
+  box-shadow: 0 3px 0 #78350f; flex-shrink: 0;
+  transition: transform 0.1s;
 }
+.topbar__avatar:active { transform: translateY(2px); }
 .notif-dot {
   position: absolute; top: -5px; right: -5px;
   display: none;
@@ -146,7 +155,7 @@ i[class^="ph-"] {
   font-size: 9px; font-weight: 900;
   min-width: 18px; height: 18px;
   border-radius: 10px; padding: 0 4px;
-  border: 2.5px solid #f97316;
+  border: 2.5px solid #b45309;
   align-items: center; justify-content: center; line-height: 1;
 }
 
@@ -154,25 +163,25 @@ i[class^="ph-"] {
 .topbar__row2 {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 0 12px 10px;
-  width: 100%;           /* FULL WIDTH — no overflow */
+  width: 100%;
   flex-shrink: 0;
 }
 
-.bal-dropdown { flex: 1; min-width: 0; }  /* each pill takes equal space */
+.bal-dropdown { flex: 1; min-width: 0; }
 
 .bal-pill {
   display: flex; align-items: center; gap: 6px;
   background: #fff;
-  border: 2px solid #fdba74;
-  border-radius: 20px;
+  border: 2.5px solid #78350f;
+  border-radius: 18px;
   padding: 5px 10px 5px 6px;
   cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-  width: 100%;          /* fill the flex container */
-  box-shadow: 0 4px 0 #ea580c;
+  width: 100%;
+  box-shadow: 0 3px 0 #78350f;
 }
-.bal-pill:active { transform: translateY(3px); box-shadow: 0 1px 0 #ea580c; }
+.bal-pill:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
 .bal-pill__icon {
   width: 24px; height: 24px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -181,11 +190,11 @@ i[class^="ph-"] {
 }
 .bal-pill__texts { display: flex; flex-direction: column; gap: 0; min-width: 0; }
 .bal-pill__label {
-  font-size: 9px; font-weight: 800; color: #9a3412; line-height: 1;
+  font-size: 8.5px; font-weight: 800; color: #78350f; line-height: 1;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .bal-pill__val {
-  font-size: 12px; font-weight: 900; color: #7c2d12; line-height: 1.2;
+  font-size: 12px; font-weight: 900; color: #b45309; line-height: 1.2;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -194,9 +203,9 @@ i[class^="ph-"] {
   display: none; position: absolute;
   left: 12px; top: calc(100% + 4px);
   background: #fff;
-  border: 3px solid #f97316;
-  border-radius: 16px;
-  box-shadow: 0 6px 0 #ea580c, 0 12px 24px rgba(0,0,0,0.15);
+  border: 3px solid #78350f;
+  border-radius: 18px;
+  box-shadow: 0 6px 0 #78350f, 0 12px 24px rgba(120,53,15,0.25);
   min-width: 200px; z-index: 9999; overflow: hidden;
   animation: bdFadeIn .15s ease;
 }
@@ -206,8 +215,8 @@ i[class^="ph-"] {
   display: flex; justify-content: space-between; align-items: center;
   padding: 12px 14px; font-size: 12px; font-weight: 800;
 }
-.bal-dropdown__row--wd  { background: #d1fae5; color: #065f46; }
-.bal-dropdown__row--dep { background: #dbeafe; color: #1e3a8a; }
+.bal-dropdown__row--wd  { background: #ecfdf5; color: #065f46; border-bottom: 1.5px solid #d1fae5; }
+.bal-dropdown__row--dep { background: #fffbeb; color: #78350f; }
 .bal-dropdown__lbl { display: flex; align-items: center; gap: 4px; }
 </style>
 </head>
@@ -218,13 +227,9 @@ i[class^="ph-"] {
     <div class="topbar__row1">
       <a href="/home" class="topbar__logo">
         <div class="topbar__logo-box">
-          <?php if ($_favicon): ?>
-            <img src="<?= htmlspecialchars($fav_url) ?>" alt="" style="width:22px;height:22px;object-fit:contain;">
-          <?php else: ?>
-            🎬
-          <?php endif; ?>
+          <img src="/assets/game/bee_worker.png" alt="Lebah Cuan" style="width:26px;height:26px;object-fit:contain;">
         </div>
-        <span>Tonton<em>Cuan</em></span>
+        <span>Lebah<em>Cuan</em></span>
       </a>
 
       <?php if (!empty($user)): ?>

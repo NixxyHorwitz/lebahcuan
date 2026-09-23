@@ -2,7 +2,7 @@
 
   <style>
   /* ══════════════════════════════════════════════════════
-     CASUAL GAME BOTTOM NAV — FIXED RESPONSIVE 5 ITEMS
+     CASUAL GAME BOTTOM NAV — AMBER HONEY THEME
      ══════════════════════════════════════════════════════ */
   .bottom-nav {
     position: fixed !important;
@@ -13,9 +13,9 @@
     max-width: 480px !important;
     background: #ffffff !important;
     /* DOME SHAPE */
-    border-top: 5px solid #ea580c !important;
+    border-top: 5px solid #d97706 !important;
     border-radius: 40px 40px 0 0 !important;
-    box-shadow: 0 -8px 24px rgba(234,88,12,0.2) !important;
+    box-shadow: 0 -8px 24px rgba(217,119,6,0.2) !important;
     display: grid !important;
     grid-template-columns: repeat(5, 1fr) !important;
     align-items: center !important;
@@ -32,15 +32,15 @@
     align-items: center !important;
     justify-content: center !important;
     text-decoration: none !important;
-    color: #64748b !important;
+    color: #94a3b8 !important;
     font-size: 10px !important;
     font-weight: 900 !important;
     font-family: 'Nunito', sans-serif !important;
     gap: 4px !important;
     height: 56px !important;
-    border: 2.5px solid #cbd5e1 !important;
-    background: #f8fafc !important;
-    box-shadow: 0 3px 0 #cbd5e1 !important;
+    border: 2.5px solid #fde68a !important;
+    background: #fffdf7 !important;
+    box-shadow: 0 3px 0 #fde68a !important;
     position: relative;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
     border-radius: 16px !important;
@@ -53,19 +53,19 @@
   .nav-item i {
     font-size: 22px !important;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-    color: #64748b !important;
+    color: #94a3b8 !important;
   }
 
   /* Active state - ULTRA COMPACT 3D POP UP */
   .nav-item.active { 
     background: #fff !important; 
-    border-color: #ea580c !important; 
-    color: #c2410c !important; 
-    box-shadow: 0 3px 0 #c2410c !important;
+    border-color: #78350f !important; 
+    color: #78350f !important; 
+    box-shadow: 0 3px 0 #78350f !important;
     transform: translateY(-4px) !important;
   }
   .nav-item.active i {
-    color: #ea580c !important;
+    color: #d97706 !important;
     transform: scale(1.1) !important;
   }
 
@@ -87,21 +87,20 @@
     margin-top: -30px; /* lift above nav bar dome */
   }
   .nav-play-btn {
-    width: 60px; height: 60px; /* BIGGER */
-    background: linear-gradient(135deg, #f97316, #ea580c);
-    border: 3px solid #fff;
+    width: 62px; height: 62px;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%) !important;
+    border: 3px solid #78350f !important;
     border-radius: 20px;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 0 #c2410c, 0 8px 20px rgba(234,88,12,0.4);
+    box-shadow: 0 4px 0 #78350f, 0 8px 20px rgba(180,83,9,0.35) !important;
     transition: transform 0.1s, box-shadow 0.1s;
     position: relative;
     z-index: 10;
   }
-  .nav-play-btn i { font-size: 30px !important; color: #fff !important; transform: none !important; margin-left: 3px; }
-  .nav-item--play:active .nav-play-btn { transform: translateY(4px); box-shadow: 0 0 0 #c2410c; }
-  .nav-item--play.active .nav-play-btn { background: linear-gradient(135deg, #fbbf24, #f59e0b); box-shadow: 0 4px 0 #d97706; }
-  .nav-play-label { font-size: 9px; font-weight: 900; color: #94a3b8; font-family: 'Nunito', sans-serif; }
-  .nav-item--play.active .nav-play-label { color: #d97706; }
+  .nav-item--play:active .nav-play-btn { transform: translateY(4px); box-shadow: 0 0 0 #78350f !important; }
+  .nav-item--play.active .nav-play-btn { background: linear-gradient(135deg, #fde047, #f59e0b) !important; box-shadow: 0 4px 0 #78350f, 0 0 16px rgba(251,191,36,0.6) !important; }
+  .nav-play-label { font-size: 9px; font-weight: 900; color: #78350f; font-family: 'Nunito', sans-serif; }
+  .nav-item--play.active .nav-play-label { color: #b45309; }
 
   /* Floating contact adjustment */
   .float-contact-wrap { bottom: 100px !important; }
@@ -117,13 +116,13 @@
       Video
     </a>
 
-    <!-- Center: TERNAK LEBAH button -->
+    <!-- Center: SIDEJOB TERNAK LEBAH 3D button -->
     <a href="/farm" class="nav-item nav-item--play <?= ($activePage??'')==='farm'?'active':'' ?>">
       <div class="nav-play-wrap">
-        <div class="nav-play-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 4px 0 #78350f, 0 8px 20px rgba(217,119,6,0.4);">
-          <i class="ph-fill ph-drop" style="color:#fff !important; margin-left:0;"></i>
+        <div class="nav-play-btn">
+          <img src="/assets/game/bee_worker.png" alt="Sidejob 3D" style="width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
         </div>
-        <span class="nav-play-label" style="<?= ($activePage??'')==='farm'?'color:#d97706;font-weight:900;':'' ?>">Ternak 🐝</span>
+        <span class="nav-play-label" style="<?= ($activePage??'')==='farm'?'color:#b45309;font-weight:900;':'' ?>">Sidejob 3D</span>
       </div>
     </a>
 
