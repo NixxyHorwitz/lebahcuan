@@ -116,13 +116,13 @@
       Video
     </a>
 
-    <!-- Center: SIDEJOB TERNAK LEBAH 3D button -->
+    <!-- Center: SIDEJOB TERNAK LEBAH button -->
     <a href="/farm" class="nav-item nav-item--play <?= ($activePage??'')==='farm'?'active':'' ?>">
       <div class="nav-play-wrap">
         <div class="nav-play-btn">
-          <img src="/assets/game/bee_worker.png" alt="Sidejob 3D" style="width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+          <img src="/assets/game/bee_worker.png" alt="Ternak Lebah" style="width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
         </div>
-        <span class="nav-play-label" style="<?= ($activePage??'')==='farm'?'color:#b45309;font-weight:900;':'' ?>">Sidejob 3D</span>
+        <span class="nav-play-label" style="<?= ($activePage??'')==='farm'?'color:#b45309;font-weight:900;':'' ?>">Ternak Lebah</span>
       </div>
     </a>
 

@@ -577,7 +577,7 @@ i[class^="ph-"] {
       </div>
       <div class="twp-footer">
         <a href="/farm" class="twp-farm-link">
-          🌻 Buka Peternakan 3D Sidejob untuk panen madu! →
+          🌻 Buka Peternakan Lebah untuk panen madu! →
         </a>
       </div>
     </div>

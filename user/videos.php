@@ -149,11 +149,11 @@ require dirname(__DIR__) . '/partials/header.php';
     <img src="/assets/game/honey_jar.png" alt="Honey" style="width: 32px; height: 32px; object-fit: contain;">
     <div>
       <div style="font-size: 11.5px; font-weight: 900; color: #78350f;">Pekerjaan Sampingan (Sidejob)</div>
-      <div style="font-size: 10px; font-weight: 700; color: #92400e;">Lebahmu terus panen madu di kandang 3D!</div>
+      <div style="font-size: 10px; font-weight: 700; color: #92400e;">Lebahmu terus panen madu di kandang!</div>
     </div>
   </div>
   <a href="/farm" style="background: #f59e0b; color: #78350f; border: 2px solid #78350f; border-radius: 10px; font-size: 10.5px; font-weight: 900; padding: 6px 12px; text-decoration: none; box-shadow: 0 3px 0 #78350f; white-space: nowrap;">
-    Buka 3D Farm 🐝
+    Buka Kebun Lebah 🐝
   </a>
 </div>
 

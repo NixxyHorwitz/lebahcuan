@@ -452,7 +452,7 @@ require dirname(__DIR__) . '/partials/header.php';
 <div class="page-title-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
   <div>
     <h1 style="margin:0;color:var(--ink);">🐝 Toko Bibit & Kandang Lebah</h1>
-    <p style="margin:2px 0 0 0;color:var(--ink-muted);">Percepat produksi madu di Sidejob 3D Farm dengan bibit lebah unggulan!</p>
+    <p style="margin:2px 0 0 0;color:var(--ink-muted);">Percepat produksi madu di Peternakan Lebah dengan bibit lebah unggulan!</p>
   </div>
   <button type="button" onclick="openGuideModal()" class="btn btn--sm" style="background:var(--lavender); color:var(--ink); border:2.5px solid var(--ink); box-shadow:2px 2px 0 var(--ink); font-weight:800; font-size:12px; padding:6px 12px; display:inline-flex; align-items:center; gap:4px; height:fit-content; white-space:nowrap;">
     📖 Panduan

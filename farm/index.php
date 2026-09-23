@@ -43,7 +43,7 @@ unset($h);
 
 $active_stall = BeeFarm::getUserActiveStall($pdo, (int)$user['id']);
 
-$pageTitle = 'Kebun Sarang Lebah Cuan — 3D Tycoon';
+$pageTitle = 'Kebun Sarang Lebah Cuan';
 $activePage = 'farm';
 $farmSubPage = 'meadow';
 require dirname(__DIR__) . '/partials/header.php';
@@ -206,7 +206,7 @@ body { background: #071a0c !important; font-family: 'Nunito', sans-serif; overfl
 <div id="farm3dCanvas">
   <div class="farm3d-loading" id="farm3dLoading">
     <div class="farm3d-loading-spinner"></div>
-    <div class="farm3d-loading-text">Memuat Kebun 3D...</div>
+    <div class="farm3d-loading-text">Memuat Kebun Lebah...</div>
   </div>
   <button class="ambient-sound-toggle" id="btnAmbientSound" onclick="toggleAmbientSound()">
     <i class="ph-fill ph-speaker-high"></i> Ambient
@@ -239,7 +239,7 @@ body { background: #071a0c !important; font-family: 'Nunito', sans-serif; overfl
     <div class="farm-empty-cta">
       <div class="emoji">🐝</div>
       <div class="title">Kebun Masih Kosong!</div>
-      <div class="sub">Beli sarang pertamamu dan mulai beternak lebah 3D</div>
+      <div class="sub">Beli sarang pertamamu dan mulai beternak lebah</div>
       <a href="/farm/shop" class="btn-cta"><i class="ph-fill ph-storefront"></i> Buka Toko</a>
     </div>
   <?php else: ?>

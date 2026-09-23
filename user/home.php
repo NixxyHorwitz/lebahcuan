@@ -126,7 +126,7 @@ if (!$membership_name) {
     if (!$membership_name) $membership_name = 'Member Gratis';
 }
 
-$pageTitle = 'Nonton Video & Sidejob Ternak Lebah 3D';
+$pageTitle = 'Nonton Video & Ternak Lebah Cuan';
 $activePage = 'home';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
@@ -830,12 +830,12 @@ body {
     <div class="sidejob-badge-tag"><i class="ph-fill ph-hexagon"></i> Sidejob Cuan Pasif</div>
     
     <div class="sidejob-title-row">
-      <div class="sidejob-title">Peternakan Lebah 3D Realistis 🌿</div>
-      <img src="/assets/game/beehive_wooden.png" alt="Sarang 3D" style="width:42px;height:42px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+      <div class="sidejob-title">Peternakan Lebah Cuan 🌿</div>
+      <img src="/assets/game/beehive_wooden.png" alt="Sarang Lebah" style="width:42px;height:42px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
     </div>
 
     <div class="sidejob-desc">
-      Gunakan cuan hasil nonton videomu untuk beternak lebah 3D interaktif! Lebah akan bekerja otomatis memproduksi madu murni yang siap kamu panen dan cairkan ke rekening.
+      Gunakan cuan hasil nonton videomu untuk beternak lebah! Lebah akan bekerja otomatis memproduksi madu murni yang siap kamu panen dan cairkan ke rekening.
     </div>
 
     <!-- Live Farm Stats -->
@@ -862,10 +862,10 @@ body {
       </div>
     <?php endif; ?>
 
-    <!-- CTA Button directly to 3D World -->
+    <!-- CTA Button directly to Farm -->
     <a href="/farm" class="btn-open-3d-farm">
       <i class="ph-fill ph-binoculars" style="font-size:18px;"></i>
-      <span>Buka Kebun Lebah 3D & Panen</span>
+      <span>Buka Kebun Lebah & Panen</span>
       <i class="ph-bold ph-arrow-right"></i>
     </a>
 
@@ -892,12 +892,12 @@ body {
       <span class="b-tile__lbl">Tonton</span>
     </a>
 
-    <!-- Tile 2: Sidejob 3D -->
+    <!-- Tile 2: Sidejob Lebah -->
     <a href="/farm" class="b-tile">
       <div class="b-tile__icon" style="background:linear-gradient(135deg,#16a34a,#15803d);">
         <i class="ph-fill ph-drop"></i>
       </div>
-      <span class="b-tile__lbl">Ternak 3D</span>
+      <span class="b-tile__lbl">Ternak Lebah</span>
     </a>
 
     <!-- Tile 3: Lapak Jual Madu -->
@@ -955,7 +955,7 @@ body {
     <div>
       <div style="font-size:12px;font-weight:900;color:#78350f;margin-bottom:2px;">Tips Cuan dari Buzzy</div>
       <div style="font-size:10.5px;font-weight:700;color:#78350f;line-height:1.35;">
-        Tonton video sampai kuota harianmu penuh, lalu investasikan bonusnya untuk sewa sarang di <strong>Sidejob 3D</strong> agar madu terus terisi saat kamu tidur!
+        Tonton video sampai kuota harianmu penuh, lalu investasikan bonusnya untuk sewa sarang di <strong>Peternakan Lebah</strong> agar madu terus terisi saat kamu tidur!
       </div>
     </div>
   </div>
@@ -1020,7 +1020,7 @@ function shareRefLink(url, code) {
   if (navigator.share) {
     navigator.share({
       title: 'LebahCuan - Nonton Video Dapat Cuan!',
-      text: 'Yuk raih jutaan rupiah dari nonton video dan beternak lebah 3D! Gunakan kode referralku: ' + code,
+      text: 'Yuk raih jutaan rupiah dari nonton video dan beternak lebah! Gunakan kode referralku: ' + code,
       url: url
     }).catch(() => {});
   } else {
