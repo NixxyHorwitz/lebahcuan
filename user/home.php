@@ -244,12 +244,6 @@ body {
   z-index: 2;
   overflow: hidden;
 }
-/* Watermark corner badge */
-.cuan-card-watermark-tag {
-  position: absolute; top: 10px; right: 12px;
-  font-size: 8.5px; font-weight: 900; letter-spacing: 0.8px;
-  color: #b45309; opacity: 0.65; text-transform: uppercase;
-}
 /* Watermark bee illustration background */
 .cuan-card-bee-bg {
   position: absolute; right: -12px; bottom: -12px;
@@ -259,13 +253,15 @@ body {
 
 /* Card Brand Header */
 .cuan-card-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 8px; padding-bottom: 6px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-bottom: 8px; padding-bottom: 7px;
   border-bottom: 1.5px dashed rgba(180,83,9,0.3);
+  position: relative; z-index: 3;
 }
 .cuan-card-brand {
   display: flex; align-items: center; gap: 6px;
   font-size: 11px; font-weight: 900; color: #78350f;
+  white-space: nowrap;
 }
 .cuan-card-brand-badge {
   background: #f59e0b; color: #78350f; font-size: 9px; font-weight: 900;
@@ -276,7 +272,8 @@ body {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 10px; font-weight: 900; color: #059669;
   background: #ecfdf5; border: 1.5px solid #10b981;
-  padding: 2px 7px; border-radius: 10px;
+  padding: 2.5px 8px; border-radius: 10px;
+  white-space: nowrap; flex-shrink: 0;
 }
 .cuan-card-status-verified .pulse-dot {
   width: 6px; height: 6px; background: #10b981; border-radius: 50%;
@@ -678,14 +675,13 @@ body {
 
   <!-- ── THE VIP FLEX CARD (SCREENSHOT TARGET) ── -->
   <div class="cuan-flex-card" id="cuan-ss-target">
-    <div class="cuan-card-watermark-tag">LEBAHCUAN VIP CASH</div>
     <div class="cuan-card-bee-bg"></div>
 
     <!-- Header Card -->
     <div class="cuan-card-header">
       <div class="cuan-card-brand">
-        <span class="cuan-card-brand-badge">⚡ RESMI</span>
-        <span>LEBAHCUAN WATCH-TO-EARN</span>
+        <span class="cuan-card-brand-badge">⚡ VIP CASH</span>
+        <span>LEBAHCUAN RESMI</span>
       </div>
       <div class="cuan-card-status-verified">
         <span class="pulse-dot"></span>
