@@ -33,6 +33,20 @@ $watch_today = user_watch_today($pdo, $user);
 $watch_pct   = $watch_limit > 0 ? min(100, (int)round(($watch_today / $watch_limit) * 100)) : 0;
 $watch_remaining = max(0, $watch_limit - $watch_today);
 
+// Cuan dari Nonton Video Hari Ini
+$today_watch_earned = 0.0;
+if (!$is_guest) {
+    try {
+        $twStmt = $pdo->prepare("SELECT COALESCE(SUM(reward_given), 0) FROM watch_history WHERE user_id = ? AND DATE(watched_at) = CURDATE()");
+        $twStmt->execute([$user['id']]);
+        $today_watch_earned = (float)$twStmt->fetchColumn();
+    } catch (\Throwable) {}
+}
+
+// Data Referral Pengguna untuk Flex / Promosi
+$ref_code = $user['referral_code'] ?? '-';
+$ref_url = function_exists('base_url') ? base_url('register/' . ($ref_code !== '-' ? $ref_code : '')) : '/register?ref=' . urlencode($ref_code);
+
 // Video Populer & Cuan Hari Ini
 $featured_videos = [];
 try {
@@ -127,63 +141,83 @@ body {
   overflow-x: hidden;
 }
 
-/* ── HERO BANNER WITH BEE MASCOT ── */
-.amber-hero {
-  background: linear-gradient(135deg, #b45309 0%, #d97706 35%, #f59e0b 75%, #fbbf24 100%);
-  padding: 16px 14px 18px;
-  position: relative; overflow: hidden;
+/* ── HERO SECTION: NONTON VIDEO & DISPLAY SALDO VIP ── */
+.amber-hero-wrap {
+  background: linear-gradient(180deg, #78350f 0%, #92400e 30%, #b45309 65%, #d97706 100%);
+  padding: 14px 14px 20px;
+  position: relative;
+  overflow: hidden;
   border-bottom: 4px solid #78350f;
-  box-shadow: 0 6px 20px rgba(180,83,9,0.28);
+  box-shadow: 0 8px 24px rgba(120,53,15,0.32);
 }
 /* Subtle honeycomb hexagon background pattern */
-.amber-hero::before {
+.amber-hero-wrap::before {
   content: ''; position: absolute; inset: 0;
-  background-image: radial-gradient(#fff 15%, transparent 16%), radial-gradient(#fff 15%, transparent 16%);
-  background-size: 24px 24px;
-  background-position: 0 0, 12px 12px;
-  opacity: 0.12; pointer-events: none;
+  background-image: radial-gradient(rgba(255,255,255,0.18) 15%, transparent 16%), radial-gradient(rgba(255,255,255,0.18) 15%, transparent 16%);
+  background-size: 22px 22px;
+  background-position: 0 0, 11px 11px;
+  opacity: 0.16; pointer-events: none;
+}
+/* Soft radial amber sheen */
+.amber-hero-wrap::after {
+  content: ''; position: absolute; top: -40px; right: -40px;
+  width: 180px; height: 180px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(254,240,138,0.25) 0%, transparent 70%);
+  pointer-events: none;
 }
 
-.hero-profile-row {
+/* User Profile Row */
+.hero-user-bar {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 12px; position: relative; z-index: 2;
+  margin-bottom: 10px; position: relative; z-index: 2;
 }
-.hero-mascot-user {
+.hero-user-left {
   display: flex; align-items: center; gap: 10px;
 }
-.hero-mascot-avatar {
-  width: 52px; height: 52px; background: #fff;
-  border: 3px solid #78350f; border-radius: 18px;
+.hero-avatar-box {
+  width: 48px; height: 48px; background: #ffffff;
+  border: 2.5px solid #78350f; border-radius: 16px;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 0 #78350f; flex-shrink: 0; position: relative;
+  box-shadow: 0 3px 0 #78350f; position: relative; flex-shrink: 0;
   animation: mascotBob 4s ease-in-out infinite;
 }
-.hero-mascot-avatar img { width: 38px; height: 38px; object-fit: contain; }
+.hero-avatar-box img { width: 34px; height: 34px; object-fit: contain; }
 @keyframes mascotBob {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  50% { transform: translateY(-3px); }
 }
-
-.hero-user-details { line-height: 1.15; }
-.hero-user-name { font-size: 16px; font-weight: 900; color: #fff; text-shadow: 0 2px 0 #78350f; }
-.hero-user-tier {
+.hero-avatar-badge {
+  position: absolute; bottom: -3px; right: -3px;
+  background: #10b981; color: #fff; border-radius: 50%;
+  width: 14px; height: 14px; border: 2px solid #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px;
+}
+.hero-user-meta { line-height: 1.15; }
+.hero-user-name {
+  font-size: 15px; font-weight: 900; color: #ffffff;
+  text-shadow: 0 2px 0 #78350f; display: flex; align-items: center; gap: 5px;
+}
+.hero-tier-pill {
   display: inline-flex; align-items: center; gap: 4px;
-  background: rgba(120,53,15,0.45); border: 1.5px solid rgba(254,243,199,0.5);
-  border-radius: 12px; padding: 2px 8px; font-size: 10px; font-weight: 900; color: #fef08a;
-  margin-top: 3px;
+  background: rgba(120,53,15,0.65); border: 1.5px solid rgba(254,240,138,0.7);
+  border-radius: 10px; padding: 2px 8px; font-size: 9.5px; font-weight: 900;
+  color: #fef08a; margin-top: 3px;
 }
-.hero-action-link {
-  background: #fff; border: 2.5px solid #78350f; border-radius: 12px;
+.hero-profile-btn {
+  background: #ffffff; border: 2.5px solid #78350f; border-radius: 12px;
   padding: 6px 12px; font-size: 11px; font-weight: 900; color: #78350f;
-  text-decoration: none; box-shadow: 0 3px 0 #78350f;
+  text-decoration: none; box-shadow: 0 3px 0 #78350f; display: flex; align-items: center; gap: 4px;
+  transition: transform 0.1s;
 }
+.hero-profile-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
 
 /* ── MASCOT SPEECH BUBBLE ── */
 .mascot-dialogue {
   background: rgba(255,255,255,0.96);
   border: 2.5px solid #78350f;
   border-radius: 16px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   margin-bottom: 12px;
   position: relative;
   z-index: 2;
@@ -197,37 +231,252 @@ body {
 .mascot-dialogue__text { font-size: 11px; font-weight: 800; color: #78350f; line-height: 1.35; }
 .mascot-dialogue__text strong { color: #b45309; }
 
-/* 3-Column Balance & Honey Display */
-.hero-stats-3col {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-  margin-bottom: 12px; position: relative; z-index: 2;
+/* ══════════════════════════════════════════════════════════
+   THE VIP EARNINGS CARD (SCREENSHOT TARGET FOR PROMOTIONS)
+   ══════════════════════════════════════════════════════════ */
+.cuan-flex-card {
+  background: linear-gradient(145deg, #ffffff 0%, #fffbeb 40%, #fef3c7 100%);
+  border: 3.5px solid #78350f;
+  border-radius: 22px;
+  box-shadow: 0 8px 0 #78350f, 0 16px 28px rgba(120,53,15,0.22);
+  padding: 16px 14px 14px;
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
 }
-.hero-stat-card {
-  background: #ffffff; border: 2.5px solid #78350f; border-radius: 16px;
-  padding: 8px 6px; text-align: center; box-shadow: 0 4px 0 #78350f;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+/* Watermark corner badge */
+.cuan-card-watermark-tag {
+  position: absolute; top: 10px; right: 12px;
+  font-size: 8.5px; font-weight: 900; letter-spacing: 0.8px;
+  color: #b45309; opacity: 0.65; text-transform: uppercase;
 }
-.hero-stat-card__lbl { font-size: 8.5px; font-weight: 900; color: #78350f; text-transform: uppercase; margin-bottom: 2px; }
-.hero-stat-card__val { font-size: 13px; font-weight: 900; line-height: 1.2; }
-.hero-stat-card__val--wd  { color: #059669; }
-.hero-stat-card__val--dep { color: #0284c7; }
-.hero-stat-card__val--honey { color: #d97706; }
+/* Watermark bee illustration background */
+.cuan-card-bee-bg {
+  position: absolute; right: -12px; bottom: -12px;
+  width: 105px; height: 105px; opacity: 0.08; pointer-events: none;
+  background: url('/assets/game/bee_golden.png') no-repeat center center / contain;
+}
 
-/* Quick Buttons Row */
-.hero-quick-actions {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-  position: relative; z-index: 2;
+/* Card Brand Header */
+.cuan-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; padding-bottom: 6px;
+  border-bottom: 1.5px dashed rgba(180,83,9,0.3);
 }
-.hero-btn-act {
-  display: flex; align-items: center; justify-content: center; gap: 4px;
-  padding: 8px 4px; border-radius: 12px; font-size: 11px; font-weight: 900;
-  text-decoration: none; border: 2.5px solid #78350f; font-family: 'Nunito', sans-serif;
+.cuan-card-brand {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 900; color: #78350f;
+}
+.cuan-card-brand-badge {
+  background: #f59e0b; color: #78350f; font-size: 9px; font-weight: 900;
+  padding: 2px 7px; border-radius: 8px; border: 1.5px solid #78350f;
+  box-shadow: 0 1.5px 0 #78350f;
+}
+.cuan-card-status-verified {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 900; color: #059669;
+  background: #ecfdf5; border: 1.5px solid #10b981;
+  padding: 2px 7px; border-radius: 10px;
+}
+.cuan-card-status-verified .pulse-dot {
+  width: 6px; height: 6px; background: #10b981; border-radius: 50%;
+  animation: pulseGreen 1.5s infinite;
+}
+@keyframes pulseGreen {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16,185,129,0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(16,185,129,0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+
+/* Balance Hero Display */
+.cuan-card-balance-box {
+  margin: 6px 0 10px;
+}
+.cuan-balance-sub {
+  font-size: 9.5px; font-weight: 900; color: #92400e; text-transform: uppercase;
+  letter-spacing: 0.6px; display: flex; align-items: center; gap: 4px;
+}
+.cuan-balance-main {
+  font-size: 29px; font-weight: 900; color: #78350f;
+  line-height: 1.1; margin: 4px 0 6px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.9);
+  font-family: 'Nunito', sans-serif;
+  letter-spacing: -0.5px;
+  display: flex; align-items: baseline; gap: 2px;
+}
+.cuan-balance-main .curr {
+  font-size: 18px; font-weight: 900; color: #d97706; margin-right: 2px;
+}
+
+/* Dual Cuan Stat Pills (Cuan Hari Ini & Total Dihasilkan) */
+.cuan-stats-pills {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  margin-bottom: 12px;
+}
+.cuan-pill {
+  background: #ffffff; border: 2px solid #78350f; border-radius: 12px;
+  padding: 6px 8px; box-shadow: 0 2.5px 0 #78350f;
+  display: flex; flex-direction: column;
+}
+.cuan-pill-lbl {
+  font-size: 8.5px; font-weight: 900; color: #92400e; text-transform: uppercase;
+  display: flex; align-items: center; gap: 3px;
+}
+.cuan-pill-val {
+  font-size: 13.5px; font-weight: 900; line-height: 1.2; margin-top: 1px;
+}
+.cuan-pill-val--today { color: #059669; }
+.cuan-pill-val--total { color: #b45309; }
+
+/* Referral Promo Strip on Card (For Screenshots!) */
+.cuan-ref-banner {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #78350f;
+  border-radius: 14px;
+  padding: 7px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+  box-shadow: 0 2.5px 0 #78350f;
+  cursor: pointer;
   transition: transform 0.1s;
 }
-.hero-btn-act:active { transform: translateY(3px); box-shadow: none !important; }
-.hero-btn-act--wd  { background: #4ade80; color: #064e3b; box-shadow: 0 3px 0 #78350f; }
-.hero-btn-act--dep { background: #38bdf8; color: #0c4a6e; box-shadow: 0 3px 0 #78350f; }
-.hero-btn-act--shop{ background: #fde047; color: #78350f; box-shadow: 0 3px 0 #78350f; }
+.cuan-ref-banner:active { transform: scale(0.98); }
+.cuan-ref-left {
+  display: flex; align-items: center; gap: 6px;
+}
+.cuan-ref-tag {
+  background: #78350f; color: #fef08a; font-size: 8.5px; font-weight: 900;
+  padding: 2px 6px; border-radius: 6px; text-transform: uppercase;
+}
+.cuan-ref-code {
+  font-family: monospace; font-size: 13.5px; font-weight: 900; color: #78350f;
+  letter-spacing: 1px;
+}
+.cuan-ref-copy-btn {
+  background: #ffffff; border: 1.5px solid #78350f; border-radius: 8px;
+  padding: 3px 8px; font-size: 9.5px; font-weight: 900; color: #78350f;
+  display: flex; align-items: center; gap: 3px; box-shadow: 0 1.5px 0 #78350f;
+}
+
+/* ── INTEGRATED VIDEO TASK MISSION ── */
+.cuan-video-mission {
+  background: #ffffff;
+  border: 2px solid #78350f;
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 3px 0 #78350f;
+  margin-bottom: 12px;
+}
+.cvm-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.cvm-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #ea580c; color: #fff; font-size: 9px; font-weight: 900;
+  padding: 2px 7px; border-radius: 8px; border: 1.5px solid #78350f;
+  text-transform: uppercase;
+}
+.cvm-quota {
+  font-size: 11.5px; font-weight: 900; color: #78350f;
+  background: #fef3c7; border: 1.5px solid #78350f;
+  padding: 2px 7px; border-radius: 8px;
+}
+.cvm-bar-wrap {
+  height: 14px; background: #fed7aa; border: 1.5px solid #78350f;
+  border-radius: 10px; overflow: hidden; position: relative; margin-bottom: 6px;
+}
+.cvm-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  border-radius: 8px;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+.cvm-bar-fill::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+  animation: barShimmer 2s infinite;
+}
+@keyframes barShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.cvm-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 10px; font-weight: 800; color: #78350f;
+}
+
+/* Primary CTA Button: Tonton Video Sekarang */
+.btn-cuan-watch-now {
+  width: 100%; padding: 13px 14px; border-radius: 16px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 3px solid #78350f; box-shadow: 0 5px 0 #78350f;
+  color: #fff; font-size: 14px; font-weight: 900;
+  text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;
+  text-shadow: 0 1.5px 0 #78350f; transition: transform 0.1s;
+  font-family: 'Nunito', sans-serif;
+  margin-bottom: 10px;
+  animation: ctaGlow 2.5s ease-in-out infinite;
+}
+.btn-cuan-watch-now:active { transform: translateY(3px); box-shadow: 0 2px 0 #78350f; }
+@keyframes ctaGlow {
+  0%, 100% { box-shadow: 0 5px 0 #78350f, 0 0 0 rgba(245,158,11,0); }
+  50% { box-shadow: 0 5px 0 #78350f, 0 0 18px rgba(245,158,11,0.6); }
+}
+
+/* Quick Action Buttons (WD, Top Up, Share) */
+.cuan-card-actions {
+  display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 6px;
+}
+.cuan-btn-action {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 8px 4px; border-radius: 12px; font-size: 11px; font-weight: 900;
+  text-decoration: none; border: 2px solid #78350f; font-family: 'Nunito', sans-serif;
+  transition: transform 0.1s;
+}
+.cuan-btn-action:active { transform: translateY(2px); box-shadow: none !important; }
+.cuan-btn-action--wd {
+  background: #10b981; color: #ffffff; box-shadow: 0 3px 0 #065f46;
+  border-color: #065f46; text-shadow: 0 1px 0 #064e3b;
+}
+.cuan-btn-action--dep {
+  background: #38bdf8; color: #0c4a6e; box-shadow: 0 3px 0 #78350f;
+}
+.cuan-btn-action--share {
+  background: #fde047; color: #78350f; box-shadow: 0 3px 0 #78350f;
+}
+
+/* ── CUAN TOAST NOTIFICATION ── */
+#cuan-toast {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #78350f;
+  color: #fef08a;
+  border: 2px solid #fef08a;
+  box-shadow: 0 8px 24px rgba(120,53,15,0.4);
+  padding: 10px 18px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 900;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  white-space: nowrap;
+}
+#cuan-toast.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
 
 /* ── CONTAINER ── */
 .home-feed { padding: 16px 14px 110px; max-width: 480px; margin: 0 auto; }
@@ -244,66 +493,6 @@ body {
   overflow: hidden;
 }
 
-/* ── MAIN TASK: NONTON VIDEO CARD ── */
-.video-task-card {
-  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
-  border: 3.5px solid #78350f;
-  border-radius: 24px;
-  box-shadow: 0 6px 0 #78350f;
-  padding: 16px;
-  margin-bottom: 18px;
-  position: relative;
-}
-.video-task-head {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px;
-}
-.badge-main-job {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: linear-gradient(135deg, #ea580c, #c2410c);
-  color: #fff; font-size: 10px; font-weight: 900;
-  padding: 3px 10px; border-radius: 12px; border: 2px solid #78350f;
-  box-shadow: 0 2px 0 #78350f; text-transform: uppercase;
-}
-.quota-counter {
-  font-size: 12px; font-weight: 900; color: #78350f;
-  background: #fde68a; border: 2px solid #78350f;
-  padding: 3px 9px; border-radius: 12px;
-}
-
-/* Progress bar */
-.honey-progress-track {
-  background: #fed7aa;
-  border: 2px solid #78350f;
-  border-radius: 14px;
-  height: 16px;
-  overflow: hidden;
-  margin: 10px 0 8px;
-  position: relative;
-}
-.honey-progress-fill {
-  background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
-  height: 100%;
-  border-radius: 12px;
-  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2);
-}
-.video-task-sub {
-  font-size: 11px; font-weight: 800; color: #78350f;
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 14px;
-}
-
-.btn-start-watch {
-  width: 100%; padding: 12px; border-radius: 18px;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  border: 3px solid #78350f; box-shadow: 0 5px 0 #78350f;
-  color: #fff; font-size: 14px; font-weight: 900;
-  text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;
-  text-shadow: 0 1px 2px #78350f; transition: transform 0.1s;
-  font-family: 'Nunito', sans-serif;
-}
-.btn-start-watch:active { transform: translateY(3px); box-shadow: 0 2px 0 #78350f; }
 
 /* ── FEATURED VIDEO GRID (2x2) ── */
 .v-grid-mini {
@@ -447,26 +636,35 @@ body {
 </style>
 
 <!-- ══════════════════════════════════════════════════════════
-     HERO SECTION — PROFIL, MASKOT LEBAH & SALDO
+     HERO SECTION: NONTON VIDEO & DISPLAY SALDO VIP (FLEX READY)
      ══════════════════════════════════════════════════════════ -->
-<div class="amber-hero">
-  <div class="hero-profile-row">
-    <div class="hero-mascot-user">
-      <div class="hero-mascot-avatar">
+<div class="amber-hero-wrap">
+  <!-- User Profile Row -->
+  <div class="hero-user-bar">
+    <div class="hero-user-left">
+      <div class="hero-avatar-box">
         <img src="/assets/game/bee_worker.png" alt="Buzzy Lebah">
+        <span class="hero-avatar-badge"><i class="ph-bold ph-check"></i></span>
       </div>
-      <div class="hero-user-details">
-        <div class="hero-user-name"><?= htmlspecialchars($user['username']) ?> 🐝</div>
-        <div class="hero-user-tier">
+      <div class="hero-user-meta">
+        <div class="hero-user-name">
+          <span><?= htmlspecialchars($user['username']) ?></span>
+          <img src="/assets/game/crown_3d.png" alt="VIP" style="width:16px;height:16px;object-fit:contain;">
+        </div>
+        <div class="hero-tier-pill">
           <i class="ph-fill ph-crown"></i>
           <span><?= htmlspecialchars($membership_name) ?></span>
         </div>
       </div>
     </div>
     <?php if ($is_guest): ?>
-      <a href="/login" class="hero-action-link">Masuk Akun</a>
+      <a href="/login" class="hero-profile-btn">
+        <i class="ph-bold ph-sign-in"></i> Masuk
+      </a>
     <?php else: ?>
-      <a href="/profile" class="hero-action-link"><i class="ph-bold ph-gear"></i> Profil</a>
+      <a href="/profile" class="hero-profile-btn">
+        <i class="ph-bold ph-gear"></i> Profil
+      </a>
     <?php endif; ?>
   </div>
 
@@ -474,85 +672,128 @@ body {
   <div class="mascot-dialogue">
     <div class="mascot-dialogue__icon">🐝</div>
     <div class="mascot-dialogue__text">
-      Hai! Buzzy siap temani kamu nonton video & raih cuan hari ini! Selesaikan kuota video lalu kembangkan <strong>Sidejob Ternak Lebah 3D</strong> kamu!
+      Halo <strong><?= htmlspecialchars($user['username']) ?></strong>! Nonton video hari ini & kumpulkan saldo Rupiah. Bagikan screenshot bukti cuanmu ke teman untuk raih komisi!
     </div>
   </div>
 
-  <!-- 3-Column Wallet: Saldo Tarik, Saldo Depo, Stok Madu -->
-  <div class="hero-stats-3col">
-    <div class="hero-stat-card">
-      <div class="hero-stat-card__lbl">Saldo Tarik</div>
-      <div class="hero-stat-card__val hero-stat-card__val--wd">
-        Rp <?= number_format((float)$user['balance_wd'], 0, ',', '.') ?>
-      </div>
-    </div>
-    <div class="hero-stat-card">
-      <div class="hero-stat-card__lbl">Saldo Depo</div>
-      <div class="hero-stat-card__val hero-stat-card__val--dep">
-        Rp <?= number_format((float)$user['balance_dep'], 0, ',', '.') ?>
-      </div>
-    </div>
-    <div class="hero-stat-card">
-      <div class="hero-stat-card__lbl">Stok Madu</div>
-      <div class="hero-stat-card__val hero-stat-card__val--honey">
-        <?= number_format((float)$user['honey_stock'], 1, ',', '.') ?> ml
-      </div>
-    </div>
-  </div>
+  <!-- ── THE VIP FLEX CARD (SCREENSHOT TARGET) ── -->
+  <div class="cuan-flex-card" id="cuan-ss-target">
+    <div class="cuan-card-watermark-tag">LEBAHCUAN VIP CASH</div>
+    <div class="cuan-card-bee-bg"></div>
 
-  <!-- Quick Action Buttons -->
-  <div class="hero-quick-actions">
-    <a href="/deposit" class="hero-btn-act hero-btn-act--dep">
-      <i class="ph-bold ph-wallet"></i> Top Up
+    <!-- Header Card -->
+    <div class="cuan-card-header">
+      <div class="cuan-card-brand">
+        <span class="cuan-card-brand-badge">⚡ RESMI</span>
+        <span>LEBAHCUAN WATCH-TO-EARN</span>
+      </div>
+      <div class="cuan-card-status-verified">
+        <span class="pulse-dot"></span>
+        <span>Siap Cair 24 Jam</span>
+      </div>
+    </div>
+
+    <!-- Main Balance Display -->
+    <div class="cuan-card-balance-box">
+      <div class="cuan-balance-sub">
+        <i class="ph-fill ph-shield-check" style="color:#059669;font-size:13px;"></i>
+        <span>Saldo Siap Tarik (WD)</span>
+      </div>
+      <div class="cuan-balance-main">
+        <span class="curr">Rp</span>
+        <span><?= number_format((float)$user['balance_wd'], 0, ',', '.') ?></span>
+      </div>
+    </div>
+
+    <!-- Dual Stat Pills: Cuan Hari Ini & Total Dihasilkan -->
+    <div class="cuan-stats-pills">
+      <div class="cuan-pill">
+        <div class="cuan-pill-lbl">
+          <i class="ph-fill ph-sparkle" style="color:#10b981;"></i> Cuan Hari Ini
+        </div>
+        <div class="cuan-pill-val cuan-pill-val--today">
+          +Rp <?= number_format($today_watch_earned, 0, ',', '.') ?>
+        </div>
+      </div>
+      <div class="cuan-pill">
+        <div class="cuan-pill-lbl">
+          <i class="ph-fill ph-trophy" style="color:#f59e0b;"></i> Total Dihasilkan
+        </div>
+        <div class="cuan-pill-val cuan-pill-val--total">
+          Rp <?= number_format((float)$user['total_earned'], 0, ',', '.') ?>
+        </div>
+      </div>
+    </div>
+
+    <!-- Referral Code Strip on Card (High Visibility for Screenshots!) -->
+    <div class="cuan-ref-banner" onclick="copyRefCode('<?= htmlspecialchars($ref_code) ?>')" title="Klik untuk menyalin kode referral">
+      <div class="cuan-ref-left">
+        <span class="cuan-ref-tag"><i class="ph-bold ph-ticket"></i> KODE REFF</span>
+        <span class="cuan-ref-code"><?= htmlspecialchars($ref_code) ?></span>
+      </div>
+      <button type="button" class="cuan-ref-copy-btn">
+        <i class="ph-bold ph-copy"></i>
+        <span>Salin</span>
+      </button>
+    </div>
+
+    <!-- Integrated Video Task Mission Bar -->
+    <div class="cuan-video-mission">
+      <div class="cvm-head">
+        <span class="cvm-badge"><i class="ph-fill ph-film-strip"></i> Misi Video Hari Ini</span>
+        <span class="cvm-quota">Kuota: <?= $watch_today ?> / <?= $watch_limit ?></span>
+      </div>
+
+      <div class="cvm-bar-wrap">
+        <div class="cvm-bar-fill" style="width: <?= $watch_pct ?>%;"></div>
+      </div>
+
+      <div class="cvm-foot">
+        <span>Progres: <strong><?= $watch_pct ?>% Selesai</strong></span>
+        <span><?= $watch_remaining > 0 ? "Sisa {$watch_remaining} video lagi" : "✓ Kuota Penuh!" ?></span>
+      </div>
+    </div>
+
+    <!-- Primary CTA: Mulai Nonton Video Sekarang -->
+    <a href="/videos" class="btn-cuan-watch-now">
+      <i class="ph-fill ph-play-circle" style="font-size:20px;"></i>
+      <span><?= $watch_remaining > 0 ? 'Mulai Tonton Video Sekarang' : 'Buka Galeri Video & Cuan' ?></span>
+      <i class="ph-bold ph-arrow-right"></i>
     </a>
-    <a href="/withdraw" class="hero-btn-act hero-btn-act--wd">
-      <i class="ph-bold ph-arrow-up-right"></i> Tarik Dana
-    </a>
-    <a href="/farm/stall" class="hero-btn-act hero-btn-act--shop">
-      <i class="ph-bold ph-storefront"></i> Jual Madu
-    </a>
+
+    <!-- Quick Action Buttons -->
+    <div class="cuan-card-actions">
+      <a href="/withdraw" class="cuan-btn-action cuan-btn-action--wd">
+        <i class="ph-bold ph-arrow-up-right"></i> Tarik Saldo
+      </a>
+      <a href="/deposit" class="cuan-btn-action cuan-btn-action--dep">
+        <i class="ph-bold ph-wallet"></i> Top Up
+      </a>
+      <button type="button" onclick="shareRefLink('<?= htmlspecialchars($ref_url) ?>', '<?= htmlspecialchars($ref_code) ?>')" class="cuan-btn-action cuan-btn-action--share" style="cursor:pointer;">
+        <i class="ph-bold ph-share-network"></i> Bagikan
+      </button>
+    </div>
   </div>
 </div>
 
 <div class="home-feed">
 
   <!-- ══════════════════════════════════════════════════════════
-       1. TUGAS UTAMA: NONTON VIDEO BERHADIAH HARI INI
+       1. TUGAS VIDEO PILIHAN HARI INI (FEATURED VIDEOS)
        ══════════════════════════════════════════════════════════ -->
-  <div class="video-task-card">
-    <div class="video-task-head">
-      <span class="badge-main-job"><i class="ph-fill ph-film-strip"></i> Pekerjaan Utama</span>
-      <span class="quota-counter">Kuota: <?= $watch_today ?>/<?= $watch_limit ?></span>
-    </div>
-
-    <div style="font-size:15px;font-weight:900;color:#78350f;margin-bottom:2px;">
-      Tonton Video & Dapatkan Cuan 🎬
-    </div>
-    <div style="font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:8px;">
-      Selesaikan tugas nonton video harian untuk mengumpulkan reward Rupiah instan!
-    </div>
-
-    <!-- Progress bar -->
-    <div class="honey-progress-track">
-      <div class="honey-progress-fill" style="width: <?= $watch_pct ?>%;"></div>
-    </div>
-
-    <div class="video-task-sub">
-      <span>Progres Hari Ini: <strong><?= $watch_pct ?>%</strong></span>
-      <span><?= $watch_remaining > 0 ? "Sisa {$watch_remaining} video lagi" : "✓ Kuota Penuh!" ?></span>
-    </div>
-
-    <a href="/videos" class="btn-start-watch">
-      <i class="ph-fill ph-play-circle" style="font-size:20px;"></i>
-      <span><?= $watch_remaining > 0 ? 'Mulai Tonton Video Sekarang' : 'Buka Halaman Video' ?></span>
-      <i class="ph-bold ph-arrow-right"></i>
-    </a>
-
-    <!-- Featured Videos Grid (Tugas Video Pilihan) -->
-    <?php if (!empty($featured_videos)): ?>
-      <div style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:12px;font-weight:900;color:#78350f;"><i class="ph-fill ph-sparkle" style="color:#f59e0b;"></i> Video Pilihan Hari Ini</span>
-        <a href="/videos" style="font-size:10.5px;font-weight:900;color:#d97706;text-decoration:none;">Semua Video &rarr;</a>
+  <?php if (!empty($featured_videos)): ?>
+    <div class="amber-section-card" style="padding:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div style="font-size:14px;font-weight:900;color:#78350f;display:flex;align-items:center;gap:6px;">
+          <i class="ph-fill ph-sparkle" style="color:#f59e0b;font-size:18px;"></i>
+          <span>Video Pilihan Berhadiah</span>
+        </div>
+        <a href="/videos" style="font-size:11px;font-weight:900;color:#d97706;text-decoration:none;display:flex;align-items:center;gap:2px;">
+          Lihat Semua &rarr;
+        </a>
+      </div>
+      <div style="font-size:10.5px;font-weight:700;color:#94a3b8;margin-bottom:12px;">
+        Tonton video pilihan berdurasi singkat dan saldo cuan langsung bertambah otomatis!
       </div>
 
       <div class="v-grid-mini">
@@ -582,8 +823,9 @@ body {
           </a>
         <?php endforeach; ?>
       </div>
-    <?php endif; ?>
-  </div>
+    </div>
+  <?php endif; ?>
+
 
   <!-- ══════════════════════════════════════════════════════════
        2. SIDEJOB: PETERNAKAN LEBAH 3D REALISTIS (IDLE TYCOON)
@@ -738,5 +980,69 @@ body {
   <?php endif; ?>
 
 </div>
+
+<!-- Toast Container for Copy / Share feedback -->
+<div id="cuan-toast"></div>
+
+<script>
+function copyRefCode(code) {
+  if (!code || code === '-') {
+    showCuanToast('Silakan masuk akun untuk melihat kode referral!');
+    return;
+  }
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(code).then(() => {
+      showCuanToast('🐝 Kode Referral disalin: ' + code);
+    }).catch(() => fallbackCopy(code));
+  } else {
+    fallbackCopy(code);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showCuanToast('🐝 Kode Referral disalin: ' + text);
+  } catch (err) {
+    showCuanToast('Gagal menyalin kode referral.');
+  }
+  document.body.removeChild(ta);
+}
+
+function shareRefLink(url, code) {
+  if (!code || code === '-') {
+    window.location.href = '/login';
+    return;
+  }
+  if (navigator.share) {
+    navigator.share({
+      title: 'LebahCuan - Nonton Video Dapat Cuan!',
+      text: 'Yuk raih jutaan rupiah dari nonton video dan beternak lebah 3D! Gunakan kode referralku: ' + code,
+      url: url
+    }).catch(() => {});
+  } else {
+    copyRefCode(code);
+  }
+}
+
+let toastTimer = null;
+function showCuanToast(msg) {
+  const t = document.getElementById('cuan-toast');
+  if (!t) return;
+  t.innerHTML = msg;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    t.classList.remove('show');
+  }, 2600);
+}
+</script>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
