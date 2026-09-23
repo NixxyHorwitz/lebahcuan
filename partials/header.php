@@ -81,217 +81,525 @@ i[class^="ph-"] {
 .app-shell { width: 100%; max-width: 480px; margin: 0 auto; }
 
 /* ══ TOPBAR — AMBER HONEY GRADIENT ══ */
+/* ══ TOPBAR — REMADE AMBER HONEY GAME HUD ══ */
 .topbar {
   position: sticky; top: 0; z-index: 1000;
   width: 100%;
-  height: auto !important;
-  min-height: 56px;
-  background: linear-gradient(135deg, #b45309 0%, #d97706 40%, #f59e0b 80%, #fbbf24 100%);
-  border-bottom: 4px solid #78350f;
-  box-shadow: 0 4px 0 #451a03;
+  height: 60px;
+  background: linear-gradient(135deg, #b45309 0%, #d97706 45%, #f59e0b 100%);
+  border-bottom: 3.5px solid #78350f;
+  box-shadow: 0 4px 16px rgba(120, 53, 15, 0.28);
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  position: sticky;
 }
 
-/* ── Row 1: Logo + Actions ── */
-.topbar__row1 {
+.topbar__inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px;
-  height: 56px;
+  padding: 0 12px;
+  height: 100%;
   width: 100%;
-  flex-shrink: 0;
 }
 
-.topbar__logo {
-  display: flex; align-items: center; gap: 8px;
-  font-weight: 900; font-size: 19px;
-  color: #fff; text-decoration: none; flex-shrink: 0;
-  text-shadow: 0 2px 0 #78350f;
-}
-.topbar__logo-box {
-  width: 38px; height: 38px;
-  background: #fff;
-  border: 2.5px solid #78350f;
-  border-radius: 13px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; box-shadow: 0 3px 0 #78350f; flex-shrink: 0;
-}
-.topbar__logo span em { font-style: normal; color: #fef08a; }
-
-.topbar__actions {
-  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-}
-.topbar__bell {
-  position: relative;
-  width: 38px; height: 38px;
-  background: rgba(255,255,255,0.22);
-  border: 2px solid rgba(255,255,255,0.45);
-  border-radius: 13px;
-  display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 19px; text-decoration: none;
-  box-shadow: 0 3px 0 rgba(120,53,15,0.3);
-  flex-shrink: 0;
-  transition: transform 0.1s;
-}
-.topbar__bell:active { transform: translateY(2px); }
-.topbar__avatar {
-  width: 38px; height: 38px;
-  background: #fff;
-  color: #78350f;
-  border: 2.5px solid #78350f;
-  border-radius: 13px;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 900; font-size: 16px; text-decoration: none;
-  box-shadow: 0 3px 0 #78350f; flex-shrink: 0;
-  transition: transform 0.1s;
-}
-.topbar__avatar:active { transform: translateY(2px); }
-.notif-dot {
-  position: absolute; top: -5px; right: -5px;
-  display: none;
-  background: #ef4444; color: #fff;
-  font-size: 9px; font-weight: 900;
-  min-width: 18px; height: 18px;
-  border-radius: 10px; padding: 0 4px;
-  border: 2.5px solid #b45309;
-  align-items: center; justify-content: center; line-height: 1;
-}
-
-/* ── Row 2: Balance Pills ── */
-.topbar__row2 {
+/* ── Brand & Mascot ── */
+.tb-brand {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 12px 10px;
-  width: 100%;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.tb-mascot-box {
+  width: 38px; height: 38px;
+  background: #fffbeb;
+  border: 2.5px solid #78350f;
+  border-radius: 13px;
+  box-shadow: 0 3px 0 #78350f;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.tb-mascot-img {
+  width: 28px; height: 28px;
+  object-fit: contain;
+  animation: tbBeeFloat 2.6s ease-in-out infinite;
+}
+@keyframes tbBeeFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(4deg); }
+}
+
+.tb-brand-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.tb-brand-name {
+  font-size: 16.5px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 0 #78350f;
+  letter-spacing: -0.3px;
+}
+.tb-brand-name em {
+  font-style: normal;
+  color: #fef08a;
+  text-shadow: 0 2px 0 #78350f;
+}
+.tb-brand-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 8px;
+  font-weight: 900;
+  color: #78350f;
+  background: #fde68a;
+  padding: 1px 5px;
+  border-radius: 6px;
+  border: 1px solid #78350f;
+  width: fit-content;
+  margin-top: 2px;
+  box-shadow: 0 1px 0 #78350f;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+/* ── Actions HUD ── */
+.tb-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
 }
 
-.bal-dropdown { flex: 1; min-width: 0; }
-
-.bal-pill {
-  display: flex; align-items: center; gap: 6px;
-  background: #fff;
+/* ── Saldo Capsule ── */
+.tb-saldo-capsule {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #fffbeb;
   border: 2.5px solid #78350f;
-  border-radius: 18px;
-  padding: 5px 10px 5px 6px;
-  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-  width: 100%;
+  border-radius: 16px;
+  padding: 3px 7px 3px 5px;
+  box-shadow: 0 3px 0 #78350f;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.tb-saldo-capsule:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #78350f;
+}
+.tb-saldo-icon {
+  width: 24px; height: 24px;
+  background: linear-gradient(135deg, #fde047, #f59e0b);
+  border: 1.5px solid #78350f;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  color: #78350f;
+  flex-shrink: 0;
+  box-shadow: 0 1px 0 #78350f;
+}
+.tb-saldo-texts {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.tb-saldo-lbl {
+  font-size: 7.5px;
+  font-weight: 900;
+  color: #92400e;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.tb-saldo-val {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #78350f;
+  white-space: nowrap;
+}
+.tb-saldo-plus {
+  width: 16px; height: 16px;
+  background: #fde68a;
+  border: 1.5px solid #78350f;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px;
+  color: #78350f;
+  font-weight: 900;
+  transition: transform 0.2s;
+}
+.tb-saldo-capsule.active .tb-saldo-plus {
+  transform: rotate(180deg);
+}
+
+/* ── Buttons (Bell & Avatar) ── */
+.tb-btn-icon {
+  width: 36px; height: 36px;
+  background: #fffbeb;
+  border: 2.5px solid #78350f;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 #78350f;
+  display: flex; align-items: center; justify-content: center;
+  color: #78350f;
+  text-decoration: none;
+  position: relative;
+  font-weight: 900;
+  font-size: 17px;
+  flex-shrink: 0;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.tb-btn-icon:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #78350f;
+}
+.tb-avatar {
+  background: linear-gradient(135deg, #fde68a, #f59e0b);
+  color: #78350f;
+  font-size: 14.5px;
+}
+.tb-badge-count {
+  position: absolute;
+  top: -5px; right: -5px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  min-width: 17px; height: 17px;
+  border-radius: 10px;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.25);
+  display: none;
+  align-items: center; justify-content: center;
+  line-height: 1;
+}
+
+/* Guest buttons */
+.tb-login-btn {
+  background: #fffbeb;
+  border: 2px solid #78350f;
+  border-radius: 10px;
+  padding: 6px 12px;
+  color: #78350f;
+  font-weight: 900;
+  font-size: 12px;
+  text-decoration: none;
+  box-shadow: 0 2px 0 #78350f;
+}
+.tb-reg-btn {
+  background: #fde68a;
+  border: 2px solid #78350f;
+  border-radius: 10px;
+  padding: 6px 12px;
+  color: #78350f;
+  font-weight: 900;
+  font-size: 12px;
+  text-decoration: none;
+  box-shadow: 0 2px 0 #78350f;
+}
+
+@media (max-width: 360px) {
+  .tb-brand-tag { display: none; }
+  .tb-saldo-lbl { display: none; }
+  .tb-saldo-capsule { padding: 3px 5px; }
+  .tb-btn-icon { width: 32px; height: 32px; font-size: 15px; }
+  .tb-brand-name { font-size: 15px; }
+  .tb-mascot-box { width: 34px; height: 34px; }
+  .tb-mascot-img { width: 24px; height: 24px; }
+}
+
+/* ── WALLET POPOVER DRAWER ── */
+.tb-wallet-backdrop {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(69, 26, 3, 0.45);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  z-index: 9998;
+  animation: tbFadeIn .2s ease;
+}
+.tb-wallet-backdrop.open { display: block; }
+
+.tb-wallet-popover {
+  display: none;
+  position: fixed;
+  top: 68px; left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px); max-width: 440px;
+  background: #fffbeb;
+  border: 3px solid #78350f;
+  border-radius: 20px;
+  box-shadow: 0 8px 0 #78350f, 0 16px 36px rgba(120, 53, 15, 0.35);
+  z-index: 9999;
+  overflow: hidden;
+  animation: tbPopIn .25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.tb-wallet-popover.open { display: block; }
+
+@keyframes tbPopIn {
+  from { transform: translateX(-50%) translateY(-10px) scale(0.96); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+}
+@keyframes tbFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.twp-header {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2.5px solid #78350f;
+  color: #fff;
+}
+.twp-title {
+  font-size: 14px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-shadow: 0 1.5px 0 #78350f;
+}
+.twp-close {
+  background: #78350f;
+  color: #fde68a;
+  border: 1.5px solid #fff;
+  border-radius: 8px;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+}
+
+.twp-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.twp-card {
+  background: #ffffff;
+  border: 2px solid #78350f;
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   box-shadow: 0 3px 0 #78350f;
 }
-.bal-pill:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
-.bal-pill__icon {
-  width: 24px; height: 24px; border-radius: 50%;
+.twp-card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.twp-card-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1.5px solid #78350f;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; flex-shrink: 0;
-  border: 1.5px solid rgba(0,0,0,0.05);
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 0 #78350f;
 }
-.bal-pill__texts { display: flex; flex-direction: column; gap: 0; min-width: 0; }
-.bal-pill__label {
-  font-size: 8.5px; font-weight: 800; color: #78350f; line-height: 1;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.twp-card-icon.wd { background: #d1fae5; color: #065f46; }
+.twp-card-icon.dep { background: #fef3c7; color: #b45309; }
+.twp-card-icon.honey { background: #fed7aa; color: #9a3412; }
+
+.twp-card-info {
+  display: flex;
+  flex-direction: column;
 }
-.bal-pill__val {
-  font-size: 12px; font-weight: 900; color: #b45309; line-height: 1.2;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.twp-card-lbl {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #92400e;
+  text-transform: uppercase;
+}
+.twp-card-val {
+  font-size: 14px;
+  font-weight: 900;
+  color: #78350f;
 }
 
-/* Dropdown panel */
-.bal-dropdown__panel {
-  display: none; position: absolute;
-  left: 12px; top: calc(100% + 4px);
-  background: #fff;
-  border: 3px solid #78350f;
-  border-radius: 18px;
-  box-shadow: 0 6px 0 #78350f, 0 12px 24px rgba(120,53,15,0.25);
-  min-width: 200px; z-index: 9999; overflow: hidden;
-  animation: bdFadeIn .15s ease;
+.twp-card-btn {
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.25);
+  transition: transform 0.1s;
 }
-.bal-dropdown__panel.open { display: block; }
-@keyframes bdFadeIn { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:none } }
-.bal-dropdown__row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 12px 14px; font-size: 12px; font-weight: 800;
+.twp-card-btn:active { transform: translateY(2px); box-shadow: none; }
+.twp-card-btn.wd { background: #10b981; color: #fff; border: 1.5px solid #065f46; }
+.twp-card-btn.dep { background: #f59e0b; color: #78350f; border: 1.5px solid #78350f; }
+.twp-card-btn.honey { background: #f97316; color: #fff; border: 1.5px solid #7c2d12; }
+
+.twp-footer {
+  padding: 0 14px 14px;
+  display: flex;
+  justify-content: center;
 }
-.bal-dropdown__row--wd  { background: #ecfdf5; color: #065f46; border-bottom: 1.5px solid #d1fae5; }
-.bal-dropdown__row--dep { background: #fffbeb; color: #78350f; }
-.bal-dropdown__lbl { display: flex; align-items: center; gap: 4px; }
+.twp-farm-link {
+  width: 100%;
+  text-align: center;
+  background: #fef08a;
+  border: 2px solid #78350f;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #78350f;
+  text-decoration: none;
+  box-shadow: 0 3px 0 #78350f;
+}
 </style>
 </head>
 <body>
 <div class="app-shell">
+  <!-- ══ REMADE TOPBAR ══ -->
   <header class="topbar">
-    <!-- Row 1: Logo + Actions -->
-    <div class="topbar__row1">
-      <a href="/home" class="topbar__logo">
-        <div class="topbar__logo-box">
-          <img src="/assets/game/bee_worker.png" alt="Lebah Cuan" style="width:26px;height:26px;object-fit:contain;">
+    <div class="topbar__inner">
+      <!-- Left: Logo & Mascot -->
+      <a href="/home" class="tb-brand">
+        <div class="tb-mascot-box">
+          <img src="/assets/game/bee_worker.png" alt="Lebah Cuan" class="tb-mascot-img">
         </div>
-        <span>Lebah<em>Cuan</em></span>
+        <div class="tb-brand-info">
+          <div class="tb-brand-name">Lebah<em>Cuan</em></div>
+          <div class="tb-brand-tag"><i class="ph-fill ph-sparkle"></i> Watch & Farm</div>
+        </div>
       </a>
 
+      <!-- Right: Game HUD / Actions -->
       <?php if (!empty($user)): ?>
-      <div class="topbar__actions">
-        <a href="/notifications" class="topbar__bell" id="notif-bell-btn" title="Notifikasi">
+      <?php
+      if (!function_exists('fmt_short_tb')) {
+        function fmt_short_tb(float $n): string {
+          if ($n >= 1_000_000_000) return 'Rp ' . number_format($n/1_000_000_000, 1, '.', '') . 'M';
+          if ($n >= 1_000_000)     return 'Rp ' . number_format($n/1_000_000, 1, '.', '') . 'jt';
+          if ($n >= 100_000)       return 'Rp ' . number_format($n/1_000, 0, '.', '') . 'rb';
+          return 'Rp ' . number_format($n, 0, ',', '.');
+        }
+      }
+      ?>
+      <div class="tb-actions">
+        <!-- Saldo Capsule HUD -->
+        <div class="tb-saldo-capsule" id="tb-saldo-trigger" onclick="toggleWalletPopover()" title="Klik untuk rincian dompet">
+          <div class="tb-saldo-icon">
+            <i class="ph-fill ph-coins"></i>
+          </div>
+          <div class="tb-saldo-texts">
+            <span class="tb-saldo-lbl">SALDO WD</span>
+            <span class="tb-saldo-val"><?= fmt_short_tb((float)$user['balance_wd']) ?></span>
+          </div>
+          <div class="tb-saldo-plus">
+            <i class="ph-bold ph-caret-down"></i>
+          </div>
+        </div>
+
+        <!-- Notifikasi -->
+        <a href="/notifications" class="tb-btn-icon" id="notif-bell-btn" title="Notifikasi">
           <i class="ph-bold ph-bell"></i>
-          <span id="notif-badge" class="notif-dot"></span>
+          <span id="notif-badge" class="tb-badge-count"></span>
         </a>
-        <a href="/profile" class="topbar__avatar" title="Akun">
+
+        <!-- Avatar Profil -->
+        <a href="/profile" class="tb-btn-icon tb-avatar" title="Profil Akun">
           <?= strtoupper(substr($user['username'], 0, 1)) ?>
         </a>
+      </div>
+      <?php else: ?>
+      <div class="tb-actions">
+        <a href="/login" class="tb-login-btn">Masuk</a>
+        <a href="/register" class="tb-reg-btn">Daftar</a>
       </div>
       <?php endif; ?>
     </div>
 
     <?php if (!empty($user)): ?>
-    <?php
-    function fmt_short(float $n): string {
-      if ($n >= 1_000_000) return 'Rp ' . number_format($n/1_000_000, 1, '.', '') . 'jt';
-      if ($n >= 1_000)     return 'Rp ' . number_format($n/1_000, 1, '.', '') . 'rb';
-      return 'Rp ' . (string)(int)$n;
-    }
-    ?>
+    <!-- Wallet Popover Modal -->
+    <div class="tb-wallet-backdrop" id="tb-wallet-backdrop" onclick="toggleWalletPopover(false)"></div>
+    <div class="tb-wallet-popover" id="tb-wallet-popover">
+      <div class="twp-header">
+        <div class="twp-title">
+          <i class="ph-bold ph-wallet"></i> Dompet LebahCuan
+        </div>
+        <button type="button" class="twp-close" onclick="toggleWalletPopover(false)">&times;</button>
+      </div>
+      <div class="twp-body">
+        <!-- Card 1: Saldo WD -->
+        <div class="twp-card">
+          <div class="twp-card-left">
+            <div class="twp-card-icon wd"><i class="ph-bold ph-coins"></i></div>
+            <div class="twp-card-info">
+              <span class="twp-card-lbl">Saldo Siap Tarik (WD)</span>
+              <span class="twp-card-val"><?= format_rp((float)$user['balance_wd']) ?></span>
+            </div>
+          </div>
+          <a href="/withdraw" class="twp-card-btn wd">Tarik →</a>
+        </div>
 
+        <!-- Card 2: Saldo Depo -->
+        <div class="twp-card">
+          <div class="twp-card-left">
+            <div class="twp-card-icon dep"><i class="ph-bold ph-wallet"></i></div>
+            <div class="twp-card-info">
+              <span class="twp-card-lbl">Saldo Pembelian (Depo)</span>
+              <span class="twp-card-val"><?= format_rp((float)$user['balance_dep']) ?></span>
+            </div>
+          </div>
+          <a href="/deposit" class="twp-card-btn dep">+ Isi Saldo</a>
+        </div>
+
+        <!-- Card 3: Stok Madu -->
+        <div class="twp-card">
+          <div class="twp-card-left">
+            <div class="twp-card-icon honey"><i class="ph-bold ph-drop"></i></div>
+            <div class="twp-card-info">
+              <span class="twp-card-lbl">Stok Madu Sidejob</span>
+              <span class="twp-card-val"><?= number_format((float)($user['honey_stock'] ?? 0), 1) ?> ml</span>
+            </div>
+          </div>
+          <a href="/farm" class="twp-card-btn honey">Sidejob 🐝</a>
+        </div>
+      </div>
+      <div class="twp-footer">
+        <a href="/farm" class="twp-farm-link">
+          🌻 Buka Peternakan 3D Sidejob untuk panen madu! →
+        </a>
+      </div>
+    </div>
 
     <script>
-    (function(){
-      var _justOpened = {};
-      window.toggleBal = function(key, e) {
-        if (e) { e.preventDefault(); e.stopPropagation(); }
-        var panel = document.getElementById('bal-panel-' + key);
-        if (!panel) return;
-        var opening = !panel.classList.contains('open');
-        ['wd','dep'].forEach(function(k) {
-          var p = document.getElementById('bal-panel-' + k);
-          if (p) p.classList.remove('open');
-        });
-        if (opening) {
-          panel.classList.add('open');
-          _justOpened[key] = true;
-          setTimeout(function(){ _justOpened[key] = false; }, 150);
-        }
-      };
-      document.addEventListener('click', function(e) {
-        ['wd','dep'].forEach(function(key) {
-          if (_justOpened[key]) return;
-          var wrap = document.getElementById('bal-dropdown-' + key);
-          if (wrap && wrap.contains(e.target)) return;
-          var panel = document.getElementById('bal-panel-' + key);
-          if (panel) panel.classList.remove('open');
-        });
-      });
-      document.addEventListener('touchend', function(e) {
-        ['wd','dep'].forEach(function(key) {
-          if (_justOpened[key]) return;
-          var wrap = document.getElementById('bal-dropdown-' + key);
-          if (wrap && wrap.contains(e.target)) return;
-          var panel = document.getElementById('bal-panel-' + key);
-          if (panel) panel.classList.remove('open');
-        });
-      }, {passive: true});
-    })();
+    function toggleWalletPopover(force) {
+      const popover = document.getElementById('tb-wallet-popover');
+      const backdrop = document.getElementById('tb-wallet-backdrop');
+      const trigger = document.getElementById('tb-saldo-trigger');
+      if (!popover || !backdrop) return;
+
+      const shouldOpen = typeof force === 'boolean' ? force : !popover.classList.contains('open');
+      if (shouldOpen) {
+        popover.classList.add('open');
+        backdrop.classList.add('open');
+        if (trigger) trigger.classList.add('active');
+      } else {
+        popover.classList.remove('open');
+        backdrop.classList.remove('open');
+        if (trigger) trigger.classList.remove('active');
+      }
+    }
     </script>
     <?php endif; ?>
   </header>
