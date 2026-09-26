@@ -37,7 +37,7 @@ if (!$is_authed) {
     echo '<div style="font-family:sans-serif;padding:40px;text-align:center;color:#e55;background:#131520;min-height:100vh">'
        . '<div style="font-size:48px">🔒</div>'
        . '<h3>Akses Ditolak</h3>'
-       . '<p style="color:#888">Token tidak valid atau sudah kadaluarsa.<br>Minta link baru dari bot Telegram.</p>'
+       . '<p style="color:#888">Token tidak valid atau sudah kadaluarsa.<br>Silakan hubungi administrator pusat.</p>'
        . '</div>';
     exit;
 }

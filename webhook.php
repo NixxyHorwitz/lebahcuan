@@ -100,7 +100,7 @@ function do_req_reject(PDO $pdo, int $id, string $reason): array {
         return ['status' => 'error', 'message' => 'Request tidak ditemukan atau sudah diproses.'];
     }
     
-    $admin_note = $reason ?: 'Ditolak via Telegram Bot';
+    $admin_note = $reason ?: 'Ditolak oleh Admin (Ketentuan belum terpenuhi)';
     $pdo->prepare("UPDATE admin_requests SET status='rejected', admin_note=?, updated_at=NOW() WHERE id=?")
         ->execute([$admin_note, $id]);
         
@@ -147,7 +147,7 @@ function do_depo_reject(PDO $pdo, int $id, string $reason): string {
         $pdo->rollBack();
         return 'Deposit tidak ditemukan atau bukan pending.';
     }
-    $note = $reason ?: 'Rejected via Bot';
+    $note = $reason ?: 'Bukti transfer tidak valid atau belum masuk';
     $pdo->prepare("UPDATE deposits SET status='rejected', admin_note=? WHERE id=?")->execute([$note, $id]);
     $pdo->commit();
     return 'ok';
@@ -163,7 +163,7 @@ function do_wd_reject(PDO $pdo, int $id, string $reason): string {
         $pdo->rollBack();
         return 'WD tidak ditemukan atau bukan pending.';
     }
-    $note = $reason ?: 'Rejected via Bot';
+    $note = $reason ?: 'Dibatalkan oleh Admin (Data rekening tidak sesuai)';
     $pdo->prepare("UPDATE withdrawals SET status='rejected', admin_note=? WHERE id=?")->execute([$note, $id]);
     $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$wd['amount'], $wd['user_id']]);
     $pdo->commit();
@@ -180,7 +180,7 @@ function do_wd_hold(PDO $pdo, int $id, string $reason): string {
         $pdo->rollBack();
         return 'WD tidak ditemukan atau bukan pending.';
     }
-    $note = $reason ?: 'Hold via Bot (Selesai non-refund)';
+    $note = $reason ?: 'Peninjauan antrean audit keuangan';
     $pdo->prepare("UPDATE withdrawals SET status='hold', admin_note=?, processed_at=NOW() WHERE id=?")->execute([$note, $id]);
     $pdo->commit();
     return 'ok';
@@ -310,7 +310,7 @@ if (isset($update['callback_query'])) {
                 // 1. Credit balance_dep to user
                 $pdo->prepare("UPDATE users SET balance_dep=balance_dep+? WHERE id=?")->execute([$dep['amount'], $dep['user_id']]);
                 // 2. Mark deposit as confirmed
-                $pdo->prepare("UPDATE deposits SET status='confirmed', admin_note='Acc Expired via Bot', confirmed_at=NOW() WHERE id=?")->execute([$id]);
+                $pdo->prepare("UPDATE deposits SET status='confirmed', admin_note='Dikonfirmasi manual oleh Admin', confirmed_at=NOW() WHERE id=?")->execute([$id]);
                 
                 // 3. Check referral commission (bypass if upline is a promotor)
                 $referer = $pdo->prepare(

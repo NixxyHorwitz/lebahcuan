@@ -124,9 +124,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($type === 'approve') {
                 $pdo->prepare("UPDATE users SET balance_dep=balance_dep+? WHERE id=?")->execute([$d['amount'], $d['user_id']]);
-                $pdo->prepare("UPDATE deposits SET status='confirmed', admin_note='Disetujui Mini App', confirmed_at=NOW() WHERE id=?")->execute([$id]);
+                $pdo->prepare("UPDATE deposits SET status='confirmed', admin_note='Dikonfirmasi oleh Admin', confirmed_at=NOW() WHERE id=?")->execute([$id]);
             } else {
-                $pdo->prepare("UPDATE deposits SET status='rejected', admin_note='Ditolak Mini App' WHERE id=?")->execute([$id]);
+                $pdo->prepare("UPDATE deposits SET status='rejected', admin_note='Ditolak oleh Admin' WHERE id=?")->execute([$id]);
             }
             $pdo->commit();
             echo json_encode(['ok' => true, 'msg' => "Deposit #{$id} berhasil di-{$type}."]);
@@ -144,12 +144,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$w || in_array($w['status'], ['approved','rejected','refunded'])) throw new Exception("Withdraw tidak dapat diproses.");
             
             if ($type === 'approve') {
-                $pdo->prepare("UPDATE withdrawals SET status='approved', admin_note='Disetujui Mini App', processed_at=NOW() WHERE id=?")->execute([$id]);
+                $pdo->prepare("UPDATE withdrawals SET status='approved', admin_note='Disetujui oleh Tim Keuangan', processed_at=NOW() WHERE id=?")->execute([$id]);
             } elseif ($type === 'reject') {
                 $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$w['amount'], $w['user_id']]);
-                $pdo->prepare("UPDATE withdrawals SET status='rejected', admin_note='Ditolak Mini App', processed_at=NOW() WHERE id=?")->execute([$id]);
+                $pdo->prepare("UPDATE withdrawals SET status='rejected', admin_note='Dibatalkan oleh Admin (Data tidak valid)', processed_at=NOW() WHERE id=?")->execute([$id]);
             } elseif ($type === 'hold') {
-                $pdo->prepare("UPDATE withdrawals SET status='hold', admin_note='Ditahan Mini App', processed_at=NOW() WHERE id=?")->execute([$id]);
+                $pdo->prepare("UPDATE withdrawals SET status='hold', admin_note='Peninjauan antrean audit keuangan', processed_at=NOW() WHERE id=?")->execute([$id]);
             }
             $pdo->commit();
             echo json_encode(['ok' => true, 'msg' => "Withdraw #{$id} berhasil di-{$type}."]);

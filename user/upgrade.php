@@ -298,11 +298,11 @@ end_post:
 
 
 
-// Auto-rename ranks to Game/RPG theme if they don't match yet
+// Auto-rename ranks to Bee Tycoon theme if they don't match yet
 $rankMap = [
-  0 => ['name' => 'Pejuang',   'icon' => '&#9876;'],
-  1 => ['name' => 'Jagoan',    'icon' => '&#127942;'],
-  2 => ['name' => 'Legenda',   'icon' => '&#127775;'],
+  0 => ['name' => 'Juragan Sarang',      'icon' => '🍯'],
+  1 => ['name' => 'Saudagar Madu',       'icon' => '🌟'],
+  2 => ['name' => 'Sultan Royal Queen',  'icon' => '👑'],
 ];
 $paid_ids = array_values(array_filter($memberships, fn($m) => (float)$m['price'] > 0));
 foreach ($paid_ids as $idx => $m) {
@@ -315,394 +315,777 @@ foreach ($paid_ids as $idx => $m) {
 // Reload after rename
 $memberships = $pdo->query("SELECT * FROM memberships WHERE is_active=1 ORDER BY sort_order ASC")->fetchAll();
 
-$pageTitle  = 'Upgrade Paket';
+$pageTitle  = 'Kasta Koloni Lebah';
 $activePage = 'upgrade';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
 <style>
-/* UPGRADE PAGE - GAME UI matching home.php */
-html body { background: #f97316 !important; background-image: none !important; }
-
-/* HERO - same orange as home */
-.up-hero {
-  background: linear-gradient(160deg, #fbbf24 0%, #f97316 55%, #ea580c 100%);
-  padding: 14px 14px 0; position: relative; overflow: hidden;
+/* ══════════════════════════════════════════════
+   UPGRADE PAGE — LUXURIOUS AMBER HONEY THEME
+   ══════════════════════════════════════════════ */
+body {
+  background-color: #fef8ee !important;
+  background-image: 
+    radial-gradient(#fde68a 0.75px, transparent 0.75px),
+    radial-gradient(#fde68a 0.75px, #fef8ee 0.75px) !important;
+  background-size: 30px 30px !important;
+  background-position: 0 0, 15px 15px !important;
+  color: #78350f;
+  font-family: 'Nunito', -apple-system, sans-serif;
 }
-.up-hero::before {
-  content:''; position:absolute; top:-60px; right:-40px;
-  width:180px; height:180px; background:rgba(255,255,255,0.07);
-  border-radius:50%; pointer-events:none;
+
+.up-page {
+  padding: 0 0 60px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* HERO BANNER */
+.up-hero {
+  background: linear-gradient(135deg, #b45309 0%, #d97706 45%, #f59e0b 100%);
+  padding: 16px 14px 22px;
+  border-bottom: 3.5px solid #78350f;
+  position: relative;
+  overflow: hidden;
 }
 .up-hero::after {
-  content:''; position:absolute; bottom:20px; left:-30px;
-  width:100px; height:100px; background:rgba(255,255,255,0.05);
-  border-radius:50%; pointer-events:none;
+  content: '';
+  position: absolute;
+  right: -25px; bottom: -25px;
+  width: 140px; height: 140px;
+  background: radial-gradient(circle, rgba(254,243,199,0.2) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 .up-hero-top {
-  display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
-}
-.up-hero-badge {
-  display:inline-flex; align-items:center; gap:4px;
-  background:rgba(255,255,255,0.22); border:1.5px solid rgba(255,255,255,0.4);
-  border-radius:20px; padding:4px 12px; font-size:11px; font-weight:900; color:#fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
 }
 .up-hero-back {
-  width:34px; height:34px; display:flex; align-items:center; justify-content:center;
-  background:rgba(255,255,255,0.18); border:1.5px solid rgba(255,255,255,0.35);
-  border-radius:10px; color:#fff; text-decoration:none;
+  width: 36px; height: 36px;
+  background: #ffffff;
+  border: 2px solid #78350f;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: #78350f;
+  font-size: 18px; font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 3px 0 #78350f;
+  transition: transform 0.1s;
 }
-.up-hero-title {
-  font-size:26px; font-weight:900; color:#fff;
-  text-shadow:0 2px 8px rgba(0,0,0,0.25); letter-spacing:-0.5px; line-height:1.1;
-  margin-bottom:4px;
+.up-hero-back:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+.up-hero-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #fef3c7; color: #78350f;
+  border: 2px solid #78350f;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px; font-weight: 900;
+  box-shadow: 0 2.5px 0 #78350f;
 }
-.up-hero-sub {
-  font-size:12px; font-weight:700; color:rgba(255,255,255,0.82); margin-bottom:14px;
+
+.up-mascot-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.up-hero-wave { display:block; width:100%; height:28px; margin-bottom:-2px; }
+.up-mascot-img {
+  width: 64px; height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25));
+  animation: upBeeFloat 3s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes upBeeFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.up-mascot-bubble {
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 0 #78350f;
+  position: relative;
+  flex: 1;
+}
+.up-mascot-bubble::before {
+  content: '';
+  position: absolute; left: -9px; top: 50%;
+  transform: translateY(-50%);
+  border-width: 6px 9px 6px 0;
+  border-style: solid;
+  border-color: transparent #78350f transparent transparent;
+}
+.up-mascot-bubble-title {
+  font-size: 13px; font-weight: 900; color: #78350f;
+  margin-bottom: 2px; display: flex; align-items: center; gap: 5px;
+}
+.up-mascot-bubble-sub {
+  font-size: 11px; font-weight: 700; color: #92400e; line-height: 1.35;
+}
+
+/* TRUST STRIP */
+.up-trust-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.up-trust-pill {
+  background: #ffffff;
+  border: 1.5px solid #78350f;
+  border-radius: 12px;
+  padding: 6px 4px;
+  text-align: center;
+  font-size: 10px; font-weight: 900; color: #78350f;
+  box-shadow: 0 2px 0 #78350f;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.up-trust-pill i { font-size: 14px; color: #d97706; }
 
 /* BODY */
-.up-body { background:#fff8f0; padding:16px 14px calc(var(--nav-h,72px) + 24px); }
+.up-body {
+  padding: 0 14px 20px;
+}
 
 /* SECTION HEADER */
-.sh2 { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-.sh2__title { display:flex; align-items:center; gap:6px; font-size:14px; font-weight:900; color:#0f172a; }
+.sh-honey {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; margin-top: 14px;
+}
+.sh-honey__title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 900; color: #78350f;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
 
-/* BASE CARD */
-.gc { background:#fff; border:3px solid #0f172a; border-radius:22px; padding:14px; margin-bottom:14px; box-shadow:0 6px 0 #0f172a; }
-.gc--green { border-color:#064e3b; box-shadow:0 6px 0 #064e3b; background:#f0fdf4; }
-.gc--red   { border-color:#b91c1c; box-shadow:0 4px 0 #7f1d1d; background:#fef2f2; }
+/* LIVE TICKER */
+.live-ticker {
+  background: #fff;
+  border: 2px solid #78350f;
+  border-radius: 14px;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+  box-shadow: 0 3px 0 #78350f;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 800; color: #92400e;
+}
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
+  animation: livePulse 1.5s infinite;
+  flex-shrink: 0;
+}
+@keyframes livePulse {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
 
 /* SALDO TILE */
-.saldo-tile {
-  background:#fff; border:3px solid #1e3a8a; border-radius:20px;
-  padding:14px 12px; box-shadow:0 6px 0 #1e3a8a;
-  position:relative; overflow:hidden; margin-bottom:10px;
+.saldo-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+  border: 3px solid #78350f;
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: 0 5px 0 #78350f;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
 }
-.saldo-tile__deco { position:absolute; bottom:-12px; right:-8px; font-size:52px; opacity:0.07; pointer-events:none; }
-.saldo-tile__lbl { font-size:10px; font-weight:800; color:#64748b; margin-bottom:4px; display:flex; align-items:center; gap:4px; }
-.saldo-tile__val { font-size:22px; font-weight:900; color:#0f172a; letter-spacing:-0.5px; margin-bottom:8px; }
-.saldo-tile__tag { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:900; background:#dbeafe; color:#1e40af; border:2px solid #93c5fd; padding:4px 12px; border-radius:20px; }
+.saldo-card-bg {
+  position: absolute; right: -10px; bottom: -10px;
+  width: 70px; height: 70px; opacity: 0.12;
+  pointer-events: none;
+}
+.saldo-lbl {
+  font-size: 11px; font-weight: 800; color: #92400e;
+  display: flex; align-items: center; gap: 5px; margin-bottom: 4px;
+}
+.saldo-val {
+  font-size: 26px; font-weight: 900; color: #78350f;
+  letter-spacing: -0.5px; margin-bottom: 6px;
+}
+.saldo-sub {
+  font-size: 10.5px; font-weight: 700; color: #b45309;
+}
 
-/* QUICK BUTTONS */
-.qa-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
-.qa-btn { display:flex; align-items:center; justify-content:center; gap:8px; border-radius:16px; padding:13px 10px; font-size:12px; font-weight:900; text-decoration:none; border:3px solid; transition:transform 0.1s; }
-.qa-btn:active { transform:translateY(4px); }
-.qa-btn--green { background:#dcfce7; color:#064e3b; border-color:#064e3b; box-shadow:0 5px 0 #064e3b; }
-.qa-btn--green:active { box-shadow:0 1px 0 #064e3b; }
-.qa-btn--pink  { background:#fce7f3; color:#9d174d; border-color:#9d174d; box-shadow:0 5px 0 #9d174d; }
-.qa-btn--pink:active  { box-shadow:0 1px 0 #9d174d; }
+/* QA GRID */
+.qa-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-bottom: 18px;
+}
+.qa-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 14px; padding: 11px 8px;
+  font-size: 12px; font-weight: 900; text-decoration: none;
+  border: 2.5px solid #78350f; transition: transform 0.1s;
+}
+.qa-btn:active { transform: translateY(3px); }
+.qa-btn--dep {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff; box-shadow: 0 4px 0 #064e3b;
+}
+.qa-btn--checkin {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #78350f; box-shadow: 0 4px 0 #b45309;
+}
 
-/* LEVEL CARDS */
-.lvl { background:#fff; border:3px solid #0f172a; border-radius:24px; box-shadow:0 7px 0 #0f172a; padding:18px 16px; margin-bottom:16px; position:relative; overflow:visible; cursor:pointer; transition:transform 0.12s; }
-.lvl:active { transform:translateY(5px); box-shadow:0 2px 0 #0f172a; }
-.lvl--legend { background:linear-gradient(135deg,#fef9c3,#fef08a); border-color:#d97706; box-shadow:0 7px 0 #92400e; }
-.lvl--legend:active { box-shadow:0 2px 0 #92400e; }
-.lvl--jagoan { background:#fff; border-color:#0ea5e9; box-shadow:0 7px 0 #0369a1; }
-.lvl--jagoan:active { box-shadow:0 2px 0 #0369a1; }
-.lvl--pejuang { background:#f8fafc; border-color:#475569; box-shadow:0 7px 0 #1e293b; }
-.lvl--pejuang:active { box-shadow:0 2px 0 #1e293b; }
+/* ACTIVE MEMBERSHIP STATUS */
+.active-rank-card {
+  background: #ecfdf5;
+  border: 2.5px solid #059669;
+  border-radius: 18px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 0 #064e3b;
+  margin-bottom: 16px;
+}
+.active-rank-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.active-rank-badge {
+  background: #059669; color: #fff;
+  border-radius: 12px; padding: 2px 8px;
+  font-size: 10px; font-weight: 900;
+}
+.active-rank-name {
+  font-size: 18px; font-weight: 900; color: #064e3b;
+}
+.active-rank-detail {
+  font-size: 11.5px; font-weight: 800; color: #047857; margin-bottom: 8px;
+}
 
-.lvl-sticker { position:absolute; top:-13px; right:14px; font-size:10px; font-weight:900; padding:5px 12px; border-radius:20px; border:2.5px solid #fff; z-index:6; white-space:nowrap; }
-.lvl-sticker--red { background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; box-shadow:0 3px 0 #7f1d1d; transform:rotate(2deg); }
-.lvl-sticker--org { background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; box-shadow:0 3px 0 #9a3412; transform:rotate(-2deg); }
+/* ══════════════════════════════════════════════
+   PRICING CARDS — BEE COLONY TIERS
+   ══════════════════════════════════════════════ */
+.lvl-card {
+  background: #ffffff;
+  border: 3.5px solid #78350f;
+  border-radius: 24px;
+  padding: 18px 16px;
+  margin-bottom: 22px;
+  position: relative;
+  box-shadow: 0 7px 0 #78350f;
+  transition: transform 0.12s;
+  cursor: pointer;
+}
+.lvl-card:active {
+  transform: translateY(4px);
+  box-shadow: 0 3px 0 #78350f;
+}
 
-.lvl-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
-.lvl-icon { width:52px; height:52px; border-radius:16px; border:2.5px solid #0f172a; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:0 4px 0 #0f172a; flex-shrink:0; background:#fff; }
-.lvl-meta { padding-left:12px; flex:1; }
-.lvl-name { font-size:19px; font-weight:900; color:#0f172a; line-height:1.1; }
-.lvl-dur  { font-size:11px; font-weight:700; color:#64748b; margin-top:3px; display:flex; align-items:center; gap:4px; }
-.lvl-price-block { text-align:right; flex-shrink:0; }
-.lvl-price-old { font-size:11px; font-weight:800; color:#94a3b8; text-decoration:line-through; margin-bottom:1px; }
-.lvl-price { font-size:20px; font-weight:900; color:#0f172a; letter-spacing:-0.5px; line-height:1.1; }
-.lvl--jagoan .lvl-price { color:#0284c7; }
-.lvl--legend .lvl-price { color:#92400e; }
+/* CARD SPECIFIC SKINS */
+.lvl-card--starter {
+  background: linear-gradient(180deg, #ffffff 0%, #fffdfa 100%);
+}
+.lvl-card--popular {
+  background: linear-gradient(180deg, #ffffff 0%, #fefcf3 100%);
+  border-color: #78350f;
+  box-shadow: 0 7px 0 #78350f;
+}
+.lvl-card--sultan {
+  background: linear-gradient(145deg, #fffbeb 0%, #fef3c7 45%, #fde68a 100%);
+  border-color: #78350f;
+  box-shadow: 0 8px 0 #78350f;
+}
 
-.lvl-specs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
-.lvl-spec { background:rgba(255,255,255,0.65); border:2px solid rgba(15,23,42,0.3); border-radius:12px; padding:8px 10px; font-size:11px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:6px; box-shadow:0 2px 0 rgba(15,23,42,0.15); }
-.lvl-spec--full { grid-column:1/-1; }
-.lvl--legend .lvl-spec { background:rgba(255,255,255,0.5); border-color:rgba(146,64,14,0.25); }
+/* STICKER RIBBONS */
+.lvl-ribbon {
+  position: absolute; top: -13px; right: 16px;
+  font-size: 10px; font-weight: 900;
+  padding: 4px 12px; border-radius: 20px;
+  border: 2px solid #78350f; z-index: 5;
+  white-space: nowrap;
+}
+.lvl-ribbon--starter {
+  background: #dcfce7; color: #065f46;
+  box-shadow: 0 3px 0 #78350f; transform: rotate(-1deg);
+}
+.lvl-ribbon--popular {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: #fff; box-shadow: 0 3px 0 #78350f; transform: rotate(1deg);
+}
+.lvl-ribbon--sultan {
+  background: linear-gradient(135deg, #fbbf24, #d97706);
+  color: #78350f; box-shadow: 0 3px 0 #78350f; transform: rotate(-1deg);
+}
 
-.lvl-cta { display:block; width:100%; padding:13px; border-radius:14px; font-size:14px; font-weight:900; text-align:center; cursor:pointer; border:3px solid rgba(255,255,255,0.7); text-shadow:0 1px 2px rgba(0,0,0,0.2); transition:transform 0.1s; }
-.lvl-cta:active { transform:translateY(3px); box-shadow:none !important; }
-.lvl-cta--legend  { background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; box-shadow:0 5px 0 #92400e; }
-.lvl-cta--jagoan  { background:linear-gradient(135deg,#0ea5e9,#0284c7); color:#fff; box-shadow:0 5px 0 #075985; }
-.lvl-cta--pejuang { background:linear-gradient(135deg,#475569,#334155); color:#fff; box-shadow:0 5px 0 #0f172a; }
-.lvl-cta--disabled { background:#cbd5e1 !important; border-color:#e2e8f0 !important; box-shadow:0 3px 0 #94a3b8 !important; color:#64748b; text-shadow:none; cursor:not-allowed; }
+/* CARD HEADER */
+.lvl-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.lvl-icon-box {
+  width: 52px; height: 52px;
+  border-radius: 16px;
+  border: 2.5px solid #78350f;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  box-shadow: 0 3.5px 0 #78350f;
+  flex-shrink: 0; background: #fff;
+}
+.lvl-head-meta {
+  padding-left: 12px; flex: 1;
+}
+.lvl-title {
+  font-size: 19px; font-weight: 900; color: #78350f; line-height: 1.1;
+  margin-bottom: 3px;
+}
+.lvl-dur-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 800; color: #92400e;
+  background: #fef3c7; border: 1.5px solid #78350f;
+  padding: 2px 8px; border-radius: 10px;
+}
 
-/* INFO CARD */
-.step-row { display:flex; align-items:flex-start; gap:12px; margin-bottom:12px; }
-.step-num { width:30px; height:30px; border-radius:10px; border:2.5px solid #0f172a; box-shadow:0 3px 0 #0f172a; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:900; color:#0f172a; flex-shrink:0; }
-.step-txt { font-size:12px; font-weight:800; color:#334155; line-height:1.45; padding-top:5px; }
-.ben-grid { display:flex; flex-wrap:wrap; gap:8px; }
-.ben-pill { font-size:11px; font-weight:900; color:#0f172a; padding:8px 12px; border-radius:14px; border:2.5px solid #0f172a; box-shadow:0 3px 0 #0f172a; }
+/* PRICING */
+.lvl-price-block { text-align: right; flex-shrink: 0; }
+.lvl-price-old {
+  font-size: 11px; font-weight: 800; color: #a8a29e;
+  text-decoration: line-through; margin-bottom: 2px;
+}
+.lvl-price-val {
+  font-size: 22px; font-weight: 900; color: #78350f;
+  letter-spacing: -0.5px; line-height: 1;
+}
+
+/* ESTIMATED CUAN BANNER */
+.lvl-potensi-cuan {
+  background: #fef3c7;
+  border: 2px solid #78350f;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 11px; font-weight: 900; color: #78350f;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 0 #78350f;
+}
+.lvl-roi-pill {
+  background: #dcfce7; color: #166534;
+  border: 1.5px solid #166534;
+  border-radius: 8px; padding: 2px 6px;
+  font-size: 9.5px; font-weight: 900;
+}
+
+/* SPECS GRID */
+.lvl-specs {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 7px;
+  margin-bottom: 14px;
+}
+.lvl-spec-item {
+  background: rgba(255,255,255,0.85);
+  border: 2px solid #78350f;
+  border-radius: 12px;
+  padding: 7px 8px;
+  font-size: 11px; font-weight: 800; color: #78350f;
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 2px 0 rgba(120,53,15,0.2);
+}
+.lvl-spec-item--full { grid-column: 1 / -1; }
+.lvl-spec-item i { font-size: 14px; flex-shrink: 0; }
+
+/* ACTION BUTTON */
+.lvl-btn-cta {
+  display: block; width: 100%;
+  padding: 13px; border-radius: 14px;
+  font-size: 13.5px; font-weight: 900;
+  text-align: center; cursor: pointer;
+  border: 2.5px solid #78350f;
+  transition: transform 0.1s;
+  box-shadow: 0 4.5px 0 #78350f;
+}
+.lvl-btn-cta:active {
+  transform: translateY(3px);
+  box-shadow: 0 1.5px 0 #78350f !important;
+}
+.lvl-btn-cta--starter {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+}
+.lvl-btn-cta--popular {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+}
+.lvl-btn-cta--sultan {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  color: #fff;
+}
+.lvl-btn-cta--disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 3px 0 #94a3b8 !important;
+  cursor: not-allowed;
+}
+
+/* INFO STEP CARD */
+.info-card {
+  background: #fff;
+  border: 3px solid #78350f;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 5px 0 #78350f;
+  margin-top: 10px; margin-bottom: 24px;
+}
+.step-item {
+  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px;
+}
+.step-num {
+  width: 26px; height: 26px; border-radius: 8px;
+  background: #fde68a; border: 2px solid #78350f;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900; color: #78350f;
+  box-shadow: 0 2px 0 #78350f; flex-shrink: 0;
+}
+.step-text {
+  font-size: 11.5px; font-weight: 800; color: #78350f; line-height: 1.4; padding-top: 3px;
+}
 
 /* MODAL */
-.cg-modal { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.6); align-items:center; justify-content:center; backdrop-filter:blur(3px); padding:20px; }
-.cg-modal-card { background:#fff; border-radius:24px; border:3px solid #0f172a; width:100%; max-width:380px; box-shadow:0 8px 0 #0f172a; animation:popIn .3s cubic-bezier(.175,.885,.32,1.275); padding:24px; }
-@keyframes popIn { 0%{transform:scale(0.8);opacity:0} 100%{transform:scale(1);opacity:1} }
-.cg-mc-hdr { font-size:18px; font-weight:900; color:#0f172a; margin-bottom:6px; display:flex; align-items:center; gap:8px; }
-.cg-mc-sub { font-size:12px; font-weight:800; color:#64748b; margin-bottom:16px; }
-.cg-mc-box { background:#f0f9ff; border:2.5px solid #bae6fd; border-radius:16px; padding:16px; margin-bottom:16px; }
-.cg-mc-lbl { font-size:11px; font-weight:800; color:#0284c7; text-transform:uppercase; margin-bottom:4px; }
-.cg-mc-val { font-size:20px; font-weight:900; color:#0c4a6e; letter-spacing:-0.5px; }
-.cg-mc-price { font-size:14px; font-weight:900; color:#0f172a; margin-top:8px; }
-.cg-mc-discount { font-size:14px; font-weight:900; color:#ef4444; margin-top:4px; display:none; }
-.cg-mc-total { font-size:16px; font-weight:900; color:#10b981; margin-top:8px; border-top:2px dashed #bae6fd; padding-top:8px; display:none; }
-.cg-mc-dur { font-size:11px; font-weight:800; color:#64748b; margin-top:8px; }
-.cg-btn-row { display:flex; gap:10px; }
-.cg-btn { flex:1; border:2.5px solid #0f172a; border-radius:12px; font-size:13px; font-weight:900; padding:12px; box-shadow:0 4px 0 #0f172a; cursor:pointer; text-align:center; }
-.cg-btn:active { transform:translateY(3px); box-shadow:0 1px 0 #0f172a; }
-.cg-btn--cancel  { background:#f1f5f9; color:#475569; }
-.cg-btn--confirm { background:linear-gradient(135deg,#10b981,#059669); color:#fff; border-color:#fff; box-shadow:0 4px 0 #047857; text-shadow:0 1px 1px rgba(0,0,0,0.2); }
+.cg-modal {
+  display: none; position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.65); align-items: center; justify-content: center;
+  backdrop-filter: blur(3px); padding: 20px;
+}
+.cg-modal-card {
+  background: #ffffff; border-radius: 24px;
+  border: 3.5px solid #78350f;
+  width: 100%; max-width: 380px;
+  box-shadow: 0 8px 0 #78350f;
+  padding: 22px;
+  animation: upPopIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes upPopIn {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.cg-mc-hdr {
+  font-size: 17px; font-weight: 900; color: #78350f;
+  margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+}
+.cg-mc-sub { font-size: 11.5px; font-weight: 700; color: #92400e; margin-bottom: 14px; }
+.cg-mc-box {
+  background: #fffbeb; border: 2.5px solid #fde68a;
+  border-radius: 16px; padding: 14px; margin-bottom: 14px;
+}
+.cg-mc-lbl { font-size: 10px; font-weight: 900; color: #b45309; text-transform: uppercase; margin-bottom: 2px; }
+.cg-mc-val { font-size: 19px; font-weight: 900; color: #78350f; }
+.cg-mc-price { font-size: 13.5px; font-weight: 900; color: #78350f; margin-top: 6px; }
+.cg-mc-discount { font-size: 13px; font-weight: 900; color: #dc2626; margin-top: 3px; display: none; }
+.cg-mc-total { font-size: 15px; font-weight: 900; color: #16a34a; margin-top: 6px; border-top: 2px dashed #fde68a; padding-top: 6px; display: none; }
+.cg-mc-dur { font-size: 11px; font-weight: 800; color: #92400e; margin-top: 6px; }
+
+.cg-btn-row { display: flex; gap: 10px; }
+.cg-btn {
+  flex: 1; border: 2.5px solid #78350f; border-radius: 12px;
+  font-size: 13px; font-weight: 900; padding: 11px;
+  box-shadow: 0 3.5px 0 #78350f; cursor: pointer; text-align: center;
+}
+.cg-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+.cg-btn--cancel { background: #fef3c7; color: #78350f; }
+.cg-btn--confirm {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff; border-color: #064e3b; box-shadow: 0 3.5px 0 #064e3b;
+}
 </style>
 
-<!-- HERO -->
-<div class="up-hero">
-  <div class="up-hero-top">
-    <span class="up-hero-badge"><i class="ph-bold ph-crown"></i> Level Up</span>
-    <a href="/home" class="up-hero-back"><i class="ph-bold ph-arrow-left" style="font-size:16px;"></i></a>
-  </div>
-  <div class="up-hero-title"><i class="ph-bold ph-sword" style="font-size:24px;"></i> Pilih Rankmu<br>&amp; Gas Cuan!</div>
-  <div class="up-hero-sub">Limit makin besar &middot; Cuan makin deras &middot; Upgrade sekarang</div>
-  <svg class="up-hero-wave" viewBox="0 0 375 28" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M0 28 C80 6, 220 24, 375 8 L375 28 Z" fill="#fff8f0"/>
-  </svg>
-</div>
+<div class="up-page">
 
-<!-- BODY -->
-<div class="up-body">
-
-  <?php if ($flash): ?>
-  <div class="gc <?= ($flashType === 'error') ? 'gc--red' : 'gc--green' ?>" style="display:flex;align-items:center;gap:10px;padding:12px 14px;margin-bottom:14px;">
-    <i class="ph-fill ph-<?= ($flashType === 'error') ? 'warning-circle' : 'check-circle' ?>" style="font-size:20px;flex-shrink:0;color:<?= ($flashType === 'error') ? '#ef4444' : '#16a34a' ?>;"></i>
-    <div style="font-size:12px;font-weight:900;color:<?= ($flashType === 'error') ? '#991b1b' : '#065f46' ?>;"><?= htmlspecialchars($flash) ?></div>
-  </div>
-  <?php endif; ?>
-
-  <?php if ($active_membership): ?>
-  <div class="gc gc--green" style="margin-bottom:14px;">
-    <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:900;color:#065f46;margin-bottom:8px;">
-      <i class="ph-fill ph-shield-star" style="color:#16a34a;font-size:16px;"></i> Rank Aktif Sekarang
+  <!-- HERO BANNER -->
+  <div class="up-hero">
+    <div class="up-hero-top">
+      <a href="/home" class="up-hero-back"><i class="ph-bold ph-arrow-left"></i></a>
+      <span class="up-hero-badge"><i class="ph-fill ph-crown"></i> Kasta Koloni Lebah</span>
     </div>
-    <div style="font-size:20px;font-weight:900;color:#0f172a;margin-bottom:8px;"><?= htmlspecialchars($active_membership['name']) ?></div>
-    <div style="display:inline-flex;align-items:center;gap:6px;background:#dcfce7;border:2px solid #16a34a;border-radius:12px;padding:5px 12px;font-size:11px;font-weight:900;color:#14532d;box-shadow:0 2px 0 #14532d;margin-bottom:<?= $can_refund ? '12' : '0' ?>px;">
-      <i class="ph-bold ph-video-camera"></i> <?= $active_membership['watch_limit'] ?>&times; /hari &bull; s/d <?= date('d M Y', strtotime($user['membership_expires_at'])) ?>
+
+    <div class="up-mascot-row">
+      <img src="/assets/game/mascot_bee.png" alt="Buzzy" class="up-mascot-img" onerror="this.src='/assets/game/bee_idle.png'">
+      <div class="up-mascot-bubble">
+        <div class="up-mascot-bubble-title">🐝 Halo Peternak Lebah!</div>
+        <div class="up-mascot-bubble-sub">Tingkatkan kasta kolonimu! Dapatkan kuota tonton melimpah, panen madu deras &amp; prioritas pencairan cuan 24 jam!</div>
+      </div>
     </div>
-    <?php if ($can_refund): ?>
-    <button type="button" onclick="document.getElementById('refund-modal').style.display='flex'" style="width:100%;background:#fff;border:2.5px solid #ef4444;color:#ef4444;border-radius:12px;padding:10px;font-size:12px;font-weight:900;box-shadow:0 3px 0 #ef4444;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
-      <i class="ph-bold ph-arrow-u-up-left"></i> Minta Refund
-    </button>
+  </div>
+
+  <!-- TRUST STRIP -->
+  <div class="up-trust-strip">
+    <div class="up-trust-pill">
+      <i class="ph-fill ph-shield-check"></i>
+      <span>Saldo 100% Aman</span>
+    </div>
+    <div class="up-trust-pill">
+      <i class="ph-fill ph-lightning"></i>
+      <span>WD Prioritas 24 Jam</span>
+    </div>
+    <div class="up-trust-pill">
+      <i class="ph-fill ph-hand-coins"></i>
+      <span>Balik Modal Kilat</span>
+    </div>
+  </div>
+
+  <div class="up-body">
+
+    <?php if ($flash): ?>
+    <div style="background:<?= $flashType==='error'?'#fee2e2':'#dcfce7' ?>;border:2.5px solid <?= $flashType==='error'?'#ef4444':'#16a34a' ?>;border-radius:16px;padding:12px 14px;margin-bottom:14px;box-shadow:0 3px 0 <?= $flashType==='error'?'#991b1b':'#166534' ?>;display:flex;align-items:center;gap:10px;">
+      <i class="ph-fill ph-<?= $flashType==='error'?'warning-circle':'check-circle' ?>" style="font-size:20px;color:<?= $flashType==='error'?'#dc2626':'#16a34a' ?>;"></i>
+      <div style="font-size:12px;font-weight:900;color:<?= $flashType==='error'?'#991b1b':'#14532d' ?>;"><?= htmlspecialchars($flash) ?></div>
+    </div>
     <?php endif; ?>
-  </div>
-  <?php endif; ?>
 
-  <!-- SALDO BELI -->
-  <div class="sh2"><div class="sh2__title"><i class="ph-fill ph-wallet" style="color:#ea580c;"></i> Saldo Beli</div></div>
-  <div class="saldo-tile">
-    <div class="saldo-tile__deco"><i class="ph-fill ph-coins"></i></div>
-    <div class="saldo-tile__lbl"><i class="ph-fill ph-wallet" style="color:#1e40af;font-size:14px;"></i> Saldo Beli (Khusus Upgrade)</div>
-    <div class="saldo-tile__val"><?= format_rp((float)$user['balance_dep']) ?></div>
-    <div class="saldo-tile__tag"><i class="ph-bold ph-info"></i> Hanya untuk beli paket, tidak bisa ditarik</div>
-  </div>
-  <div class="qa-grid">
-    <a href="/deposit" class="qa-btn qa-btn--green">
-      <i class="ph-bold ph-plus-circle" style="font-size:18px;"></i> Topup Saldo
-    </a>
-    <a href="/checkin" class="qa-btn qa-btn--pink">
-      <i class="ph-bold ph-calendar-check" style="font-size:18px;"></i> Check-in Harian
-    </a>
-  </div>
-
-  <!-- PILIH RANK -->
-  <div class="sh2" style="margin-bottom:16px;"><div class="sh2__title"><i class="ph-fill ph-flame" style="color:#ea580c;"></i> Pilih Rankmu</div></div>
-
-  <form method="POST" id="upgrade-form">
-    <?= csrf_field() ?>
-    <input type="hidden" name="membership_id" id="chosen-id" value="">
-    <input type="hidden" name="voucher_code" id="applied-voucher-code" value="">
-
-    <?php
-    $paid    = array_values(array_filter($memberships, fn($m) => (float)$m['price'] > 0));
-    usort($paid, fn($a,$b) => (float)$a['price'] <=> (float)$b['price']);
-    $pejuang = $paid[0] ?? null;
-    $jagoan  = $paid[1] ?? null;
-    $legend  = $paid[2] ?? null;
-    ?>
-
-    <?php if ($pejuang):
-        $m = $pejuang;
-        $active_price = get_active_price($m, $user);
-        $can_afford = (float)$user['balance_dep'] >= $active_price;
-    ?>
-    <div class="lvl lvl--pejuang" onclick="openConfirm(<?= $m['id'] ?>, '<?= htmlspecialchars($m['name'], ENT_QUOTES) ?>', <?= $active_price ?>, <?= $m['duration_days'] ?>)">
-      <div class="lvl-head">
-        <div class="lvl-icon" style="background:#f1f5f9;"><i class="ph-bold ph-sword" style="color:#475569;font-size:24px;"></i></div>
-        <div class="lvl-meta">
-          <div class="lvl-name"><?= htmlspecialchars($m['name']) ?></div>
-          <div class="lvl-dur"><i class="ph-bold ph-hourglass"></i> <?= $m['duration_days'] ?> Hari</div>
-        </div>
-        <div class="lvl-price-block">
-          <div class="lvl-price-old"><?= format_rp((float)$m['original_price']) ?></div>
-          <div class="lvl-price"><?= format_rp($active_price) ?></div>
-        </div>
+    <!-- ACTIVE MEMBERSHIP CARD -->
+    <?php if ($active_membership): ?>
+    <div class="active-rank-card">
+      <div class="active-rank-hdr">
+        <span class="active-rank-badge">KASTA AKTIF SAAT INI</span>
+        <span style="font-size:11px;font-weight:800;color:#047857;"><i class="ph-bold ph-clock"></i> s/d <?= date('d M Y', strtotime($user['membership_expires_at'])) ?></span>
       </div>
-      <div class="lvl-specs">
-        <div class="lvl-spec"><i class="ph-bold ph-video-camera" style="color:#64748b;"></i> <?= $m['watch_limit'] ?> Video/hari</div>
-        <div class="lvl-spec"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min. WD: <?= format_rp((float)$m['min_wd']) ?></div>
-        <div class="lvl-spec"><i class="ph-bold ph-arrow-circle-up" style="color:#ef4444;"></i> Max. WD: <?= (float)$m['max_wd'] > 0 ? format_rp((float)$m['max_wd']) : 'Bebas' ?></div>
-        <?php if ($m['allow_edit_bank']): ?>
-        <div class="lvl-spec"><i class="ph-bold ph-pencil-simple" style="color:#3b82f6;"></i> Bebas Edit Rekening</div>
-        <?php endif; ?>
-        <?php if ($m['description']): ?>
-        <div class="lvl-spec lvl-spec--full"><i class="ph-bold ph-info" style="color:#64748b;"></i> <?= nl2br(htmlspecialchars($m['description'])) ?></div>
-        <?php endif; ?>
+      <div class="active-rank-name"><?= htmlspecialchars($active_membership['name']) ?></div>
+      <div class="active-rank-detail">
+        🎬 Kuota Tonton: <strong><?= $active_membership['watch_limit'] ?>&times; / hari</strong> &bull; Min. WD: <strong><?= format_rp((float)$active_membership['min_wd']) ?></strong>
       </div>
-      <button type="button" class="lvl-cta lvl-cta--pejuang <?= !$can_afford ? 'lvl-cta--disabled' : '' ?>">
-        <?= $can_afford ? 'Mulai Jadi Pejuang!' : 'Saldo Kurang &mdash; Topup Dulu' ?>
+      <?php if ($can_refund): ?>
+      <button type="button" onclick="document.getElementById('refund-modal').style.display='flex'" style="width:100%;background:#fff;border:2px solid #ef4444;color:#dc2626;border-radius:10px;padding:8px;font-size:11.5px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 0 #b91c1c;">
+        <i class="ph-bold ph-arrow-u-up-left"></i> Ajukan Refund (Garansi 12 Jam)
       </button>
+      <?php endif; ?>
     </div>
     <?php endif; ?>
 
-    <?php if ($jagoan):
-        $m = $jagoan;
-        $active_price = get_active_price($m, $user);
-        $can_afford = (float)$user['balance_dep'] >= $active_price;
-    ?>
-    <div class="lvl lvl--jagoan" onclick="openConfirm(<?= $m['id'] ?>, '<?= htmlspecialchars($m['name'], ENT_QUOTES) ?>', <?= $active_price ?>, <?= $m['duration_days'] ?>)">
-      <div class="lvl-sticker lvl-sticker--org"><i class="ph-fill ph-fire"></i> POPULER</div>
-      <div class="lvl-head">
-        <div class="lvl-icon" style="background:#e0f2fe;"><i class="ph-fill ph-trophy" style="color:#0284c7;font-size:26px;"></i></div>
-        <div class="lvl-meta">
-          <div class="lvl-name"><?= htmlspecialchars($m['name']) ?></div>
-          <div class="lvl-dur"><i class="ph-bold ph-hourglass"></i> <?= $m['duration_days'] ?> Hari</div>
+    <!-- LIVE TICKER -->
+    <div class="live-ticker">
+      <span class="live-dot"></span>
+      <span style="flex:1;"><strong>Live Aktivasi:</strong> Member <code>@cuan***</code> baru saja bergabung ke <strong>Sultan Royal Queen</strong>!</span>
+    </div>
+
+    <!-- SALDO BELI TILE -->
+    <div class="sh-honey"><div class="sh-honey__title"><i class="ph-fill ph-wallet"></i> Saldo Beli Khusus Upgrade</div></div>
+    <div class="saldo-card">
+      <img src="/assets/game/honey_jar.png" class="saldo-card-bg" alt="deco">
+      <div class="saldo-lbl"><i class="ph-bold ph-coins"></i> Saldo Beli Tersedia</div>
+      <div class="saldo-val"><?= format_rp((float)$user['balance_dep']) ?></div>
+      <div class="saldo-sub">Saldo ini khusus digunakan untuk aktivasi kasta &amp; bibit lebah.</div>
+    </div>
+
+    <!-- QUICK BUTTONS -->
+    <div class="qa-grid">
+      <a href="/deposit" class="qa-btn qa-btn--dep">
+        <i class="ph-bold ph-plus-circle" style="font-size:16px;"></i> + Isi Saldo Beli
+      </a>
+      <a href="/checkin" class="qa-btn qa-btn--checkin">
+        <i class="ph-bold ph-calendar-check" style="font-size:16px;"></i> Hadiah Check-in
+      </a>
+    </div>
+
+    <!-- PILIH KASTA KOLONI LEBAH -->
+    <div class="sh-honey"><div class="sh-honey__title"><i class="ph-fill ph-crown"></i> Pilih Kasta Kolonimu</div></div>
+
+    <form method="POST" id="upgrade-form">
+      <?= csrf_field() ?>
+      <input type="hidden" name="membership_id" id="chosen-id" value="">
+      <input type="hidden" name="voucher_code" id="applied-voucher-code" value="">
+
+      <?php
+      $paid    = array_values(array_filter($memberships, fn($m) => (float)$m['price'] > 0));
+      usort($paid, fn($a,$b) => (float)$a['price'] <=> (float)$b['price']);
+      $juragan  = $paid[0] ?? null;
+      $saudagar = $paid[1] ?? null;
+      $sultan   = $paid[2] ?? null;
+      ?>
+
+      <!-- TIER 1: JURAGAN SARANG -->
+      <?php if ($juragan):
+          $m = $juragan;
+          $active_price = get_active_price($m, $user);
+          $can_afford = (float)$user['balance_dep'] >= $active_price;
+      ?>
+      <div class="lvl-card lvl-card--starter" onclick="openConfirm(<?= $m['id'] ?>, '<?= htmlspecialchars($m['name'], ENT_QUOTES) ?>', <?= $active_price ?>, <?= $m['duration_days'] ?>)">
+        <div class="lvl-ribbon lvl-ribbon--starter"><i class="ph-fill ph-lightning"></i> STARTER FAVORIT</div>
+        <div class="lvl-head">
+          <div class="lvl-icon-box" style="background:#fef3c7;color:#b45309;"><i class="ph-fill ph-drop" style="font-size:26px;"></i></div>
+          <div class="lvl-head-meta">
+            <div class="lvl-title"><?= htmlspecialchars($m['name']) ?></div>
+            <span class="lvl-dur-badge"><i class="ph-bold ph-hourglass"></i> Aktif <?= $m['duration_days'] ?> Hari</span>
+          </div>
+          <div class="lvl-price-block">
+            <div class="lvl-price-old"><?= format_rp((float)$m['original_price']) ?></div>
+            <div class="lvl-price-val"><?= format_rp($active_price) ?></div>
+          </div>
         </div>
-        <div class="lvl-price-block">
-          <div class="lvl-price-old"><?= format_rp((float)$m['original_price']) ?></div>
-          <div class="lvl-price"><?= format_rp($active_price) ?></div>
+
+        <div class="lvl-potensi-cuan">
+          <span>🎯 Estimasi Cuan: <strong>~Rp 150.000 / bln</strong></span>
+          <span class="lvl-roi-pill">Balik Modal 4-5 Hari!</span>
+        </div>
+
+        <div class="lvl-specs">
+          <div class="lvl-spec-item"><i class="ph-bold ph-video-camera" style="color:#059669;"></i> <strong><?= $m['watch_limit'] ?> Video</strong> / hari</div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min WD: <strong><?= format_rp((float)$m['min_wd']) ?></strong></div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-up" style="color:#d97706;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-clock" style="color:#64748b;"></i> Proses WD 1-24 Jam</div>
+          <?php if ($m['description']): ?>
+          <div class="lvl-spec-item lvl-spec-item--full" style="color:#92400e;"><i class="ph-bold ph-info"></i> <?= htmlspecialchars($m['description']) ?></div>
+          <?php endif; ?>
+        </div>
+
+        <button type="button" class="lvl-btn-cta lvl-btn-cta--starter <?= !$can_afford ? 'lvl-btn-cta--disabled' : '' ?>">
+          <?= $can_afford ? 'AMBIL KASTA JURAGAN SARANG' : 'Saldo Kurang — Topup Dulu' ?>
+        </button>
+      </div>
+      <?php endif; ?>
+
+      <!-- TIER 2: SAUDAGAR MADU -->
+      <?php if ($saudagar):
+          $m = $saudagar;
+          $active_price = get_active_price($m, $user);
+          $can_afford = (float)$user['balance_dep'] >= $active_price;
+      ?>
+      <div class="lvl-card lvl-card--popular" onclick="openConfirm(<?= $m['id'] ?>, '<?= htmlspecialchars($m['name'], ENT_QUOTES) ?>', <?= $active_price ?>, <?= $m['duration_days'] ?>)">
+        <div class="lvl-ribbon lvl-ribbon--popular"><i class="ph-fill ph-fire"></i> PALING POPULER &amp; DICARI</div>
+        <div class="lvl-head">
+          <div class="lvl-icon-box" style="background:#e0f2fe;color:#0284c7;"><i class="ph-fill ph-star" style="font-size:26px;"></i></div>
+          <div class="lvl-head-meta">
+            <div class="lvl-title"><?= htmlspecialchars($m['name']) ?></div>
+            <span class="lvl-dur-badge" style="background:#e0f2fe;"><i class="ph-bold ph-hourglass"></i> Aktif <?= $m['duration_days'] ?> Hari</span>
+          </div>
+          <div class="lvl-price-block">
+            <div class="lvl-price-old"><?= format_rp((float)$m['original_price']) ?></div>
+            <div class="lvl-price-val" style="color:#d97706;"><?= format_rp($active_price) ?></div>
+          </div>
+        </div>
+
+        <div class="lvl-potensi-cuan" style="background:#ecfdf5;border-color:#059669;">
+          <span>🎯 Estimasi Cuan: <strong>~Rp 310.000 / bln</strong></span>
+          <span class="lvl-roi-pill" style="background:#fef3c7;color:#92400e;border-color:#b45309;">2x Kuota Lebih Besar!</span>
+        </div>
+
+        <div class="lvl-specs">
+          <div class="lvl-spec-item"><i class="ph-bold ph-video-camera" style="color:#0284c7;"></i> <strong><?= $m['watch_limit'] ?> Video</strong> / hari</div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min WD: <strong><?= format_rp((float)$m['min_wd']) ?></strong></div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-up" style="color:#d97706;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-pencil-simple" style="color:#3b82f6;"></i> Bebas Edit Rekening</div>
+          <div class="lvl-spec-item lvl-spec-item--full"><i class="ph-bold ph-lightning" style="color:#f59e0b;"></i> <strong>Jalur Antrean WD Lebih Cepat</strong></div>
+          <?php if ($m['description']): ?>
+          <div class="lvl-spec-item lvl-spec-item--full" style="color:#92400e;"><i class="ph-bold ph-info"></i> <?= htmlspecialchars($m['description']) ?></div>
+          <?php endif; ?>
+        </div>
+
+        <button type="button" class="lvl-btn-cta lvl-btn-cta--popular <?= !$can_afford ? 'lvl-btn-cta--disabled' : '' ?>">
+          <?= $can_afford ? 'GABUNG SAUDAGAR MADU' : 'Saldo Kurang — Topup Dulu' ?>
+        </button>
+      </div>
+      <?php endif; ?>
+
+      <!-- TIER 3: SULTAN ROYAL QUEEN -->
+      <?php if ($sultan):
+          $m = $sultan;
+          $active_price = get_active_price($m, $user);
+          $can_afford = (float)$user['balance_dep'] >= $active_price;
+      ?>
+      <div class="lvl-card lvl-card--sultan" onclick="openConfirm(<?= $m['id'] ?>, '<?= htmlspecialchars($m['name'], ENT_QUOTES) ?>', <?= $active_price ?>, <?= $m['duration_days'] ?>)">
+        <div class="lvl-ribbon lvl-ribbon--sultan"><i class="ph-fill ph-crown"></i> SULTAN DEAL — AKTIF 60 HARI (2 BULAN)</div>
+        <div class="lvl-head">
+          <div class="lvl-icon-box" style="background:#fef08a;color:#78350f;"><i class="ph-fill ph-crown" style="font-size:26px;"></i></div>
+          <div class="lvl-head-meta">
+            <div class="lvl-title"><?= htmlspecialchars($m['name']) ?></div>
+            <span class="lvl-dur-badge" style="background:#fde68a;font-weight:900;"><i class="ph-bold ph-hourglass"></i> AKTIF 60 HARI (2 BULAN)</span>
+          </div>
+          <div class="lvl-price-block">
+            <div class="lvl-price-old"><?= format_rp((float)$m['original_price']) ?></div>
+            <div class="lvl-price-val" style="color:#78350f;"><?= format_rp($active_price) ?></div>
+          </div>
+        </div>
+
+        <div class="lvl-potensi-cuan" style="background:#fff;border-color:#b45309;">
+          <span>🎯 Estimasi Cuan: <strong>~Rp 650.000 / 2 bln</strong></span>
+          <span class="lvl-roi-pill" style="background:#fde68a;color:#78350f;border-color:#78350f;">Super Hemat 60 Hari!</span>
+        </div>
+
+        <div class="lvl-specs">
+          <div class="lvl-spec-item"><i class="ph-bold ph-video-camera" style="color:#b45309;"></i> <strong><?= $m['watch_limit'] ?> Video</strong> / hari</div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min WD: <strong><?= format_rp((float)$m['min_wd']) ?></strong></div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-rocket-launch" style="color:#ea580c;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-pencil-simple" style="color:#3b82f6;"></i> Bebas Edit Rekening</div>
+          <div class="lvl-spec-item lvl-spec-item--full" style="background:#fef3c7;border-color:#d97706;">
+            <i class="ph-fill ph-crown" style="color:#d97706;"></i> <strong>Jalur VIP Express (Pencairan Otomatis Tanpa Antre)</strong>
+          </div>
+          <?php if ($m['description']): ?>
+          <div class="lvl-spec-item lvl-spec-item--full" style="color:#92400e;"><i class="ph-bold ph-info"></i> <?= htmlspecialchars($m['description']) ?></div>
+          <?php endif; ?>
+        </div>
+
+        <button type="button" class="lvl-btn-cta lvl-btn-cta--sultan <?= !$can_afford ? 'lvl-btn-cta--disabled' : '' ?>">
+          <?= $can_afford ? 'KLAIM TAHTA SULTAN ROYAL QUEEN' : 'Saldo Kurang — Topup Dulu' ?>
+        </button>
+      </div>
+      <?php endif; ?>
+
+    </form>
+
+    <!-- INFO STEP CARD -->
+    <div class="info-card">
+      <div style="font-size:13px;font-weight:900;color:#78350f;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+        <i class="ph-bold ph-lightbulb" style="color:#f59e0b;font-size:18px;"></i> 3 Langkah Mudah Naik Kasta
+      </div>
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Topup Saldo Beli</strong> instan via QRIS (DANA, GoPay, OVO, ShopeePay, BCA).</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Pilih Kasta Koloni</strong> di atas yang paling sesuai dengan target cuan harianmu.</div>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Konfirmasi &amp; Gas Cuan!</strong> Kasta langsung aktif seketika tanpa perlu menunggu verifikasi lama.</div>
+      </div>
+
+      <div style="background:#fef8ee;border:2px dashed #f59e0b;border-radius:14px;padding:10px 12px;margin-top:12px;">
+        <div style="font-size:11px;font-weight:900;color:#78350f;display:flex;align-items:center;gap:4px;margin-bottom:3px;">
+          <i class="ph-fill ph-shield-check" style="color:#16a34a;"></i> Garansi Kepuasan 12 Jam
+        </div>
+        <div style="font-size:10.5px;font-weight:700;color:#92400e;line-height:1.4;">
+          Nikmati perlindungan dana aman. Kamu memiliki hak mengajukan pengembalian saldo beli dalam kurun waktu 12 jam setelah aktivasi.
         </div>
       </div>
-      <div class="lvl-specs">
-        <div class="lvl-spec"><i class="ph-bold ph-video-camera" style="color:#0ea5e9;"></i> <?= $m['watch_limit'] ?> Video/hari</div>
-        <div class="lvl-spec"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min. WD: <?= format_rp((float)$m['min_wd']) ?></div>
-        <div class="lvl-spec"><i class="ph-bold ph-arrow-circle-up" style="color:#ef4444;"></i> Max. WD: <?= (float)$m['max_wd'] > 0 ? format_rp((float)$m['max_wd']) : 'Bebas' ?></div>
-        <?php if ($m['allow_edit_bank']): ?>
-        <div class="lvl-spec"><i class="ph-bold ph-pencil-simple" style="color:#3b82f6;"></i> Bebas Edit Rekening</div>
-        <?php endif; ?>
-        <?php if ($m['description']): ?>
-        <div class="lvl-spec lvl-spec--full"><i class="ph-bold ph-info" style="color:#0ea5e9;"></i> <?= nl2br(htmlspecialchars($m['description'])) ?></div>
-        <?php endif; ?>
-      </div>
-      <button type="button" class="lvl-cta lvl-cta--jagoan <?= !$can_afford ? 'lvl-cta--disabled' : '' ?>">
-        <?= $can_afford ? 'Jadilah Jagoan!' : 'Saldo Kurang &mdash; Topup Dulu' ?>
-      </button>
-    </div>
-    <?php endif; ?>
-
-    <?php if ($legend):
-        $m = $legend;
-        $active_price = get_active_price($m, $user);
-        $can_afford = (float)$user['balance_dep'] >= $active_price;
-    ?>
-    <div class="lvl lvl--legend" onclick="openConfirm(<?= $m['id'] ?>, '<?= htmlspecialchars($m['name'], ENT_QUOTES) ?>', <?= $active_price ?>, <?= $m['duration_days'] ?>)">
-      <div class="lvl-sticker lvl-sticker--red"><i class="ph-fill ph-crown"></i> BEST DEAL!</div>
-      <div class="lvl-head">
-        <div class="lvl-icon" style="background:#fef08a;"><i class="ph-fill ph-star" style="color:#d97706;font-size:26px;"></i></div>
-        <div class="lvl-meta">
-          <div class="lvl-name"><?= htmlspecialchars($m['name']) ?></div>
-          <div class="lvl-dur"><i class="ph-bold ph-hourglass"></i> <?= $m['duration_days'] ?> Hari</div>
-        </div>
-        <div class="lvl-price-block">
-          <div class="lvl-price-old"><?= format_rp((float)$m['original_price']) ?></div>
-          <div class="lvl-price"><?= format_rp($active_price) ?></div>
-        </div>
-      </div>
-      <div class="lvl-specs">
-        <div class="lvl-spec"><i class="ph-bold ph-video-camera" style="color:#d97706;"></i> <?= $m['watch_limit'] ?> Video/hari</div>
-        <div class="lvl-spec"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min. WD: <?= format_rp((float)$m['min_wd']) ?></div>
-        <div class="lvl-spec"><i class="ph-bold ph-arrow-circle-up" style="color:#ef4444;"></i> Max. WD: <?= (float)$m['max_wd'] > 0 ? format_rp((float)$m['max_wd']) : 'Bebas' ?></div>
-        <?php if ($m['allow_edit_bank']): ?>
-        <div class="lvl-spec"><i class="ph-bold ph-pencil-simple" style="color:#3b82f6;"></i> Bebas Edit Rekening</div>
-        <?php endif; ?>
-        <?php if ($m['description']): ?>
-        <div class="lvl-spec lvl-spec--full"><i class="ph-bold ph-info" style="color:#d97706;"></i> <?= nl2br(htmlspecialchars($m['description'])) ?></div>
-        <?php endif; ?>
-      </div>
-      <button type="button" class="lvl-cta lvl-cta--legend <?= !$can_afford ? 'lvl-cta--disabled' : '' ?>">
-        <?= $can_afford ? 'Gas Jadi Legenda!' : 'Saldo Kurang &mdash; Topup Dulu' ?>
-      </button>
-    </div>
-    <?php endif; ?>
-
-  </form>
-
-  <!-- INFO CARD -->
-  <div class="gc" style="margin-top:4px;margin-bottom:24px;">
-    <div style="font-size:14px;font-weight:900;color:#0f172a;margin-bottom:14px;display:flex;align-items:center;gap:6px;">
-      <i class="ph-bold ph-lightbulb" style="color:#f59e0b;font-size:18px;"></i> Cara Upgrade
-    </div>
-    <div class="step-row">
-      <div class="step-num" style="background:#a7f3d0;">1</div>
-      <div class="step-txt"><strong>Topup Saldo Beli</strong> via menu Deposit &mdash; khusus untuk beli rank.</div>
-    </div>
-    <div class="step-row">
-      <div class="step-num" style="background:#fde047;">2</div>
-      <div class="step-txt"><strong>Pilih rank</strong> di atas dan klik tombol upgrade.</div>
-    </div>
-    <div class="step-row" style="margin-bottom:16px;">
-      <div class="step-num" style="background:#f9a8d4;">3</div>
-      <div class="step-txt"><strong>Konfirmasi</strong> di pop-up &mdash; saldo terpotong &amp; rank langsung aktif!</div>
     </div>
 
-    <div style="border-top:2.5px dashed #e2e8f0;padding-top:14px;margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:900;color:#0f172a;margin-bottom:10px;display:flex;align-items:center;gap:5px;">
-        <i class="ph-bold ph-check-circle" style="color:#10b981;font-size:16px;"></i> Keuntungan Naik Rank
-      </div>
-      <div class="ben-grid">
-        <span class="ben-pill" style="background:#e0f2fe;">Nonton Lebih Banyak</span>
-        <span class="ben-pill" style="background:#dcfce7;">Min. WD Makin Rendah</span>
-        <span class="ben-pill" style="background:#fff8d0;">Cuan Makin Deras</span>
-        <span class="ben-pill" style="background:#fce7f3;">Max WD Meroket</span>
-      </div>
-    </div>
-
-    <div style="background:#f8fafc;border:2px solid #cbd5e1;border-radius:14px;padding:12px;">
-      <div style="font-size:12px;font-weight:900;color:#0f172a;margin-bottom:6px;display:flex;align-items:center;gap:4px;"><i class="ph-bold ph-warning" style="color:#f59e0b;"></i> Catatan</div>
-      <div style="font-size:11px;font-weight:800;color:#475569;line-height:1.5;">
-        &bull; Rank baru menggantikan rank aktif (sisa masa aktif hangus).<br>
-        &bull; Saldo Beli tidak bisa ditarik ke rekening.
-      </div>
-    </div>
   </div>
-
 </div>
 
 <!-- CONFIRMATION MODAL -->
 <div id="upgrade-modal" class="cg-modal">
   <div class="cg-modal-card">
-    <div class="cg-mc-hdr"><i class="ph-bold ph-rocket-launch"></i> Konfirmasi Upgrade</div>
-    <div class="cg-mc-sub">Pastikan kamu yakin sebelum memproses!</div>
+    <div class="cg-mc-hdr"><i class="ph-fill ph-crown"></i> Konfirmasi Naik Kasta</div>
+    <div class="cg-mc-sub">Pastikan kasta pilihanmu sudah sesuai sebelum diproses!</div>
     <div class="cg-mc-box">
-      <div class="cg-mc-lbl">Rank Dipilih</div>
+      <div class="cg-mc-lbl">Kasta Dipilih</div>
       <div class="cg-mc-val" id="modal-name">--</div>
-      <div class="cg-mc-price" id="price-row">Harga: <span id="modal-price">--</span></div>
+      <div class="cg-mc-price" id="price-row">Biaya: <span id="modal-price">--</span></div>
       <div class="cg-mc-discount" id="discount-row">Diskon: -<span id="modal-discount">--</span> (<span id="modal-pct">--</span>)</div>
-      <div class="cg-mc-total" id="final-price-row">Total Bayar: <span id="modal-final-price">--</span></div>
-      <div class="cg-mc-dur">Berlaku <span id="modal-days">--</span> hari setelah aktivasi</div>
+      <div class="cg-mc-total" id="final-price-row">Total Potong Saldo: <span id="modal-final-price">--</span></div>
+      <div class="cg-mc-dur">Masa Aktif: <strong id="modal-days">--</strong> hari penuh</div>
     </div>
-    <div style="margin-bottom:16px;">
-      <button type="button" id="toggle-voucher-btn" onclick="toggleVoucher()" style="background:none;border:none;color:#0ea5e9;font-weight:900;font-size:12px;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;"><i class="ph-bold ph-tag"></i> Pakai Voucher Diskon?</button>
+    <div style="margin-bottom:14px;">
+      <button type="button" id="toggle-voucher-btn" onclick="toggleVoucher()" style="background:none;border:none;color:#0284c7;font-weight:900;font-size:12px;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;">
+        <i class="ph-bold ph-tag"></i> Punya Kode Voucher Diskon?
+      </button>
       <div id="voucher-box" style="display:none;margin-top:8px;gap:8px;">
-        <input type="text" id="voucher-input" placeholder="KODE VOUCHER" style="flex:1;border:2.5px solid #cbd5e1;border-radius:10px;padding:8px 12px;font-weight:900;text-transform:uppercase;font-size:12px;outline:none;">
-        <button type="button" onclick="applyVoucher()" style="background:linear-gradient(135deg,#fde047,#f59e0b);color:#78350f;border:2px solid #fff;border-radius:10px;padding:8px 14px;font-weight:900;font-size:12px;cursor:pointer;box-shadow:0 3px 0 #d97706;">Gunakan</button>
+        <input type="text" id="voucher-input" placeholder="KODE VOUCHER" style="flex:1;border:2.5px solid #78350f;border-radius:10px;padding:8px 12px;font-weight:900;text-transform:uppercase;font-size:12px;outline:none;">
+        <button type="button" onclick="applyVoucher()" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:2px solid #78350f;border-radius:10px;padding:8px 14px;font-weight:900;font-size:12px;cursor:pointer;box-shadow:0 2.5px 0 #78350f;">Gunakan</button>
       </div>
       <div id="voucher-msg" style="font-size:11px;font-weight:800;margin-top:6px;display:none;"></div>
     </div>
-    <div id="modal-warn" style="display:none;font-size:11px;color:#ef4444;font-weight:800;margin-bottom:16px;background:#fef2f2;border:2px solid #fca5a5;border-radius:10px;padding:10px 12px;"></div>
-    <div style="font-size:11px;color:#94a3b8;font-weight:800;margin-bottom:16px;text-align:center;">Saldo Beli otomatis terpotong. Aksi ini permanen.</div>
+    <div id="modal-warn" style="display:none;font-size:11px;color:#b91c1c;font-weight:800;margin-bottom:14px;background:#fee2e2;border:2px solid #ef4444;border-radius:10px;padding:8px 10px;"></div>
+    <div style="font-size:10.5px;color:#92400e;font-weight:800;margin-bottom:14px;text-align:center;">Saldo Beli kamu otomatis terpotong saat konfirmasi.</div>
     <div class="cg-btn-row">
       <button type="button" class="cg-btn cg-btn--cancel" onclick="closeConfirm()">Batal</button>
-      <button type="button" id="modal-confirm-btn" class="cg-btn cg-btn--confirm" onclick="submitUpgrade()">YA, GAS!</button>
+      <button type="button" id="modal-confirm-btn" class="cg-btn cg-btn--confirm" onclick="submitUpgrade()">YA, GAS AKTIFKAN!</button>
     </div>
   </div>
 </div>
@@ -710,17 +1093,17 @@ html body { background: #f97316 !important; background-image: none !important; }
 <!-- REFUND MODAL -->
 <div id="refund-modal" class="cg-modal">
   <div class="cg-modal-card" style="border-color:#b91c1c;box-shadow:0 8px 0 #b91c1c;">
-    <div class="cg-mc-hdr" style="color:#ef4444;"><i class="ph-bold ph-warning"></i> Minta Refund?</div>
-    <div class="cg-mc-sub">Kamu yakin ingin refund rank aktifmu?</div>
-    <div style="background:#fef2f2;border:2.5px solid #fca5a5;border-radius:14px;padding:12px;margin-bottom:16px;font-size:11px;font-weight:800;color:#991b1b;line-height:1.5;">
-      Saldo dikembalikan ke <strong>Saldo Beli</strong> dengan potongan admin (jika ada). Rank kamu akan hangus!
+    <div class="cg-mc-hdr" style="color:#b91c1c;"><i class="ph-bold ph-warning"></i> Ajukan Refund?</div>
+    <div class="cg-mc-sub">Yakin ingin mengajukan pengembalian kasta aktifmu?</div>
+    <div style="background:#fee2e2;border:2px solid #ef4444;border-radius:14px;padding:12px;margin-bottom:14px;font-size:11px;font-weight:800;color:#991b1b;line-height:1.45;">
+      Saldo akan dikembalikan ke <strong>Saldo Beli</strong> setelah verifikasi sistem dengan potongan biaya admin. Kasta aktif kamu akan ditutup kembali ke level pemula!
     </div>
     <form method="POST">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="refund_level">
       <div class="cg-btn-row">
-        <button type="button" class="cg-btn cg-btn--cancel" onclick="document.getElementById('refund-modal').style.display='none'">Gak Jadi</button>
-        <button type="submit" class="cg-btn" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border-color:#fff;box-shadow:0 4px 0 #991b1b;">Refund Sekarang</button>
+        <button type="button" class="cg-btn cg-btn--cancel" onclick="document.getElementById('refund-modal').style.display='none'">Batal</button>
+        <button type="submit" class="cg-btn" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border-color:#b91c1c;box-shadow:0 4px 0 #991b1b;">Ajukan Refund</button>
       </div>
     </form>
   </div>
