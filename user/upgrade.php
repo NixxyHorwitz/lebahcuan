@@ -296,7 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 end_post:
 
-// Auto-rename ranks to Dark Forest Bee theme if they don't match yet
+// Auto-rename ranks to Forest Bee Colony theme if they don't match yet
 $rankMap = [
   0 => ['name' => 'Pemanen Kanopi',   'icon' => '🍃'],
   1 => ['name' => 'Panglima Rimba',   'icon' => '🍯'],
@@ -319,16 +319,16 @@ $activePage = 'upgrade';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
 <style>
-/* ══════════════════════════════════════════════
-   UPGRADE PAGE — NATURAL DARK FOREST & HONEYCOMB
-   ══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════
+   UPGRADE PAGE — AMBER HONEY PALETTE + DARK FOREST TREE DECO
+   ══════════════════════════════════════════════════════════ */
 body {
-  background-color: #07120c !important;
+  background-color: #fef8ee !important;
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.12) 0%, transparent 65%),
-    radial-gradient(circle at 100% 30%, rgba(245, 158, 11, 0.05) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23f59e0b' fill-opacity='0.038'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l11 6.35 11-6.35V17.9l-11-6.35L3 17.9zM0 49l14-8.08L28 49H0zm0-49h28L14 8.08 0 0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") !important;
-  color: #e2ece6;
+    radial-gradient(#fde68a 0.85px, transparent 0.85px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%23f59e0b' fill-opacity='0.035'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l11 6.35 11-6.35V17.9l-11-6.35L3 17.9zM0 49l14-8.08L28 49H0zm0-49h28L14 8.08 0 0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") !important;
+  background-size: 24px 24px, 28px 49px !important;
+  color: #78350f;
   font-family: 'Nunito', -apple-system, sans-serif;
   margin: 0;
   padding: 0;
@@ -340,63 +340,57 @@ body {
   padding-bottom: 70px;
 }
 
-/* HERO CANOPY BANNER */
+/* HERO CANOPY BANNER WITH DARK FOREST PINE TREELINE */
 .up-hero {
-  background: linear-gradient(145deg, #091a13 0%, #0f2d20 50%, #153e2d 100%);
-  border-bottom: 1.5px solid #1f4735;
-  padding: 14px 14px 18px;
+  background: linear-gradient(160deg, #b45309 0%, #d97706 40%, #1a3c2b 100%);
+  border-bottom: 3.5px solid #78350f;
+  padding: 14px 14px 0;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-}
-.up-hero::after {
-  content: '';
-  position: absolute;
-  right: -20px; bottom: -20px;
-  width: 120px; height: 120px;
-  background: radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 70%);
-  border-radius: 50%;
-  pointer-events: none;
 }
 .up-hero-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+  position: relative;
+  z-index: 3;
 }
 .up-hero-back {
-  width: 34px; height: 34px;
-  background: #0d2319;
-  border: 1.5px solid #244d39;
-  border-radius: 10px;
+  width: 36px; height: 36px;
+  background: #ffffff;
+  border: 2px solid #78350f;
+  border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  color: #a7f3d0;
-  font-size: 16px;
+  color: #78350f;
+  font-size: 18px; font-weight: 900;
   text-decoration: none;
-  box-shadow: 0 2px 0 #07150f;
+  box-shadow: 0 3px 0 #78350f;
   transition: transform 0.1s;
 }
-.up-hero-back:active { transform: translateY(2px); }
+.up-hero-back:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
 .up-hero-badge {
   display: inline-flex; align-items: center; gap: 5px;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #34d399;
+  background: #fef3c7; color: #78350f;
+  border: 2px solid #78350f;
   border-radius: 20px;
-  padding: 3px 10px;
-  font-size: 10.5px; font-weight: 800;
-  letter-spacing: 0.3px;
+  padding: 3.5px 12px;
+  font-size: 11px; font-weight: 900;
+  box-shadow: 0 2.5px 0 #78350f;
 }
 
 .up-mascot-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  position: relative;
+  z-index: 3;
+  margin-bottom: 12px;
 }
 .up-mascot-img {
-  width: 54px; height: 54px;
+  width: 60px; height: 60px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
   animation: upBeeFloat 3s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -405,11 +399,11 @@ body {
   50% { transform: translateY(-4px); }
 }
 .up-mascot-bubble {
-  background: #091a13;
-  border: 1.5px solid #1e4533;
-  border-radius: 14px;
-  padding: 8px 12px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  border-radius: 16px;
+  padding: 9px 12px;
+  box-shadow: 0 3.5px 0 #78350f;
   position: relative;
   flex: 1;
 }
@@ -419,14 +413,29 @@ body {
   transform: translateY(-50%);
   border-width: 5px 8px 5px 0;
   border-style: solid;
-  border-color: transparent #1e4533 transparent transparent;
+  border-color: transparent #78350f transparent transparent;
 }
 .up-mascot-bubble-title {
-  font-size: 12px; font-weight: 900; color: #fde047;
+  font-size: 12.5px; font-weight: 900; color: #78350f;
   margin-bottom: 2px; display: flex; align-items: center; gap: 5px;
 }
 .up-mascot-bubble-sub {
-  font-size: 10.5px; font-weight: 700; color: #9bb7aa; line-height: 1.35;
+  font-size: 11px; font-weight: 700; color: #92400e; line-height: 1.35;
+}
+
+/* DARK FOREST TREES SILHOUETTE IN HERO */
+.forest-trees-strip {
+  width: 100%;
+  height: 40px;
+  position: relative;
+  z-index: 2;
+  margin-top: -6px;
+  pointer-events: none;
+}
+.forest-trees-strip svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* TRUST STRIP */
@@ -437,15 +446,16 @@ body {
   padding: 10px 14px;
 }
 .up-trust-pill {
-  background: #091a13;
-  border: 1px solid #1b3d2c;
-  border-radius: 10px;
+  background: #ffffff;
+  border: 1.5px solid #78350f;
+  border-radius: 12px;
   padding: 6px 4px;
   text-align: center;
-  font-size: 9.5px; font-weight: 800; color: #a3c2b2;
+  font-size: 9.5px; font-weight: 900; color: #78350f;
+  box-shadow: 0 2px 0 #78350f;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
 }
-.up-trust-pill i { font-size: 13px; color: #fbbf24; }
+.up-trust-pill i { font-size: 13.5px; color: #d97706; }
 
 /* BODY */
 .up-body {
@@ -459,24 +469,25 @@ body {
 }
 .sh-honey__title {
   display: flex; align-items: center; gap: 6px;
-  font-size: 11.5px; font-weight: 900; color: #a7f3d0;
+  font-size: 12px; font-weight: 900; color: #78350f;
   text-transform: uppercase; letter-spacing: 0.5px;
 }
 
 /* LIVE TICKER */
 .live-ticker {
-  background: #081710;
-  border: 1px solid #1a3c2c;
-  border-radius: 12px;
+  background: #ffffff;
+  border: 2px solid #78350f;
+  border-radius: 14px;
   padding: 7px 12px;
   margin-bottom: 12px;
+  box-shadow: 0 3px 0 #78350f;
   display: flex; align-items: center; gap: 8px;
-  font-size: 10.5px; font-weight: 700; color: #a1c0b1;
+  font-size: 10.5px; font-weight: 800; color: #92400e;
 }
 .live-dot {
   width: 7px; height: 7px; border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 8px #10b981;
+  background: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
   animation: livePulse 1.5s infinite;
   flex-shrink: 0;
 }
@@ -488,31 +499,30 @@ body {
 
 /* SALDO TILE */
 .saldo-card {
-  background: linear-gradient(135deg, #0b1f17 0%, #0e271c 100%);
-  border: 1.5px solid #204b36;
-  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+  border: 2.5px solid #78350f;
+  border-radius: 18px;
   padding: 12px 14px;
+  box-shadow: 0 4px 0 #78350f;
   margin-bottom: 10px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 .saldo-card-bg {
-  position: absolute; right: -5px; bottom: -5px;
+  position: absolute; right: -8px; bottom: -8px;
   width: 65px; height: 65px; opacity: 0.12;
   pointer-events: none;
 }
 .saldo-lbl {
-  font-size: 10.5px; font-weight: 800; color: #86efac;
+  font-size: 10.5px; font-weight: 800; color: #92400e;
   display: flex; align-items: center; gap: 5px; margin-bottom: 3px;
 }
 .saldo-val {
-  font-size: 22px; font-weight: 900; color: #fde047;
-  letter-spacing: -0.3px; margin-bottom: 4px;
-  text-shadow: 0 0 12px rgba(253, 224, 71, 0.2);
+  font-size: 24px; font-weight: 900; color: #78350f;
+  letter-spacing: -0.4px; margin-bottom: 4px;
 }
 .saldo-sub {
-  font-size: 10px; font-weight: 700; color: #8bb09f;
+  font-size: 10px; font-weight: 700; color: #b45309;
 }
 
 /* QA GRID */
@@ -522,29 +532,27 @@ body {
 }
 .qa-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  border-radius: 12px; padding: 9px 8px;
+  border-radius: 12px; padding: 10px 8px;
   font-size: 11.5px; font-weight: 900; text-decoration: none;
-  transition: transform 0.1s;
+  border: 2px solid #78350f; transition: transform 0.1s;
 }
 .qa-btn:active { transform: translateY(2px); }
 .qa-btn--dep {
   background: linear-gradient(135deg, #10b981, #059669);
-  color: #ffffff; border: 1.5px solid #34d399;
-  box-shadow: 0 3px 0 #064e3b;
+  color: #ffffff; box-shadow: 0 3px 0 #064e3b;
 }
 .qa-btn--checkin {
-  background: linear-gradient(135deg, #d97706, #b45309);
-  color: #fffbeb; border: 1.5px solid #f59e0b;
-  box-shadow: 0 3px 0 #78350f;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #78350f; box-shadow: 0 3px 0 #b45309;
 }
 
 /* ACTIVE MEMBERSHIP STATUS */
 .active-rank-card {
-  background: #0b1f17;
-  border: 1.5px solid #10b981;
+  background: #ecfdf5;
+  border: 2px solid #059669;
   border-radius: 16px;
   padding: 12px 14px;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 3.5px 0 #064e3b;
   margin-bottom: 14px;
 }
 .active-rank-hdr {
@@ -552,267 +560,271 @@ body {
   margin-bottom: 4px;
 }
 .active-rank-badge {
-  background: #064e3b; color: #a7f3d0;
-  border: 1px solid #10b981;
+  background: #059669; color: #fff;
   border-radius: 10px; padding: 2px 7px;
   font-size: 9.5px; font-weight: 900;
 }
 .active-rank-name {
-  font-size: 16px; font-weight: 900; color: #f0fdf4;
+  font-size: 16px; font-weight: 900; color: #064e3b;
 }
 .active-rank-detail {
-  font-size: 11px; font-weight: 800; color: #86efac; margin-bottom: 8px;
+  font-size: 11px; font-weight: 800; color: #047857; margin-bottom: 8px;
 }
 
 /* ══════════════════════════════════════════════
-   COMPACT & SOLID PRICING CARDS
+   COMPACT & SOLID PRICING CARDS (AMBER + FOREST)
    ══════════════════════════════════════════════ */
 .lvl-card {
-  background: #0a1b14;
-  border: 1.5px solid #1b3f2f;
-  border-radius: 18px;
-  padding: 13px 14px;
-  margin-bottom: 14px;
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  border-radius: 20px;
+  padding: 14px 14px 12px;
+  margin-bottom: 15px;
   position: relative;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.35);
-  transition: transform 0.12s, border-color 0.15s;
+  box-shadow: 0 5px 0 #78350f;
+  transition: transform 0.12s;
   cursor: pointer;
   overflow: hidden;
 }
 .lvl-card:active {
-  transform: translateY(2px);
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #78350f;
 }
 
-/* Honeycomb Watermark In Card */
-.lvl-card-hex-bg {
-  position: absolute; right: 0; top: 0;
-  width: 90px; height: 90px;
-  opacity: 0.07;
+/* Corner Honeycomb & Forest Watermark */
+.lvl-card-deco-bg {
+  position: absolute; right: -5px; top: -5px;
+  width: 95px; height: 95px;
+  opacity: 0.08;
   pointer-events: none;
 }
 
-/* Card Variations */
+/* Card Skins */
 .lvl-card--starter {
-  border-color: #24563f;
+  background: linear-gradient(180deg, #ffffff 0%, #fefcf8 100%);
 }
 .lvl-card--popular {
-  border-color: #d97706;
-  box-shadow: 0 5px 18px rgba(217, 119, 6, 0.15);
+  background: linear-gradient(180deg, #ffffff 0%, #fffdf5 100%);
+  border-color: #78350f;
+  box-shadow: 0 5.5px 0 #78350f;
 }
 .lvl-card--sultan {
-  border-color: #eab308;
-  background: linear-gradient(160deg, #0e261d 0%, #153327 100%);
-  box-shadow: 0 6px 20px rgba(234, 179, 8, 0.2);
+  background: linear-gradient(145deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+  border-color: #78350f;
+  box-shadow: 0 6px 0 #78350f;
 }
 
 /* RIBBONS */
 .lvl-ribbon {
   position: absolute; top: 0; right: 14px;
   font-size: 9px; font-weight: 900;
-  padding: 2.5px 8px; border-radius: 0 0 8px 8px;
-  letter-spacing: 0.3px; z-index: 2;
+  padding: 3px 9px; border-radius: 0 0 10px 10px;
+  border: 1.5px solid #78350f; border-top: none;
+  z-index: 2; letter-spacing: 0.3px;
 }
 .lvl-ribbon--starter {
-  background: #064e3b; color: #a7f3d0; border: 1px solid #10b981;
+  background: #dcfce7; color: #065f46;
 }
 .lvl-ribbon--popular {
-  background: #78350f; color: #fef08a; border: 1px solid #f59e0b;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: #fff;
 }
 .lvl-ribbon--sultan {
-  background: linear-gradient(135deg, #b45309, #d97706);
-  color: #fff; border: 1px solid #fde047;
+  background: linear-gradient(135deg, #fbbf24, #d97706);
+  color: #78350f;
 }
 
 /* CARD HEADER */
 .lvl-head {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px; margin-top: 4px;
+  margin-bottom: 9px; margin-top: 3px;
 }
-.lvl-hex-icon {
-  width: 42px; height: 42px;
+.lvl-icon-box {
+  width: 44px; height: 44px;
+  border-radius: 13px;
+  border: 2px solid #78350f;
   display: flex; align-items: center; justify-content: center;
-  font-size: 20px; flex-shrink: 0;
-  background: #0f2e21;
-  border: 1.5px solid #276247;
-  border-radius: 12px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+  font-size: 22px;
+  box-shadow: 0 2.5px 0 #78350f;
+  flex-shrink: 0; background: #fff;
 }
 .lvl-head-meta {
   padding-left: 10px; flex: 1;
 }
 .lvl-title {
-  font-size: 16px; font-weight: 900; color: #f0fdf4; line-height: 1.2;
+  font-size: 16.5px; font-weight: 900; color: #78350f; line-height: 1.15;
 }
 .lvl-dur-badge {
-  display: inline-flex; align-items: center; gap: 3px;
-  font-size: 10px; font-weight: 800; color: #86efac;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  padding: 1px 6px; border-radius: 6px; margin-top: 2px;
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 800; color: #92400e;
+  background: #fef3c7; border: 1.5px solid #78350f;
+  padding: 1.5px 7px; border-radius: 8px; margin-top: 2px;
 }
 
 /* PRICING */
 .lvl-price-block { text-align: right; flex-shrink: 0; }
 .lvl-price-old {
-  font-size: 10px; font-weight: 700; color: #64748b;
+  font-size: 10.5px; font-weight: 800; color: #a8a29e;
   text-decoration: line-through;
 }
 .lvl-price-val {
-  font-size: 17px; font-weight: 900; color: #fbbf24;
-  letter-spacing: -0.3px;
+  font-size: 18px; font-weight: 900; color: #059669;
+  letter-spacing: -0.4px;
 }
 
-/* POTENSI CUAN / ROI BAR */
+/* POTENSI CUAN STRIP */
 .lvl-potensi-cuan {
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  border-radius: 9px;
-  padding: 5px 8px;
+  background: #f0fdf4;
+  border: 1.5px dashed #16a34a;
+  border-radius: 10px;
+  padding: 6px 9px;
   display: flex; align-items: center; justify-content: space-between;
-  font-size: 10.5px; font-weight: 800; color: #86efac;
+  font-size: 10.5px; font-weight: 800; color: #166534;
   margin-bottom: 9px;
 }
 .lvl-roi-pill {
-  background: #064e3b; color: #a7f3d0;
-  border: 1px solid #10b981;
+  background: #dcfce7; color: #166534;
+  border: 1.5px solid #166534;
   border-radius: 6px; padding: 1.5px 6px;
   font-size: 9px; font-weight: 900;
 }
 
 /* SPECS MATRIX 2x2 */
 .lvl-specs {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 5.5px;
   margin-bottom: 11px;
 }
 .lvl-spec-item {
-  background: rgba(15, 38, 28, 0.7);
-  border: 1px solid #1e4533;
-  border-radius: 8px;
+  background: rgba(255,255,255,0.9);
+  border: 1.5px solid #78350f;
+  border-radius: 9px;
   padding: 5px 7px;
-  font-size: 10px; font-weight: 800; color: #cbd5ce;
+  font-size: 10.5px; font-weight: 800; color: #78350f;
   display: flex; align-items: center; gap: 5px;
+  box-shadow: 0 1.5px 0 rgba(120,53,15,0.15);
 }
 .lvl-spec-item--full { grid-column: 1 / -1; }
-.lvl-spec-item i { font-size: 12.5px; flex-shrink: 0; }
+.lvl-spec-item i { font-size: 13px; flex-shrink: 0; }
 
 /* ACTION BUTTON */
 .lvl-btn-cta {
   display: block; width: 100%;
-  padding: 10px; border-radius: 11px;
-  font-size: 12px; font-weight: 900;
+  padding: 10.5px; border-radius: 12px;
+  font-size: 12.5px; font-weight: 900;
   text-align: center; cursor: pointer;
-  border: 1.5px solid transparent;
-  transition: transform 0.1s, box-shadow 0.1s;
+  border: 2px solid #78350f;
+  transition: transform 0.1s;
+  box-shadow: 0 3.5px 0 #78350f;
 }
-.lvl-btn-cta:active { transform: translateY(2px); }
+.lvl-btn-cta:active {
+  transform: translateY(2px);
+  box-shadow: 0 1.5px 0 #78350f !important;
+}
 .lvl-btn-cta--starter {
   background: linear-gradient(135deg, #10b981, #059669);
-  color: #fff; border-color: #34d399;
-  box-shadow: 0 3px 0 #064e3b;
+  color: #fff;
 }
 .lvl-btn-cta--popular {
   background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #fff; border-color: #fbbf24;
-  box-shadow: 0 3px 0 #78350f;
+  color: #fff;
 }
 .lvl-btn-cta--sultan {
-  background: linear-gradient(135deg, #eab308, #ca8a04);
-  color: #422006; border-color: #fef08a;
-  box-shadow: 0 3px 0 #713f12;
+  background: linear-gradient(135deg, #d97706, #b45309);
+  color: #fff;
 }
 .lvl-btn-cta--disabled {
-  background: #142820 !important;
-  color: #6b8a7b !important;
-  border-color: #1e3d30 !important;
-  box-shadow: 0 2px 0 #091711 !important;
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 2.5px 0 #94a3b8 !important;
   cursor: not-allowed;
 }
 
 /* INFO STEP CARD */
 .info-card {
-  background: #0a1b14;
-  border: 1px solid #1a3f2f;
-  border-radius: 16px;
+  background: #fff;
+  border: 2.5px solid #78350f;
+  border-radius: 18px;
   padding: 14px;
-  margin-top: 10px; margin-bottom: 20px;
+  box-shadow: 0 4px 0 #78350f;
+  margin-top: 10px; margin-bottom: 22px;
 }
 .step-item {
   display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px;
 }
 .step-num {
   width: 22px; height: 22px; border-radius: 6px;
-  background: #0f2d20; border: 1px solid #204b36;
+  background: #fde68a; border: 1.5px solid #78350f;
   display: flex; align-items: center; justify-content: center;
-  font-size: 10.5px; font-weight: 900; color: #86efac;
-  flex-shrink: 0;
+  font-size: 11px; font-weight: 900; color: #78350f;
+  box-shadow: 0 1.5px 0 #78350f; flex-shrink: 0;
 }
 .step-text {
-  font-size: 10.5px; font-weight: 700; color: #a1c0b1; line-height: 1.35; padding-top: 2px;
+  font-size: 10.5px; font-weight: 800; color: #78350f; line-height: 1.35; padding-top: 2px;
 }
 
 /* MODAL */
 .cg-modal {
   display: none; position: fixed; inset: 0; z-index: 9999;
-  background: rgba(3, 8, 5, 0.75); align-items: center; justify-content: center;
-  backdrop-filter: blur(4px); padding: 16px;
+  background: rgba(0,0,0,0.65); align-items: center; justify-content: center;
+  backdrop-filter: blur(3px); padding: 18px;
 }
 .cg-modal-card {
-  background: #0b1e16; border-radius: 20px;
-  border: 1.5px solid #255841;
+  background: #ffffff; border-radius: 22px;
+  border: 3px solid #78350f;
   width: 100%; max-width: 370px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  box-shadow: 0 7px 0 #78350f;
   padding: 18px;
   animation: upPopIn 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  color: #e2ece6;
 }
 @keyframes upPopIn {
   0% { transform: scale(0.9); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
 .cg-mc-hdr {
-  font-size: 15px; font-weight: 900; color: #fde047;
-  margin-bottom: 2px; display: flex; align-items: center; gap: 7px;
+  font-size: 16px; font-weight: 900; color: #78350f;
+  margin-bottom: 3px; display: flex; align-items: center; gap: 7px;
 }
 .cg-mc-sub {
-  font-size: 10.5px; font-weight: 700; color: #9ab9aa; margin-bottom: 12px;
+  font-size: 11px; font-weight: 700; color: #92400e; margin-bottom: 12px;
 }
 .cg-mc-box {
-  background: #07150f; border: 1px solid #1a4230;
+  background: #fef8ee; border: 2px solid #78350f;
   border-radius: 14px; padding: 12px; margin-bottom: 12px;
 }
 .cg-mc-lbl {
-  font-size: 9.5px; font-weight: 800; color: #86efac; text-transform: uppercase;
+  font-size: 9.5px; font-weight: 800; color: #b45309; text-transform: uppercase;
   margin-bottom: 2px;
 }
 .cg-mc-val {
-  font-size: 17px; font-weight: 900; color: #f0fdf4; margin-bottom: 6px;
+  font-size: 17px; font-weight: 900; color: #78350f; margin-bottom: 6px;
 }
 .cg-mc-price {
-  font-size: 12px; font-weight: 800; color: #9bb7aa;
+  font-size: 12px; font-weight: 800; color: #78350f;
 }
 .cg-mc-discount {
-  font-size: 11px; font-weight: 800; color: #34d399; display: none; margin-top: 2px;
+  font-size: 11px; font-weight: 800; color: #059669; display: none; margin-top: 2px;
 }
 .cg-mc-total {
-  font-size: 14px; font-weight: 900; color: #fbbf24; margin-top: 5px;
-  padding-top: 5px; border-top: 1px dashed #1e4533; display: none;
+  font-size: 14px; font-weight: 900; color: #d97706; margin-top: 5px;
+  padding-top: 5px; border-top: 1.5px dashed #d97706; display: none;
 }
 .cg-mc-dur {
-  font-size: 10.5px; font-weight: 800; color: #86efac; margin-top: 4px;
+  font-size: 10.5px; font-weight: 800; color: #b45309; margin-top: 4px;
 }
 .cg-btn-row {
-  display: grid; grid-template-columns: 1fr 1.5fr; gap: 8px;
+  display: grid; grid-template-columns: 1fr 1.3fr; gap: 8px;
 }
 .cg-btn {
   padding: 10px; border-radius: 11px; font-size: 12px; font-weight: 900;
-  text-align: center; cursor: pointer; border: none;
+  text-align: center; cursor: pointer; border: 2px solid #78350f;
 }
 .cg-btn--cancel {
-  background: #142820; color: #a1c0b1; border: 1px solid #204533;
+  background: #f1f5f9; color: #64748b; border-color: #cbd5e1;
 }
 .cg-btn--confirm {
   background: linear-gradient(135deg, #10b981, #059669);
-  color: #fff; border: 1px solid #34d399; box-shadow: 0 3px 0 #064e3b;
+  color: #fff; box-shadow: 0 3px 0 #064e3b;
 }
 
 @media (max-width: 360px) {
@@ -822,16 +834,16 @@ body {
 
 <div class="up-page">
 
-  <!-- HERO CANOPY -->
+  <!-- HERO CANOPY WITH DARK FOREST TREES -->
   <div class="up-hero">
     <div class="up-hero-top">
       <a href="/dashboard" class="up-hero-back" title="Kembali">
         <i class="ph-bold ph-caret-left"></i>
       </a>
       <div class="up-hero-badge">
-        <i class="ph-fill ph-tree"></i> Belantara Koloni Lebah
+        <i class="ph-fill ph-tree"></i> Belantara Lebah Cuan
       </div>
-      <div style="width:34px;"></div>
+      <div style="width:36px;"></div>
     </div>
 
     <!-- MASCOT BUZZY ROW -->
@@ -839,28 +851,38 @@ body {
       <img src="/assets/game/bee_golden.png" class="up-mascot-img" alt="Buzzy Forest Bee">
       <div class="up-mascot-bubble">
         <div class="up-mascot-bubble-title">
-          <i class="ph-fill ph-sparkle"></i> Panen Madu Belantara
+          <i class="ph-fill ph-sparkle"></i> Panen Madu Belantara!
         </div>
         <div class="up-mascot-bubble-sub">
-          Tingkatkan kasta lebahmu untuk kuota tonton harian lebih deras &amp; batas penarikan tanpa hambatan.
+          Pilih kasta kolonimu, panen madu hutan liar &amp; nikmati prioritas pencairan cuan 24 jam!
         </div>
       </div>
     </div>
+
+    <!-- DARK FOREST PINE TREELINE SILHOUETTE -->
+    <div class="forest-trees-strip">
+      <svg viewBox="0 0 1000 70" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Background Layer: Misty Green Trees -->
+        <path d="M0,70 L0,38 L20,18 L40,38 L65,12 L90,38 L115,22 L140,38 L170,10 L200,38 L225,18 L250,38 L280,14 L310,38 L335,22 L360,38 L390,10 L420,38 L445,20 L470,38 L500,12 L530,38 L555,22 L580,38 L610,10 L640,38 L665,18 L690,38 L720,14 L750,38 L775,20 L800,38 L830,10 L860,38 L885,22 L910,38 L940,14 L970,38 L1000,18 L1000,70 Z" fill="#0d2e1f" opacity="0.45"/>
+        <!-- Foreground Layer: Deep Dark Forest Pine Trees -->
+        <path d="M0,70 L0,48 L15,28 L30,48 L50,20 L70,48 L95,14 L120,48 L140,32 L160,48 L190,12 L220,48 L245,26 L270,48 L310,10 L350,48 L375,30 L400,48 L430,16 L460,48 L485,28 L510,48 L545,12 L580,48 L610,26 L640,48 L675,16 L710,48 L735,30 L760,48 L795,10 L830,48 L855,28 L880,48 L915,16 L950,48 L975,32 L1000,48 L1000,70 Z" fill="#071b12"/>
+      </svg>
+    </div>
   </div>
 
-  <!-- TRUST STRIP (COMPACT) -->
+  <!-- TRUST STRIP -->
   <div class="up-trust-strip">
     <div class="up-trust-pill">
       <i class="ph-fill ph-shield-check"></i>
-      <span>Saldo Escrow Aman</span>
+      <span>Saldo 100% Aman</span>
     </div>
     <div class="up-trust-pill">
       <i class="ph-fill ph-lightning"></i>
-      <span>Pencairan Prioritas</span>
+      <span>WD Prioritas 24 Jam</span>
     </div>
     <div class="up-trust-pill">
-      <i class="ph-fill ph-arrows-clockwise"></i>
-      <span>Garansi 12 Jam</span>
+      <i class="ph-fill ph-chart-line-up"></i>
+      <span>Balik Modal Kilat</span>
     </div>
   </div>
 
@@ -869,7 +891,7 @@ body {
 
     <!-- FLASH MESSAGES -->
     <?php if ($flash): ?>
-      <div style="padding:10px 12px;border-radius:12px;font-size:11.5px;font-weight:800;margin-bottom:12px;<?= $flashType==='success' ? 'background:#064e3b;border:1px solid #10b981;color:#a7f3d0;' : 'background:#450a0a;border:1px solid #ef4444;color:#fca5a5;' ?>">
+      <div style="padding:10px 12px;border-radius:12px;font-size:11.5px;font-weight:800;margin-bottom:12px;border:2px solid;<?= $flashType==='success' ? 'background:#dcfce7;border-color:#16a34a;color:#166534;' : 'background:#fee2e2;border-color:#ef4444;color:#991b1b;' ?>">
         <?= htmlspecialchars($flash) ?>
       </div>
     <?php endif; ?>
@@ -880,7 +902,7 @@ body {
         <div class="active-rank-hdr">
           <span class="active-rank-badge"><i class="ph-fill ph-check-circle"></i> Kasta Aktif</span>
           <?php if ($can_refund): ?>
-            <button type="button" onclick="document.getElementById('refund-modal').style.display='flex'" style="background:none;border:none;color:#f87171;font-size:10.5px;font-weight:900;cursor:pointer;display:flex;align-items:center;gap:3px;">
+            <button type="button" onclick="document.getElementById('refund-modal').style.display='flex'" style="background:none;border:none;color:#dc2626;font-size:10.5px;font-weight:900;cursor:pointer;display:flex;align-items:center;gap:3px;">
               <i class="ph-bold ph-arrow-u-up-left"></i> Ajukan Refund
             </button>
           <?php endif; ?>
@@ -940,16 +962,17 @@ body {
           $can_afford = (float)$user['balance_dep'] >= $active_price;
       ?>
       <div class="lvl-card lvl-card--starter" onclick="openConfirm(<?= $m['id'] ?>, '<?= htmlspecialchars($m['name'], ENT_QUOTES) ?>', <?= $active_price ?>, <?= $m['duration_days'] ?>)">
-        <!-- Honeycomb Watermark -->
-        <svg class="lvl-card-hex-bg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M50 0L93.3 25V75L50 100L6.7 75V25L50 0Z" stroke="#10b981" stroke-width="2"/>
-          <path d="M50 16L80.3 33.5V66.5L50 84L19.7 66.5V33.5L50 16Z" stroke="#10b981" stroke-width="1.5"/>
+        <!-- Honeycomb & Forest Watermark -->
+        <svg class="lvl-card-deco-bg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 0L93.3 25V75L50 100L6.7 75V25L50 0Z" stroke="#78350f" stroke-width="2.5"/>
+          <path d="M50 16L80.3 33.5V66.5L50 84L19.7 66.5V33.5L50 16Z" stroke="#78350f" stroke-width="1.5"/>
+          <path d="M70,80 L75,60 L80,80 L85,55 L90,80 L95,65 L100,80" stroke="#166534" stroke-width="2"/>
         </svg>
 
         <div class="lvl-ribbon lvl-ribbon--starter">🌿 STARTER RIMBA</div>
         
         <div class="lvl-head">
-          <div class="lvl-hex-icon" style="color:#34d399;"><i class="ph-fill ph-leaf"></i></div>
+          <div class="lvl-icon-box" style="background:#f0fdf4;color:#16a34a;"><i class="ph-fill ph-drop"></i></div>
           <div class="lvl-head-meta">
             <div class="lvl-title"><?= htmlspecialchars($m['name']) ?></div>
             <span class="lvl-dur-badge"><i class="ph-bold ph-hourglass"></i> Aktif <?= $m['duration_days'] ?> Hari</span>
@@ -966,17 +989,17 @@ body {
         </div>
 
         <div class="lvl-specs">
-          <div class="lvl-spec-item"><i class="ph-bold ph-video-camera" style="color:#34d399;"></i> <strong><?= $m['watch_limit'] ?> Video</strong> / hari</div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-video-camera" style="color:#059669;"></i> <strong><?= $m['watch_limit'] ?> Video</strong> / hari</div>
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min WD: <strong><?= format_rp((float)$m['min_wd']) ?></strong></div>
-          <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-up" style="color:#fbbf24;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
-          <div class="lvl-spec-item"><i class="ph-bold ph-clock" style="color:#94a3b8;"></i> Proses 1-24 Jam</div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-up" style="color:#d97706;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-clock" style="color:#64748b;"></i> Proses 1-24 Jam</div>
           <?php if ($m['description']): ?>
-          <div class="lvl-spec-item lvl-spec-item--full" style="color:#86efac;"><i class="ph-bold ph-info"></i> <?= htmlspecialchars($m['description']) ?></div>
+          <div class="lvl-spec-item lvl-spec-item--full" style="color:#92400e;"><i class="ph-bold ph-tree" style="color:#166534;"></i> <?= htmlspecialchars($m['description']) ?></div>
           <?php endif; ?>
         </div>
 
         <button type="button" class="lvl-btn-cta lvl-btn-cta--starter <?= !$can_afford ? 'lvl-btn-cta--disabled' : '' ?>">
-          <?= $can_afford ? 'AKTIFKAN PEMANEN KANOPI' : 'Saldo Kurang — Topup Dulu' ?>
+          <?= $can_afford ? 'AMBIL KASTA PEMANEN KANOPI' : 'Saldo Kurang — Topup Dulu' ?>
         </button>
       </div>
       <?php endif; ?>
@@ -988,39 +1011,40 @@ body {
           $can_afford = (float)$user['balance_dep'] >= $active_price;
       ?>
       <div class="lvl-card lvl-card--popular" onclick="openConfirm(<?= $m['id'] ?>, '<?= htmlspecialchars($m['name'], ENT_QUOTES) ?>', <?= $active_price ?>, <?= $m['duration_days'] ?>)">
-        <!-- Honeycomb Watermark -->
-        <svg class="lvl-card-hex-bg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M50 0L93.3 25V75L50 100L6.7 75V25L50 0Z" stroke="#f59e0b" stroke-width="2"/>
+        <!-- Honeycomb & Forest Watermark -->
+        <svg class="lvl-card-deco-bg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 0L93.3 25V75L50 100L6.7 75V25L50 0Z" stroke="#f59e0b" stroke-width="2.5"/>
           <path d="M50 16L80.3 33.5V66.5L50 84L19.7 66.5V33.5L50 16Z" stroke="#f59e0b" stroke-width="1.5"/>
+          <path d="M70,80 L75,55 L80,80 L85,50 L90,80 L95,60 L100,80" stroke="#d97706" stroke-width="2"/>
         </svg>
 
         <div class="lvl-ribbon lvl-ribbon--popular">🔥 FAVORIT BELANTARA</div>
 
         <div class="lvl-head">
-          <div class="lvl-hex-icon" style="background:#261806;border-color:#b45309;color:#fbbf24;"><i class="ph-fill ph-drop"></i></div>
+          <div class="lvl-icon-box" style="background:#fef3c7;color:#d97706;"><i class="ph-fill ph-drop"></i></div>
           <div class="lvl-head-meta">
             <div class="lvl-title"><?= htmlspecialchars($m['name']) ?></div>
-            <span class="lvl-dur-badge" style="color:#fde047;border-color:rgba(253,224,71,0.3);background:rgba(253,224,71,0.1);"><i class="ph-bold ph-hourglass"></i> Aktif <?= $m['duration_days'] ?> Hari</span>
+            <span class="lvl-dur-badge" style="background:#fef3c7;"><i class="ph-bold ph-hourglass"></i> Aktif <?= $m['duration_days'] ?> Hari</span>
           </div>
           <div class="lvl-price-block">
             <div class="lvl-price-old"><?= format_rp((float)$m['original_price']) ?></div>
-            <div class="lvl-price-val" style="color:#fbbf24;"><?= format_rp($active_price) ?></div>
+            <div class="lvl-price-val" style="color:#d97706;"><?= format_rp($active_price) ?></div>
           </div>
         </div>
 
-        <div class="lvl-potensi-cuan" style="background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.25);color:#fde047;">
+        <div class="lvl-potensi-cuan" style="background:#fffbeb;border-color:#f59e0b;color:#92400e;">
           <span>🎯 Estimasi Panen: <strong>~Rp 310rb/bln</strong></span>
-          <span class="lvl-roi-pill" style="background:#78350f;border-color:#f59e0b;color:#fef08a;">🔥 Kuota 2x Lipat</span>
+          <span class="lvl-roi-pill" style="background:#fef3c7;color:#92400e;border-color:#b45309;">🔥 Kuota 2x Lipat</span>
         </div>
 
         <div class="lvl-specs">
-          <div class="lvl-spec-item"><i class="ph-bold ph-video-camera" style="color:#fbbf24;"></i> <strong><?= $m['watch_limit'] ?> Video</strong> / hari</div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-video-camera" style="color:#d97706;"></i> <strong><?= $m['watch_limit'] ?> Video</strong> / hari</div>
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min WD: <strong><?= format_rp((float)$m['min_wd']) ?></strong></div>
-          <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-up" style="color:#f59e0b;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
-          <div class="lvl-spec-item"><i class="ph-bold ph-pencil-simple" style="color:#60a5fa;"></i> Bebas Ganti Rekening</div>
-          <div class="lvl-spec-item lvl-spec-item--full" style="color:#fde047;"><i class="ph-bold ph-lightning" style="color:#f59e0b;"></i> Jalur Antrean Cepat</div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-up" style="color:#d97706;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-pencil-simple" style="color:#2563eb;"></i> Bebas Ganti Rekening</div>
+          <div class="lvl-spec-item lvl-spec-item--full" style="color:#b45309;"><i class="ph-bold ph-lightning" style="color:#f59e0b;"></i> Jalur Antrean Cepat</div>
           <?php if ($m['description']): ?>
-          <div class="lvl-spec-item lvl-spec-item--full" style="color:#cbd5ce;"><i class="ph-bold ph-info"></i> <?= htmlspecialchars($m['description']) ?></div>
+          <div class="lvl-spec-item lvl-spec-item--full" style="color:#78350f;"><i class="ph-bold ph-tree" style="color:#166534;"></i> <?= htmlspecialchars($m['description']) ?></div>
           <?php endif; ?>
         </div>
 
@@ -1037,41 +1061,42 @@ body {
           $can_afford = (float)$user['balance_dep'] >= $active_price;
       ?>
       <div class="lvl-card lvl-card--sultan" onclick="openConfirm(<?= $m['id'] ?>, '<?= htmlspecialchars($m['name'], ENT_QUOTES) ?>', <?= $active_price ?>, <?= $m['duration_days'] ?>)">
-        <!-- Honeycomb Watermark -->
-        <svg class="lvl-card-hex-bg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M50 0L93.3 25V75L50 100L6.7 75V25L50 0Z" stroke="#fde047" stroke-width="2.5"/>
-          <path d="M50 16L80.3 33.5V66.5L50 84L19.7 66.5V33.5L50 16Z" stroke="#fde047" stroke-width="1.5"/>
+        <!-- Honeycomb & Forest Watermark -->
+        <svg class="lvl-card-deco-bg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 0L93.3 25V75L50 100L6.7 75V25L50 0Z" stroke="#78350f" stroke-width="2.5"/>
+          <path d="M50 16L80.3 33.5V66.5L50 84L19.7 66.5V33.5L50 16Z" stroke="#78350f" stroke-width="1.5"/>
+          <path d="M70,80 L75,50 L80,80 L85,45 L90,80 L95,55 L100,80" stroke="#78350f" stroke-width="2.5"/>
         </svg>
 
         <div class="lvl-ribbon lvl-ribbon--sultan">👑 TAHTA SULTAN · 60 HARI (2 BULAN)</div>
 
         <div class="lvl-head">
-          <div class="lvl-hex-icon" style="background:#2a1c07;border-color:#f59e0b;color:#fde047;"><i class="ph-fill ph-crown"></i></div>
+          <div class="lvl-icon-box" style="background:#fef08a;color:#78350f;"><i class="ph-fill ph-crown"></i></div>
           <div class="lvl-head-meta">
             <div class="lvl-title"><?= htmlspecialchars($m['name']) ?></div>
-            <span class="lvl-dur-badge" style="color:#fef08a;border-color:#f59e0b;background:#78350f;"><i class="ph-bold ph-hourglass"></i> AKTIF 60 HARI (2 BULAN)</span>
+            <span class="lvl-dur-badge" style="background:#fde68a;font-weight:900;"><i class="ph-bold ph-hourglass"></i> AKTIF 60 HARI (2 BULAN)</span>
           </div>
           <div class="lvl-price-block">
             <div class="lvl-price-old"><?= format_rp((float)$m['original_price']) ?></div>
-            <div class="lvl-price-val" style="color:#fde047;text-shadow:0 0 10px rgba(253,224,71,0.3);"><?= format_rp($active_price) ?></div>
+            <div class="lvl-price-val" style="color:#78350f;"><?= format_rp($active_price) ?></div>
           </div>
         </div>
 
-        <div class="lvl-potensi-cuan" style="background:rgba(234,179,8,0.12);border-color:rgba(234,179,8,0.35);color:#fef08a;">
+        <div class="lvl-potensi-cuan" style="background:#fff;border-color:#b45309;color:#78350f;">
           <span>🎯 Estimasi Panen: <strong>~Rp 650rb / 2 bln</strong></span>
-          <span class="lvl-roi-pill" style="background:#78350f;border-color:#fde047;color:#fef08a;">👑 Super Hemat 60 Hari</span>
+          <span class="lvl-roi-pill" style="background:#fde68a;color:#78350f;border-color:#78350f;">👑 Super Hemat 60 Hari</span>
         </div>
 
         <div class="lvl-specs">
-          <div class="lvl-spec-item"><i class="ph-bold ph-video-camera" style="color:#fde047;"></i> <strong><?= $m['watch_limit'] ?> Video</strong> / hari</div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-video-camera" style="color:#b45309;"></i> <strong><?= $m['watch_limit'] ?> Video</strong> / hari</div>
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min WD: <strong><?= format_rp((float)$m['min_wd']) ?></strong></div>
-          <div class="lvl-spec-item"><i class="ph-bold ph-rocket-launch" style="color:#f97316;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
-          <div class="lvl-spec-item"><i class="ph-bold ph-pencil-simple" style="color:#60a5fa;"></i> Bebas Ganti Rekening</div>
-          <div class="lvl-spec-item lvl-spec-item--full" style="background:#231805;border-color:#d97706;color:#fde047;">
-            <i class="ph-fill ph-crown" style="color:#fbbf24;"></i> <strong>VIP Express (Pencairan Otomatis Tanpa Antre)</strong>
+          <div class="lvl-spec-item"><i class="ph-bold ph-rocket-launch" style="color:#ea580c;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
+          <div class="lvl-spec-item"><i class="ph-bold ph-pencil-simple" style="color:#2563eb;"></i> Bebas Ganti Rekening</div>
+          <div class="lvl-spec-item lvl-spec-item--full" style="background:#fef3c7;border-color:#d97706;color:#78350f;">
+            <i class="ph-fill ph-crown" style="color:#d97706;"></i> <strong>VIP Express (Pencairan Otomatis Tanpa Antre)</strong>
           </div>
           <?php if ($m['description']): ?>
-          <div class="lvl-spec-item lvl-spec-item--full" style="color:#cbd5ce;"><i class="ph-bold ph-info"></i> <?= htmlspecialchars($m['description']) ?></div>
+          <div class="lvl-spec-item lvl-spec-item--full" style="color:#92400e;"><i class="ph-bold ph-tree" style="color:#166534;"></i> <?= htmlspecialchars($m['description']) ?></div>
           <?php endif; ?>
         </div>
 
@@ -1085,8 +1110,8 @@ body {
 
     <!-- INFO STEP CARD (COMPACT) -->
     <div class="info-card">
-      <div style="font-size:12px;font-weight:900;color:#fde047;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
-        <i class="ph-bold ph-lightbulb" style="color:#fbbf24;font-size:16px;"></i> 3 Langkah Mudah Panen Nektar
+      <div style="font-size:12px;font-weight:900;color:#78350f;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+        <i class="ph-bold ph-lightbulb" style="color:#f59e0b;font-size:16px;"></i> 3 Langkah Mudah Panen Nektar
       </div>
       <div class="step-item">
         <div class="step-num">1</div>
@@ -1101,11 +1126,11 @@ body {
         <div class="step-text"><strong>Konfirmasi &amp; Panen!</strong> Kasta langsung aktif seketika tanpa nunggu lama.</div>
       </div>
 
-      <div style="background:#07150f;border:1px dashed #10b981;border-radius:12px;padding:8px 10px;margin-top:10px;">
-        <div style="font-size:10.5px;font-weight:900;color:#86efac;display:flex;align-items:center;gap:4px;margin-bottom:2px;">
-          <i class="ph-fill ph-shield-check" style="color:#34d399;"></i> Garansi Kepuasan 12 Jam
+      <div style="background:#fef8ee;border:2px dashed #f59e0b;border-radius:12px;padding:8px 10px;margin-top:10px;">
+        <div style="font-size:10.5px;font-weight:900;color:#78350f;display:flex;align-items:center;gap:4px;margin-bottom:2px;">
+          <i class="ph-fill ph-shield-check" style="color:#16a34a;"></i> Garansi Kepuasan 12 Jam
         </div>
-        <div style="font-size:10px;font-weight:700;color:#94a39b;line-height:1.35;">
+        <div style="font-size:10px;font-weight:700;color:#92400e;line-height:1.35;">
           Perlindungan dana aman. Kamu berhak mengajukan pengembalian saldo beli dalam kurun waktu 12 jam setelah aktivasi jika berubah pikiran.
         </div>
       </div>
@@ -1128,17 +1153,17 @@ body {
       <div class="cg-mc-dur">Masa Aktif: <strong id="modal-days">--</strong> hari penuh</div>
     </div>
     <div style="margin-bottom:12px;">
-      <button type="button" id="toggle-voucher-btn" onclick="toggleVoucher()" style="background:none;border:none;color:#38bdf8;font-weight:900;font-size:11.5px;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;">
+      <button type="button" id="toggle-voucher-btn" onclick="toggleVoucher()" style="background:none;border:none;color:#0284c7;font-weight:900;font-size:11.5px;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;">
         <i class="ph-bold ph-tag"></i> Punya Kode Voucher Diskon?
       </button>
       <div id="voucher-box" style="display:none;margin-top:6px;gap:6px;">
-        <input type="text" id="voucher-input" placeholder="KODE VOUCHER" style="flex:1;background:#07150f;border:1.5px solid #204b36;color:#f0fdf4;border-radius:9px;padding:7px 10px;font-weight:900;text-transform:uppercase;font-size:11px;outline:none;">
-        <button type="button" onclick="applyVoucher()" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:9px;padding:7px 12px;font-weight:900;font-size:11px;cursor:pointer;box-shadow:0 2px 0 #78350f;">Gunakan</button>
+        <input type="text" id="voucher-input" placeholder="KODE VOUCHER" style="flex:1;border:2px solid #78350f;border-radius:9px;padding:7px 10px;font-weight:900;text-transform:uppercase;font-size:11px;outline:none;">
+        <button type="button" onclick="applyVoucher()" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:2px solid #78350f;border-radius:9px;padding:7px 12px;font-weight:900;font-size:11px;cursor:pointer;box-shadow:0 2px 0 #78350f;">Gunakan</button>
       </div>
       <div id="voucher-msg" style="font-size:10.5px;font-weight:800;margin-top:5px;display:none;"></div>
     </div>
-    <div id="modal-warn" style="display:none;font-size:10.5px;color:#fca5a5;font-weight:800;margin-bottom:12px;background:#450a0a;border:1px solid #ef4444;border-radius:9px;padding:7px 9px;"></div>
-    <div style="font-size:10px;color:#94a39b;font-weight:800;margin-bottom:12px;text-align:center;">Saldo Beli kamu otomatis terpotong saat konfirmasi.</div>
+    <div id="modal-warn" style="display:none;font-size:10.5px;color:#b91c1c;font-weight:800;margin-bottom:12px;background:#fee2e2;border:2px solid #ef4444;border-radius:9px;padding:7px 9px;"></div>
+    <div style="font-size:10px;color:#92400e;font-weight:800;margin-bottom:12px;text-align:center;">Saldo Beli kamu otomatis terpotong saat konfirmasi.</div>
     <div class="cg-btn-row">
       <button type="button" class="cg-btn cg-btn--cancel" onclick="closeConfirm()">Batal</button>
       <button type="button" id="modal-confirm-btn" class="cg-btn cg-btn--confirm" onclick="submitUpgrade()">YA, AKTIFKAN!</button>
@@ -1148,10 +1173,10 @@ body {
 
 <!-- REFUND MODAL -->
 <div id="refund-modal" class="cg-modal">
-  <div class="cg-modal-card" style="border-color:#ef4444;">
-    <div class="cg-mc-hdr" style="color:#ef4444;"><i class="ph-bold ph-warning"></i> Ajukan Refund?</div>
+  <div class="cg-modal-card" style="border-color:#b91c1c;box-shadow:0 7px 0 #b91c1c;">
+    <div class="cg-mc-hdr" style="color:#b91c1c;"><i class="ph-bold ph-warning"></i> Ajukan Refund?</div>
     <div class="cg-mc-sub">Yakin ingin mengajukan pengembalian kasta aktifmu?</div>
-    <div style="background:#450a0a;border:1px solid #ef4444;border-radius:12px;padding:10px;margin-bottom:12px;font-size:10.5px;font-weight:800;color:#fca5a5;line-height:1.4;">
+    <div style="background:#fee2e2;border:2px solid #ef4444;border-radius:12px;padding:10px;margin-bottom:12px;font-size:10.5px;font-weight:800;color:#991b1b;line-height:1.4;">
       Saldo akan dikembalikan ke <strong>Saldo Beli</strong> setelah verifikasi sistem dengan potongan biaya admin. Kasta aktif kamu akan ditutup kembali ke Pencari Nektar!
     </div>
     <form method="POST">
@@ -1159,7 +1184,7 @@ body {
       <input type="hidden" name="action" value="refund_level">
       <div class="cg-btn-row">
         <button type="button" class="cg-btn cg-btn--cancel" onclick="document.getElementById('refund-modal').style.display='none'">Batal</button>
-        <button type="submit" class="cg-btn" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;box-shadow:0 3px 0 #991b1b;">Ajukan Refund</button>
+        <button type="submit" class="cg-btn" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border-color:#b91c1c;box-shadow:0 3px 0 #991b1b;">Ajukan Refund</button>
       </div>
     </form>
   </div>
