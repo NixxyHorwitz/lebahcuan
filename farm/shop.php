@@ -317,25 +317,53 @@ body { background: #fef3c7 !important; font-family: 'Nunito', sans-serif; }
 const CSRF_TOKEN = document.querySelector('input[name="_csrf"]')?.value || '';
 const USER_BAL_DEP = <?= (float)$user['balance_dep'] ?>;
 
+// Custom branded confirm dialog (replaces native confirm())
+function cuanConfirm(msg) {
+  return new Promise((resolve) => {
+    // Remove old dialog if exists
+    const old = document.getElementById('cuanConfirmOverlay');
+    if (old) old.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'cuanConfirmOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);animation:fadeIn .2s';
+    
+    const box = document.createElement('div');
+    box.style.cssText = 'background:linear-gradient(135deg,#1a2e05,#0f2a16);border:2px solid rgba(251,191,36,0.3);border-radius:20px;padding:24px 20px;max-width:320px;width:90%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.5);animation:scaleIn .25s cubic-bezier(.34,1.56,.64,1)';
+    
+    box.innerHTML = '<div style="font-size:32px;margin-bottom:10px">🐝</div>' +
+      '<div style="font-size:13px;font-weight:800;color:#fef3c7;line-height:1.5;margin-bottom:18px">' + msg + '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center">' +
+        '<button id="cuanConfirmNo" style="flex:1;padding:10px;border-radius:12px;border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#e2e8f0;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">Batal</button>' +
+        '<button id="cuanConfirmYes" style="flex:1;padding:10px;border-radius:12px;border:2px solid #78350f;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 3px 0 #78350f;font-family:inherit">Ya, Lanjut</button>' +
+      '</div>';
+    
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    
+    document.getElementById('cuanConfirmYes').onclick = () => { overlay.remove(); resolve(true); };
+    document.getElementById('cuanConfirmNo').onclick = () => { overlay.remove(); resolve(false); };
+    overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); resolve(false); } };
+  });
+}
+
 // Buy Bee
-function buyBee(beeId, beeName, price) {
+async function buyBee(beeId, beeName, price) {
   if (USER_BAL_DEP < price) {
-    if (confirm('Saldo Beli kamu tidak mencukupi (Harga: Rp ' + price.toLocaleString('id-ID') + '). Mau isi saldo sekarang?')) {
-      window.location.href = '/deposit';
-    }
+    const go = await cuanConfirm('Saldo Beli kamu tidak mencukupi (Harga: Rp ' + price.toLocaleString('id-ID') + '). Mau isi saldo sekarang?');
+    if (go) window.location.href = '/deposit';
     return;
   }
 
   const selectEl = document.getElementById('targetHive_' + beeId);
   const targetHiveId = selectEl ? selectEl.value : 0;
   if (!targetHiveId) {
-    alert('Pilih kandang tujuan yang masih memiliki slot kosong.');
+    if (typeof nToast === 'function') nToast('Pilih kandang tujuan yang masih memiliki slot kosong.', 'warn');
     return;
   }
 
-  if (!confirm('Beli ' + beeName + ' seharga Rp ' + price.toLocaleString('id-ID') + '?')) {
-    return;
-  }
+  const ok = await cuanConfirm('Beli ' + beeName + ' seharga Rp ' + price.toLocaleString('id-ID') + '?');
+  if (!ok) return;
 
   FarmAudio.playPop();
 
@@ -349,27 +377,25 @@ function buyBee(beeId, beeName, price) {
     .then(r => r.json())
     .then(data => {
       if (data.ok) {
-        alert(data.msg);
-        window.location.href = '/farm';
+        if (typeof nToast === 'function') nToast(data.msg, 'success');
+        setTimeout(() => { window.location.href = '/farm'; }, 1200);
       } else {
-        alert(data.msg || 'Gagal membeli bibit lebah.');
+        if (typeof nToast === 'function') nToast(data.msg || 'Gagal membeli bibit lebah.', 'error');
       }
     })
-    .catch(() => alert('Terjadi kendala jaringan.'));
+    .catch(() => { if (typeof nToast === 'function') nToast('Terjadi kendala jaringan.', 'error'); });
 }
 
 // Buy Hive
-function buyHive(hiveMasterId, hiveName, price) {
+async function buyHive(hiveMasterId, hiveName, price) {
   if (USER_BAL_DEP < price) {
-    if (confirm('Saldo Beli kamu tidak mencukupi (Harga: Rp ' + price.toLocaleString('id-ID') + '). Mau isi saldo sekarang?')) {
-      window.location.href = '/deposit';
-    }
+    const go = await cuanConfirm('Saldo Beli kamu tidak mencukupi (Harga: Rp ' + price.toLocaleString('id-ID') + '). Mau isi saldo sekarang?');
+    if (go) window.location.href = '/deposit';
     return;
   }
 
-  if (!confirm('Beli kandang ' + hiveName + ' seharga Rp ' + price.toLocaleString('id-ID') + '?')) {
-    return;
-  }
+  const ok = await cuanConfirm('Beli kandang ' + hiveName + ' seharga Rp ' + price.toLocaleString('id-ID') + '?');
+  if (!ok) return;
 
   FarmAudio.playPop();
 
@@ -382,27 +408,25 @@ function buyHive(hiveMasterId, hiveName, price) {
     .then(r => r.json())
     .then(data => {
       if (data.ok) {
-        alert(data.msg);
-        window.location.href = '/farm';
+        if (typeof nToast === 'function') nToast(data.msg, 'success');
+        setTimeout(() => { window.location.href = '/farm'; }, 1200);
       } else {
-        alert(data.msg || 'Gagal membeli kandang.');
+        if (typeof nToast === 'function') nToast(data.msg || 'Gagal membeli kandang.', 'error');
       }
     })
-    .catch(() => alert('Terjadi kendala jaringan.'));
+    .catch(() => { if (typeof nToast === 'function') nToast('Terjadi kendala jaringan.', 'error'); });
 }
 
 // Buy / Lease Stall
-function buyStall(stallMasterId, stallName, price) {
+async function buyStall(stallMasterId, stallName, price) {
   if (USER_BAL_DEP < price) {
-    if (confirm('Saldo Beli kamu tidak mencukupi (Harga: Rp ' + price.toLocaleString('id-ID') + '). Mau isi saldo sekarang?')) {
-      window.location.href = '/deposit';
-    }
+    const go = await cuanConfirm('Saldo Beli kamu tidak mencukupi (Harga: Rp ' + price.toLocaleString('id-ID') + '). Mau isi saldo sekarang?');
+    if (go) window.location.href = '/deposit';
     return;
   }
 
-  if (!confirm('Sewa/Upgrade ke ' + stallName + ' seharga Rp ' + price.toLocaleString('id-ID') + '?')) {
-    return;
-  }
+  const ok = await cuanConfirm('Sewa/Upgrade ke ' + stallName + ' seharga Rp ' + price.toLocaleString('id-ID') + '?');
+  if (!ok) return;
 
   FarmAudio.playPop();
 
@@ -415,13 +439,13 @@ function buyStall(stallMasterId, stallName, price) {
     .then(r => r.json())
     .then(data => {
       if (data.ok) {
-        alert(data.msg);
-        window.location.href = '/farm/stall';
+        if (typeof nToast === 'function') nToast(data.msg, 'success');
+        setTimeout(() => { window.location.href = '/farm/stall'; }, 1200);
       } else {
-        alert(data.msg || 'Gagal menyewa lapak.');
+        if (typeof nToast === 'function') nToast(data.msg || 'Gagal menyewa lapak.', 'error');
       }
     })
-    .catch(() => alert('Terjadi kendala jaringan.'));
+    .catch(() => { if (typeof nToast === 'function') nToast('Terjadi kendala jaringan.', 'error'); });
 }
 </script>
 

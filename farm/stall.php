@@ -389,7 +389,7 @@ function executeSellHoney() {
   const input = document.getElementById('sellAmountInput');
   const amount = parseFloat(input.value) || 0;
   if (amount <= 0) {
-    alert('Masukkan jumlah madu yang valid.');
+    if (typeof nToast === 'function') nToast('Masukkan jumlah madu yang valid.', 'warn');
     return;
   }
 
@@ -415,7 +415,7 @@ function executeSellHoney() {
       // Play celebratory coin sound!
       FarmAudio.playCoin();
 
-      alert(data.msg);
+      if (typeof nToast === 'function') nToast(data.msg, 'success');
 
       // Update local variables
       CURRENT_USER_STOCK = parseFloat(data.new_honey_stock);
@@ -435,7 +435,7 @@ function executeSellHoney() {
         window.location.reload();
       }, 1000);
     } else {
-      alert(data.msg || 'Gagal menjual madu.');
+      if (typeof nToast === 'function') nToast(data.msg || 'Gagal menjual madu.', 'error');
       btn.disabled = false;
       btn.innerHTML = origText;
     }
@@ -443,7 +443,7 @@ function executeSellHoney() {
   .catch(err => {
     btn.disabled = false;
     btn.innerHTML = origText;
-    alert('Terjadi kesalahan jaringan.');
+    if (typeof nToast === 'function') nToast('Terjadi kesalahan jaringan.', 'error');
   });
 }
 

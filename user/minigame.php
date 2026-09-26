@@ -494,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Rp ' + parseInt(data.reward).toLocaleString('id-ID');
             } else {
                 document.getElementById('reward-amount').innerText = 'Gagal';
-                alert(data.message || 'Terjadi kesalahan.');
+                if (typeof nToast === 'function') nToast(data.message || 'Terjadi kesalahan.', 'error');
             }
         } catch (err) {
             document.getElementById('reward-loading').style.display = 'none';
@@ -502,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('reward-amount').innerText = 'Error';
             
             // Debug the raw text in case of fatal HTML error
-            alert("JS Fetch Error: " + err.toString());
+            if (typeof nToast === 'function') nToast('Terjadi kesalahan koneksi.', 'error');
         }
     }
 });

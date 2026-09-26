@@ -292,7 +292,7 @@ document.getElementById('btn-pindah').addEventListener('click', function(e) {
     })
     .catch(error => {
       console.error(error);
-      alert('Waduh! Gagal mengambil alamat server baru. Silakan coba beberapa saat lagi.');
+      if (typeof nToast === 'function') nToast('Waduh! Gagal mengambil alamat server baru. Silakan coba beberapa saat lagi.', 'error');
       btn.classList.remove('is-loading');
       btn.innerHTML = originalText;
     });

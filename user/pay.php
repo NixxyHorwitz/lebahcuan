@@ -284,7 +284,7 @@ body { background: #f97316 !important; color: #0f172a; }
       </div>
     </div>
 
-    <div class="wd-alert" style="background:#1e3a8a; border-color:#1e40af; cursor:pointer;" onclick="alert('Silakan chat Admin jika nominal unik bermasalah.')">
+    <div class="wd-alert" style="background:#1e3a8a; border-color:#1e40af; cursor:pointer;" onclick="if(typeof nToast==='function')nToast('Silakan chat Admin jika nominal unik bermasalah.','info')">
       <div class="wd-alert-icon">ℹ️</div>
       <div style="flex:1;">Keberatan nominal unik? Hubungi Admin.</div>
     </div>

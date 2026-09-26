@@ -792,19 +792,16 @@ function selectWdAmount(btn, val) {
     if (!amt || isNaN(amt)) {
       e.preventDefault();
       if(typeof nToast !== 'undefined') nToast('Pilih nominal penarikan dulu ya!', 'warn');
-      else alert('Pilih nominal penarikan dulu ya!');
       return;
     }
     if (amt < minWd) {
       e.preventDefault();
       if(typeof nToast !== 'undefined') nToast('Minimal penarikan Rp ' + minWd.toLocaleString('id-ID'), 'error');
-      else alert('Minimal penarikan Rp ' + minWd.toLocaleString('id-ID'));
       return;
     }
     if (amt > maxWd) {
       e.preventDefault();
       if(typeof nToast !== 'undefined') nToast('Maksimal penarikan Rp ' + maxWd.toLocaleString('id-ID'), 'error');
-      else alert('Maksimal penarikan Rp ' + maxWd.toLocaleString('id-ID'));
       return;
     }
 
@@ -825,16 +822,15 @@ function selectWdAmount(btn, val) {
     .then(r => r.json())
     .then(res => {
       if (res.error) {
-        if (typeof nToast !== 'undefined') nToast(res.error, 'error'); else alert(res.error);
+        if (typeof nToast !== 'undefined') nToast(res.error, 'error');
         if (btn) { btn.disabled = false; btn.innerText = 'Tarik Saldo Sekarang'; }
       } else {
-        if (typeof nToast !== 'undefined') nToast(res.message, 'success'); else alert(res.message);
+        if (typeof nToast !== 'undefined') nToast(res.message, 'success');
         setTimeout(() => window.location.href = '/history?tab=withdraw', 1500);
       }
     })
     .catch(() => {
       if (typeof nToast !== 'undefined') nToast('Koneksi terputus. Silakan coba lagi.', 'error');
-      else alert('Koneksi terputus. Silakan coba lagi.');
       if (btn) { btn.disabled = false; btn.innerText = 'Tarik Saldo Sekarang'; }
     });
   };

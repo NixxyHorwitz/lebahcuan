@@ -676,7 +676,7 @@ function copyRek() {
     nToast.copy(t, 'Nomor rekening');
   } else {
     navigator.clipboard.writeText(t).then(() => {
-      alert('Nomor rekening disalin: ' + t);
+      if (typeof nToast === 'function') nToast('Nomor rekening disalin: ' + t, 'copy');
     });
   }
 }

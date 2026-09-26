@@ -749,7 +749,7 @@ async function startChat() {
   } catch(e) {
     btn.disabled = false;
     btn.innerHTML = '<i class="ph-bold ph-paper-plane-right" style="font-size:20px;"></i> Mulai Chat';
-    alert('❌ ' + e.message);
+    if (typeof nToast === 'function') nToast('❌ ' + e.message, 'error');
   }
 }
 
@@ -811,7 +811,7 @@ async function pollQueueStatus() {
       hideQueueUI();
       document.getElementById('chat-start-overlay').style.display = 'flex';
       queueToken = null;
-      alert('Antrean telah berakhir atau dibatalkan.');
+      if (typeof nToast === 'function') nToast('Antrean telah berakhir atau dibatalkan.', 'warn');
     }
   } catch (e) {
     dbg('Queue poll error', e.message);
@@ -915,7 +915,7 @@ function previewAttachment(input) {
   const file = input.files[0];
   if (file) {
       if (file.size > 5 * 1024 * 1024) {
-          alert('Maksimal ukuran file adalah 5MB.');
+          if (typeof nToast === 'function') nToast('Maksimal ukuran file adalah 5MB.', 'warn');
           clearAttachment();
           return;
       }
@@ -1003,7 +1003,7 @@ async function switchMode(mode) {
     if (data.switch_msg_id) lastMsgId = parseInt(data.switch_msg_id);
     if (data.switch_message) appendModeDivider(data.mode, data.switch_message);
   } catch(e) {
-    alert('Gagal beralih mode: ' + e.message);
+    if (typeof nToast === 'function') nToast('Gagal beralih mode: ' + e.message, 'error');
   }
 }
 

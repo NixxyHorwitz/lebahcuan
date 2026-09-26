@@ -619,8 +619,6 @@ async function flipCard(el, idx) {
         if (!data.success) {
             if (typeof nToast !== 'undefined') {
                 nToast(data.message, 'error');
-            } else {
-                alert(data.message);
             }
             setTimeout(() => window.location.reload(), 1200);
             return;
@@ -739,8 +737,6 @@ async function flipCard(el, idx) {
     } catch (err) {
         if (typeof nToast !== 'undefined') {
             nToast("Terjadi kesalahan jaringan.", "error");
-        } else {
-            alert("Terjadi kesalahan jaringan.");
         }
         isPlaying = false;
     }

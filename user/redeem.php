@@ -443,7 +443,7 @@ function checkRedeem(e) {
     btn.disabled = false;
     btn.textContent = 'Cek & Klaim';
     if (res.error) {
-      typeof nToast !== 'undefined' ? nToast(res.error, 'error') : alert(res.error);
+      if (typeof nToast !== 'undefined') nToast(res.error, 'error');
     } else {
       const list = document.getElementById('brutal-confirm-list');
       list.innerHTML = res.details.map(d => `<li>${d}</li>`).join('');
@@ -454,7 +454,7 @@ function checkRedeem(e) {
   .catch(() => {
     btn.disabled = false;
     btn.textContent = 'Cek & Klaim';
-    typeof nToast !== 'undefined' ? nToast('Terjadi kesalahan jaringan.', 'error') : alert('Terjadi kesalahan jaringan.');
+    if (typeof nToast !== 'undefined') nToast('Terjadi kesalahan jaringan.', 'error');
   });
 }
 </script>

@@ -958,7 +958,6 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
   }
 
   // Organic / natural grid with slight random offsets for realism
-  // Seeded random so positions are stable per-hive
   function seededRandom(seed) {
     let x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
     return x - Math.floor(x);
@@ -977,13 +976,13 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
     const ox = -(itemsInThisRow - 1) * spacingX / 2;
     const oz = -(totalRows - 1) * spacingZ / 2;
 
-    // Add organic offsets per hive (seeded so it's stable)
-    const rx = (seededRandom(idx * 3 + 1) - 0.5) * 0.6;
-    const rz = (seededRandom(idx * 3 + 2) - 0.5) * 0.5;
+    // Very subtle organic offset (max ±0.15) so it looks natural but not messy
+    const rx = (seededRandom(idx * 3 + 1) - 0.5) * 0.3;
+    const rz = (seededRandom(idx * 3 + 2) - 0.5) * 0.25;
 
     return {
-      x: ox + col * spacingX + 0.6 + rx,
-      z: oz + row * spacingZ + rz
+      x: ox + col * spacingX + 1.8 + rx,  // Shifted right to clear the cabin
+      z: oz + row * spacingZ - 0.3 + rz
     };
   }
 
@@ -2106,8 +2105,8 @@ function harvestInspectedHive() {
       // Show floating honey fly on screen
       spawnHoneyFly(d.harvested_ml, document.getElementById('btnHarvestAll') || document.body);
     }
-    else{ alert(d.msg||'Gagal'); }
-  }).catch(()=>{alert('Error jaringan.');});
+    else{ if(typeof nToast==='function') nToast(d.msg||'Gagal memanen','error'); }
+  }).catch(()=>{if(typeof nToast==='function') nToast('Error jaringan, coba lagi.','error');});
 }
 function harvestAllHives() {
   const btn=document.getElementById('btnHarvestAll'); if(!btn||btn.disabled) return;
@@ -2126,8 +2125,8 @@ function harvestAllHives() {
       btn.innerHTML='<i class="ph-bold ph-check"></i> '+(d.msg||'Berhasil!');
       setTimeout(()=>{btn.innerHTML=ot;btn.disabled=true;},2000);
     }
-    else{ alert(d.msg||'Gagal'); btn.disabled=false; btn.innerHTML=ot; }
-  }).catch(()=>{btn.disabled=false;btn.innerHTML=ot;alert('Error jaringan.');});
+    else{ if(typeof nToast==='function') nToast(d.msg||'Gagal memanen','error'); btn.disabled=false; btn.innerHTML=ot; }
+  }).catch(()=>{btn.disabled=false;btn.innerHTML=ot;if(typeof nToast==='function') nToast('Error jaringan, coba lagi.','error');});
 }
 </script>
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
