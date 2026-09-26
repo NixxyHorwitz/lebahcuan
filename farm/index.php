@@ -126,13 +126,13 @@ body { background: #071a0c !important; font-family: 'Nunito', sans-serif; overfl
 }
 .hive-3d-label:hover { transform: translate(-50%, -100%) scale(1.1); }
 .hive-label-bubble {
-  background: linear-gradient(135deg, #fbbf24, #e68a00);
-  border: 2.5px solid #78350f; border-radius: 14px;
-  padding: 5px 12px; box-shadow: 0 3px 0 #78350f, 0 5px 14px rgba(0,0,0,0.4);
+  background: linear-gradient(135deg, rgba(251,191,36,0.85), rgba(230,138,0,0.85));
+  border: 1.5px solid #78350f; border-radius: 10px;
+  padding: 3px 8px; box-shadow: 0 2px 0 #78350f, 0 3px 8px rgba(0,0,0,0.3);
   text-align: center; white-space: nowrap; position: relative;
 }
-.hive-label-name { font-size: 10.5px; font-weight: 900; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-.hive-label-honey { font-size: 9px; font-weight: 800; color: #fef3c7; }
+.hive-label-name { font-size: 8px; font-weight: 800; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.5); }
+.hive-label-honey { font-size: 7px; font-weight: 700; color: #fef3c7; }
 .hive-label-bubble::after {
   content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
   border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 8px solid #78350f;
@@ -428,7 +428,7 @@ const AmbientEngine = (function(){
       if (A) {
         ctx = new A();
         mg = ctx.createGain();
-        mg.gain.value = 0.72; // Louder, vibrant & immersive!
+        mg.gain.value = 0.18; // Subtle, natural ambiance
         mg.connect(ctx.destination);
       }
     }
@@ -436,43 +436,28 @@ const AmbientEngine = (function(){
     return ctx;
   }
 
-  // 1. Apiary Swarm Drone (Dengungan ribuan lebah di koloni sarang)
+  // 1. Soft Apiary Hum (gentle background, not continuous drone)
   function hiveDrone() {
     const c = gc(); if (!c) return;
     try {
-      // Layer A: Low hive body resonance (138-146Hz)
-      const o1 = c.createOscillator(), o2 = c.createOscillator();
+      // Single gentle hive hum (much softer)
+      const o1 = c.createOscillator();
       const lfo = c.createOscillator(), lfoGain = c.createGain();
       const filter = c.createBiquadFilter(), gain = c.createGain();
 
-      o1.type = 'sawtooth'; o1.frequency.value = 142;
-      o2.type = 'triangle'; o2.frequency.value = 148;
-      lfo.type = 'sine'; lfo.frequency.value = 18; // wing flap rate
-      lfoGain.gain.value = 14;
+      o1.type = 'triangle'; o1.frequency.value = 145;
+      lfo.type = 'sine'; lfo.frequency.value = 6; // slow modulation
+      lfoGain.gain.value = 5;
       lfo.connect(lfoGain);
       lfoGain.connect(o1.frequency);
-      lfoGain.connect(o2.frequency);
 
-      filter.type = 'bandpass'; filter.frequency.value = 250; filter.Q.value = 2.6;
-      gain.gain.value = 0.22; // Clear presence
+      filter.type = 'bandpass'; filter.frequency.value = 200; filter.Q.value = 4.0;
+      gain.gain.value = 0.06; // Very subtle background
 
-      o1.connect(filter); o2.connect(filter);
+      o1.connect(filter);
       filter.connect(gain); gain.connect(mg);
-      o1.start(); o2.start(); lfo.start();
-      nodes.push(o1, o2, lfo);
-
-      // Layer B: Mid harmonic flight hum (215-235Hz)
-      const o3 = c.createOscillator(), f3 = c.createBiquadFilter(), g3 = c.createGain();
-      const lfo2 = c.createOscillator(), lg2 = c.createGain();
-      o3.type = 'sawtooth'; o3.frequency.value = 224;
-      lfo2.type = 'sine'; lfo2.frequency.value = 24;
-      lg2.gain.value = 16;
-      lfo2.connect(lg2); lg2.connect(o3.frequency);
-      f3.type = 'bandpass'; f3.frequency.value = 390; f3.Q.value = 3.2;
-      g3.gain.value = 0.18;
-      o3.connect(f3); f3.connect(g3); g3.connect(mg);
-      o3.start(); lfo2.start();
-      nodes.push(o3, lfo2);
+      o1.start(); lfo.start();
+      nodes.push(o1, lfo);
     } catch(e) {}
   }
 
@@ -520,7 +505,7 @@ const AmbientEngine = (function(){
 
           // Volume swell as bee zooms past
           gain.gain.setValueAtTime(0.01, now);
-          gain.gain.linearRampToValueAtTime(0.34, now + dur * 0.45);
+          gain.gain.linearRampToValueAtTime(0.12, now + dur * 0.45);
           gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
 
           // Stereo panning across ears
@@ -539,7 +524,7 @@ const AmbientEngine = (function(){
           osc1.stop(now + dur); osc2.stop(now + dur); lfo.stop(now + dur);
         } catch(e) {}
       }
-      const nextDelay = 1800 + Math.random() * 2400;
+      const nextDelay = 4000 + Math.random() * 6000;
       const tid = setTimeout(triggerSingleFlyby, nextDelay);
       timers.push(tid);
     }
@@ -972,7 +957,13 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
     return g;
   }
 
-  // Centered grid arrangement on X and Z around (0, 0)
+  // Organic / natural grid with slight random offsets for realism
+  // Seeded random so positions are stable per-hive
+  function seededRandom(seed) {
+    let x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+    return x - Math.floor(x);
+  }
+
   function hivePos(idx, total) {
     const maxCols = Math.min(Math.max(total, 1), 3);
     const totalRows = Math.ceil(total / maxCols);
@@ -980,27 +971,41 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
     const col = idx % maxCols;
     const itemsInThisRow = (row === totalRows - 1) ? (total - row * maxCols) : maxCols;
 
-    const spacingX = 2.3;
-    const spacingZ = 2.3;
+    const spacingX = 2.8;
+    const spacingZ = 2.6;
 
     const ox = -(itemsInThisRow - 1) * spacingX / 2;
     const oz = -(totalRows - 1) * spacingZ / 2;
 
+    // Add organic offsets per hive (seeded so it's stable)
+    const rx = (seededRandom(idx * 3 + 1) - 0.5) * 0.6;
+    const rz = (seededRandom(idx * 3 + 2) - 0.5) * 0.5;
+
     return {
-      x: ox + col * spacingX + 0.6,
-      z: oz + row * spacingZ
+      x: ox + col * spacingX + 0.6 + rx,
+      z: oz + row * spacingZ + rz
     };
   }
+
+  // Collect all obstacle positions for collision avoidance
+  const obstaclePositions = [];
 
   HIVES_ARRAY.forEach((hive, idx) => {
     const h = mkBeehive();
     const p = hivePos(idx, HIVES_ARRAY.length);
+    // Add slight random rotation for organic feel
+    const rRot = (seededRandom(idx * 7 + 5) - 0.5) * 0.25;
     h.position.set(p.x, 0, p.z);
+    h.rotation.y = rRot;
     h.userData.hiveId = hive.id;
     scene.add(h);
     hive3D.push(h);
     hiveWP.push(new THREE.Vector3(p.x, 2.25, p.z));
+    // Register as obstacle (radius ~0.7 for the hive body)
+    obstaclePositions.push({ x: p.x, z: p.z, r: 0.85 });
   });
+  // Cabin obstacle
+  obstaclePositions.push({ x: -3.8, z: -2.5, r: 1.6 });
 
   // ── BEES (only near hives that have bees) ──
   const bees = [];
@@ -1271,19 +1276,20 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
   function createMeadowPath() {
     const stoneGeo = new THREE.CylinderGeometry(0.32, 0.38, 0.06, 7);
     const stoneMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.94, flatShading: true });
+    // Path routed AROUND hive area (not through it)
     const pathPts = [
-      [-4.5, 0.04, 0.2],
-      [-3.6, 0.04, 0.4],
-      [-2.8, 0.04, 0.3],
-      [-2.0, 0.04, 0.5],
-      [-1.2, 0.04, 0.3],
-      [-0.4, 0.04, 0.5],
-      [0.4, 0.04, 0.3],
-      [1.2, 0.04, 0.6],
-      [2.0, 0.04, 0.8],
-      [2.8, 0.04, 1.2],
-      [3.6, 0.04, 1.6],
-      [4.5, 0.04, 2.2]
+      [-4.8, 0.04, -0.8],
+      [-4.0, 0.04, -0.4],
+      [-3.2, 0.04, 0.6],
+      [-2.4, 0.04, 1.5],
+      [-1.5, 0.04, 2.2],
+      [-0.6, 0.04, 2.6],
+      [0.4, 0.04, 2.8],
+      [1.4, 0.04, 2.5],
+      [2.4, 0.04, 2.1],
+      [3.4, 0.04, 1.8],
+      [4.4, 0.04, 2.4],
+      [5.2, 0.04, 3.0]
     ];
     pathPts.forEach(([px, py, pz]) => {
       const stone = new THREE.Mesh(stoneGeo, stoneMat);
@@ -1391,18 +1397,18 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
   let bkIdleAction = 0; // 0=breathe, 1=lookAround, 2=checkSmoker
   let bkHomePos = new THREE.Vector3(-1.5, 0, 0.5);
 
-  // Wandering waypoints (near hives, cabin, path, pond)
+  // Wandering waypoints (along the stone path, around but NOT through hives/cabin)
   const bkWaypoints = [
-    new THREE.Vector3(-1.5, 0, 0.5),
-    new THREE.Vector3(0.6, 0, 0.0),
-    new THREE.Vector3(1.8, 0, -0.8),
-    new THREE.Vector3(-0.5, 0, -1.2),
-    new THREE.Vector3(-2.8, 0, -1.5),
-    new THREE.Vector3(0.0, 0, 1.2),
-    new THREE.Vector3(2.2, 0, 0.5),
-    new THREE.Vector3(-1.0, 0, -0.5),
-    new THREE.Vector3(1.0, 0, 1.0),
-    new THREE.Vector3(-2.0, 0, 0.0)
+    new THREE.Vector3(-1.5, 0, 2.4),
+    new THREE.Vector3(0.4, 0, 2.8),
+    new THREE.Vector3(1.4, 0, 2.5),
+    new THREE.Vector3(2.4, 0, 2.1),
+    new THREE.Vector3(-2.4, 0, 1.5),
+    new THREE.Vector3(-0.6, 0, 2.6),
+    new THREE.Vector3(3.4, 0, 1.8),
+    new THREE.Vector3(-3.2, 0, 0.6),
+    new THREE.Vector3(-4.0, 0, -0.4),
+    new THREE.Vector3(0.0, 0, 3.5)
   ];
 
   // Harvest sequence state
@@ -1536,7 +1542,7 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
     honeyLiquid.position.set(-0.48, 0.34, 0.22);
     bk.add(honeyLiquid);
 
-    bk.position.set(-1.5, 0, 0.5);
+    bk.position.set(-1.5, 0, 2.4);
     bk.rotation.y = Math.PI * 0.25;
     scene.add(bk);
     beekeeperMesh = bk;
@@ -1836,10 +1842,10 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
         beekeeperMesh.position.y = 0;
       }
 
-      // Move beekeeper towards a target, return true when arrived
+      // Move beekeeper towards a target with collision avoidance, return true when arrived
       function moveTowards(target, spd) {
-        const dx = target.x - beekeeperMesh.position.x;
-        const dz = target.z - beekeeperMesh.position.z;
+        let dx = target.x - beekeeperMesh.position.x;
+        let dz = target.z - beekeeperMesh.position.z;
         const dist = Math.sqrt(dx*dx + dz*dz);
         const targetRot = Math.atan2(dx, dz);
         // Smooth rotation
@@ -1850,8 +1856,25 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
 
         if (dist < 0.15) return true;
         const step = Math.min(spd * dt, dist);
-        beekeeperMesh.position.x += (dx / dist) * step;
-        beekeeperMesh.position.z += (dz / dist) * step;
+        let nx = beekeeperMesh.position.x + (dx / dist) * step;
+        let nz = beekeeperMesh.position.z + (dz / dist) * step;
+
+        // Collision avoidance: push away from obstacles
+        for (let oi = 0; oi < obstaclePositions.length; oi++) {
+          const ob = obstaclePositions[oi];
+          const odx = nx - ob.x;
+          const odz = nz - ob.z;
+          const oDist = Math.sqrt(odx*odx + odz*odz);
+          if (oDist < ob.r && oDist > 0.01) {
+            // Push outward from obstacle center
+            const pushStr = (ob.r - oDist) * 1.5;
+            nx += (odx / oDist) * pushStr;
+            nz += (odz / oDist) * pushStr;
+          }
+        }
+
+        beekeeperMesh.position.x = nx;
+        beekeeperMesh.position.z = nz;
         bkWalkCycle += spd * dt * 6.0;
         applyWalkAnim(bkWalkCycle);
         return false;
@@ -2063,39 +2086,28 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeHiveInspec
 function spawnHoneyFly(t,el) { const r=el?el.getBoundingClientRect():{top:innerHeight/2,left:innerWidth/2}; const b=document.createElement('div'); b.className='floating-honey-fly'; b.innerText='+ '+t+' ml'; b.style.top=(r.top+10)+'px'; b.style.left=(r.left+20)+'px'; document.body.appendChild(b); setTimeout(()=>b.remove(),1200); }
 function harvestInspectedHive() {
   if(!currentInspectedHiveId) return; const btn=document.getElementById('btnInspectionHarvest'); if(!btn||btn.disabled) return;
-  btn.disabled=true; const ot=btn.innerHTML; btn.innerHTML='<i class="ph-bold ph-spinner ph-spin"></i> Memanen...';
-  const targetIdx = HIVES_ARRAY.findIndex(h => h.id == currentInspectedHiveId);
+  btn.disabled=true;
+  const harvestingHiveId = currentInspectedHiveId; // Save before closing modal
+  const targetIdx = HIVES_ARRAY.findIndex(h => h.id == harvestingHiveId);
+  // Close modal immediately so user can see the 3D harvest animation & progress bar
+  closeHiveInspection();
   if (typeof triggerBeekeeperHarvest === 'function') {
     triggerBeekeeperHarvest(targetIdx >= 0 ? targetIdx : 0, 10);
   }
-  const fd=new FormData(); fd.append('action','harvest_hive'); fd.append('hive_id',currentInspectedHiveId); fd.append('_csrf',document.querySelector('input[name="_csrf"]')?.value||'');
+  const fd=new FormData(); fd.append('action','harvest_hive'); fd.append('hive_id',harvestingHiveId); fd.append('_csrf',document.querySelector('input[name="_csrf"]')?.value||'');
   fetch('/api/farm_action',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
     if(d.ok){
-      spawnHoneyFly(d.harvested_ml,btn);
       const hs=document.getElementById('hudHoneyStock');
       if(hs&&d.new_honey_stock!==undefined)hs.innerText=Number(d.new_honey_stock).toLocaleString('id-ID',{minimumFractionDigits:1})+' ml';
-      document.getElementById('inspectionHoneyAmt').innerText='0.00 ml';
-      renderHexagonCells(0,'inspectionHexGrid');
-      if(USER_HIVES_MAP[currentInspectedHiveId]?.details){
-        USER_HIVES_MAP[currentInspectedHiveId].details.total_honey=0;
-        USER_HIVES_MAP[currentInspectedHiveId].details.fill_percentage=0;
+      if(USER_HIVES_MAP[harvestingHiveId]?.details){
+        USER_HIVES_MAP[harvestingHiveId].details.total_honey=0;
+        USER_HIVES_MAP[harvestingHiveId].details.fill_percentage=0;
       }
-      btn.innerHTML='<i class="ph-bold ph-check"></i> Dipanen!';
-
-      const infoEl = document.querySelector('.hive-inspection-info');
-      if (infoEl) {
-        const oldBanner = infoEl.querySelector('.harvest-celebration-banner');
-        if (oldBanner) oldBanner.remove();
-        const banner = document.createElement('div');
-        banner.className = 'harvest-celebration-banner';
-        banner.innerHTML = '<img src="/assets/game/bee_worker.png" alt="Peternak"><div class="harvest-celebration-text"><div class="h-title">🎉 Peternak Selesai Memanen!</div><div class="h-sub">+'+d.harvested_ml+' ml madu murni berhasil diekstrak dengan pengasap herbal.</div></div>';
-        infoEl.prepend(banner);
-        setTimeout(() => banner.remove(), 3200);
-      }
-      setTimeout(()=>{btn.innerHTML=ot;btn.disabled=true;},1500);
+      // Show floating honey fly on screen
+      spawnHoneyFly(d.harvested_ml, document.getElementById('btnHarvestAll') || document.body);
     }
-    else{ alert(d.msg||'Gagal'); btn.disabled=false; btn.innerHTML=ot; }
-  }).catch(()=>{btn.disabled=false;btn.innerHTML=ot;alert('Error jaringan.');});
+    else{ alert(d.msg||'Gagal'); }
+  }).catch(()=>{alert('Error jaringan.');});
 }
 function harvestAllHives() {
   const btn=document.getElementById('btnHarvestAll'); if(!btn||btn.disabled) return;
