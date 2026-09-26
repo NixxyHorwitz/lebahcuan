@@ -22,27 +22,27 @@ Sistem ini memisahkan saldo pengguna menjadi dua entitas berbeda untuk mengunci 
 
 ```mermaid
 graph LR
-    subgraph Uang_Masuk["Uang Masuk (Deposit)"]
-        QRIS["Scan QRIS Instan"] --> SaldoBeli["balance_dep (Saldo Beli)"]
-        Bank["Transfer Bank VIP"] --> SaldoBeli
+    subgraph Uang_Masuk [Uang Masuk Deposit]
+        QRIS[Scan QRIS Instan] --> SaldoBeli[balance_dep - Saldo Beli]
+        Bank[Transfer Bank VIP] --> SaldoBeli
     end
 
-    subgraph Pemakaian["Pemakaian Internal"]
-        SaldoBeli --> BeliPaket["Beli Paket Membership (upgrade.php)"]
-        SaldoBeli --> BeliBibit["Beli Bibit & Ternak Lebah (farm/shop.php)"]
-        SaldoBeli -.->|DILARANG| GagalWD["TIDAK BISA DITARIK KE REKENING"]
+    subgraph Pemakaian [Pemakaian Internal]
+        SaldoBeli --> BeliPaket[Beli Paket Membership upgrade.php]
+        SaldoBeli --> BeliBibit[Beli Bibit dan Ternak Lebah farm]
+        SaldoBeli -.->|Dilarang| GagalWD[TIDAK BISA DITARIK KE REKENING]
     end
 
-    subgraph Penghasilan["Penghasilan Pengguna"]
-        Nonton["Nonton Video (watch.php)"] --> SaldoTarik["balance_wd (Saldo Tarik)"]
-        Panen["Panen Madu (farm)"] --> SaldoTarik
-        Referral["Komisi Referral 30%"] --> SaldoTarik
+    subgraph Penghasilan [Penghasilan Pengguna]
+        Nonton[Nonton Video watch.php] --> SaldoTarik[balance_wd - Saldo Tarik]
+        Panen[Panen Madu farm] --> SaldoTarik
+        Referral[Komisi Referral 30 Persen] --> SaldoTarik
     end
 
-    subgraph Pencairan["Pencairan Dana"]
-        SaldoTarik --> Syarat{"Cek Syarat: Level, Min WD, Jam"}
-        Syarat -->|Lolos| BankUser["Cair ke Rekening / DANA"]
-        Syarat -->|Gagal| Terkunci["Saldo Terkunci di Akun"]
+    subgraph Pencairan [Pencairan Dana]
+        SaldoTarik --> Syarat{Cek Syarat: Level, Min WD, Jam}
+        Syarat -->|Lolos| BankUser[Cair ke Rekening atau DANA]
+        Syarat -->|Gagal| Terkunci[Saldo Terkunci di Akun]
     end
 ```
 
@@ -61,34 +61,34 @@ Berikut adalah diagram alur logika dari baris kode `user/upgrade.php` saat pengg
 sequenceDiagram
     autonumber
     actor User as Pengguna
-    participant UI as Browser (upgrade.php)
+    participant UI as Browser upgrade.php
     participant Server as Backend PHP
     participant DB as Database MySQL
     participant TG as Telegram Admin Bot
 
-    User->>UI: Klik salah satu kartu paket (Pejuang/Jagoan/Legenda)
-    UI->>UI: Buka Pop-up Konfirmasi & Tampilkan Detail
+    User->>UI: Klik salah satu kartu paket
+    UI->>UI: Buka Pop-up Konfirmasi dan Tampilkan Detail
     opt Input Voucher Diskon
-        User->>UI: Ketik Kode Voucher & Klik Gunakan
+        User->>UI: Ketik Kode Voucher dan Klik Gunakan
         UI->>Server: AJAX POST action=check_voucher
-        Server->>DB: Validasi kode, masa aktif, & kuota klaim
+        Server->>DB: Validasi kode, masa aktif, dan kuota klaim
         DB-->>Server: Voucher valid
         Server-->>UI: JSON harga baru setelah diskon
     end
 
-    User->>UI: Klik tombol "YA, GAS!"
-    UI->>Server: POST membership_id + csrf_token + voucher_code
-    Server->>Server: Cek get_active_price() & Genjutsu
+    User->>UI: Klik tombol YA GAS
+    UI->>Server: POST membership_id dan csrf_token
+    Server->>Server: Cek get_active_price dan Genjutsu
 
-    alt Saldo Beli Kurang (balance_dep < harga)
-        Server-->>UI: Tampilkan notifikasi "Saldo Beli Kurang, Yuk Topup!"
+    alt Saldo Beli Kurang
+        Server-->>UI: Tampilkan notifikasi Saldo Beli Kurang
     else Saldo Beli Cukup
-        Server->>DB: BEGIN TRANSACTION (Atomic Lock)
+        Server->>DB: BEGIN TRANSACTION Atomic Lock
         Server->>DB: UPDATE users SET balance_dep = balance_dep - harga
-        Server->>DB: INSERT INTO upgrade_orders (status=confirmed)
-        Server->>DB: UPDATE users SET membership_id=?, membership_expires_at=NOW()+durasi
+        Server->>DB: INSERT INTO upgrade_orders
+        Server->>DB: UPDATE users SET membership_id, masa aktif baru
         Server->>DB: COMMIT TRANSACTION
-        Server->>TG: Kirim notifikasi webhook "Member Upgrade Level"
+        Server->>TG: Kirim notifikasi webhook Member Upgrade Level
         Server-->>UI: Reload halaman dengan status VIP aktif
     end
 ```
@@ -106,13 +106,13 @@ Sistem memiliki kontrol harga dinamis yang dikonfigurasi pada tabel `memberships
 
 ```mermaid
 flowchart TD
-    Start(["Pengguna Buka Halaman Upgrade"]) --> CekSaldo{"Apakah balance_dep >= harga promo?"}
-    CekSaldo -- Tidak (Saldo Kosong) --> TampilMurah["Tampilkan Harga Promo Murah\n(Contoh: Rp 48.000)"]
-    TampilMurah --> Deposit["Pengguna Tergiur & Deposit Rp 48.000"]
-    Deposit --> Reload["Pengguna Kembali ke Halaman Upgrade"]
-    Reload --> CekUlang{"Cek Ulang: is_genjutsu == 1?"}
-    CekUlang -- Ya --> TampilGenjutsu["Harga Berubah Jadi price_genjutsu\n(Contoh: Rp 69.000)"]
-    TampilGenjutsu --> PushLagi["Pengguna Kurang Rp 21.000\nTerpaksa Deposit Tambahan"]
+    Start[Pengguna Buka Halaman Upgrade] --> CekSaldo{Apakah Saldo Cukup?}
+    CekSaldo -->|Saldo Kosong| TampilMurah[Tampilkan Harga Promo Murah Rp 48.000]
+    TampilMurah --> Deposit[Pengguna Tergiur dan Deposit Rp 48.000]
+    Deposit --> Reload[Pengguna Kembali ke Halaman Upgrade]
+    Reload --> CekUlang{Cek Ulang: is_genjutsu Aktif?}
+    CekUlang -->|Ya| TampilGenjutsu[Harga Berubah Jadi Rp 69.000]
+    TampilGenjutsu --> PushLagi[Pengguna Kurang Rp 21.000 Terpaksa Deposit Lagi]
 ```
 
 *   **`is_genjutsu`**: Menampilkan harga murah sebagai umpan awal. Saat saldo terisi, harga disesuaikan naik ke nominal target.
@@ -151,27 +151,27 @@ Model bisnis ini bertumpu pada **arus kas positif di depan (*Cash Upfront*)** da
 
 ```mermaid
 graph TD
-    subgraph ARUS_KAS_MASUK["Arus Kas Masuk (100% Tunai di Awal)"]
-        DepoPejuang["Deposit Paket Pejuang: Rp 48.000 - Rp 69.000"]
-        DepoJagoan["Deposit Paket Jagoan: Rp 179.000"]
-        DepoLegenda["Deposit Paket Legenda: Rp 229.000"]
+    subgraph Kas_Masuk [Arus Kas Masuk 100 Persen Tunai di Awal]
+        DepoPejuang[Deposit Paket Pejuang Rp 48.000 - Rp 69.000]
+        DepoJagoan[Deposit Paket Jagoan Rp 179.000]
+        DepoLegenda[Deposit Paket Legenda Rp 229.000]
     end
 
-    subgraph TANGGUNGAN_OUTFLOW["Tanggungan Pengeluaran (Terkontrol & Dicicil)"]
-        ModalPancingan["Modal Pancingan Free: Rp 2.000 - Rp 3.000 per user"]
-        DicicilHarian["Dicicil Harian: User wajib nonton 30-60 hari berturut-turut"]
-        MinWDFilter["Filter Ambang Batas: Min WD Rp 50.000 - Rp 100.000"]
-        AdminApproval["Filter Verifikasi: Manual Approve via Telegram / Console"]
+    subgraph Pengeluaran_Terkontrol [Tanggungan Pengeluaran Terkontrol]
+        ModalPancingan[Modal Pancingan Free Rp 2.000 - Rp 3.000 per user]
+        DicicilHarian[Dicicil Harian: User wajib nonton 30-60 hari]
+        MinWDFilter[Filter Ambang Batas: Min WD Rp 50.000 - Rp 100.000]
+        AdminApproval[Filter Verifikasi: Manual Approve via Telegram]
     end
 
-    subgraph KEUNTUNGAN_BERSIH["Sumber Laba Bersih Pemilik Web"]
-        LabaBreakage["1. Laba Breakage (35%-60% user malas/gugur di tengah jalan)"]
-        LabaFloat["2. Laba Float Likuiditas (Modal mengendap 30-60 hari di rekening admin)"]
-        LabaSelisih["3. Selisih Nilai (Uang masuk awal jauh melampaui biaya modal pancingan)"]
+    subgraph Sumber_Keuntungan [Sumber Laba Bersih Pemilik Web]
+        LabaBreakage[1. Laba Breakage: 40 Persen user malas atau gugur di jalan]
+        LabaFloat[2. Laba Float: Modal mengendap 30-60 hari di kas admin]
+        LabaSelisih[3. Selisih Nilai: Uang masuk awal jauh melampaui modal pancingan]
     end
 
-    ARUS_KAS_MASUK --> KEUNTUNGAN_BERSIH
-    TANGGUNGAN_OUTFLOW -.->|Membatasi Outflow| KEUNTUNGAN_BERSIH
+    Kas_Masuk --> Sumber_Keuntungan
+    Pengeluaran_Terkontrol -.->|Membatasi Outflow| Sumber_Keuntungan
 ```
 
 ### Rumus Perputaran Kas:
@@ -192,16 +192,16 @@ Alur terstruktur yang membawa pengunjung gratis (*free user*) menjadi penyetor d
 
 ```mermaid
 flowchart TD
-    A["Langkah 1: Daftar Gratis"] --> B["Langkah 2: Nonton 7 Video Hari Pertama"]
-    B --> C["Saldo Terkumpul ~Rp 36.400"]
-    C --> D["Langkah 3: Lakukan Tes WD Perdana (Rp 2.000)"]
-    D --> E{"Admin Approve Rp 2.000 ke DANA"}
-    E --> F["Pengguna Percaya: Web Terbukti Membayar!"]
-    F --> G["Pengguna Ingin Tarik Sisa Saldo (Rp 34.400+)"]
-    G --> H["Pintu Terkunci: Level Free Batas Maks 1x WD"]
-    H --> I["Notifikasi: Upgrade ke Pejuang untuk Tarik Seluruh Cuan!"]
-    I --> J["Pengguna Scan QRIS Rp 48.000 (Konversi Terjadi)"]
-    J --> K["Ajak Teman untuk Kejar Komisi 30%"]
+    A[Langkah 1: Daftar Gratis] --> B[Langkah 2: Nonton 7 Video Hari Pertama]
+    B --> C[Saldo Terkumpul Rp 36.400]
+    C --> D[Langkah 3: Lakukan Tes WD Perdana Rp 2.000]
+    D --> E{Admin Approve Rp 2.000 ke DANA}
+    E --> F[Pengguna Percaya: Web Terbukti Membayar!]
+    F --> G[Pengguna Ingin Tarik Sisa Saldo Rp 34.400]
+    G --> H[Pintu Terkunci: Level Free Batas Maksimal 1x WD]
+    H --> I[Notifikasi: Upgrade ke Pejuang untuk Tarik Cuan!]
+    I --> J[Pengguna Scan QRIS Rp 48.000 - Konversi Terjadi]
+    J --> K[Ajak Teman untuk Kejar Komisi 30 Persen]
 ```
 
 ---
