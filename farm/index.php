@@ -241,6 +241,39 @@ body .float-contact-wrap {
 .btn-inspection-harvest:disabled { background: #4b5563; border-color: #374151; color: #9ca3af; box-shadow: 0 3px 0 #374151; cursor: not-allowed; }
 .floating-honey-fly { position: fixed; z-index: 99999; font-size: 16px; font-weight: 900; color: #b45309; background: #fef3c7; border: 2.5px solid #b45309; border-radius: 12px; padding: 4px 10px; box-shadow: 0 4px 0 #b45309; pointer-events: none; animation: honeyFloatUp 1.2s forwards ease-out; }
 @keyframes honeyFloatUp { 0% { opacity: 1; transform: translateY(0) scale(0.9); } 60% { opacity: 1; transform: translateY(-55px) scale(1.15); } 100% { opacity: 0; transform: translateY(-90px) scale(1); } }
+
+/* Beekeeper Harvest Celebration Banner */
+.harvest-celebration-banner {
+  background: linear-gradient(135deg, rgba(251,191,36,0.2) 0%, rgba(217,119,6,0.32) 100%);
+  border: 2px solid #fbbf24;
+  border-radius: 16px;
+  padding: 10px 14px;
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: bannerPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: left;
+}
+@keyframes bannerPop {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.harvest-celebration-banner img {
+  width: 42px; height: 42px; object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+  animation: keeperBounce 0.6s infinite alternate ease-in-out;
+}
+@keyframes keeperBounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-4px); }
+}
+.harvest-celebration-text .h-title {
+  font-size: 13px; font-weight: 900; color: #fef08a; line-height: 1.2;
+}
+.harvest-celebration-text .h-sub {
+  font-size: 10.5px; font-weight: 700; color: #fde68a; margin-top: 2px;
+}
 </style>
 
 <?php require __DIR__ . '/partials/farm_header.php'; ?>
@@ -341,18 +374,234 @@ const USER_HIVES_MAP = <?= json_encode(array_column($user_hives, null, 'id')) ?>
 const HIVES_ARRAY = <?= json_encode(array_values($user_hives)) ?>;
 let currentInspectedHiveId = 0;
 
-// ── AMBIENT SOUND ENGINE ──
+// ── AMBIENT SOUND ENGINE (LOUDER, REALISTIC MULTI-LAYER BEE SWARMS & NATURE) ──
 const AmbientEngine = (function(){
-  let ctx=null, mg=null, playing=false, nodes=[];
-  function gc(){ if(!ctx){const A=window.AudioContext||window.webkitAudioContext;if(A){ctx=new A();mg=ctx.createGain();mg.gain.value=0.3;mg.connect(ctx.destination);}} if(ctx&&ctx.state==='suspended')ctx.resume(); return ctx; }
-  function beeLoop(){ const c=gc();if(!c)return; const o1=c.createOscillator(),o2=c.createOscillator(),lfo=c.createOscillator(),lg=c.createGain(),bp=c.createBiquadFilter(),g=c.createGain(); o1.type='sawtooth';o1.frequency.value=155; o2.type='triangle';o2.frequency.value=162; lfo.type='sine';lfo.frequency.value=8;lg.gain.value=12; lfo.connect(lg);lg.connect(o1.frequency);lg.connect(o2.frequency); bp.type='bandpass';bp.frequency.value=260;bp.Q.value=3; g.gain.value=0.05; o1.connect(bp);o2.connect(bp);bp.connect(g);g.connect(mg); o1.start();o2.start();lfo.start(); nodes.push(o1,o2,lfo); }
-  function windLoop(){ const c=gc();if(!c)return; const bs=c.sampleRate*2,bf=c.createBuffer(1,bs,c.sampleRate),d=bf.getChannelData(0); for(let i=0;i<bs;i++)d[i]=Math.random()*2-1; const s=c.createBufferSource();s.buffer=bf;s.loop=true; const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=350; const g=c.createGain();g.gain.value=0.035; const lfo=c.createOscillator();lfo.type='sine';lfo.frequency.value=0.12; const lg=c.createGain();lg.gain.value=0.015; lfo.connect(lg);lg.connect(g.gain); s.connect(lp);lp.connect(g);g.connect(mg); s.start();lfo.start(); nodes.push(s,lfo); }
-  function birds(){ const c=gc();if(!c)return; function chirp(){if(!playing)return; const n=c.currentTime,o=c.createOscillator(),g=c.createGain(),f=1200+Math.random()*1800; o.type='sine';o.frequency.setValueAtTime(f,n);o.frequency.exponentialRampToValueAtTime(f*(0.7+Math.random()*0.6),n+0.08);o.frequency.exponentialRampToValueAtTime(f*1.1,n+0.14); g.gain.setValueAtTime(0.025,n);g.gain.exponentialRampToValueAtTime(0.001,n+0.18); o.connect(g);g.connect(mg);o.start(n);o.stop(n+0.2); setTimeout(chirp,2500+Math.random()*5500);} setTimeout(chirp,1000+Math.random()*3000); }
-  function crickets(){ const c=gc();if(!c)return; function tick(){if(!playing)return; const n=c.currentTime; for(let i=0;i<3;i++){const o=c.createOscillator(),g=c.createGain(),t=n+i*0.03; o.type='square';o.frequency.setValueAtTime(4200+Math.random()*800,t); g.gain.setValueAtTime(0.006,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.025); o.connect(g);g.connect(mg);o.start(t);o.stop(t+0.03);} setTimeout(tick,3000+Math.random()*5000);} setTimeout(tick,2000); }
-  return { start(){if(playing)return;playing=true;beeLoop();windLoop();birds();crickets();}, stop(){playing=false;nodes.forEach(n=>{try{n.stop();}catch(e){}});nodes=[];if(ctx){ctx.close();ctx=null;}}, isOn(){return playing;} };
+  let ctx = null, mg = null, playing = false, nodes = [], timers = [];
+
+  function gc() {
+    if (!ctx) {
+      const A = window.AudioContext || window.webkitAudioContext;
+      if (A) {
+        ctx = new A();
+        mg = ctx.createGain();
+        mg.gain.value = 0.72; // Louder, vibrant & immersive!
+        mg.connect(ctx.destination);
+      }
+    }
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  // 1. Apiary Swarm Drone (Dengungan ribuan lebah di koloni sarang)
+  function hiveDrone() {
+    const c = gc(); if (!c) return;
+    try {
+      // Layer A: Low hive body resonance (138-146Hz)
+      const o1 = c.createOscillator(), o2 = c.createOscillator();
+      const lfo = c.createOscillator(), lfoGain = c.createGain();
+      const filter = c.createBiquadFilter(), gain = c.createGain();
+
+      o1.type = 'sawtooth'; o1.frequency.value = 142;
+      o2.type = 'triangle'; o2.frequency.value = 148;
+      lfo.type = 'sine'; lfo.frequency.value = 18; // wing flap rate
+      lfoGain.gain.value = 14;
+      lfo.connect(lfoGain);
+      lfoGain.connect(o1.frequency);
+      lfoGain.connect(o2.frequency);
+
+      filter.type = 'bandpass'; filter.frequency.value = 250; filter.Q.value = 2.6;
+      gain.gain.value = 0.22; // Clear presence
+
+      o1.connect(filter); o2.connect(filter);
+      filter.connect(gain); gain.connect(mg);
+      o1.start(); o2.start(); lfo.start();
+      nodes.push(o1, o2, lfo);
+
+      // Layer B: Mid harmonic flight hum (215-235Hz)
+      const o3 = c.createOscillator(), f3 = c.createBiquadFilter(), g3 = c.createGain();
+      const lfo2 = c.createOscillator(), lg2 = c.createGain();
+      o3.type = 'sawtooth'; o3.frequency.value = 224;
+      lfo2.type = 'sine'; lfo2.frequency.value = 24;
+      lg2.gain.value = 16;
+      lfo2.connect(lg2); lg2.connect(o3.frequency);
+      f3.type = 'bandpass'; f3.frequency.value = 390; f3.Q.value = 3.2;
+      g3.gain.value = 0.18;
+      o3.connect(f3); f3.connect(g3); g3.connect(mg);
+      o3.start(); lfo2.start();
+      nodes.push(o3, lfo2);
+    } catch(e) {}
+  }
+
+  // 2. Realistic Periodic Bee Flybys ("bzzbzbzzbzzbz" melintas dekat telinga)
+  function startBeeFlybys() {
+    if (!playing) return;
+    function triggerSingleFlyby() {
+      if (!playing) return;
+      const c = gc();
+      if (c) {
+        try {
+          const now = c.currentTime;
+          const dur = 0.85 + Math.random() * 0.75;
+          const baseFreq = 220 + Math.random() * 85;
+
+          const osc1 = c.createOscillator();
+          const osc2 = c.createOscillator();
+          const lfo = c.createOscillator();
+          const lfoG = c.createGain();
+          const filter = c.createBiquadFilter();
+          const panner = c.createStereoPanner ? c.createStereoPanner() : null;
+          const gain = c.createGain();
+
+          osc1.type = 'sawtooth';
+          osc2.type = 'triangle';
+          lfo.type = 'sawtooth';
+          lfo.frequency.setValueAtTime(32 + Math.random() * 12, now);
+          lfoG.gain.setValueAtTime(38, now);
+          lfo.connect(lfoG);
+          lfoG.connect(osc1.frequency);
+          lfoG.connect(osc2.frequency);
+
+          // Doppler pitch modulation: ascends on approach, descends flying away
+          osc1.frequency.setValueAtTime(baseFreq * 0.85, now);
+          osc1.frequency.exponentialRampToValueAtTime(baseFreq * 1.36, now + dur * 0.45);
+          osc1.frequency.exponentialRampToValueAtTime(baseFreq * 0.76, now + dur);
+
+          osc2.frequency.setValueAtTime(baseFreq * 0.88, now);
+          osc2.frequency.exponentialRampToValueAtTime(baseFreq * 1.40, now + dur * 0.45);
+          osc2.frequency.exponentialRampToValueAtTime(baseFreq * 0.78, now + dur);
+
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(baseFreq * 2.2, now);
+          filter.Q.setValueAtTime(3.8, now);
+
+          // Volume swell as bee zooms past
+          gain.gain.setValueAtTime(0.01, now);
+          gain.gain.linearRampToValueAtTime(0.34, now + dur * 0.45);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+          // Stereo panning across ears
+          const startPan = Math.random() > 0.5 ? -0.85 : 0.85;
+          if (panner) {
+            panner.pan.setValueAtTime(startPan, now);
+            panner.pan.linearRampToValueAtTime(-startPan, now + dur);
+          }
+
+          osc1.connect(filter); osc2.connect(filter);
+          filter.connect(gain);
+          if (panner) { gain.connect(panner); panner.connect(mg); }
+          else { gain.connect(mg); }
+
+          osc1.start(now); osc2.start(now); lfo.start(now);
+          osc1.stop(now + dur); osc2.stop(now + dur); lfo.stop(now + dur);
+        } catch(e) {}
+      }
+      const nextDelay = 1800 + Math.random() * 2400;
+      const tid = setTimeout(triggerSingleFlyby, nextDelay);
+      timers.push(tid);
+    }
+    triggerSingleFlyby();
+  }
+
+  // 3. Meadow Wind Breeze
+  function windLoop() {
+    const c = gc(); if (!c) return;
+    try {
+      const bs = c.sampleRate * 2, bf = c.createBuffer(1, bs, c.sampleRate), d = bf.getChannelData(0);
+      for (let i = 0; i < bs; i++) d[i] = Math.random() * 2 - 1;
+      const s = c.createBufferSource(); s.buffer = bf; s.loop = true;
+      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+      const g = c.createGain(); g.gain.value = 0.045;
+      const lfo = c.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.15;
+      const lg = c.createGain(); lg.gain.value = 0.025;
+      lfo.connect(lg); lg.connect(g.gain);
+      s.connect(lp); lp.connect(g); g.connect(mg);
+      s.start(); lfo.start();
+      nodes.push(s, lfo);
+    } catch(e) {}
+  }
+
+  // 4. Wild Meadow Songbirds
+  function birds() {
+    const c = gc(); if (!c) return;
+    function chirp() {
+      if (!playing) return;
+      try {
+        const n = c.currentTime, o = c.createOscillator(), g = c.createGain(), f = 1400 + Math.random() * 1600;
+        o.type = 'sine'; o.frequency.setValueAtTime(f, n);
+        o.frequency.exponentialRampToValueAtTime(f * (0.75 + Math.random() * 0.5), n + 0.07);
+        o.frequency.exponentialRampToValueAtTime(f * 1.15, n + 0.13);
+        g.gain.setValueAtTime(0.04, n); g.gain.exponentialRampToValueAtTime(0.001, n + 0.16);
+        o.connect(g); g.connect(mg); o.start(n); o.stop(n + 0.18);
+      } catch(e) {}
+      const tid = setTimeout(chirp, 2200 + Math.random() * 4200);
+      timers.push(tid);
+    }
+    const tid = setTimeout(chirp, 1000);
+    timers.push(tid);
+  }
+
+  // 5. Nature Crickets
+  function crickets() {
+    const c = gc(); if (!c) return;
+    function tick() {
+      if (!playing) return;
+      try {
+        const n = c.currentTime;
+        for (let i = 0; i < 3; i++) {
+          const o = c.createOscillator(), g = c.createGain(), t = n + i * 0.035;
+          o.type = 'square'; o.frequency.setValueAtTime(4400 + Math.random() * 600, t);
+          g.gain.setValueAtTime(0.012, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+          o.connect(g); g.connect(mg); o.start(t); o.stop(t + 0.03);
+        }
+      } catch(e) {}
+      const tid = setTimeout(tick, 2500 + Math.random() * 4500);
+      timers.push(tid);
+    }
+    const tid = setTimeout(tick, 1500);
+    timers.push(tid);
+  }
+
+  return {
+    start() {
+      if (playing) return;
+      playing = true;
+      hiveDrone();
+      startBeeFlybys();
+      windLoop();
+      birds();
+      crickets();
+    },
+    stop() {
+      playing = false;
+      nodes.forEach(n => { try { n.stop(); } catch(e) {} });
+      nodes = [];
+      timers.forEach(t => clearTimeout(t));
+      timers = [];
+      if (ctx) { try { ctx.close(); } catch(e) {} ctx = null; }
+    },
+    isOn() { return playing; }
+  };
 })();
-let ambientOn=false;
-function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'); if(ambientOn){AmbientEngine.stop();ambientOn=false;b.innerHTML='<i class="ph-fill ph-speaker-slash"></i> Muted';}else{AmbientEngine.start();ambientOn=true;b.innerHTML='<i class="ph-fill ph-speaker-high"></i> Ambient';} }
+let ambientOn = false;
+function toggleAmbientSound() {
+  const b = document.getElementById('btnAmbientSound');
+  if (ambientOn) {
+    AmbientEngine.stop();
+    ambientOn = false;
+    b.innerHTML = '<i class="ph-fill ph-speaker-slash"></i> Muted';
+  } else {
+    AmbientEngine.start();
+    ambientOn = true;
+    b.innerHTML = '<i class="ph-fill ph-speaker-high"></i> Ambient';
+  }
+}
+// Auto-start ambient on first canvas click if not yet started
+document.addEventListener('pointerdown', function startAmbientOnce() {
+  if (!ambientOn) {
+    toggleAmbientSound();
+  }
+  document.removeEventListener('pointerdown', startAmbientOnce);
+}, { once: true });
 
 // ══════════════════════════════════════════════════════════
 // THREE.JS — CINEMATIC CAM + SMOOTH MOUNTAINS + VIBRANT
@@ -778,6 +1027,466 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
   scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xfde047, size: 0.06, transparent: true, opacity: 0.6 })));
 
   // ══════════════════════════════════════════════════════════
+  // GUBUK KAYU PETERNAK (RUSTIC TIMBER CABIN & DETAILED SCENE)
+  // ══════════════════════════════════════════════════════════
+  const chimneySmoke = [];
+  function createRusticCabin() {
+    const cabin = new THREE.Group();
+
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.95 });
+    const woodDarkMat = new THREE.MeshStandardMaterial({ color: 0x5c2d0e, roughness: 0.85 });
+    const woodPlankMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.78 });
+    const woodLogMat = new THREE.MeshStandardMaterial({ color: 0xa16207, roughness: 0.75 });
+    const roofShingleMat = new THREE.MeshStandardMaterial({ color: 0x713f12, roughness: 0.68 });
+
+    // 6 Foundation Pillars
+    [[-1.6, -1.2], [0, -1.2], [1.6, -1.2], [-1.6, 1.2], [0, 1.2], [1.6, 1.2]].forEach(([px, pz]) => {
+      const pier = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.32, 0.42), stoneMat);
+      pier.position.set(px, 0.16, pz);
+      pier.castShadow = true; pier.receiveShadow = true;
+      cabin.add(pier);
+    });
+
+    // Timber Foundation Beams
+    const fBeam1 = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.16, 0.22), woodDarkMat);
+    fBeam1.position.set(0, 0.38, -1.2); cabin.add(fBeam1);
+    const fBeam2 = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.16, 0.22), woodDarkMat);
+    fBeam2.position.set(0, 0.38, 1.2); cabin.add(fBeam2);
+
+    // Floor Deck
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.14, 3.6), woodPlankMat);
+    deck.position.set(0, 0.52, 0.2);
+    deck.castShadow = true; deck.receiveShadow = true;
+    cabin.add(deck);
+
+    // Main Log Walls
+    const wallBody = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.0, 2.4), woodLogMat);
+    wallBody.position.set(0, 1.55, -0.2);
+    wallBody.castShadow = true; wallBody.receiveShadow = true;
+    cabin.add(wallBody);
+
+    // Horizontal Log Seams
+    for (let i = 0; i < 6; i++) {
+      const gY = 0.75 + i * 0.32;
+      const rimF = new THREE.Mesh(new THREE.BoxGeometry(3.46, 0.04, 2.46), woodDarkMat);
+      rimF.position.set(0, gY, -0.2);
+      cabin.add(rimF);
+    }
+
+    // Doorway & Rustic Door
+    const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.62, 0.1), woodDarkMat);
+    doorFrame.position.set(0.35, 1.36, 1.02);
+    cabin.add(doorFrame);
+
+    const door = new THREE.Mesh(new THREE.BoxGeometry(0.78, 1.52, 0.05), new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.8 }));
+    door.position.set(0.35, 1.34, 1.04);
+    cabin.add(door);
+
+    // Brass door handle
+    const handle = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.8, roughness: 0.2 }));
+    handle.position.set(0.65, 1.32, 1.08);
+    cabin.add(handle);
+
+    // Horseshoe good luck above door
+    const shoe = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.02, 4, 8, Math.PI), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9 }));
+    shoe.position.set(0.35, 2.22, 1.05); shoe.rotation.z = Math.PI;
+    cabin.add(shoe);
+
+    // Warm Glowing Window
+    const winFrame = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.75, 0.1), woodDarkMat);
+    winFrame.position.set(-0.95, 1.55, 1.02);
+    cabin.add(winFrame);
+
+    const winGlass = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.65, 0.04), new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 0.7 }));
+    winGlass.position.set(-0.95, 1.55, 1.04);
+    cabin.add(winGlass);
+
+    // Window cross muntins
+    const winCrossH = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.03, 0.05), woodDarkMat);
+    winCrossH.position.set(-0.95, 1.55, 1.06); cabin.add(winCrossH);
+    const winCrossV = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.65, 0.05), woodDarkMat);
+    winCrossV.position.set(-0.95, 1.55, 1.06); cabin.add(winCrossV);
+
+    // Front Porch Pillars
+    [-1.4, 0, 1.4].forEach(px => {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.075, 2.0, 6), woodDarkMat);
+      post.position.set(px, 1.58, 1.6);
+      post.castShadow = true;
+      cabin.add(post);
+    });
+
+    // Porch Railings
+    const railTopL = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.06, 0.06), woodDarkMat);
+    railTopL.position.set(-0.7, 1.15, 1.6); cabin.add(railTopL);
+    for (let b = 0; b < 4; b++) {
+      const bal = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 4), woodDarkMat);
+      bal.position.set(-1.25 + b * 0.36, 0.9, 1.6); cabin.add(bal);
+    }
+
+    // Wooden Steps
+    for (let s = 0; s < 2; s++) {
+      const step = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.12, 0.34), woodPlankMat);
+      step.position.set(0.35, 0.38 - s * 0.18, 1.95 + s * 0.3);
+      step.castShadow = true; step.receiveShadow = true;
+      cabin.add(step);
+    }
+
+    // Porch Hanging Lantern
+    const lanternG = new THREE.Group();
+    const lBody = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.18, 6), new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.8 }));
+    const lGlow = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshStandardMaterial({ color: 0xfffbeb, emissive: 0xfbbf24, emissiveIntensity: 1.0 }));
+    lanternG.add(lBody); lanternG.add(lGlow);
+    const lLight = new THREE.PointLight(0xf59e0b, 0.85, 5);
+    lanternG.add(lLight);
+    lanternG.position.set(0.35, 2.38, 1.6);
+    cabin.add(lanternG);
+
+    // Porch Signboard
+    const sign = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.22, 0.04), woodDarkMat);
+    sign.position.set(0.35, 2.45, 1.65);
+    cabin.add(sign);
+
+    // Pitched Roof
+    const roofMain = new THREE.Mesh(new THREE.ConeGeometry(2.7, 1.3, 4), roofShingleMat);
+    roofMain.position.set(0, 3.05, 0.1);
+    roofMain.rotation.y = Math.PI / 4;
+    roofMain.scale.set(1.15, 1, 0.95);
+    roofMain.castShadow = true;
+    cabin.add(roofMain);
+
+    // Stone Chimney
+    const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.65, 3.6, 0.65), stoneMat);
+    chimney.position.set(1.5, 2.2, -0.6);
+    chimney.castShadow = true;
+    cabin.add(chimney);
+
+    const chimneyCap = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.12, 0.78), woodDarkMat);
+    chimneyCap.position.set(1.5, 4.05, -0.6);
+    cabin.add(chimneyCap);
+
+    // Chimney Smoke Puffs
+    for (let sm = 0; sm < 8; sm++) {
+      const sp = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12 + sm * 0.03, 6, 5),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.45 })
+      );
+      sp.position.set(1.5, 4.2 + sm * 0.35, -0.6);
+      sp.userData = { initialY: 4.2, speed: 0.015 + Math.random() * 0.01, seed: sm };
+      cabin.add(sp);
+      chimneySmoke.push(sp);
+    }
+
+    // Firewood Stack (Tumpukan Kayu Bakar)
+    const logMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.85 });
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 4 - r; c++) {
+        const log = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.95, 6), logMat);
+        log.rotation.z = Math.PI / 2;
+        log.position.set(1.5, 0.65 + r * 0.16, -1.35 + (c + r * 0.5) * 0.2);
+        log.castShadow = true;
+        cabin.add(log);
+      }
+    }
+
+    // Beekeeper Workbench & Honey Jars on Porch
+    const tableTop = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.06, 0.4), woodDarkMat);
+    tableTop.position.set(-1.1, 0.9, 1.2); cabin.add(tableTop);
+    [[-1.35, 1.05], [-0.85, 1.05], [-1.35, 1.35], [-0.85, 1.35]].forEach(([tx, tz]) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.35, 4), woodDarkMat);
+      leg.position.set(tx, 0.72, tz); cabin.add(leg);
+    });
+    const jarMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.15, transparent: true, opacity: 0.88 });
+    [-0.2, 0, 0.2].forEach((jx, idx) => {
+      const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.11, 6), jarMat);
+      jar.position.set(-1.1 + jx * 0.4, 0.98, 1.2);
+      cabin.add(jar);
+    });
+
+    // 2 Wooden Rain Barrels (Tong Air Kayu)
+    [-0.5, 0.35].forEach((bx, bi) => {
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.25, 0.7, 8), woodPlankMat);
+      barrel.position.set(-1.95, 0.35, -0.6 + bx);
+      barrel.castShadow = true; cabin.add(barrel);
+      [-0.18, 0.18].forEach(hy => {
+        const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.015, 4, 8), new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.8 }));
+        hoop.rotation.x = Math.PI / 2;
+        hoop.position.set(-1.95, 0.35 + hy, -0.6 + bx);
+        cabin.add(hoop);
+      });
+    });
+
+    cabin.position.set(-7.5, 0, -1.0);
+    cabin.rotation.y = Math.PI * 0.16;
+    scene.add(cabin);
+    return cabin;
+  }
+  createRusticCabin();
+
+  // ── JALAN SETAPAK BATU MEANDER (STEPPING STONES) ──
+  function createMeadowPath() {
+    const stoneGeo = new THREE.CylinderGeometry(0.32, 0.38, 0.06, 7);
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.94, flatShading: true });
+    const pathPts = [
+      [-5.8, 0.04, 0.8],
+      [-5.0, 0.04, 0.9],
+      [-4.2, 0.04, 0.7],
+      [-3.4, 0.04, 0.8],
+      [-2.6, 0.04, 0.6],
+      [-1.8, 0.04, 0.8],
+      [-1.0, 0.04, 0.5],
+      [-0.2, 0.04, 0.6],
+      [0.8, 0.04, 0.4],
+      [1.6, 0.04, 0.8],
+      [2.5, 0.04, 1.2],
+      [3.5, 0.04, 1.6],
+      [4.6, 0.04, 2.2],
+      [5.6, 0.04, 3.2]
+    ];
+    pathPts.forEach(([px, py, pz]) => {
+      const stone = new THREE.Mesh(stoneGeo, stoneMat);
+      stone.position.set(px + (Math.random()-0.5)*0.12, py, pz + (Math.random()-0.5)*0.12);
+      stone.rotation.y = Math.random() * Math.PI;
+      stone.scale.set(0.85 + Math.random()*0.3, 0.7, 0.85 + Math.random()*0.3);
+      stone.receiveShadow = true;
+      scene.add(stone);
+    });
+  }
+  createMeadowPath();
+
+  // ── PAGAR KAYU PEDESAAN (RUSTIC SPLIT-RAIL FENCES) ──
+  function createFences() {
+    const postMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.88 });
+    const railMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.82 });
+    const fencePosts = [
+      [-10, -5], [-7.5, -5.5], [-5, -6], [-2.5, -6.2], [0, -6.5], [2.5, -6.2], [5, -6], [7.5, -5.5], [10, -5]
+    ];
+    for (let i = 0; i < fencePosts.length; i++) {
+      const [fx, fz] = fencePosts[i];
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.085, 1.1, 5), postMat);
+      post.position.set(fx, 0.55, fz);
+      post.castShadow = true;
+      scene.add(post);
+
+      if (i < fencePosts.length - 1) {
+        const [nx, nz] = fencePosts[i + 1];
+        const dist = Math.hypot(nx - fx, nz - fz);
+        const ang = Math.atan2(nx - fx, nz - fz);
+        [0.4, 0.78].forEach(ry => {
+          const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, dist, 4), railMat);
+          rail.rotation.x = Math.PI / 2;
+          rail.rotation.z = -ang;
+          rail.position.set((fx + nx) / 2, ry, (fz + nz) / 2);
+          rail.castShadow = true;
+          scene.add(rail);
+        });
+      }
+    }
+  }
+  createFences();
+
+  // ── BUNGA MATAHARI MEGAH (TALL BLOOMING SUNFLOWERS) ──
+  function createSunflowers() {
+    const stemMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.8 });
+    const petalMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.6 });
+    const coreMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.95 });
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.75, side: THREE.DoubleSide });
+
+    const spots = [
+      [-9.2, -3.8, 2.1], [-8.6, -4.2, 1.8], [-6.2, -4.5, 2.3], [-4.0, -5.2, 2.0],
+      [3.2, -5.0, 1.9], [5.5, -4.8, 2.2], [7.0, -4.2, 2.4], [8.4, -3.5, 1.8]
+    ];
+
+    spots.forEach(([sx, sz, sh]) => {
+      const g = new THREE.Group();
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.055, sh, 6), stemMat);
+      stem.position.y = sh / 2;
+      stem.castShadow = true; g.add(stem);
+
+      for (let l = 0; l < 4; l++) {
+        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.22, 5, 4), leafMat);
+        leaf.scale.set(1.4, 0.15, 0.8);
+        const lY = 0.5 + l * 0.35;
+        const lRot = (l % 2 === 0 ? 1 : -1) * 0.4;
+        leaf.position.set(Math.sin(lRot)*0.25, lY, Math.cos(lRot)*0.25);
+        leaf.rotation.z = lRot;
+        g.add(leaf);
+      }
+
+      const head = new THREE.Group();
+      head.position.y = sh;
+      head.rotation.x = 0.28;
+
+      const core = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.06, 12), coreMat);
+      core.rotation.x = Math.PI / 2;
+      head.add(core);
+
+      for (let p = 0; p < 16; p++) {
+        const pAng = (p / 16) * Math.PI * 2;
+        const pet = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.28, 4), petalMat);
+        pet.position.set(Math.cos(pAng) * 0.24, Math.sin(pAng) * 0.24, 0);
+        pet.rotation.z = pAng - Math.PI / 2;
+        head.add(pet);
+      }
+      g.add(head);
+      g.position.set(sx, 0, sz);
+      scene.add(g);
+    });
+  }
+  createSunflowers();
+
+  // ── 3D PETERNAK LEBAH (BEEKEEPER CHARACTER) ──
+  let beekeeperMesh = null;
+  const smokerPuffParticles = [];
+  const honeySparkles = [];
+
+  function createBeekeeper() {
+    const bk = new THREE.Group();
+
+    const suitMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.7 });
+    const bootMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.8 });
+    const gloveMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6 });
+    const veilMat = new THREE.MeshStandardMaterial({ color: 0x334155, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.85, roughness: 0.25 });
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
+
+    // Boots
+    [-0.14, 0.14].forEach(bx => {
+      const boot = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.16, 0.22), bootMat);
+      boot.position.set(bx, 0.08, 0.03);
+      boot.castShadow = true; bk.add(boot);
+    });
+
+    // Legs
+    [-0.14, 0.14].forEach(lx => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.075, 0.55, 6), suitMat);
+      leg.position.set(lx, 0.42, 0);
+      leg.castShadow = true; bk.add(leg);
+    });
+
+    // Torso / White Apiary Suit
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.65, 8), suitMat);
+    torso.position.y = 0.95;
+    torso.castShadow = true; bk.add(torso);
+
+    // Leather Tool Belt
+    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.08, 8), woodMat);
+    belt.position.y = 0.72;
+    bk.add(belt);
+
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), new THREE.MeshStandardMaterial({ color: 0xfde047 }));
+    head.position.y = 1.42;
+    bk.add(head);
+
+    // Beekeeper Hat
+    const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.03, 16), new THREE.MeshStandardMaterial({ color: 0xfef3c7 }));
+    hatBrim.position.y = 1.55;
+    bk.add(hatBrim);
+
+    const hatTop = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 0.24, 12), new THREE.MeshStandardMaterial({ color: 0xfef3c7 }));
+    hatTop.position.y = 1.68;
+    bk.add(hatTop);
+
+    // Protective Face Mesh / Veil Netting
+    const veil = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.44, 12), veilMat);
+    veil.position.y = 1.35;
+    bk.add(veil);
+
+    // Left Arm (Relaxed)
+    const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.52, 6), suitMat);
+    armL.position.set(-0.32, 0.95, 0);
+    armL.rotation.z = 0.18;
+    bk.add(armL);
+    const gloveL = new THREE.Mesh(new THREE.SphereGeometry(0.075, 6, 6), gloveMat);
+    gloveL.position.set(-0.37, 0.68, 0);
+    bk.add(gloveL);
+
+    // Right Arm (Holding Smoker tool)
+    const armRGroup = new THREE.Group();
+    armRGroup.position.set(0.32, 1.15, 0);
+
+    const armR = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.48, 6), suitMat);
+    armR.position.set(0.06, -0.22, 0.12);
+    armR.rotation.x = -0.45;
+    armRGroup.add(armR);
+
+    const gloveR = new THREE.Mesh(new THREE.SphereGeometry(0.075, 6, 6), gloveMat);
+    gloveR.position.set(0.06, -0.42, 0.25);
+    armRGroup.add(gloveR);
+
+    // Smoker Tool (Alat Pengasap Stainless Steel)
+    const smoker = new THREE.Group();
+    smoker.position.set(0.08, -0.44, 0.35);
+
+    const canister = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.22, 8), metalMat);
+    smoker.add(canister);
+
+    const snout = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.14, 8), metalMat);
+    snout.rotation.x = -0.55;
+    snout.position.set(0, 0.16, 0.06);
+    smoker.add(snout);
+
+    const bellows = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.1), woodMat);
+    bellows.position.set(-0.08, 0, -0.04);
+    smoker.add(bellows);
+
+    armRGroup.add(smoker);
+    bk.add(armRGroup);
+    bk.userData.armRGroup = armRGroup;
+
+    // Wooden Honey Bucket beside Beekeeper
+    const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.19, 0.38, 8), woodMat);
+    bucket.position.set(-0.48, 0.19, 0.22);
+    bucket.castShadow = true; bk.add(bucket);
+
+    const honeyLiquid = new THREE.Mesh(new THREE.CircleGeometry(0.21, 12), new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.1, metalness: 0.2 }));
+    honeyLiquid.rotation.x = -Math.PI / 2;
+    honeyLiquid.position.set(-0.48, 0.34, 0.22);
+    bk.add(honeyLiquid);
+
+    bk.position.set(-2.2, 0, 0.8);
+    bk.rotation.y = Math.PI * 0.25;
+    scene.add(bk);
+    beekeeperMesh = bk;
+    return bk;
+  }
+  createBeekeeper();
+
+  // Particle Pools (Smoker Smoke + Honey Extraction Sparkles)
+  for (let i = 0; i < 20; i++) {
+    const p = new THREE.Mesh(
+      new THREE.SphereGeometry(0.09, 5, 5),
+      new THREE.MeshStandardMaterial({ color: 0xf1f5f9, transparent: true, opacity: 0 })
+    );
+    scene.add(p);
+    smokerPuffParticles.push(p);
+  }
+  for (let i = 0; i < 30; i++) {
+    const spk = new THREE.Mesh(
+      new THREE.SphereGeometry(0.055, 5, 4),
+      new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xf59e0b, emissiveIntensity: 0.8, transparent: true, opacity: 0 })
+    );
+    scene.add(spk);
+    honeySparkles.push(spk);
+  }
+
+  let harvestAnimProgress = -1;
+  let harvestTargetPos = new THREE.Vector3();
+  let harvestHoneyAmount = 0;
+
+  window.triggerBeekeeperHarvest = function(targetHiveIdx, harvestedMl) {
+    if (!beekeeperMesh) return;
+    harvestHoneyAmount = harvestedMl || 10;
+    const p = hivePos(targetHiveIdx >= 0 ? targetHiveIdx : 0, HIVES_ARRAY.length);
+    harvestTargetPos.set(p.x, 1.2, p.z);
+    harvestAnimProgress = 0;
+
+    FarmAudio.playSmoker();
+    setTimeout(() => FarmAudio.playBee(1.4, 215), 180);
+    setTimeout(() => { FarmAudio.playHarvest(); FarmAudio.playCoin(); }, 600);
+  };
+
+  // ══════════════════════════════════════════════════════════
   // CINEMATIC CAMERA SYSTEM — EYE LEVEL, VOLUMETRIC 3D
   // ══════════════════════════════════════════════════════════
   let cineIdx = -1; // -1 = overview
@@ -965,6 +1674,84 @@ function toggleAmbientSound(){ const b=document.getElementById('btnAmbientSound'
       } else { obj.rotation.y = Math.sin(t*0.4+i)*0.015; }
     });
 
+    // Chimney smoke drift
+    chimneySmoke.forEach((sp) => {
+      sp.position.y += sp.userData.speed;
+      sp.position.x += Math.sin(t * 1.2 + sp.userData.seed) * 0.004;
+      const s = 1 + (sp.position.y - sp.userData.initialY) * 0.35;
+      sp.scale.set(s, s, s);
+      if (sp.position.y > sp.userData.initialY + 2.4) {
+        sp.position.y = sp.userData.initialY;
+        sp.position.x = 1.5;
+      }
+    });
+
+    // Beekeeper Character Animation & Active Harvest Sequence
+    if (beekeeperMesh) {
+      if (harvestAnimProgress >= 0) {
+        harvestAnimProgress += 0.018;
+
+        const dx = harvestTargetPos.x - beekeeperMesh.position.x;
+        const dz = harvestTargetPos.z - beekeeperMesh.position.z;
+        const targetRot = Math.atan2(dx, dz);
+        beekeeperMesh.rotation.y += (targetRot - beekeeperMesh.rotation.y) * 0.12;
+
+        if (harvestAnimProgress < 0.45) {
+          const pump = Math.sin(harvestAnimProgress * 36);
+          if (beekeeperMesh.userData.armRGroup) {
+            beekeeperMesh.userData.armRGroup.rotation.x = -0.45 + pump * 0.42;
+          }
+          const pIdx = Math.floor((harvestAnimProgress * 40) % smokerPuffParticles.length);
+          const p = smokerPuffParticles[pIdx];
+          if (p && pump > 0.5) {
+            p.material.opacity = 0.65;
+            p.position.set(
+              beekeeperMesh.position.x + Math.sin(targetRot) * 0.85,
+              1.25 + pump * 0.1,
+              beekeeperMesh.position.z + Math.cos(targetRot) * 0.85
+            );
+          }
+        } else if (harvestAnimProgress < 0.85) {
+          if (beekeeperMesh.userData.armRGroup) {
+            beekeeperMesh.userData.armRGroup.rotation.x = -0.9 + Math.sin(t * 6) * 0.12;
+          }
+          const sIdx = Math.floor((harvestAnimProgress * 55) % honeySparkles.length);
+          const spk = honeySparkles[sIdx];
+          if (spk) {
+            const ratio = (harvestAnimProgress - 0.45) / 0.4;
+            spk.material.opacity = 0.9;
+            spk.position.lerpVectors(harvestTargetPos, new THREE.Vector3(beekeeperMesh.position.x - 0.45, 0.45, beekeeperMesh.position.z + 0.2), ratio);
+            spk.position.y += Math.sin(ratio * Math.PI) * 1.1;
+          }
+        } else if (harvestAnimProgress < 1.0) {
+          if (beekeeperMesh.userData.armRGroup) {
+            beekeeperMesh.userData.armRGroup.rotation.x = -1.35 + Math.sin(t * 8) * 0.15;
+          }
+        } else {
+          harvestAnimProgress = -1;
+          if (beekeeperMesh.userData.armRGroup) {
+            beekeeperMesh.userData.armRGroup.rotation.x = 0;
+          }
+          smokerPuffParticles.forEach(p => p.material.opacity = 0);
+          honeySparkles.forEach(s => s.material.opacity = 0);
+        }
+      } else {
+        beekeeperMesh.position.y = Math.sin(t * 1.6) * 0.02;
+        if (beekeeperMesh.userData.armRGroup) {
+          beekeeperMesh.userData.armRGroup.rotation.x = Math.sin(t * 1.6) * 0.04;
+        }
+      }
+    }
+
+    // Drift active smoke puffs
+    smokerPuffParticles.forEach(p => {
+      if (p.material.opacity > 0.01) {
+        p.position.y += 0.014;
+        p.position.x += (Math.random() - 0.5) * 0.01;
+        p.material.opacity -= 0.016;
+      }
+    });
+
     renderer.render(scene, camera);
     updateLabels();
   }
@@ -998,19 +1785,57 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeHiveInspec
 function spawnHoneyFly(t,el) { const r=el?el.getBoundingClientRect():{top:innerHeight/2,left:innerWidth/2}; const b=document.createElement('div'); b.className='floating-honey-fly'; b.innerText='+ '+t+' ml'; b.style.top=(r.top+10)+'px'; b.style.left=(r.left+20)+'px'; document.body.appendChild(b); setTimeout(()=>b.remove(),1200); }
 function harvestInspectedHive() {
   if(!currentInspectedHiveId) return; const btn=document.getElementById('btnInspectionHarvest'); if(!btn||btn.disabled) return;
-  btn.disabled=true; const ot=btn.innerHTML; btn.innerHTML='<i class="ph-bold ph-spinner ph-spin"></i> Memanen...'; FarmAudio.playHarvest();
+  btn.disabled=true; const ot=btn.innerHTML; btn.innerHTML='<i class="ph-bold ph-spinner ph-spin"></i> Memanen...';
+  const targetIdx = HIVES_ARRAY.findIndex(h => h.id == currentInspectedHiveId);
+  if (typeof triggerBeekeeperHarvest === 'function') {
+    triggerBeekeeperHarvest(targetIdx >= 0 ? targetIdx : 0, 10);
+  }
   const fd=new FormData(); fd.append('action','harvest_hive'); fd.append('hive_id',currentInspectedHiveId); fd.append('_csrf',document.querySelector('input[name="_csrf"]')?.value||'');
   fetch('/api/farm_action',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
-    if(d.ok){ spawnHoneyFly(d.harvested_ml,btn); const hs=document.getElementById('hudHoneyStock'); if(hs&&d.new_honey_stock!==undefined)hs.innerText=Number(d.new_honey_stock).toLocaleString('id-ID',{minimumFractionDigits:1})+' ml'; document.getElementById('inspectionHoneyAmt').innerText='0.00 ml'; renderHexagonCells(0,'inspectionHexGrid'); if(USER_HIVES_MAP[currentInspectedHiveId]?.details){USER_HIVES_MAP[currentInspectedHiveId].details.total_honey=0;USER_HIVES_MAP[currentInspectedHiveId].details.fill_percentage=0;} btn.innerHTML='<i class="ph-bold ph-check"></i> Dipanen!'; setTimeout(()=>{btn.innerHTML=ot;btn.disabled=true;},1500); }
+    if(d.ok){
+      spawnHoneyFly(d.harvested_ml,btn);
+      const hs=document.getElementById('hudHoneyStock');
+      if(hs&&d.new_honey_stock!==undefined)hs.innerText=Number(d.new_honey_stock).toLocaleString('id-ID',{minimumFractionDigits:1})+' ml';
+      document.getElementById('inspectionHoneyAmt').innerText='0.00 ml';
+      renderHexagonCells(0,'inspectionHexGrid');
+      if(USER_HIVES_MAP[currentInspectedHiveId]?.details){
+        USER_HIVES_MAP[currentInspectedHiveId].details.total_honey=0;
+        USER_HIVES_MAP[currentInspectedHiveId].details.fill_percentage=0;
+      }
+      btn.innerHTML='<i class="ph-bold ph-check"></i> Dipanen!';
+
+      const infoEl = document.querySelector('.hive-inspection-info');
+      if (infoEl) {
+        const oldBanner = infoEl.querySelector('.harvest-celebration-banner');
+        if (oldBanner) oldBanner.remove();
+        const banner = document.createElement('div');
+        banner.className = 'harvest-celebration-banner';
+        banner.innerHTML = '<img src="/assets/game/bee_worker.png" alt="Peternak"><div class="harvest-celebration-text"><div class="h-title">🎉 Peternak Selesai Memanen!</div><div class="h-sub">+'+d.harvested_ml+' ml madu murni berhasil diekstrak dengan pengasap herbal.</div></div>';
+        infoEl.prepend(banner);
+        setTimeout(() => banner.remove(), 3200);
+      }
+      setTimeout(()=>{btn.innerHTML=ot;btn.disabled=true;},1500);
+    }
     else{ alert(d.msg||'Gagal'); btn.disabled=false; btn.innerHTML=ot; }
   }).catch(()=>{btn.disabled=false;btn.innerHTML=ot;alert('Error jaringan.');});
 }
 function harvestAllHives() {
   const btn=document.getElementById('btnHarvestAll'); if(!btn||btn.disabled) return;
-  btn.disabled=true; const ot=btn.innerHTML; btn.innerHTML='<i class="ph-bold ph-spinner ph-spin"></i> Memanen...'; FarmAudio.playHarvest();
+  btn.disabled=true; const ot=btn.innerHTML; btn.innerHTML='<i class="ph-bold ph-spinner ph-spin"></i> Memanen...';
+  if (typeof triggerBeekeeperHarvest === 'function') {
+    triggerBeekeeperHarvest(0, 50);
+  }
   const fd=new FormData(); fd.append('action','harvest_all'); fd.append('_csrf',document.querySelector('input[name="_csrf"]')?.value||'');
   fetch('/api/farm_action',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
-    if(d.ok){ spawnHoneyFly(d.harvested_ml,btn); const hs=document.getElementById('hudHoneyStock'); if(hs&&d.new_honey_stock!==undefined)hs.innerText=Number(d.new_honey_stock).toLocaleString('id-ID',{minimumFractionDigits:1})+' ml'; const tb=document.getElementById('totalUnharvestedBadge'); if(tb)tb.innerText='0.0 ml'; btn.innerHTML='<i class="ph-bold ph-check"></i> '+(d.msg||'Berhasil!'); setTimeout(()=>{btn.innerHTML=ot;btn.disabled=true;},2000); }
+    if(d.ok){
+      spawnHoneyFly(d.harvested_ml,btn);
+      const hs=document.getElementById('hudHoneyStock');
+      if(hs&&d.new_honey_stock!==undefined)hs.innerText=Number(d.new_honey_stock).toLocaleString('id-ID',{minimumFractionDigits:1})+' ml';
+      const tb=document.getElementById('totalUnharvestedBadge');
+      if(tb)tb.innerText='0.0 ml';
+      btn.innerHTML='<i class="ph-bold ph-check"></i> '+(d.msg||'Berhasil!');
+      setTimeout(()=>{btn.innerHTML=ot;btn.disabled=true;},2000);
+    }
     else{ alert(d.msg||'Gagal'); btn.disabled=false; btn.innerHTML=ot; }
   }).catch(()=>{btn.disabled=false;btn.innerHTML=ot;alert('Error jaringan.');});
 }

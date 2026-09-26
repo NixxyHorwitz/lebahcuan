@@ -50,38 +50,47 @@ $farmSubPage = $farmSubPage ?? 'meadow';
       return !isMuted;
     },
 
-    // 1. Realistic Bee Buzz (Osilator ganda modulasi sayap lebah)
-    playBee: function(duration = 0.8) {
+    // 1. Realistic Bee Buzz (Osilator ganda modulasi sayap lebah - louder & textured)
+    playBee: function(duration = 1.0, pitch = 190) {
       if (isMuted) return;
       const ctx = getAudioContext();
       if (!ctx) return;
 
       try {
         const now = ctx.currentTime;
-        // Carrier oscillator
         const osc1 = ctx.createOscillator();
         const osc2 = ctx.createOscillator();
+        const lfo = ctx.createOscillator();
+        const lfoGain = ctx.createGain();
         const gainNode = ctx.createGain();
         const filter = ctx.createBiquadFilter();
 
-        // Tremolo / flutter (kecepatan kepakan sayap ~150-200Hz)
+        // Flutter modulation (kepakan sayap 160-240Hz dengan tremolo 24Hz)
         osc1.type = 'sawtooth';
-        osc1.frequency.setValueAtTime(185, now);
-        osc1.frequency.linearRampToValueAtTime(195, now + duration * 0.5);
-        osc1.frequency.linearRampToValueAtTime(180, now + duration);
+        osc1.frequency.setValueAtTime(pitch, now);
+        osc1.frequency.linearRampToValueAtTime(pitch * 1.15, now + duration * 0.4);
+        osc1.frequency.linearRampToValueAtTime(pitch * 0.95, now + duration);
 
         osc2.type = 'triangle';
-        osc2.frequency.setValueAtTime(187, now);
-        osc2.frequency.linearRampToValueAtTime(192, now + duration * 0.5);
-        osc2.frequency.linearRampToValueAtTime(182, now + duration);
+        osc2.frequency.setValueAtTime(pitch * 1.02, now);
+        osc2.frequency.linearRampToValueAtTime(pitch * 1.18, now + duration * 0.4);
+        osc2.frequency.linearRampToValueAtTime(pitch * 0.97, now + duration);
+
+        lfo.type = 'sine';
+        lfo.frequency.setValueAtTime(26, now);
+        lfoGain.gain.setValueAtTime(pitch * 0.12, now);
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc1.frequency);
+        lfoGain.connect(osc2.frequency);
 
         filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(320, now);
-        filter.Q.setValueAtTime(2.5, now);
+        filter.frequency.setValueAtTime(pitch * 1.8, now);
+        filter.Q.setValueAtTime(3.2, now);
 
-        gainNode.gain.setValueAtTime(0.01, now);
-        gainNode.gain.linearRampToValueAtTime(0.08, now + 0.1);
-        gainNode.gain.linearRampToValueAtTime(0.07, now + duration - 0.15);
+        // Louder, punchier gain envelope
+        gainNode.gain.setValueAtTime(0.02, now);
+        gainNode.gain.linearRampToValueAtTime(0.24, now + 0.12);
+        gainNode.gain.linearRampToValueAtTime(0.22, now + duration - 0.2);
         gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
         osc1.connect(filter);
@@ -91,54 +100,91 @@ $farmSubPage = $farmSubPage ?? 'meadow';
 
         osc1.start(now);
         osc2.start(now);
+        lfo.start(now);
         osc1.stop(now + duration);
         osc2.stop(now + duration);
+        lfo.stop(now + duration);
       } catch (e) {}
     },
 
-    // 2. Honey Harvest Drop Plop (Cipratan madu pekat & renyah)
+    // 2. Beekeeper Smoker Puff (Hembusan asap pengasap lebah)
+    playSmoker: function() {
+      if (isMuted) return;
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      try {
+        const now = ctx.currentTime;
+        const dur = 0.35;
+        const bSize = ctx.sampleRate * dur;
+        const buf = ctx.createBuffer(1, bSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bSize; i++) data[i] = (Math.random() * 2 - 1);
+
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(650, now);
+        filter.frequency.exponentialRampToValueAtTime(300, now + dur);
+        filter.Q.setValueAtTime(1.8, now);
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.26, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        src.start(now);
+        src.stop(now + dur);
+      } catch (e) {}
+    },
+
+    // 3. Honey Harvest Drop Plop (Kombinasi asap + tuangan madu kental)
     playHarvest: function() {
       if (isMuted) return;
+      this.playSmoker();
       const ctx = getAudioContext();
       if (!ctx) return;
 
       try {
-        const now = ctx.currentTime;
+        const now = ctx.currentTime + 0.12;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
         osc.type = 'sine';
-        // Pitch sweep meluncur ke bawah menyerupai tetesan kental
-        osc.frequency.setValueAtTime(650, now);
-        osc.frequency.exponentialRampToValueAtTime(220, now + 0.14);
+        osc.frequency.setValueAtTime(720, now);
+        osc.frequency.exponentialRampToValueAtTime(260, now + 0.22);
 
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
 
         osc.connect(gain);
         gain.connect(ctx.destination);
 
         osc.start(now);
-        osc.stop(now + 0.18);
+        osc.stop(now + 0.25);
 
-        // Sedikit nada tinggi susulan untuk efek berkilau
+        // Suara gemerincing madu berkilau (sparkle chime)
         setTimeout(() => {
           if (isMuted) return;
           try {
-            const osc2 = ctx.createOscillator();
-            const gain2 = ctx.createGain();
-            const t = ctx.currentTime;
-            osc2.type = 'triangle';
-            osc2.frequency.setValueAtTime(880, t);
-            osc2.frequency.exponentialRampToValueAtTime(1200, t + 0.1);
-            gain2.gain.setValueAtTime(0.12, t);
-            gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-            osc2.connect(gain2);
-            gain2.connect(ctx.destination);
-            osc2.start(t);
-            osc2.stop(t + 0.12);
+            [1046, 1318, 1568, 2093].forEach((f, idx) => {
+              const osc2 = ctx.createOscillator();
+              const gain2 = ctx.createGain();
+              const t = ctx.currentTime + (idx * 0.06);
+              osc2.type = 'triangle';
+              osc2.frequency.setValueAtTime(f, t);
+              gain2.gain.setValueAtTime(0.18, t);
+              gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+              osc2.connect(gain2);
+              gain2.connect(ctx.destination);
+              osc2.start(t);
+              osc2.stop(t + 0.25);
+            });
           } catch(e) {}
-        }, 60);
+        }, 120);
       } catch (e) {}
     },
 
