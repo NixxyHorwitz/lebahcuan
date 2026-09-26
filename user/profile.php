@@ -39,6 +39,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $st = $pdo->prepare("SELECT COUNT(*) FROM watch_history WHERE user_id=?"); $st->execute([$user['id']]); $total_watches = (int)$st->fetchColumn();
 $refs = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by=?"); $refs->execute([$user['referral_code']]); $refs = (int)$refs->fetchColumn();
 
+// Additional stats
+$total_deposits = 0; $total_withdrawals = 0; $total_hives = 0; $total_bees = 0;
+try { $s = $pdo->prepare("SELECT COUNT(*) FROM deposits WHERE user_id=? AND status='approved'"); $s->execute([$user['id']]); $total_deposits = (int)$s->fetchColumn(); } catch (\Throwable) {}
+try { $s = $pdo->prepare("SELECT COUNT(*) FROM withdrawals WHERE user_id=? AND status='approved'"); $s->execute([$user['id']]); $total_withdrawals = (int)$s->fetchColumn(); } catch (\Throwable) {}
+try { $s = $pdo->prepare("SELECT COUNT(*) FROM user_bee_hives WHERE user_id=?"); $s->execute([$user['id']]); $total_hives = (int)$s->fetchColumn(); } catch (\Throwable) {}
+try { $s = $pdo->prepare("SELECT COUNT(*) FROM user_bees WHERE user_id=?"); $s->execute([$user['id']]); $total_bees = (int)$s->fetchColumn(); } catch (\Throwable) {}
+
+// Active investments
+$active_investments = 0;
+try { $s = $pdo->prepare("SELECT COUNT(*) FROM user_investments WHERE user_id=? AND status='active'"); $s->execute([$user['id']]); $active_investments = (int)$s->fetchColumn(); } catch (\Throwable) {}
+
 // Membership
 $membership_name = '';
 $membership_allow_edit_bank = false;
@@ -64,6 +75,10 @@ $dep_ok_for_edit   = (float)$user['balance_dep'] >= $edit_bank_min_dep;
 $is_promotor_prof  = ((int)($user['is_promotor'] ?? 0) === 1);
 $show_edit_rek_btn = $membership_allow_edit_bank || $is_promotor_prof;
 
+// Member since
+$member_since = date('d M Y', strtotime($user['created_at']));
+$days_member = max(1, (int)((time() - strtotime($user['created_at'])) / 86400));
+
 // Contact buttons
 try {
     $_contact_btns = $pdo->query("SELECT * FROM contact_buttons WHERE is_active=1 ORDER BY sort_order ASC, id ASC")->fetchAll();
@@ -84,348 +99,483 @@ $_psvg = [
 
 <style>
 /* ══════════════════════════════════════════════
-   PROFILE PAGE — DARK FOREST PREMIUM REDESIGN
+   PROFILE — AMBER HONEY THEME (RICH & DECORATED)
    ══════════════════════════════════════════════ */
 body {
-  background: #071a0c !important;
-  color: #e2e8f0;
+  background-color: #fef8ee !important;
+  background-image: radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px) !important;
+  background-size: 16px 16px !important;
+  color: #78350f;
 }
 
-/* ── HERO BANNER ── */
+/* ── HERO ── */
 .prof-hero {
   position: relative;
-  background: linear-gradient(160deg, #0c2e15 0%, #132d14 40%, #1a3a1d 100%);
-  padding: 28px 20px 60px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  padding: 22px 14px 56px;
+  border-bottom: 3.5px solid #78350f;
+  box-shadow: 0 4px 0 #78350f;
   overflow: hidden;
 }
 .prof-hero::before {
   content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 80%, rgba(251,191,36,0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(34,197,94,0.06) 0%, transparent 50%);
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.15) 1.5px, transparent 1.5px);
+  background-size: 16px 16px;
   pointer-events: none;
 }
 .prof-hero::after {
   content: '';
   position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 30px;
-  background: #071a0c;
+  bottom: -1px; left: 0; right: 0; height: 24px;
+  background: #fef8ee;
   clip-path: ellipse(55% 100% at 50% 100%);
 }
 
-/* Floating hexagons */
-.prof-hex-deco {
+/* Honeycomb decoration */
+.hex-deco {
   position: absolute;
-  background: rgba(251,191,36,0.06);
+  background: rgba(255,255,255,0.08);
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   pointer-events: none;
 }
-.prof-hex-deco:nth-child(1) { top: 12px; right: 20px; width: 28px; height: 28px; animation: hexFloat 6s ease-in-out infinite; }
-.prof-hex-deco:nth-child(2) { top: 50px; right: 55px; width: 18px; height: 18px; animation: hexFloat 8s ease-in-out infinite 1s; opacity: 0.6; }
-.prof-hex-deco:nth-child(3) { bottom: 40px; left: 15px; width: 22px; height: 22px; animation: hexFloat 7s ease-in-out infinite 2s; opacity: 0.5; }
-@keyframes hexFloat {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-8px) rotate(12deg); }
+.hex-deco:nth-child(1) { top: 8px; right: 16px; width: 32px; height: 32px; animation: hexBob 5s ease-in-out infinite; }
+.hex-deco:nth-child(2) { top: 44px; right: 52px; width: 20px; height: 20px; animation: hexBob 7s ease-in-out infinite 1s; }
+.hex-deco:nth-child(3) { bottom: 32px; left: 12px; width: 26px; height: 26px; animation: hexBob 6s ease-in-out infinite 0.5s; }
+.hex-deco:nth-child(4) { top: 18px; left: 40px; width: 16px; height: 16px; animation: hexBob 8s ease-in-out infinite 2s; opacity: 0.6; }
+.hex-deco:nth-child(5) { bottom: 36px; right: 30px; width: 14px; height: 14px; animation: hexBob 6.5s ease-in-out infinite 1.5s; opacity: 0.5; }
+@keyframes hexBob {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(15deg); }
+}
+
+/* Floating bee decorations */
+.fly-bee {
+  position: absolute; font-size: 14px; pointer-events: none;
+  animation: beeFly 12s ease-in-out infinite;
+}
+.fly-bee:nth-child(6) { top: 20%; left: -10%; animation-delay: 0s; }
+.fly-bee:nth-child(7) { top: 50%; left: -10%; animation-delay: 4s; font-size: 11px; }
+.fly-bee:nth-child(8) { top: 70%; left: -10%; animation-delay: 8s; font-size: 16px; }
+@keyframes beeFly {
+  0% { transform: translateX(-20px); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(calc(100vw + 40px)) translateY(-20px); opacity: 0; }
 }
 
 /* Avatar */
 .prof-ava-wrap {
   position: relative; z-index: 2;
   display: flex; flex-direction: column; align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 .prof-ava-ring {
-  width: 82px; height: 82px;
+  width: 76px; height: 76px;
   border-radius: 50%;
-  background: conic-gradient(from 0deg, #f59e0b, #22c55e, #f59e0b);
-  padding: 3px;
-  animation: avaRingSpin 6s linear infinite;
-  box-shadow: 0 0 20px rgba(251,191,36,0.2);
+  background: conic-gradient(from 0deg, #fde68a, #78350f, #fbbf24, #fde68a);
+  padding: 3.5px;
+  animation: ringPulse 3s ease-in-out infinite;
+  box-shadow: 0 4px 0 #78350f, 0 0 16px rgba(251,191,36,0.3);
 }
-@keyframes avaRingSpin {
-  0% { filter: hue-rotate(0deg); }
-  100% { filter: hue-rotate(360deg); }
+@keyframes ringPulse {
+  0%,100% { box-shadow: 0 4px 0 #78350f, 0 0 16px rgba(251,191,36,0.2); }
+  50% { box-shadow: 0 4px 0 #78350f, 0 0 24px rgba(251,191,36,0.5); }
 }
 .prof-ava {
   width: 100%; height: 100%;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1a3a1d, #0f2a16);
+  background: linear-gradient(135deg, #fde68a, #fbbf24);
+  border: 2.5px solid #78350f;
   display: flex; align-items: center; justify-content: center;
-  font-size: 30px; font-weight: 900; color: #fbbf24;
-  text-shadow: 0 0 12px rgba(251,191,36,0.4);
+  font-size: 28px; font-weight: 900; color: #78350f;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
 }
 .prof-name {
-  font-size: 20px; font-weight: 900; color: #fef3c7;
-  text-align: center; text-shadow: 0 1px 6px rgba(0,0,0,0.4);
-  margin-bottom: 3px; position: relative; z-index: 2;
+  font-size: 18px; font-weight: 900; color: #fff;
+  text-shadow: 0 2px 0 #78350f;
+  text-align: center; margin-bottom: 2px;
+  position: relative; z-index: 2;
 }
 .prof-email {
-  font-size: 11px; font-weight: 700; color: rgba(254,243,199,0.5);
-  text-align: center; margin-bottom: 10px; position: relative; z-index: 2;
+  font-size: 10.5px; font-weight: 700; color: #fef3c7;
+  text-align: center; margin-bottom: 8px;
+  position: relative; z-index: 2;
 }
-.prof-tier-badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: rgba(251,191,36,0.12);
-  border: 1.5px solid rgba(251,191,36,0.3);
-  backdrop-filter: blur(8px); border-radius: 20px;
-  padding: 5px 14px; font-size: 10px; font-weight: 900; color: #fbbf24;
-  text-transform: uppercase; letter-spacing: 0.5px; position: relative; z-index: 2;
+.prof-tier {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #78350f; color: #fde68a;
+  border: 1.5px solid #fff; border-radius: 8px;
+  padding: 3px 10px; font-size: 9.5px; font-weight: 900;
+  text-transform: uppercase; box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+  position: relative; z-index: 2;
 }
-.prof-tier-badge.premium {
-  background: linear-gradient(135deg, rgba(251,191,36,0.25), rgba(217,119,6,0.2));
-  border-color: rgba(251,191,36,0.5);
-  box-shadow: 0 0 12px rgba(251,191,36,0.15);
+.prof-tier.prem { background: linear-gradient(135deg, #78350f, #92400e); border-color: #fde68a; box-shadow: 0 2px 0 rgba(0,0,0,0.3), 0 0 10px rgba(251,191,36,0.3); }
+
+.prof-member-since {
+  text-align: center; font-size: 9px; font-weight: 800;
+  color: rgba(255,255,255,0.6); margin-top: 6px;
+  position: relative; z-index: 2;
 }
 
 /* ── BODY ── */
-.prof-body {
-  padding: 0 14px 120px; margin-top: -24px;
-  position: relative; z-index: 5;
-}
-
-/* ── STATS ── */
-.prof-stats {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-  margin-bottom: 16px;
-}
-.prof-stat-card {
-  background: rgba(255,255,255,0.04);
-  border: 1.5px solid rgba(255,255,255,0.08);
-  border-radius: 14px; padding: 12px 8px; text-align: center;
-  backdrop-filter: blur(6px);
-  transition: transform 0.2s, border-color 0.2s;
-}
-.prof-stat-card:hover { transform: translateY(-2px); border-color: rgba(251,191,36,0.2); }
-.prof-stat-val { font-size: 14px; font-weight: 900; color: #fbbf24; line-height: 1.2; margin-bottom: 3px; }
-.prof-stat-val.green { color: #4ade80; }
-.prof-stat-lbl { font-size: 9px; font-weight: 800; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.3px; }
-
-/* ── REFERRAL ── */
-.prof-ref-strip {
-  display: flex; align-items: center; justify-content: space-between;
-  background: rgba(251,191,36,0.06);
-  border: 1.5px solid rgba(251,191,36,0.15);
-  border-radius: 14px; padding: 12px 14px; margin-bottom: 16px;
-  backdrop-filter: blur(6px);
-}
-.prof-ref-label { font-size: 9px; font-weight: 800; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 2px; }
-.prof-ref-code { font-size: 15px; font-weight: 900; color: #fbbf24; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; }
-.prof-ref-btn {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  border: 1.5px solid rgba(120,53,15,0.5);
-  border-radius: 10px; padding: 8px 14px;
-  font-size: 11px; font-weight: 900; color: #fff;
-  cursor: pointer; flex-shrink: 0;
-  display: flex; align-items: center; gap: 4px;
-  transition: transform 0.1s, box-shadow 0.1s;
-  box-shadow: 0 3px 0 rgba(120,53,15,0.5);
-  font-family: inherit;
-}
-.prof-ref-btn:active { transform: translateY(2px); box-shadow: none; }
-
-/* ── NAV GRID ── */
-.prof-nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
-.prof-nav-item {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 14px 10px; border-radius: 14px;
-  font-size: 12px; font-weight: 800; text-decoration: none;
-  border: 1.5px solid; transition: transform 0.15s, box-shadow 0.15s;
-  backdrop-filter: blur(4px);
-}
-.prof-nav-item:active { transform: translateY(2px); box-shadow: none !important; }
-.prof-nav-item i { font-size: 18px; }
-.prof-nav-item.n-rek { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.25); color: #4ade80; box-shadow: 0 3px 0 rgba(34,197,94,0.2); }
-.prof-nav-item.n-upg { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.25); color: #fbbf24; box-shadow: 0 3px 0 rgba(251,191,36,0.2); }
-.prof-nav-item.n-riw { background: rgba(251,146,60,0.1); border-color: rgba(251,146,60,0.25); color: #fb923c; box-shadow: 0 3px 0 rgba(251,146,60,0.2); }
-.prof-nav-item.n-pan { background: rgba(96,165,250,0.1); border-color: rgba(96,165,250,0.25); color: #60a5fa; box-shadow: 0 3px 0 rgba(96,165,250,0.2); }
-
-/* ── ACCORDION ── */
-.prof-settings {
-  background: rgba(255,255,255,0.03);
-  border: 1.5px solid rgba(255,255,255,0.06);
-  border-radius: 16px; overflow: hidden; margin-bottom: 16px;
-  backdrop-filter: blur(6px);
-}
-.prof-acc-hdr {
-  display: flex; align-items: center; gap: 10px;
-  padding: 14px; cursor: pointer; user-select: none;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  transition: background 0.2s;
-}
-.prof-acc-hdr:hover { background: rgba(255,255,255,0.02); }
-.prof-acc-hdr.open { background: rgba(251,191,36,0.05); border-bottom-color: rgba(251,191,36,0.1); }
-.prof-acc-hdr .acc-icon {
-  width: 32px; height: 32px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px; flex-shrink: 0;
-}
-.prof-acc-hdr .acc-icon.icon-info { background: rgba(96,165,250,0.12); color: #60a5fa; }
-.prof-acc-hdr .acc-icon.icon-edit { background: rgba(251,191,36,0.12); color: #fbbf24; }
-.prof-acc-hdr .acc-icon.icon-lock { background: rgba(248,113,113,0.12); color: #f87171; }
-.prof-acc-hdr .acc-title { flex: 1; font-size: 12px; font-weight: 800; color: #e2e8f0; }
-.prof-acc-hdr .acc-caret { font-size: 12px; color: rgba(255,255,255,0.3); transition: transform 0.3s; }
-.prof-acc-hdr.open .acc-caret { transform: rotate(180deg); color: #fbbf24; }
-
-.prof-acc-body {
-  max-height: 0; overflow: hidden;
-  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s;
-  padding: 0 14px; background: rgba(0,0,0,0.15);
-}
-.prof-acc-body.open { max-height: 320px; padding: 14px; }
-
-/* Forms */
-.prof-lbl { font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 0.3px; }
-.prof-input {
-  width: 100%; background: rgba(255,255,255,0.06);
-  border: 1.5px solid rgba(255,255,255,0.1);
-  border-radius: 10px; padding: 10px 12px;
-  font-size: 13px; font-weight: 700; color: #e2e8f0;
-  margin-bottom: 10px; outline: none; box-sizing: border-box;
-  transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit;
-}
-.prof-input:focus { border-color: rgba(251,191,36,0.4); box-shadow: 0 0 0 3px rgba(251,191,36,0.1); }
-.prof-input:disabled { background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.35); border-color: rgba(255,255,255,0.05); cursor: not-allowed; }
-.prof-submit {
-  width: 100%; background: linear-gradient(135deg, #f59e0b, #d97706);
-  border: none; border-radius: 10px; padding: 11px;
-  font-size: 12px; font-weight: 900; color: #fff; cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.1s;
-  box-shadow: 0 3px 0 rgba(120,53,15,0.5);
-  display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit;
-}
-.prof-submit:active { transform: translateY(2px); box-shadow: none; }
-
-/* ── CONTACT ── */
-.prof-contact-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
-.prof-contact-btn {
-  width: 44px; height: 44px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  border: 1.5px solid; transition: transform 0.15s;
-  text-decoration: none; color: #fff; backdrop-filter: blur(4px);
-}
-.prof-contact-btn:active { transform: scale(0.92); }
-
-/* ── LOGOUT ── */
-.prof-logout {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  background: rgba(239,68,68,0.08);
-  border: 1.5px solid rgba(239,68,68,0.2);
-  border-radius: 14px; padding: 13px;
-  font-size: 13px; font-weight: 800; color: #f87171;
-  text-decoration: none; transition: background 0.2s, transform 0.1s; margin-top: 8px;
-}
-.prof-logout:active { transform: translateY(2px); }
-.prof-logout:hover { background: rgba(239,68,68,0.12); }
+.prof-body { padding: 0 14px 120px; margin-top: -16px; position: relative; z-index: 5; }
 
 /* ── FLASH ── */
 .prof-flash {
   display: flex; align-items: center; gap: 8px;
-  padding: 10px 14px; border-radius: 12px;
-  font-size: 12px; font-weight: 800; margin-bottom: 14px;
-  animation: flashSlide 0.3s ease-out;
+  padding: 10px 12px; border-radius: 12px;
+  font-size: 11.5px; font-weight: 800; margin-bottom: 12px;
+  border: 2px solid; animation: flashPop 0.3s ease-out;
 }
-@keyframes flashSlide {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes flashPop { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform: translateY(0); } }
+.prof-flash--success { background: #ecfdf5; border-color: #10b981; color: #065f46; }
+.prof-flash--error { background: #fef2f2; border-color: #ef4444; color: #b91c1c; }
+
+/* ── BALANCE CARDS ── */
+.prof-balance-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
 }
-.prof-flash--success { background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.2); color: #4ade80; }
-.prof-flash--error { background: rgba(239,68,68,0.1); border: 1.5px solid rgba(239,68,68,0.2); color: #f87171; }
+.prof-bal-card {
+  background: #fff; border: 2.5px solid #78350f; border-radius: 14px;
+  padding: 12px 10px; text-align: center; box-shadow: 0 4px 0 #78350f;
+  position: relative; overflow: hidden;
+}
+.prof-bal-card::before {
+  content: ''; position: absolute; top: -8px; right: -8px;
+  width: 32px; height: 32px; opacity: 0.06;
+  background: #f59e0b;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+.prof-bal-card.gold { background: linear-gradient(135deg, #fffbeb, #fef3c7); }
+.prof-bal-card.honey { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+.prof-bal-icon { font-size: 18px; margin-bottom: 4px; }
+.prof-bal-val { font-size: 13px; font-weight: 900; color: #78350f; line-height: 1.2; }
+.prof-bal-lbl { font-size: 8.5px; font-weight: 900; color: #92400e; text-transform: uppercase; margin-top: 2px; }
+
+/* ── STATS GRID ── */
+.prof-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px;
+}
+.prof-stat {
+  background: #fff; border: 2px solid #fde68a; border-radius: 12px;
+  padding: 10px 4px; text-align: center; transition: transform 0.15s;
+}
+.prof-stat:hover { transform: translateY(-2px); }
+.prof-stat-emoji { font-size: 16px; margin-bottom: 2px; }
+.prof-stat-val { font-size: 13px; font-weight: 900; color: #d97706; }
+.prof-stat-lbl { font-size: 8px; font-weight: 900; color: #92400e; text-transform: uppercase; }
+
+/* ── REFERRAL ── */
+.prof-ref {
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  border: 2.5px solid #78350f; border-radius: 14px;
+  padding: 10px 12px; box-shadow: 0 4px 0 #78350f; margin-bottom: 14px;
+}
+.prof-ref-lbl { font-size: 9px; font-weight: 900; color: #92400e; text-transform: uppercase; margin-bottom: 1px; }
+.prof-ref-code { font-size: 15px; font-weight: 900; color: #78350f; letter-spacing: 0.5px; }
+.prof-ref-btn {
+  background: #f59e0b; border: 2px solid #78350f; border-radius: 10px;
+  font-size: 10.5px; font-weight: 900; color: #78350f;
+  padding: 8px 12px; box-shadow: 0 3px 0 #78350f; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; gap: 4px; font-family: inherit;
+  transition: transform 0.1s;
+}
+.prof-ref-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+
+/* ── NAV GRID ── */
+.prof-nav-title {
+  font-size: 10px; font-weight: 900; color: #92400e; text-transform: uppercase;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.prof-nav-title::after { content: ''; flex: 1; height: 2px; background: #fde68a; border-radius: 2px; }
+.prof-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.prof-nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 12px 6px; border-radius: 14px; font-size: 10px; font-weight: 900;
+  text-decoration: none; border: 2.5px solid #78350f;
+  box-shadow: 0 4px 0 #78350f; transition: transform 0.1s;
+}
+.prof-nav-item:active { transform: translateY(3px); box-shadow: 0 1px 0 #78350f; }
+.prof-nav-item i { font-size: 20px; }
+.pn-rek { background: #a7f3d0; color: #065f46; border-color: #065f46; box-shadow: 0 4px 0 #065f46; }
+.pn-upg { background: #fde68a; color: #78350f; }
+.pn-riw { background: #fed7aa; color: #78350f; }
+.pn-pan { background: #fef08a; color: #78350f; }
+.pn-farm { background: #bbf7d0; color: #166534; border-color: #166534; box-shadow: 0 4px 0 #166534; }
+.pn-vid { background: #e0e7ff; color: #3730a3; border-color: #3730a3; box-shadow: 0 4px 0 #3730a3; }
+.pn-misi { background: #fce7f3; color: #9d174d; border-color: #9d174d; box-shadow: 0 4px 0 #9d174d; }
+.pn-plinko { background: #e0f2fe; color: #0369a1; border-color: #0369a1; box-shadow: 0 4px 0 #0369a1; }
+.pn-inv { background: #fef3c7; color: #92400e; border-color: #92400e; box-shadow: 0 4px 0 #92400e; }
+
+/* ── ACCORDION ── */
+.prof-group {
+  background: #fff; border: 2.5px solid #78350f; border-radius: 16px;
+  box-shadow: 0 4px 0 #78350f; overflow: hidden; margin-bottom: 14px;
+}
+.prof-acc-hdr {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px; background: #fffbeb; cursor: pointer; user-select: none;
+  border-bottom: 2px solid transparent; transition: background 0.15s;
+}
+.prof-acc-hdr.open { border-bottom-color: #fde68a; background: #fef3c7; }
+.prof-acc-hdr .icon { font-size: 16px; color: #d97706; width: 24px; text-align: center; }
+.prof-acc-hdr .title { flex: 1; font-size: 11px; font-weight: 900; color: #78350f; text-transform: uppercase; }
+.prof-acc-hdr .caret { font-size: 11px; color: #d97706; transition: transform 0.25s; }
+.prof-acc-hdr.open .caret { transform: rotate(180deg); }
+.prof-acc-body {
+  max-height: 0; overflow: hidden; background: #fff;
+  transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1), padding 0.3s;
+  padding: 0 12px;
+}
+.prof-acc-body.open { max-height: 400px; padding: 12px; }
+
+/* Info row inside accordion */
+.prof-info-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1.5px dashed #fde68a;
+}
+.prof-info-row:last-child { border-bottom: none; }
+.prof-info-row .ir-icon { font-size: 14px; color: #d97706; width: 22px; text-align: center; flex-shrink: 0; }
+.prof-info-row .ir-lbl { flex: 1; font-size: 10px; font-weight: 800; color: #92400e; }
+.prof-info-row .ir-val { font-size: 11px; font-weight: 900; color: #78350f; text-align: right; }
+
+/* Forms */
+.prof-lbl { font-size: 10px; font-weight: 900; color: #78350f; margin-bottom: 4px; display: block; }
+.prof-input {
+  width: 100%; background: #fff; border: 2px solid #fde68a; border-radius: 10px;
+  padding: 9px 10px; font-size: 12px; font-weight: 800; color: #78350f;
+  margin-bottom: 8px; outline: none; box-sizing: border-box; font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.prof-input:focus { border-color: #d97706; box-shadow: 0 0 0 3px rgba(217,119,6,0.15); }
+.prof-input:disabled { background: #f8fafc; color: #94a3b8; border-color: #e2e8f0; cursor: not-allowed; }
+.prof-btn {
+  width: 100%; background: #f59e0b; border: 2px solid #78350f; border-radius: 10px;
+  padding: 10px; font-size: 12px; font-weight: 900; color: #78350f;
+  box-shadow: 0 3px 0 #78350f; cursor: pointer; transition: transform 0.1s; font-family: inherit;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.prof-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+
+/* ── CONTACT ── */
+.prof-contact { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
+.prof-contact-btn {
+  flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2.5px solid #78350f; box-shadow: 0 3px 0 #78350f;
+  transition: transform 0.1s; text-decoration: none; color: #78350f; background: #fff;
+}
+.prof-contact-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+
+/* ── LOGOUT ── */
+.prof-logout {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: #fee2e2; border: 2.5px solid #dc2626; border-radius: 14px;
+  padding: 12px; font-size: 13px; font-weight: 900; color: #dc2626;
+  text-decoration: none; box-shadow: 0 4px 0 #dc2626; transition: transform 0.1s;
+}
+.prof-logout:active { transform: translateY(3px); box-shadow: 0 1px 0 #dc2626; }
+
+/* ── HONEYCOMB BORDER DECO ── */
+.honey-divider {
+  display: flex; align-items: center; gap: 4px; justify-content: center;
+  margin: 14px 0; opacity: 0.3;
+}
+.honey-divider span {
+  width: 12px; height: 12px; background: #f59e0b;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
 </style>
 
-<!-- HERO BANNER -->
+<!-- HERO -->
 <div class="prof-hero">
-  <div class="prof-hex-deco"></div>
-  <div class="prof-hex-deco"></div>
-  <div class="prof-hex-deco"></div>
-  
+  <!-- Hex decorations -->
+  <div class="hex-deco"></div><div class="hex-deco"></div><div class="hex-deco"></div><div class="hex-deco"></div><div class="hex-deco"></div>
+  <!-- Flying bees -->
+  <div class="fly-bee">🐝</div><div class="fly-bee">🐝</div><div class="fly-bee">🐝</div>
+
   <div class="prof-ava-wrap">
     <div class="prof-ava-ring">
       <div class="prof-ava"><?= strtoupper(substr($user['username'], 0, 1)) ?></div>
     </div>
   </div>
-  
   <div class="prof-name"><?= htmlspecialchars($user['username']) ?></div>
   <div class="prof-email"><?= htmlspecialchars($user['email']) ?></div>
-  <div style="text-align:center;position:relative;z-index:2">
-    <span class="prof-tier-badge <?= $is_premium ? 'premium' : '' ?>">
-      <?= $is_premium ? '★ '.$membership_name : $membership_name ?>
+  <div style="text-align:center">
+    <span class="prof-tier <?= $is_premium ? 'prem' : '' ?>">
+      <?= $is_premium ? '★ '.$membership_name : '🐝 '.$membership_name ?>
       <?= $user['membership_expires_at'] ? ' • '.date('d/m/y', strtotime($user['membership_expires_at'])) : '' ?>
     </span>
   </div>
+  <div class="prof-member-since">📅 Bergabung <?= $member_since ?> · <?= number_format($days_member) ?> hari</div>
 </div>
 
 <div class="prof-body">
   <?php if ($flash): ?>
   <div class="prof-flash prof-flash--<?= $flashType === 'error' ? 'error' : 'success' ?>">
-    <i class="ph-bold ph-<?= $flashType === 'error' ? 'warning-circle' : 'check-circle' ?>" style="font-size:16px;"></i>
+    <i class="ph-bold ph-<?= $flashType === 'error' ? 'warning-circle' : 'check-circle' ?>" style="font-size:15px;"></i>
     <?= htmlspecialchars($flash) ?>
   </div>
   <?php endif; ?>
 
-  <!-- STATS -->
-  <div class="prof-stats">
-    <div class="prof-stat-card">
-      <div class="prof-stat-val green"><?= format_rp((float)$user['total_earned']) ?></div>
-      <div class="prof-stat-lbl">Total Earned</div>
+  <!-- BALANCE CARDS -->
+  <div class="prof-balance-row">
+    <div class="prof-bal-card gold">
+      <div class="prof-bal-icon">💰</div>
+      <div class="prof-bal-val"><?= format_rp((float)$user['balance_wd']) ?></div>
+      <div class="prof-bal-lbl">Saldo Tarik</div>
     </div>
-    <div class="prof-stat-card">
-      <div class="prof-stat-val"><?= number_format($total_watches) ?></div>
-      <div class="prof-stat-lbl">Ditonton</div>
+    <div class="prof-bal-card">
+      <div class="prof-bal-icon">💎</div>
+      <div class="prof-bal-val"><?= format_rp((float)$user['balance_dep']) ?></div>
+      <div class="prof-bal-lbl">Saldo Beli</div>
     </div>
-    <div class="prof-stat-card">
-      <div class="prof-stat-val"><?= $refs ?></div>
-      <div class="prof-stat-lbl">Referral</div>
+  </div>
+  <div class="prof-balance-row">
+    <div class="prof-bal-card honey">
+      <div class="prof-bal-icon">🍯</div>
+      <div class="prof-bal-val"><?= number_format((float)$user['honey_stock'], 1) ?> ml</div>
+      <div class="prof-bal-lbl">Stok Madu</div>
+    </div>
+    <div class="prof-bal-card">
+      <div class="prof-bal-icon">🪙</div>
+      <div class="prof-bal-val"><?= number_format((int)$user['plinko_coins']) ?></div>
+      <div class="prof-bal-lbl">Koin Plinko</div>
     </div>
   </div>
 
+  <!-- STATS -->
+  <div class="prof-stats">
+    <div class="prof-stat">
+      <div class="prof-stat-emoji">🏆</div>
+      <div class="prof-stat-val"><?= format_rp((float)$user['total_earned']) ?></div>
+      <div class="prof-stat-lbl">Total Earned</div>
+    </div>
+    <div class="prof-stat">
+      <div class="prof-stat-emoji">👥</div>
+      <div class="prof-stat-val"><?= $refs ?></div>
+      <div class="prof-stat-lbl">Referral</div>
+    </div>
+    <div class="prof-stat">
+      <div class="prof-stat-emoji">📺</div>
+      <div class="prof-stat-val"><?= number_format($total_watches) ?></div>
+      <div class="prof-stat-lbl">Ditonton</div>
+    </div>
+  </div>
+
+  <div class="prof-stats">
+    <div class="prof-stat">
+      <div class="prof-stat-emoji">📥</div>
+      <div class="prof-stat-val"><?= $total_deposits ?></div>
+      <div class="prof-stat-lbl">Deposit</div>
+    </div>
+    <div class="prof-stat">
+      <div class="prof-stat-emoji">📤</div>
+      <div class="prof-stat-val"><?= $total_withdrawals ?></div>
+      <div class="prof-stat-lbl">Withdraw</div>
+    </div>
+    <div class="prof-stat">
+      <div class="prof-stat-emoji">📈</div>
+      <div class="prof-stat-val"><?= $active_investments ?></div>
+      <div class="prof-stat-lbl">Investasi</div>
+    </div>
+  </div>
+
+  <div class="prof-stats" style="grid-template-columns: 1fr 1fr;">
+    <div class="prof-stat">
+      <div class="prof-stat-emoji">🏠</div>
+      <div class="prof-stat-val"><?= $total_hives ?></div>
+      <div class="prof-stat-lbl">Sarang</div>
+    </div>
+    <div class="prof-stat">
+      <div class="prof-stat-emoji">🐝</div>
+      <div class="prof-stat-val"><?= $total_bees ?></div>
+      <div class="prof-stat-lbl">Lebah</div>
+    </div>
+  </div>
+
+  <!-- HONEYCOMB DIVIDER -->
+  <div class="honey-divider"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+
   <!-- REFERRAL -->
-  <div class="prof-ref-strip">
+  <div class="prof-ref">
     <div>
-      <div class="prof-ref-label">Kode Referral</div>
+      <div class="prof-ref-lbl">Kode Referral</div>
       <div class="prof-ref-code" id="ref-code"><?= htmlspecialchars($user['referral_code']) ?></div>
     </div>
     <button class="prof-ref-btn" onclick="copyRef()"><i class="ph-bold ph-copy"></i> Salin</button>
   </div>
 
   <!-- NAV GRID -->
-  <div class="prof-nav-grid">
-    <a href="/edit-rekening" class="prof-nav-item n-rek">
-      <i class="ph-bold ph-bank"></i> <span>Rekening</span>
-    </a>
-    <a href="/upgrade" class="prof-nav-item n-upg">
-      <i class="ph-bold ph-rocket-launch"></i> <span>Upgrade</span>
-    </a>
-    <a href="/history" class="prof-nav-item n-riw">
-      <i class="ph-bold ph-receipt"></i> <span>Riwayat</span>
-    </a>
-    <a href="/panduan" class="prof-nav-item n-pan">
-      <i class="ph-bold ph-book-open"></i> <span>Panduan</span>
-    </a>
+  <div class="prof-nav-title">🧭 Menu Cepat</div>
+  <div class="prof-nav">
+    <a href="/edit-rekening" class="prof-nav-item pn-rek"><i class="ph-bold ph-bank"></i> Rekening</a>
+    <a href="/upgrade" class="prof-nav-item pn-upg"><i class="ph-bold ph-rocket-launch"></i> Upgrade</a>
+    <a href="/history" class="prof-nav-item pn-riw"><i class="ph-bold ph-receipt"></i> Riwayat</a>
+    <a href="/panduan" class="prof-nav-item pn-pan"><i class="ph-bold ph-book-open"></i> Panduan</a>
+    <a href="/farm" class="prof-nav-item pn-farm"><i class="ph-bold ph-tree"></i> Farm</a>
+    <a href="/videos" class="prof-nav-item pn-vid"><i class="ph-bold ph-play-circle"></i> Video</a>
+    <a href="/missions" class="prof-nav-item pn-misi"><i class="ph-bold ph-target"></i> Misi</a>
+    <a href="/plinko" class="prof-nav-item pn-plinko"><i class="ph-bold ph-game-controller"></i> Plinko</a>
+    <a href="/invest" class="prof-nav-item pn-inv"><i class="ph-bold ph-chart-line-up"></i> Investasi</a>
   </div>
 
-  <!-- SETTINGS -->
-  <div class="prof-settings">
+  <!-- HONEYCOMB DIVIDER -->
+  <div class="honey-divider"><span></span><span></span><span></span><span></span><span></span></div>
+
+  <!-- SETTINGS ACCORDION -->
+  <div class="prof-group">
     <div class="prof-acc-hdr" onclick="toggleAcc('info')" id="h-info">
-      <div class="acc-icon icon-info"><i class="ph-bold ph-identification-card"></i></div>
-      <span class="acc-title">Info Akun</span>
-      <i class="acc-caret ph-bold ph-caret-down" id="c-info"></i>
+      <i class="icon ph-bold ph-identification-card"></i>
+      <span class="title">Info Akun</span>
+      <i class="caret ph-bold ph-caret-down"></i>
     </div>
     <div class="prof-acc-body" id="b-info">
-      <label class="prof-lbl">WhatsApp</label>
-      <input class="prof-input" value="<?= htmlspecialchars(mask_account($user['whatsapp'] ?? '')) ?>" disabled>
-      <label class="prof-lbl">Bank Terdaftar</label>
-      <input class="prof-input" value="<?= $user['bank_name'] ? htmlspecialchars($user['bank_name'] . ' - ' . mask_account($user['account_number'] ?? '')) : 'Belum Ada' ?>" disabled>
+      <div class="prof-info-row">
+        <i class="ir-icon ph-bold ph-user"></i>
+        <span class="ir-lbl">Username</span>
+        <span class="ir-val"><?= htmlspecialchars($user['username']) ?></span>
+      </div>
+      <div class="prof-info-row">
+        <i class="ir-icon ph-bold ph-envelope"></i>
+        <span class="ir-lbl">Email</span>
+        <span class="ir-val"><?= htmlspecialchars($user['email']) ?></span>
+      </div>
+      <div class="prof-info-row">
+        <i class="ir-icon ph-bold ph-whatsapp-logo"></i>
+        <span class="ir-lbl">WhatsApp</span>
+        <span class="ir-val"><?= htmlspecialchars(mask_account($user['whatsapp'] ?? '')) ?></span>
+      </div>
+      <div class="prof-info-row">
+        <i class="ir-icon ph-bold ph-bank"></i>
+        <span class="ir-lbl">Bank</span>
+        <span class="ir-val"><?= $user['bank_name'] ? htmlspecialchars($user['bank_name'] . ' - ' . mask_account($user['account_number'] ?? '')) : 'Belum Ada' ?></span>
+      </div>
+      <div class="prof-info-row">
+        <i class="ir-icon ph-bold ph-calendar"></i>
+        <span class="ir-lbl">Terdaftar</span>
+        <span class="ir-val"><?= $member_since ?></span>
+      </div>
+      <div class="prof-info-row">
+        <i class="ir-icon ph-bold ph-star"></i>
+        <span class="ir-lbl">Paket</span>
+        <span class="ir-val"><?= $membership_name ?></span>
+      </div>
+      <?php if ((int)$user['spin_tickets'] > 0): ?>
+      <div class="prof-info-row">
+        <i class="ir-icon ph-bold ph-ticket"></i>
+        <span class="ir-lbl">Tiket Spin</span>
+        <span class="ir-val"><?= (int)$user['spin_tickets'] ?></span>
+      </div>
+      <?php endif; ?>
     </div>
 
     <div class="prof-acc-hdr <?= $active_section === 'edit' ? 'open' : '' ?>" onclick="toggleAcc('edit')" id="h-edit">
-      <div class="acc-icon icon-edit"><i class="ph-bold ph-pencil-simple"></i></div>
-      <span class="acc-title">Ubah Username</span>
-      <i class="acc-caret ph-bold ph-caret-down" id="c-edit"></i>
+      <i class="icon ph-bold ph-pencil-simple"></i>
+      <span class="title">Ubah Username</span>
+      <i class="caret ph-bold ph-caret-down"></i>
     </div>
     <div class="prof-acc-body <?= $active_section === 'edit' ? 'open' : '' ?>" id="b-edit">
       <form method="POST">
@@ -433,14 +583,14 @@ body {
         <input type="hidden" name="action" value="update_profile">
         <label class="prof-lbl">Username Baru (Huruf/Angka/_)</label>
         <input class="prof-input" type="text" name="username" value="<?= htmlspecialchars($user['username']) ?>" required minlength="3">
-        <button class="prof-submit"><i class="ph-bold ph-floppy-disk"></i> Simpan Username</button>
+        <button class="prof-btn"><i class="ph-bold ph-floppy-disk"></i> Simpan Username</button>
       </form>
     </div>
 
     <div class="prof-acc-hdr <?= $active_section === 'password' ? 'open' : '' ?>" onclick="toggleAcc('password')" id="h-password">
-      <div class="acc-icon icon-lock"><i class="ph-bold ph-lock-key"></i></div>
-      <span class="acc-title">Ganti Password</span>
-      <i class="acc-caret ph-bold ph-caret-down" id="c-password"></i>
+      <i class="icon ph-bold ph-lock-key"></i>
+      <span class="title">Ganti Password</span>
+      <i class="caret ph-bold ph-caret-down"></i>
     </div>
     <div class="prof-acc-body <?= $active_section === 'password' ? 'open' : '' ?>" id="b-password">
       <form method="POST">
@@ -450,23 +600,24 @@ body {
         <input class="prof-input" type="password" name="old_password" required minlength="6">
         <label class="prof-lbl">Password Baru</label>
         <input class="prof-input" type="password" name="new_password" required minlength="6">
-        <button class="prof-submit"><i class="ph-bold ph-key"></i> Update Password</button>
+        <button class="prof-btn"><i class="ph-bold ph-key"></i> Update Password</button>
       </form>
     </div>
   </div>
 
   <!-- CONTACT -->
-  <div class="prof-contact-row">
+  <div class="prof-nav-title">📞 Hubungi Kami</div>
+  <div class="prof-contact">
     <?php foreach ($_contact_btns as $cb): ?>
       <?php
         $t = strtolower($cb['icon_value']);
         $svg = $_psvg[$t] ?? $_psvg['cs'];
         $c = match($t) {
-            'wa' => 'background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.3);',
-            'tele' => 'background:rgba(96,165,250,0.15);border-color:rgba(96,165,250,0.3);',
-            'ig' => 'background:rgba(244,63,94,0.15);border-color:rgba(244,63,94,0.3);',
-            'fb' => 'background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.3);',
-            default => 'background:rgba(148,163,184,0.15);border-color:rgba(148,163,184,0.3);'
+            'wa' => 'background:linear-gradient(135deg, #4ade80, #16a34a);border-color:#14532d;box-shadow:0 3px 0 #14532d;color:#fff;',
+            'tele' => 'background:linear-gradient(135deg, #60a5fa, #2563eb);border-color:#1e3a8a;box-shadow:0 3px 0 #1e3a8a;color:#fff;',
+            'ig' => 'background:linear-gradient(135deg, #f43f5e, #be123c);border-color:#881337;box-shadow:0 3px 0 #881337;color:#fff;',
+            'fb' => 'background:linear-gradient(135deg, #3b82f6, #1d4ed8);border-color:#1e3a8a;box-shadow:0 3px 0 #1e3a8a;color:#fff;',
+            default => 'background:linear-gradient(135deg, #94a3b8, #475569);border-color:#1e293b;box-shadow:0 3px 0 #1e293b;color:#fff;'
         };
       ?>
       <a href="<?= htmlspecialchars($cb['url']) ?>" class="prof-contact-btn" target="_blank" style="<?= $c ?>">
@@ -474,6 +625,9 @@ body {
       </a>
     <?php endforeach; ?>
   </div>
+
+  <!-- HONEYCOMB DIVIDER -->
+  <div class="honey-divider"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
 
   <!-- LOGOUT -->
   <a href="/logout" class="prof-logout">
@@ -486,11 +640,8 @@ function toggleAcc(id) {
   const b = document.getElementById('b-' + id);
   const h = document.getElementById('h-' + id);
   const isOpen = b.classList.contains('open');
-
-  // Close all
   document.querySelectorAll('.prof-acc-body').forEach(el => el.classList.remove('open'));
   document.querySelectorAll('.prof-acc-hdr').forEach(el => el.classList.remove('open'));
-
   if (!isOpen) {
     b.classList.add('open');
     h.classList.add('open');
