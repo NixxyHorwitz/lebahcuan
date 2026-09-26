@@ -139,7 +139,7 @@ body { background: #071a0c !important; font-family: 'Nunito', sans-serif; overfl
 }
 
 /* Ground UI */
-.farm-ground-ui { background: linear-gradient(180deg, #0f2a16 0%, #071a0c 100%); padding: 16px 14px 150px; }
+.farm-ground-ui { background: linear-gradient(180deg, #0f2a16 0%, #071a0c 100%); padding: 16px 14px 180px; }
 .ground-section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
 .ground-section-title .pill { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(251,191,36,0.25); border-radius: 12px; padding: 5px 14px; font-size: 12px; font-weight: 800; color: #fbbf24; }
 .hive-quick-list { display: flex; flex-direction: column; gap: 10px; }
@@ -156,10 +156,52 @@ body { background: #071a0c !important; font-family: 'Nunito', sans-serif; overfl
 .farm-empty-cta .title { font-size: 16px; font-weight: 900; color: #f8fafc; }
 .farm-empty-cta .sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
 .farm-empty-cta .btn-cta { margin-top: 14px; display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #d97706); border: 2px solid #78350f; border-radius: 14px; padding: 10px 20px; color: #fff; font-size: 13px; font-weight: 900; text-decoration: none; box-shadow: 0 4px 0 #78350f; }
-.meadow-sticky-bar { position: fixed; bottom: 84px; left: 50%; transform: translateX(-50%); width: calc(100% - 24px); max-width: 456px; z-index: 50; }
-.btn-harvest-all { width: 100%; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 45%, #d97706 100%); border: 3.5px solid #78350f; border-radius: 20px; box-shadow: 0 6px 0 #78350f, 0 10px 25px rgba(180,83,9,0.4); padding: 13px 18px; color: #fff; font-size: 15px; font-weight: 900; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-family: 'Nunito', sans-serif; text-shadow: 0 2px 0 #78350f; transition: transform 0.1s; }
-.btn-harvest-all:active { transform: translateY(3px); box-shadow: 0 3px 0 #78350f; }
-.btn-harvest-all:disabled { background: #cbd5e1; border-color: #64748b; color: #475569; text-shadow: none; box-shadow: none; cursor: not-allowed; }
+.meadow-sticky-bar {
+  position: fixed;
+  bottom: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 440px;
+  z-index: 50;
+  pointer-events: none;
+}
+.btn-harvest-all {
+  pointer-events: auto;
+  width: 100%;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 45%, #d97706 100%);
+  border: 2.5px solid #78350f;
+  border-radius: 18px;
+  box-shadow: 0 4px 0 #78350f, 0 8px 20px rgba(180,83,9,0.35);
+  padding: 10px 16px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  text-shadow: 0 1.5px 0 #78350f;
+  transition: transform 0.1s;
+}
+.btn-harvest-all:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #78350f;
+}
+.btn-harvest-all:disabled {
+  background: #cbd5e1;
+  border-color: #64748b;
+  color: #475569;
+  text-shadow: none;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Floating contact button on Farm Meadow page - positioned cleanly above harvest bar */
+body .float-contact-wrap {
+  bottom: 154px !important;
+}
 
 /* Inspection Modal */
 .hive-inspection-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s; }

@@ -76,7 +76,7 @@
     border: 1px solid #78350f;
   }
 
-  /* CENTER PLAY BUTTON (HEXAGONAL 3D NOTCH) */
+  /* CENTER PLAY BUTTON (3D HALO BADGE) */
   .nav-item--play {
     position: relative !important;
     overflow: visible !important;
@@ -91,43 +91,29 @@
     flex-direction: column;
     align-items: center;
     position: relative;
-    margin-top: -28px; /* Elevated above floating dock */
-  }
-  /* Hexagonal Cradle Base */
-  .nav-hex-cradle {
-    position: absolute;
-    top: -5px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 66px;
-    height: 66px;
-    background: #ffffff;
-    border: 2px solid #78350f;
-    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
-    box-shadow: 0 4px 10px rgba(120,53,15,0.15);
-    z-index: 1;
+    margin-top: -20px; /* Elevated cleanly above dock */
   }
   .nav-play-btn {
-    width: 56px; height: 56px;
+    width: 50px; height: 50px;
     background: linear-gradient(135deg, #fde047 0%, #f59e0b 50%, #d97706 100%) !important;
+    border-radius: 17px;
     border: 2.5px solid #78350f !important;
-    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
     display: flex; align-items: center; justify-content: center;
     position: relative;
-    z-index: 2;
-    filter: drop-shadow(0 3px 0 #78350f);
-    transition: transform 0.15s, filter 0.15s;
+    z-index: 5;
+    box-shadow: 0 0 0 3px #ffffff, 0 3.5px 0 3px #78350f, 0 8px 16px rgba(180,83,9,0.3) !important;
+    transition: transform 0.12s, box-shadow 0.12s;
   }
   .nav-item--play:active .nav-play-btn {
-    transform: translateY(3px) scale(0.95);
-    filter: drop-shadow(0 1px 0 #78350f);
+    transform: translateY(2px) scale(0.96);
+    box-shadow: 0 0 0 3px #ffffff, 0 1.5px 0 3px #78350f !important;
   }
   .nav-item--play.active .nav-play-btn {
-    background: linear-gradient(135deg, #fffbeb, #fbbf24) !important;
-    filter: drop-shadow(0 3px 0 #78350f) drop-shadow(0 0 10px rgba(245,158,11,0.5));
+    background: linear-gradient(135deg, #fef08a 0%, #fbbf24 60%, #ea580c 100%) !important;
+    box-shadow: 0 0 0 3px #ffffff, 0 3.5px 0 3px #78350f, 0 0 14px rgba(245,158,11,0.6) !important;
   }
   .nav-play-btn img {
-    width: 30px; height: 30px;
+    width: 28px; height: 28px;
     object-fit: contain;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
     animation: navBeeWiggle 3.5s ease-in-out infinite;
@@ -145,6 +131,8 @@
     font-family: 'Nunito', sans-serif;
     margin-top: 3px;
     letter-spacing: -0.2px;
+    position: relative;
+    z-index: 6;
   }
   .nav-item--play.active .nav-play-label {
     color: #d97706;
@@ -152,7 +140,7 @@
 
   /* Floating contact adjustment */
   .float-contact-wrap {
-    bottom: 88px !important;
+    bottom: <?= ($activePage ?? '') === 'farm' && ($farmSubPage ?? '') === 'meadow' ? '154px' : '88px' ?> !important;
   }
   </style>
 
@@ -166,10 +154,9 @@
       Video
     </a>
 
-    <!-- Center: SIDEJOB TERNAK LEBAH button (Floating Hexagon) -->
+    <!-- Center: SIDEJOB TERNAK LEBAH button -->
     <a href="/farm" class="nav-item nav-item--play <?= ($activePage??'')==='farm'?'active':'' ?>">
       <div class="nav-play-wrap">
-        <div class="nav-hex-cradle"></div>
         <div class="nav-play-btn">
           <img src="/assets/game/bee_worker.png" alt="Ternak Lebah">
         </div>
