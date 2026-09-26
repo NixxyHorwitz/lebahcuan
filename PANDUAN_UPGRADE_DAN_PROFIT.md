@@ -125,6 +125,36 @@ flowchart TD
     *   `❌ Reject`: Menolak permintaan pengembalian dana.
     *   `⚙️ Ubah Potongan`: Menyesuaikan persentase potongan secara fleksibel.
 
+### C. Sinergi Genjutsu & "The 25k Quick Amount Trap" (Zero-Friction Behavioral Bias)
+Kombinasi antara kenaikan harga Genjutsu dan tata letak tombol cepat deposit (`user/deposit.php`) menciptakan perangkap psikologis bertingkat (*multi-layer psychological trap*):
+
+```mermaid
+flowchart TD
+    A[Deposit Awal Rp 48.000 atau Rp 50.000] --> B[Genjutsu Aktif: Harga Naik ke Rp 69.000]
+    B --> C[Pengguna Mengalami Shortfall: Kurang Rp 19.000 s/d Rp 21.000]
+    C --> D[Pengguna Kembali ke Halaman Deposit]
+    D --> E{Pilihan Input Nominal}
+    E -->|Ketik Manual: Ada Usaha Mengetik| Manual[Ketik Angka Pas Rp 21.000]
+    E -->|1-Klik Praktis: Zero Friction| Chip[Klik Chip Cepat Terdekat: Rp 25.000]
+    Chip --> F[Pengguna Pilih Rp 25.000 Karena Malas Mengetik]
+    F --> G[Total Uang Masuk ke Admin: Rp 73.000 - Rp 75.000]
+    G --> H[Paket Pejuang Terbeli Rp 69.000]
+    H --> I[Sisa Saldo Beli Mengendap: Rp 4.000 - Rp 6.000 Terkunci!]
+```
+
+1. **Shortfall Matematika yang Direkayasa**:
+   * Harga awal paket Pejuang ditampilkan Rp 48.000. Pengguna melakukan deposit Rp 48.000.
+   * Begitu saldo masuk, Genjutsu mengubah harga menjadi Rp 69.000 $\rightarrow$ Pengguna kekurangan **Rp 21.000** untuk checkout.
+2. **Friksi Kognitif & Malas Mengetik (*Lazy Click Bias*)**:
+   * Di form deposit, `min_deposit` diatur sebesar **Rp 20.000** (chip Rp 10.000 gugur otomatis).
+   * Tombol chip cepat terendah yang valid di atas batas minimal adalah **Rp 25.000**.
+   * Secara psikologis, pengguna ponsel sangat malas mengetik angka manual di keyboard ("21000"). Memilih tombol instan **Rp 25.000** hanya butuh 1 kali tap tanpa berpikir.
+3. **Uang Masuk Lebih Besar & Saldo Mengendap Selamanya (*Breakage Float*)**:
+   * Total uang tunai asli yang masuk ke rekening admin menjadi **Rp 73.000** (Rp 48.000 + Rp 25.000), jauh melebihi harga awal Rp 48.000.
+   * Setelah paket Pejuang dibeli seharga Rp 69.000, terdapat sisa saldo beli sebesar **Rp 4.000**.
+   * Karena saldo beli *non-withdrawable*, sisa uang ini menjadi modal mengendap selamanya di sistem, sekaligus memicu rasa sayang (*sunk cost fallacy*) yang mendorong pengguna untuk deposit lagi di kemudian hari guna membeli bibit lebah atau upgrade ke Jagoan.
+
+
 ---
 
 ## 4. Tabel Perbandingan Level Membership
