@@ -274,6 +274,50 @@ body .float-contact-wrap {
 .harvest-celebration-text .h-sub {
   font-size: 10.5px; font-weight: 700; color: #fde68a; margin-top: 2px;
 }
+
+/* 3D In-World Harvest Progress Bar */
+.harvest-progress-3d {
+  position: absolute;
+  pointer-events: none;
+  z-index: 60;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -100%);
+}
+.harvest-progress-3d.active { display: flex; }
+.harvest-progress-label {
+  font-size: 10px;
+  font-weight: 900;
+  color: #fef3c7;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  margin-bottom: 3px;
+  letter-spacing: 0.5px;
+}
+.harvest-progress-bar-outer {
+  width: 90px;
+  height: 10px;
+  background: rgba(69,26,3,0.8);
+  border: 2px solid rgba(251,191,36,0.5);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 8px rgba(251,191,36,0.3);
+}
+.harvest-progress-bar-inner {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24, #fde047);
+  border-radius: 4px;
+  transition: width 0.08s linear;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);
+}
+.harvest-progress-pct {
+  font-size: 9px;
+  font-weight: 900;
+  color: #fbbf24;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  margin-top: 2px;
+}
 </style>
 
 <?php require __DIR__ . '/partials/farm_header.php'; ?>
@@ -936,14 +980,14 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
     const col = idx % maxCols;
     const itemsInThisRow = (row === totalRows - 1) ? (total - row * maxCols) : maxCols;
 
-    const spacingX = 3.6;
-    const spacingZ = 3.6;
+    const spacingX = 2.3;
+    const spacingZ = 2.3;
 
     const ox = -(itemsInThisRow - 1) * spacingX / 2;
     const oz = -(totalRows - 1) * spacingZ / 2;
 
     return {
-      x: ox + col * spacingX,
+      x: ox + col * spacingX + 0.6,
       z: oz + row * spacingZ
     };
   }
@@ -1215,8 +1259,9 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
       });
     });
 
-    cabin.position.set(-7.5, 0, -1.0);
-    cabin.rotation.y = Math.PI * 0.16;
+    cabin.position.set(-3.8, 0, -2.5);
+    cabin.rotation.y = Math.PI * 0.12;
+    cabin.scale.set(0.88, 0.88, 0.88);
     scene.add(cabin);
     return cabin;
   }
@@ -1227,20 +1272,18 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
     const stoneGeo = new THREE.CylinderGeometry(0.32, 0.38, 0.06, 7);
     const stoneMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.94, flatShading: true });
     const pathPts = [
-      [-5.8, 0.04, 0.8],
-      [-5.0, 0.04, 0.9],
-      [-4.2, 0.04, 0.7],
-      [-3.4, 0.04, 0.8],
-      [-2.6, 0.04, 0.6],
-      [-1.8, 0.04, 0.8],
-      [-1.0, 0.04, 0.5],
-      [-0.2, 0.04, 0.6],
-      [0.8, 0.04, 0.4],
-      [1.6, 0.04, 0.8],
-      [2.5, 0.04, 1.2],
-      [3.5, 0.04, 1.6],
-      [4.6, 0.04, 2.2],
-      [5.6, 0.04, 3.2]
+      [-4.5, 0.04, 0.2],
+      [-3.6, 0.04, 0.4],
+      [-2.8, 0.04, 0.3],
+      [-2.0, 0.04, 0.5],
+      [-1.2, 0.04, 0.3],
+      [-0.4, 0.04, 0.5],
+      [0.4, 0.04, 0.3],
+      [1.2, 0.04, 0.6],
+      [2.0, 0.04, 0.8],
+      [2.8, 0.04, 1.2],
+      [3.6, 0.04, 1.6],
+      [4.5, 0.04, 2.2]
     ];
     pathPts.forEach(([px, py, pz]) => {
       const stone = new THREE.Mesh(stoneGeo, stoneMat);
@@ -1339,6 +1382,37 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
   const smokerPuffParticles = [];
   const honeySparkles = [];
 
+  // Beekeeper state machine
+  const BK_STATE = { IDLE: 0, WALKING: 1, PAUSING: 2, HARVESTING: 3 };
+  let bkState = BK_STATE.IDLE;
+  let bkWalkTarget = new THREE.Vector3(-1.5, 0, 0.5);
+  let bkWalkCycle = 0;
+  let bkPauseTimer = 0;
+  let bkIdleAction = 0; // 0=breathe, 1=lookAround, 2=checkSmoker
+  let bkHomePos = new THREE.Vector3(-1.5, 0, 0.5);
+
+  // Wandering waypoints (near hives, cabin, path, pond)
+  const bkWaypoints = [
+    new THREE.Vector3(-1.5, 0, 0.5),
+    new THREE.Vector3(0.6, 0, 0.0),
+    new THREE.Vector3(1.8, 0, -0.8),
+    new THREE.Vector3(-0.5, 0, -1.2),
+    new THREE.Vector3(-2.8, 0, -1.5),
+    new THREE.Vector3(0.0, 0, 1.2),
+    new THREE.Vector3(2.2, 0, 0.5),
+    new THREE.Vector3(-1.0, 0, -0.5),
+    new THREE.Vector3(1.0, 0, 1.0),
+    new THREE.Vector3(-2.0, 0, 0.0)
+  ];
+
+  // Harvest sequence state
+  let harvestPhase = 0; // 0=walkToHive, 1=smoking, 2=extracting, 3=collecting, 4=walkBack
+  let harvestProgress = 0;
+  let harvestTargetPos = new THREE.Vector3();
+  let harvestReturnPos = new THREE.Vector3();
+  let harvestHoneyAmount = 0;
+  let harvestProgressDiv = null;
+
   function createBeekeeper() {
     const bk = new THREE.Group();
 
@@ -1349,19 +1423,28 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
     const metalMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.85, roughness: 0.25 });
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
 
-    // Boots
-    [-0.14, 0.14].forEach(bx => {
-      const boot = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.16, 0.22), bootMat);
-      boot.position.set(bx, 0.08, 0.03);
-      boot.castShadow = true; bk.add(boot);
-    });
+    // Boots (pivoted for walking)
+    const legLGroup = new THREE.Group();
+    legLGroup.position.set(-0.14, 0.16, 0);
+    const bootL = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.16, 0.22), bootMat);
+    bootL.position.set(0, -0.08, 0.03);
+    bootL.castShadow = true;
+    const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.075, 0.55, 6), suitMat);
+    legL.position.set(0, 0.26, 0);
+    legL.castShadow = true;
+    legLGroup.add(bootL); legLGroup.add(legL);
+    bk.add(legLGroup);
 
-    // Legs
-    [-0.14, 0.14].forEach(lx => {
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.075, 0.55, 6), suitMat);
-      leg.position.set(lx, 0.42, 0);
-      leg.castShadow = true; bk.add(leg);
-    });
+    const legRGroup = new THREE.Group();
+    legRGroup.position.set(0.14, 0.16, 0);
+    const bootR = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.16, 0.22), bootMat);
+    bootR.position.set(0, -0.08, 0.03);
+    bootR.castShadow = true;
+    const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.075, 0.55, 6), suitMat);
+    legR.position.set(0, 0.26, 0);
+    legR.castShadow = true;
+    legRGroup.add(bootR); legRGroup.add(legR);
+    bk.add(legRGroup);
 
     // Torso / White Apiary Suit
     const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.65, 8), suitMat);
@@ -1392,14 +1475,17 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
     veil.position.y = 1.35;
     bk.add(veil);
 
-    // Left Arm (Relaxed)
+    // Left Arm (pivoted for swing)
+    const armLGroup = new THREE.Group();
+    armLGroup.position.set(-0.32, 1.15, 0);
     const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.055, 0.52, 6), suitMat);
-    armL.position.set(-0.32, 0.95, 0);
-    armL.rotation.z = 0.18;
-    bk.add(armL);
+    armL.position.set(0, -0.2, 0);
+    armLGroup.add(armL);
     const gloveL = new THREE.Mesh(new THREE.SphereGeometry(0.075, 6, 6), gloveMat);
-    gloveL.position.set(-0.37, 0.68, 0);
-    bk.add(gloveL);
+    gloveL.position.set(0, -0.47, 0);
+    armLGroup.add(gloveL);
+    armLGroup.rotation.z = 0.18;
+    bk.add(armLGroup);
 
     // Right Arm (Holding Smoker tool)
     const armRGroup = new THREE.Group();
@@ -1432,7 +1518,13 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
 
     armRGroup.add(smoker);
     bk.add(armRGroup);
+
+    // Store refs for animation
     bk.userData.armRGroup = armRGroup;
+    bk.userData.armLGroup = armLGroup;
+    bk.userData.legLGroup = legLGroup;
+    bk.userData.legRGroup = legRGroup;
+    bk.userData.head = head;
 
     // Wooden Honey Bucket beside Beekeeper
     const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.19, 0.38, 8), woodMat);
@@ -1444,13 +1536,39 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
     honeyLiquid.position.set(-0.48, 0.34, 0.22);
     bk.add(honeyLiquid);
 
-    bk.position.set(-2.2, 0, 0.8);
+    bk.position.set(-1.5, 0, 0.5);
     bk.rotation.y = Math.PI * 0.25;
     scene.add(bk);
     beekeeperMesh = bk;
+
+    // Start wandering after a brief pause
+    bkState = BK_STATE.PAUSING;
+    bkPauseTimer = 2.0;
     return bk;
   }
   createBeekeeper();
+
+  // Create in-world harvest progress bar element
+  (function() {
+    const el = document.createElement('div');
+    el.className = 'harvest-progress-3d';
+    el.innerHTML = '<div class="harvest-progress-label">⛏️ Memanen...</div>' +
+      '<div class="harvest-progress-bar-outer"><div class="harvest-progress-bar-inner" id="harvestBarInner"></div></div>' +
+      '<div class="harvest-progress-pct" id="harvestBarPct">0%</div>';
+    document.getElementById('farm3dCanvas').appendChild(el);
+    harvestProgressDiv = el;
+  })();
+
+  // Pick next random waypoint (not too close to current)
+  function pickNextWaypoint() {
+    let best = bkWaypoints[0];
+    let tries = 0;
+    do {
+      best = bkWaypoints[Math.floor(Math.random() * bkWaypoints.length)];
+      tries++;
+    } while (tries < 10 && best.distanceTo(beekeeperMesh.position) < 1.2);
+    return best.clone();
+  }
 
   // Particle Pools (Smoker Smoke + Honey Extraction Sparkles)
   for (let i = 0; i < 20; i++) {
@@ -1470,20 +1588,24 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
     honeySparkles.push(spk);
   }
 
-  let harvestAnimProgress = -1;
-  let harvestTargetPos = new THREE.Vector3();
-  let harvestHoneyAmount = 0;
-
   window.triggerBeekeeperHarvest = function(targetHiveIdx, harvestedMl) {
     if (!beekeeperMesh) return;
     harvestHoneyAmount = harvestedMl || 10;
     const p = hivePos(targetHiveIdx >= 0 ? targetHiveIdx : 0, HIVES_ARRAY.length);
-    harvestTargetPos.set(p.x, 1.2, p.z);
-    harvestAnimProgress = 0;
+    // Target is slightly in front of the hive (not inside it)
+    harvestTargetPos.set(p.x + 0.6, 0, p.z + 0.8);
+    harvestReturnPos.copy(beekeeperMesh.position);
+    harvestPhase = 0; // walk to hive
+    harvestProgress = 0;
+    bkState = BK_STATE.HARVESTING;
+    bkWalkCycle = 0;
 
-    FarmAudio.playSmoker();
-    setTimeout(() => FarmAudio.playBee(1.4, 215), 180);
-    setTimeout(() => { FarmAudio.playHarvest(); FarmAudio.playCoin(); }, 600);
+    // Show progress bar
+    if (harvestProgressDiv) {
+      harvestProgressDiv.classList.add('active');
+      document.getElementById('harvestBarInner').style.width = '0%';
+      document.getElementById('harvestBarPct').textContent = '0%';
+    }
   };
 
   // ══════════════════════════════════════════════════════════
@@ -1613,10 +1735,13 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
   // ── ANIMATE ──
   const clock = new THREE.Clock();
   const lookTarget = new THREE.Vector3();
+  let _lastT = 0;
 
   function animate() {
     requestAnimationFrame(animate);
     const t = clock.getElapsedTime();
+    const _dt = Math.min(t - _lastT, 0.05);
+    _lastT = t;
 
     // Ensure aspect ratio is always 100% pixel-perfect (prevents gepeng/stretched viewport)
     checkResize();
@@ -1686,59 +1811,212 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
       }
     });
 
-    // Beekeeper Character Animation & Active Harvest Sequence
+    // ═══ BEEKEEPER STATE MACHINE (Wander + Harvest) ═══
     if (beekeeperMesh) {
-      if (harvestAnimProgress >= 0) {
-        harvestAnimProgress += 0.018;
+      const dt = _dt;
+      const ud = beekeeperMesh.userData;
+      const walkSpeed = 1.8; // units/sec
 
-        const dx = harvestTargetPos.x - beekeeperMesh.position.x;
-        const dz = harvestTargetPos.z - beekeeperMesh.position.z;
+      // Leg/arm swing helper
+      function applyWalkAnim(cycle) {
+        const swing = Math.sin(cycle) * 0.35;
+        if (ud.legLGroup) ud.legLGroup.rotation.x = swing;
+        if (ud.legRGroup) ud.legRGroup.rotation.x = -swing;
+        if (ud.armLGroup) ud.armLGroup.rotation.x = -swing * 0.5;
+        if (ud.armRGroup && bkState !== BK_STATE.HARVESTING) ud.armRGroup.rotation.x = swing * 0.4;
+        // Subtle torso bob
+        beekeeperMesh.position.y = Math.abs(Math.sin(cycle)) * 0.03;
+      }
+
+      function resetPose() {
+        if (ud.legLGroup) ud.legLGroup.rotation.x = 0;
+        if (ud.legRGroup) ud.legRGroup.rotation.x = 0;
+        if (ud.armLGroup) ud.armLGroup.rotation.x = 0;
+        if (ud.armRGroup) ud.armRGroup.rotation.x = 0;
+        beekeeperMesh.position.y = 0;
+      }
+
+      // Move beekeeper towards a target, return true when arrived
+      function moveTowards(target, spd) {
+        const dx = target.x - beekeeperMesh.position.x;
+        const dz = target.z - beekeeperMesh.position.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
         const targetRot = Math.atan2(dx, dz);
-        beekeeperMesh.rotation.y += (targetRot - beekeeperMesh.rotation.y) * 0.12;
+        // Smooth rotation
+        let rotDiff = targetRot - beekeeperMesh.rotation.y;
+        while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
+        while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
+        beekeeperMesh.rotation.y += rotDiff * 0.1;
 
-        if (harvestAnimProgress < 0.45) {
-          const pump = Math.sin(harvestAnimProgress * 36);
-          if (beekeeperMesh.userData.armRGroup) {
-            beekeeperMesh.userData.armRGroup.rotation.x = -0.45 + pump * 0.42;
+        if (dist < 0.15) return true;
+        const step = Math.min(spd * dt, dist);
+        beekeeperMesh.position.x += (dx / dist) * step;
+        beekeeperMesh.position.z += (dz / dist) * step;
+        bkWalkCycle += spd * dt * 6.0;
+        applyWalkAnim(bkWalkCycle);
+        return false;
+      }
+
+      // ── WANDER STATE MACHINE ──
+      if (bkState === BK_STATE.PAUSING) {
+        bkPauseTimer -= dt;
+        // Idle micro-animations while pausing
+        const breath = Math.sin(t * 1.8) * 0.015;
+        beekeeperMesh.position.y = breath;
+        // Random idle actions
+        if (bkIdleAction === 1) {
+          // Look around
+          if (ud.head) ud.head.rotation.y = Math.sin(t * 0.7) * 0.3;
+        } else if (bkIdleAction === 2) {
+          // Check smoker
+          if (ud.armRGroup) ud.armRGroup.rotation.x = -0.4 + Math.sin(t * 2) * 0.15;
+        } else {
+          // Gentle breathing sway
+          if (ud.armRGroup) ud.armRGroup.rotation.x = Math.sin(t * 1.4) * 0.05;
+        }
+        if (ud.head) ud.head.rotation.y *= 0.98; // dampen
+
+        if (bkPauseTimer <= 0) {
+          // Pick next waypoint and start walking
+          bkWalkTarget = pickNextWaypoint();
+          bkState = BK_STATE.WALKING;
+          bkWalkCycle = 0;
+          resetPose();
+          if (ud.head) ud.head.rotation.y = 0;
+        }
+      } else if (bkState === BK_STATE.WALKING) {
+        const arrived = moveTowards(bkWalkTarget, walkSpeed);
+        if (arrived) {
+          resetPose();
+          bkState = BK_STATE.PAUSING;
+          bkPauseTimer = 1.5 + Math.random() * 3.0; // pause 1.5-4.5s
+          bkIdleAction = Math.floor(Math.random() * 3); // random idle behavior
+        }
+      } else if (bkState === BK_STATE.IDLE) {
+        // Simple breathing when no waypoints
+        beekeeperMesh.position.y = Math.sin(t * 1.6) * 0.02;
+        if (ud.armRGroup) ud.armRGroup.rotation.x = Math.sin(t * 1.6) * 0.04;
+      }
+
+      // ── HARVEST STATE MACHINE ──
+      if (bkState === BK_STATE.HARVESTING) {
+        const totalHarvestTime = 4.0; // seconds for full harvest
+
+        if (harvestPhase === 0) {
+          // Phase 0: Walk to hive
+          const arrived = moveTowards(harvestTargetPos, walkSpeed * 1.2);
+          if (arrived) {
+            resetPose();
+            harvestPhase = 1;
+            harvestProgress = 0;
+            FarmAudio.playSmoker();
+            // Face the hive
+            const hp = hivePos(0, HIVES_ARRAY.length);
+            const dx2 = (harvestTargetPos.x - 0.6) - beekeeperMesh.position.x;
+            const dz2 = (harvestTargetPos.z - 0.8) - beekeeperMesh.position.z;
+            beekeeperMesh.rotation.y = Math.atan2(dx2, dz2);
           }
-          const pIdx = Math.floor((harvestAnimProgress * 40) % smokerPuffParticles.length);
-          const p = smokerPuffParticles[pIdx];
-          if (p && pump > 0.5) {
-            p.material.opacity = 0.65;
-            p.position.set(
-              beekeeperMesh.position.x + Math.sin(targetRot) * 0.85,
-              1.25 + pump * 0.1,
-              beekeeperMesh.position.z + Math.cos(targetRot) * 0.85
+        } else if (harvestPhase === 1) {
+          // Phase 1: Smoking the hive (0% - 30%)
+          harvestProgress += dt / totalHarvestTime;
+          const pct = Math.min(harvestProgress / 0.3, 1.0);
+          const pump = Math.sin(harvestProgress * 45);
+          if (ud.armRGroup) ud.armRGroup.rotation.x = -0.45 + pump * 0.42;
+          // Smoker puffs
+          const pIdx = Math.floor((harvestProgress * 40) % smokerPuffParticles.length);
+          const sp = smokerPuffParticles[pIdx];
+          if (sp && pump > 0.3) {
+            sp.material.opacity = 0.65;
+            const fwd = beekeeperMesh.rotation.y;
+            sp.position.set(
+              beekeeperMesh.position.x + Math.sin(fwd) * 0.85,
+              1.25 + pump * 0.12,
+              beekeeperMesh.position.z + Math.cos(fwd) * 0.85
             );
           }
-        } else if (harvestAnimProgress < 0.85) {
-          if (beekeeperMesh.userData.armRGroup) {
-            beekeeperMesh.userData.armRGroup.rotation.x = -0.9 + Math.sin(t * 6) * 0.12;
+          // Update progress bar
+          const totalPct = Math.min(pct * 30, 30);
+          if (harvestProgressDiv) {
+            document.getElementById('harvestBarInner').style.width = totalPct + '%';
+            document.getElementById('harvestBarPct').textContent = Math.floor(totalPct) + '%';
           }
-          const sIdx = Math.floor((harvestAnimProgress * 55) % honeySparkles.length);
+          if (harvestProgress >= 0.3) {
+            harvestPhase = 2;
+            setTimeout(() => FarmAudio.playBee(1.4, 215), 100);
+          }
+        } else if (harvestPhase === 2) {
+          // Phase 2: Extracting honey (30% - 75%)
+          harvestProgress += dt / totalHarvestTime;
+          const pct = Math.min((harvestProgress - 0.3) / 0.45, 1.0);
+          if (ud.armRGroup) ud.armRGroup.rotation.x = -0.9 + Math.sin(t * 6) * 0.12;
+          // Honey sparkle particles
+          const sIdx = Math.floor((harvestProgress * 55) % honeySparkles.length);
           const spk = honeySparkles[sIdx];
           if (spk) {
-            const ratio = (harvestAnimProgress - 0.45) / 0.4;
             spk.material.opacity = 0.9;
-            spk.position.lerpVectors(harvestTargetPos, new THREE.Vector3(beekeeperMesh.position.x - 0.45, 0.45, beekeeperMesh.position.z + 0.2), ratio);
-            spk.position.y += Math.sin(ratio * Math.PI) * 1.1;
+            const hiveCenter = new THREE.Vector3(harvestTargetPos.x - 0.6, 1.2, harvestTargetPos.z - 0.8);
+            const bucketPos = new THREE.Vector3(beekeeperMesh.position.x - 0.45, 0.45, beekeeperMesh.position.z + 0.2);
+            spk.position.lerpVectors(hiveCenter, bucketPos, pct);
+            spk.position.y += Math.sin(pct * Math.PI) * 1.1;
           }
-        } else if (harvestAnimProgress < 1.0) {
-          if (beekeeperMesh.userData.armRGroup) {
-            beekeeperMesh.userData.armRGroup.rotation.x = -1.35 + Math.sin(t * 8) * 0.15;
+          const totalPct = 30 + Math.min(pct * 45, 45);
+          if (harvestProgressDiv) {
+            document.getElementById('harvestBarInner').style.width = totalPct + '%';
+            document.getElementById('harvestBarPct').textContent = Math.floor(totalPct) + '%';
           }
-        } else {
-          harvestAnimProgress = -1;
-          if (beekeeperMesh.userData.armRGroup) {
-            beekeeperMesh.userData.armRGroup.rotation.x = 0;
+          if (harvestProgress >= 0.75) {
+            harvestPhase = 3;
+            FarmAudio.playHarvest();
+            FarmAudio.playCoin();
           }
-          smokerPuffParticles.forEach(p => p.material.opacity = 0);
-          honeySparkles.forEach(s => s.material.opacity = 0);
+        } else if (harvestPhase === 3) {
+          // Phase 3: Collecting/finishing (75% - 100%)
+          harvestProgress += dt / totalHarvestTime;
+          if (ud.armRGroup) ud.armRGroup.rotation.x = -1.35 + Math.sin(t * 8) * 0.15;
+          const pct = Math.min((harvestProgress - 0.75) / 0.25, 1.0);
+          const totalPct = 75 + Math.min(pct * 25, 25);
+          if (harvestProgressDiv) {
+            document.getElementById('harvestBarInner').style.width = totalPct + '%';
+            document.getElementById('harvestBarPct').textContent = Math.floor(totalPct) + '%';
+          }
+          if (harvestProgress >= 1.0) {
+            harvestPhase = 4;
+            // Hide progress bar with slight delay
+            setTimeout(() => {
+              if (harvestProgressDiv) harvestProgressDiv.classList.remove('active');
+            }, 600);
+            if (harvestProgressDiv) {
+              document.getElementById('harvestBarInner').style.width = '100%';
+              document.getElementById('harvestBarPct').textContent = '✓ Selesai!';
+            }
+          }
+        } else if (harvestPhase === 4) {
+          // Phase 4: Walk back to return position
+          const arrived = moveTowards(harvestReturnPos, walkSpeed);
+          if (arrived) {
+            resetPose();
+            if (ud.armRGroup) ud.armRGroup.rotation.x = 0;
+            smokerPuffParticles.forEach(p => p.material.opacity = 0);
+            honeySparkles.forEach(s => s.material.opacity = 0);
+            // Resume wandering
+            bkState = BK_STATE.PAUSING;
+            bkPauseTimer = 2.0;
+            bkIdleAction = 0;
+          }
         }
-      } else {
-        beekeeperMesh.position.y = Math.sin(t * 1.6) * 0.02;
-        if (beekeeperMesh.userData.armRGroup) {
-          beekeeperMesh.userData.armRGroup.rotation.x = Math.sin(t * 1.6) * 0.04;
+
+        // Position the progress bar in screen space above the beekeeper
+        if (harvestProgressDiv && harvestPhase >= 1 && harvestPhase <= 3) {
+          const bkWorldPos = new THREE.Vector3();
+          beekeeperMesh.getWorldPosition(bkWorldPos);
+          bkWorldPos.y += 2.1;
+          bkWorldPos.project(camera);
+          if (bkWorldPos.z < 1) {
+            const sx = (bkWorldPos.x * container.clientWidth / 2) + container.clientWidth / 2;
+            const sy = -(bkWorldPos.y * container.clientHeight / 2) + container.clientHeight / 2;
+            harvestProgressDiv.style.left = sx + 'px';
+            harvestProgressDiv.style.top = sy + 'px';
+          }
         }
       }
     }
