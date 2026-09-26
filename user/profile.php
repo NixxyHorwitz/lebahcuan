@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 $flash = $flashType = '';
-$active_section = 'main'; // default
+$active_section = 'main';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -16,7 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($ex->fetch()) { $flash = 'Username sudah digunakan.'; $flashType = 'error'; }
             else {
                 $pdo->prepare("UPDATE users SET username=? WHERE id=?")->execute([$username, $user['id']]);
-                $flash = '✅ Username berhasil diperbarui!';
+                $flash = 'Username berhasil diperbarui!';
+                $flashType = 'success';
             }
         }
         $active_section = 'edit';
@@ -28,7 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         elseif (strlen($new) < 6) { $flash = 'Password baru minimal 6 karakter.'; $flashType = 'error'; }
         else {
             $pdo->prepare("UPDATE users SET password_hash=? WHERE id=?")->execute([password_hash($new, PASSWORD_BCRYPT), $user['id']]);
-            $flash = '✅ Password berhasil diubah!';
+            $flash = 'Password berhasil diubah!';
+            $flashType = 'success';
         }
         $active_section = 'password';
     }
@@ -65,7 +67,7 @@ if ($user['membership_id'] && $user['membership_expires_at'] && strtotime((strin
 
 if (!$membership_name) {
     $ms_free = $pdo->query("SELECT name, allow_edit_bank FROM memberships WHERE price=0 AND is_active=1 ORDER BY sort_order ASC LIMIT 1")->fetch();
-    $membership_name = $ms_free['name'] ?? 'Free';
+    $membership_name = $ms_free['name'] ?? 'Free Member';
     $membership_allow_edit_bank = (bool)($ms_free['allow_edit_bank'] ?? false);
     $is_premium = false;
 }
@@ -77,14 +79,15 @@ $show_edit_rek_btn = $membership_allow_edit_bank || $is_promotor_prof;
 
 // Member since
 $member_since = date('d M Y', strtotime($user['created_at']));
-$days_member = max(1, (int)((time() - strtotime($user['created_at'])) / 86400));
+$days_member  = max(1, (int)((time() - strtotime($user['created_at'])) / 86400));
+$initial_tab  = ($active_section === 'edit' || $active_section === 'password') ? 'security' : 'summary';
 
 // Contact buttons
 try {
     $_contact_btns = $pdo->query("SELECT * FROM contact_buttons WHERE is_active=1 ORDER BY sort_order ASC, id ASC")->fetchAll();
 } catch (\Throwable) { $_contact_btns = []; }
 
-$pageTitle  = 'Profil';
+$pageTitle  = 'Profil Peternak';
 $activePage = 'profile';
 require dirname(__DIR__) . '/partials/header.php';
 
@@ -99,549 +102,1428 @@ $_psvg = [
 
 <style>
 /* ══════════════════════════════════════════════
-   PROFILE — AMBER HONEY THEME (RICH & DECORATED)
+   LEBAHCUAN INNOVATIVE PROFILE (AMBER HONEY THEME)
+   NO EMOJIS — CDN ICONS & VECTOR ART ONLY
    ══════════════════════════════════════════════ */
+:root {
+  --honey-50:  #fffbeb;
+  --honey-100: #fef3c7;
+  --honey-200: #fde68a;
+  --honey-300: #fcd34d;
+  --honey-400: #fbbf24;
+  --honey-500: #f59e0b;
+  --honey-600: #d97706;
+  --honey-700: #b45309;
+  --honey-800: #92400e;
+  --honey-900: #78350f;
+  --honey-ink: #451a03;
+}
+
 body {
   background-color: #fef8ee !important;
   background-image: radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px) !important;
-  background-size: 16px 16px !important;
-  color: #78350f;
+  background-size: 18px 18px !important;
+  color: var(--honey-900);
 }
 
-/* ── HERO ── */
-.prof-hero {
+.prof-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 14px 14px 110px;
+}
+
+/* ── 1. DIGITAL BEEKEEPER PASS CARD ── */
+.pass-card {
   position: relative;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
-  padding: 22px 14px 56px;
-  border-bottom: 3.5px solid #78350f;
-  box-shadow: 0 4px 0 #78350f;
+  background: linear-gradient(140deg, #f59e0b 0%, #d97706 48%, #92400e 100%);
+  border: 2.5px solid var(--honey-900);
+  border-radius: 22px;
+  padding: 16px 16px 14px;
+  color: #fff;
+  box-shadow: 0 6px 0 var(--honey-900), 0 16px 28px -6px rgba(180, 83, 9, 0.35);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.pass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.16) 1.5px, transparent 1.5px);
+  background-size: 14px 14px;
+  pointer-events: none;
+}
+
+.pass-sheen {
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(254, 243, 199, 0.35) 0%, rgba(245, 158, 11, 0) 70%);
+  transform: rotate(25deg);
+  pointer-events: none;
+}
+
+/* Header inside pass */
+.pass-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.pass-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #fef3c7;
+  text-transform: uppercase;
+}
+.pass-brand i {
+  font-size: 15px;
+  color: #fde68a;
+}
+.pass-tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(120, 53, 15, 0.85);
+  border: 1.5px solid #fde68a;
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 900;
+  color: #fde68a;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+.pass-tier.is-vip {
+  background: linear-gradient(135deg, #78350f, #451a03);
+  border-color: #fef08a;
+  color: #fef08a;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+}
+
+/* Body inside pass */
+.pass-body {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.pass-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.pass-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fffbeb, #fde68a);
+  border: 2.5px solid var(--honey-900);
+  box-shadow: 0 3px 0 var(--honey-900), 0 4px 10px rgba(0,0,0,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--honey-900);
+}
+.pass-status-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2.5px solid var(--honey-900);
+}
+.pass-user-info {
+  flex: 1;
+  min-width: 0;
+}
+.pass-username {
+  font-size: 17px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.2;
+  text-shadow: 0 1.5px 0 var(--honey-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pass-email {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fef3c7;
+  opacity: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 3px;
+}
+.pass-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.85);
+}
+.pass-meta i {
+  font-size: 12px;
+  color: #fde68a;
+}
+.pass-chip {
+  flex-shrink: 0;
+  width: 38px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 60%, #b45309 100%);
+  border: 1.5px solid var(--honey-900);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.6), 0 2px 0 var(--honey-900);
+  color: var(--honey-900);
+}
+.pass-chip i {
+  font-size: 18px;
+}
+
+/* Footer inside pass */
+.pass-footer {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(69, 26, 3, 0.4);
+  border: 1.5px solid rgba(253, 230, 138, 0.35);
+  border-radius: 14px;
+  padding: 8px 12px;
+  backdrop-filter: blur(4px);
+}
+.pass-ref-box {
+  display: flex;
+  flex-direction: column;
+}
+.pass-ref-label {
+  font-size: 8px;
+  font-weight: 900;
+  color: #fef3c7;
+  letter-spacing: 0.8px;
+}
+.pass-ref-code {
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+.pass-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fde68a;
+  color: var(--honey-900);
+  border: 1.5px solid var(--honey-900);
+  border-radius: 10px;
+  padding: 5px 10px;
+  font-size: 10.5px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 2.5px 0 var(--honey-900);
+  transition: transform 0.1s, box-shadow 0.1s;
+  font-family: inherit;
+}
+.pass-copy-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 0.5px 0 var(--honey-900);
+}
+
+/* ── 2. DUAL-FLOW VAULT CAPSULE (INOVASI FINANCIAL HUB) ── */
+.vault-capsule {
+  background: #ffffff;
+  border: 2.5px solid var(--honey-900);
+  border-radius: 20px;
+  padding: 14px;
+  box-shadow: 0 5px 0 var(--honey-900);
+  margin-bottom: 14px;
+  position: relative;
   overflow: hidden;
 }
-.prof-hero::before {
-  content: '';
-  position: absolute; inset: 0;
-  background-image: radial-gradient(rgba(255,255,255,0.15) 1.5px, transparent 1.5px);
-  background-size: 16px 16px;
-  pointer-events: none;
-}
-.prof-hero::after {
-  content: '';
-  position: absolute;
-  bottom: -1px; left: 0; right: 0; height: 24px;
-  background: #fef8ee;
-  clip-path: ellipse(55% 100% at 50% 100%);
-}
 
-/* Honeycomb decoration */
-.hex-deco {
+.vault-capsule::after {
+  content: '';
   position: absolute;
-  background: rgba(255,255,255,0.08);
+  right: -25px;
+  bottom: -25px;
+  width: 90px;
+  height: 90px;
+  background: rgba(245, 158, 11, 0.06);
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   pointer-events: none;
 }
-.hex-deco:nth-child(1) { top: 8px; right: 16px; width: 32px; height: 32px; animation: hexBob 5s ease-in-out infinite; }
-.hex-deco:nth-child(2) { top: 44px; right: 52px; width: 20px; height: 20px; animation: hexBob 7s ease-in-out infinite 1s; }
-.hex-deco:nth-child(3) { bottom: 32px; left: 12px; width: 26px; height: 26px; animation: hexBob 6s ease-in-out infinite 0.5s; }
-.hex-deco:nth-child(4) { top: 18px; left: 40px; width: 16px; height: 16px; animation: hexBob 8s ease-in-out infinite 2s; opacity: 0.6; }
-.hex-deco:nth-child(5) { bottom: 36px; right: 30px; width: 14px; height: 14px; animation: hexBob 6.5s ease-in-out infinite 1.5s; opacity: 0.5; }
-@keyframes hexBob {
-  0%,100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-6px) rotate(15deg); }
-}
 
-/* Floating bee decorations */
-.fly-bee {
-  position: absolute; font-size: 14px; pointer-events: none;
-  animation: beeFly 12s ease-in-out infinite;
+/* Zone 1: Rupiah Wallets */
+.vault-fiat-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 2px dashed #fde68a;
 }
-.fly-bee:nth-child(6) { top: 20%; left: -10%; animation-delay: 0s; }
-.fly-bee:nth-child(7) { top: 50%; left: -10%; animation-delay: 4s; font-size: 11px; }
-.fly-bee:nth-child(8) { top: 70%; left: -10%; animation-delay: 8s; font-size: 16px; }
-@keyframes beeFly {
-  0% { transform: translateX(-20px); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateX(calc(100vw + 40px)) translateY(-20px); opacity: 0; }
+.vault-fiat-item {
+  display: flex;
+  flex-direction: column;
 }
-
-/* Avatar */
-.prof-ava-wrap {
-  position: relative; z-index: 2;
-  display: flex; flex-direction: column; align-items: center;
-  margin-bottom: 10px;
+.vf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--honey-800);
+  margin-bottom: 3px;
 }
-.prof-ava-ring {
-  width: 76px; height: 76px;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, #fde68a, #78350f, #fbbf24, #fde68a);
-  padding: 3.5px;
-  animation: ringPulse 3s ease-in-out infinite;
-  box-shadow: 0 4px 0 #78350f, 0 0 16px rgba(251,191,36,0.3);
+.vf-badge i {
+  font-size: 13px;
+  color: var(--honey-600);
 }
-@keyframes ringPulse {
-  0%,100% { box-shadow: 0 4px 0 #78350f, 0 0 16px rgba(251,191,36,0.2); }
-  50% { box-shadow: 0 4px 0 #78350f, 0 0 24px rgba(251,191,36,0.5); }
+.vf-amount {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--honey-ink);
+  line-height: 1.2;
+  margin-bottom: 6px;
 }
-.prof-ava {
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #fde68a, #fbbf24);
-  border: 2.5px solid #78350f;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 28px; font-weight: 900; color: #78350f;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
-}
-.prof-name {
-  font-size: 18px; font-weight: 900; color: #fff;
-  text-shadow: 0 2px 0 #78350f;
-  text-align: center; margin-bottom: 2px;
-  position: relative; z-index: 2;
-}
-.prof-email {
-  font-size: 10.5px; font-weight: 700; color: #fef3c7;
-  text-align: center; margin-bottom: 8px;
-  position: relative; z-index: 2;
-}
-.prof-tier {
-  display: inline-flex; align-items: center; gap: 4px;
-  background: #78350f; color: #fde68a;
-  border: 1.5px solid #fff; border-radius: 8px;
-  padding: 3px 10px; font-size: 9.5px; font-weight: 900;
-  text-transform: uppercase; box-shadow: 0 2px 0 rgba(0,0,0,0.2);
-  position: relative; z-index: 2;
-}
-.prof-tier.prem { background: linear-gradient(135deg, #78350f, #92400e); border-color: #fde68a; box-shadow: 0 2px 0 rgba(0,0,0,0.3), 0 0 10px rgba(251,191,36,0.3); }
-
-.prof-member-since {
-  text-align: center; font-size: 9px; font-weight: 800;
-  color: rgba(255,255,255,0.6); margin-top: 6px;
-  position: relative; z-index: 2;
-}
-
-/* ── BODY ── */
-.prof-body { padding: 0 14px 120px; margin-top: -16px; position: relative; z-index: 5; }
-
-/* ── FLASH ── */
-.prof-flash {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 12px; border-radius: 12px;
-  font-size: 11.5px; font-weight: 800; margin-bottom: 12px;
-  border: 2px solid; animation: flashPop 0.3s ease-out;
-}
-@keyframes flashPop { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform: translateY(0); } }
-.prof-flash--success { background: #ecfdf5; border-color: #10b981; color: #065f46; }
-.prof-flash--error { background: #fef2f2; border-color: #ef4444; color: #b91c1c; }
-
-/* ── BALANCE CARDS ── */
-.prof-balance-row {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
-}
-.prof-bal-card {
-  background: #fff; border: 2.5px solid #78350f; border-radius: 14px;
-  padding: 12px 10px; text-align: center; box-shadow: 0 4px 0 #78350f;
-  position: relative; overflow: hidden;
-}
-.prof-bal-card::before {
-  content: ''; position: absolute; top: -8px; right: -8px;
-  width: 32px; height: 32px; opacity: 0.06;
-  background: #f59e0b;
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-}
-.prof-bal-card.gold { background: linear-gradient(135deg, #fffbeb, #fef3c7); }
-.prof-bal-card.honey { background: linear-gradient(135deg, #fef3c7, #fde68a); }
-.prof-bal-icon { font-size: 18px; margin-bottom: 4px; }
-.prof-bal-val { font-size: 13px; font-weight: 900; color: #78350f; line-height: 1.2; }
-.prof-bal-lbl { font-size: 8.5px; font-weight: 900; color: #92400e; text-transform: uppercase; margin-top: 2px; }
-
-/* ── STATS GRID ── */
-.prof-stats {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px;
-}
-.prof-stat {
-  background: #fff; border: 2px solid #fde68a; border-radius: 12px;
-  padding: 10px 4px; text-align: center; transition: transform 0.15s;
-}
-.prof-stat:hover { transform: translateY(-2px); }
-.prof-stat-emoji { font-size: 16px; margin-bottom: 2px; }
-.prof-stat-val { font-size: 13px; font-weight: 900; color: #d97706; }
-.prof-stat-lbl { font-size: 8px; font-weight: 900; color: #92400e; text-transform: uppercase; }
-
-/* ── REFERRAL ── */
-.prof-ref {
-  display: flex; align-items: center; justify-content: space-between;
-  background: linear-gradient(135deg, #fffbeb, #fef3c7);
-  border: 2.5px solid #78350f; border-radius: 14px;
-  padding: 10px 12px; box-shadow: 0 4px 0 #78350f; margin-bottom: 14px;
-}
-.prof-ref-lbl { font-size: 9px; font-weight: 900; color: #92400e; text-transform: uppercase; margin-bottom: 1px; }
-.prof-ref-code { font-size: 15px; font-weight: 900; color: #78350f; letter-spacing: 0.5px; }
-.prof-ref-btn {
-  background: #f59e0b; border: 2px solid #78350f; border-radius: 10px;
-  font-size: 10.5px; font-weight: 900; color: #78350f;
-  padding: 8px 12px; box-shadow: 0 3px 0 #78350f; cursor: pointer; flex-shrink: 0;
-  display: flex; align-items: center; gap: 4px; font-family: inherit;
+.vf-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 900;
+  text-decoration: none;
+  border: 1.5px solid var(--honey-900);
+  box-shadow: 0 2px 0 var(--honey-900);
   transition: transform 0.1s;
 }
-.prof-ref-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+.vf-action-btn:active {
+  transform: translateY(1.5px);
+  box-shadow: 0 0.5px 0 var(--honey-900);
+}
+.vf-action-btn.wd {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: var(--honey-900);
+}
+.vf-action-btn.dep {
+  background: linear-gradient(135deg, #fef08a, #f59e0b);
+  color: var(--honey-900);
+}
+.vf-divider {
+  width: 2px;
+  height: 54px;
+  background: #fde68a;
+  border-radius: 2px;
+}
 
-/* ── NAV GRID ── */
-.prof-nav-title {
-  font-size: 10px; font-weight: 900; color: #92400e; text-transform: uppercase;
-  margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+/* Zone 2: Honey Reservoir Tank & Plinko */
+.vault-reserves {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr;
+  gap: 12px;
+  align-items: center;
+  padding-top: 10px;
 }
-.prof-nav-title::after { content: ''; flex: 1; height: 2px; background: #fde68a; border-radius: 2px; }
-.prof-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
-.prof-nav-item {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 12px 6px; border-radius: 14px; font-size: 10px; font-weight: 900;
-  text-decoration: none; border: 2.5px solid #78350f;
-  box-shadow: 0 4px 0 #78350f; transition: transform 0.1s;
+.silo-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-.prof-nav-item:active { transform: translateY(3px); box-shadow: 0 1px 0 #78350f; }
-.prof-nav-item i { font-size: 20px; }
-.pn-rek { background: #a7f3d0; color: #065f46; border-color: #065f46; box-shadow: 0 4px 0 #065f46; }
-.pn-upg { background: #fde68a; color: #78350f; }
-.pn-riw { background: #fed7aa; color: #78350f; }
-.pn-pan { background: #fef08a; color: #78350f; }
-.pn-farm { background: #bbf7d0; color: #166534; border-color: #166534; box-shadow: 0 4px 0 #166534; }
-.pn-vid { background: #e0e7ff; color: #3730a3; border-color: #3730a3; box-shadow: 0 4px 0 #3730a3; }
-.pn-misi { background: #fce7f3; color: #9d174d; border-color: #9d174d; box-shadow: 0 4px 0 #9d174d; }
-.pn-plinko { background: #e0f2fe; color: #0369a1; border-color: #0369a1; box-shadow: 0 4px 0 #0369a1; }
-.pn-inv { background: #fef3c7; color: #92400e; border-color: #92400e; box-shadow: 0 4px 0 #92400e; }
+.silo-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.silo-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 900;
+  color: var(--honey-800);
+  text-transform: uppercase;
+}
+.silo-lbl i {
+  color: #ea580c;
+  font-size: 12px;
+}
+.silo-val {
+  font-size: 11px;
+  font-weight: 900;
+  color: #ea580c;
+}
+.silo-bar-track {
+  width: 100%;
+  height: 12px;
+  background: #fffbeb;
+  border: 1.5px solid var(--honey-900);
+  border-radius: 10px;
+  overflow: hidden;
+  padding: 1.5px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+}
+.silo-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #ea580c);
+  border-radius: 6px;
+  transition: width 0.4s ease;
+  position: relative;
+}
 
-/* ── ACCORDION ── */
-.prof-group {
-  background: #fff; border: 2.5px solid #78350f; border-radius: 16px;
-  box-shadow: 0 4px 0 #78350f; overflow: hidden; margin-bottom: 14px;
+.plinko-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fffbeb;
+  border: 1.5px solid var(--honey-900);
+  border-radius: 12px;
+  padding: 6px 8px;
 }
-.prof-acc-hdr {
-  display: flex; align-items: center; gap: 8px;
-  padding: 12px; background: #fffbeb; cursor: pointer; user-select: none;
-  border-bottom: 2px solid transparent; transition: background 0.15s;
+.plinko-info {
+  display: flex;
+  flex-direction: column;
 }
-.prof-acc-hdr.open { border-bottom-color: #fde68a; background: #fef3c7; }
-.prof-acc-hdr .icon { font-size: 16px; color: #d97706; width: 24px; text-align: center; }
-.prof-acc-hdr .title { flex: 1; font-size: 11px; font-weight: 900; color: #78350f; text-transform: uppercase; }
-.prof-acc-hdr .caret { font-size: 11px; color: #d97706; transition: transform 0.25s; }
-.prof-acc-hdr.open .caret { transform: rotate(180deg); }
-.prof-acc-body {
-  max-height: 0; overflow: hidden; background: #fff;
-  transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1), padding 0.3s;
-  padding: 0 12px;
+.pl-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 8.5px;
+  font-weight: 900;
+  color: var(--honey-800);
+  text-transform: uppercase;
 }
-.prof-acc-body.open { max-height: 400px; padding: 12px; }
+.pl-lbl i {
+  color: #0284c7;
+  font-size: 11px;
+}
+.pl-val {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--honey-ink);
+}
+.pl-play-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: #38bdf8;
+  border: 1.5px solid var(--honey-900);
+  color: #0369a1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 12px;
+  box-shadow: 0 2px 0 var(--honey-900);
+}
+.pl-play-btn:active {
+  transform: translateY(1.5px);
+  box-shadow: 0 0.5px 0 var(--honey-900);
+}
 
-/* Info row inside accordion */
-.prof-info-row {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 0; border-bottom: 1.5px dashed #fde68a;
+/* ── 3. SEGMENTED TAB SWITCHER ── */
+.prof-tabs {
+  display: flex;
+  background: #ffffff;
+  border: 2.5px solid var(--honey-900);
+  border-radius: 16px;
+  padding: 4px;
+  gap: 4px;
+  box-shadow: 0 4px 0 var(--honey-900);
+  margin-bottom: 14px;
 }
-.prof-info-row:last-child { border-bottom: none; }
-.prof-info-row .ir-icon { font-size: 14px; color: #d97706; width: 22px; text-align: center; flex-shrink: 0; }
-.prof-info-row .ir-lbl { flex: 1; font-size: 10px; font-weight: 800; color: #92400e; }
-.prof-info-row .ir-val { font-size: 11px; font-weight: 900; color: #78350f; text-align: right; }
+.prof-tab-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 4px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: var(--honey-800);
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+.prof-tab-btn i {
+  font-size: 15px;
+  color: var(--honey-600);
+}
+.prof-tab-btn.active {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  box-shadow: 0 2px 0 var(--honey-900);
+}
+.prof-tab-btn.active i {
+  color: #ffffff;
+}
 
-/* Forms */
-.prof-lbl { font-size: 10px; font-weight: 900; color: #78350f; margin-bottom: 4px; display: block; }
-.prof-input {
-  width: 100%; background: #fff; border: 2px solid #fde68a; border-radius: 10px;
-  padding: 9px 10px; font-size: 12px; font-weight: 800; color: #78350f;
-  margin-bottom: 8px; outline: none; box-sizing: border-box; font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
+/* TAB PANELS */
+.tab-content {
+  display: none;
 }
-.prof-input:focus { border-color: #d97706; box-shadow: 0 0 0 3px rgba(217,119,6,0.15); }
-.prof-input:disabled { background: #f8fafc; color: #94a3b8; border-color: #e2e8f0; cursor: not-allowed; }
-.prof-btn {
-  width: 100%; background: #f59e0b; border: 2px solid #78350f; border-radius: 10px;
-  padding: 10px; font-size: 12px; font-weight: 900; color: #78350f;
-  box-shadow: 0 3px 0 #78350f; cursor: pointer; transition: transform 0.1s; font-family: inherit;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
+.tab-content.active {
+  display: block;
+  animation: tabFadeIn 0.22s ease-out;
 }
-.prof-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+@keyframes tabFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-/* ── CONTACT ── */
-.prof-contact { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
-.prof-contact-btn {
-  flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  border: 2.5px solid #78350f; box-shadow: 0 3px 0 #78350f;
-  transition: transform 0.1s; text-decoration: none; color: #78350f; background: #fff;
+/* ── 4. TAB 1: RINGKASAN & METRIK PETERNAKAN ── */
+/* Colony Ribbon */
+.colony-ribbon {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid var(--honey-900);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 0 var(--honey-900);
 }
-.prof-contact-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+.cr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.cr-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--honey-900);
+}
+.cr-title i {
+  font-size: 15px;
+  color: var(--honey-600);
+}
+.cr-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 900;
+  color: #b45309;
+  text-decoration: none;
+}
+.cr-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1.5px solid #fde68a;
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+.cr-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+.cr-item-val {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--honey-ink);
+}
+.cr-item-lbl {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--honey-800);
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.cr-sep {
+  width: 1.5px;
+  height: 28px;
+  background: #fde68a;
+}
 
-/* ── LOGOUT ── */
-.prof-logout {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  background: #fee2e2; border: 2.5px solid #dc2626; border-radius: 14px;
-  padding: 12px; font-size: 13px; font-weight: 900; color: #dc2626;
-  text-decoration: none; box-shadow: 0 4px 0 #dc2626; transition: transform 0.1s;
+/* Activity & Milestone Stream */
+.stream-card {
+  background: #ffffff;
+  border: 2px solid var(--honey-900);
+  border-radius: 16px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 0 var(--honey-900);
+  margin-bottom: 12px;
 }
-.prof-logout:active { transform: translateY(3px); box-shadow: 0 1px 0 #dc2626; }
+.stream-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1.5px dashed #fde68a;
+}
+.stream-row:last-child {
+  border-bottom: none;
+}
+.stream-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--honey-900);
+}
+.si-gold   { background: #fef3c7; color: #b45309; }
+.si-green  { background: #dcfce7; color: #15803d; border-color: #15803d; }
+.si-blue   { background: #e0f2fe; color: #0369a1; border-color: #0369a1; }
+.si-purple { background: #f3e8ff; color: #7e22ce; border-color: #7e22ce; }
+.si-amber  { background: #fed7aa; color: #c2410c; border-color: #c2410c; }
 
-/* ── HONEYCOMB BORDER DECO ── */
-.honey-divider {
-  display: flex; align-items: center; gap: 4px; justify-content: center;
-  margin: 14px 0; opacity: 0.3;
+.stream-info {
+  flex: 1;
+  min-width: 0;
 }
-.honey-divider span {
-  width: 12px; height: 12px; background: #f59e0b;
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+.stream-title {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--honey-900);
+  line-height: 1.2;
+}
+.stream-desc {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #92400e;
+  opacity: 0.8;
+}
+.stream-value {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--honey-ink);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── 5. TAB 2: FITUR & LAYANAN (LIST TILE MODERN) ── */
+.service-group {
+  margin-bottom: 14px;
+}
+.service-group-title {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: var(--honey-800);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.service-group-title::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: #fde68a;
+  border-radius: 2px;
+}
+.service-card {
+  background: #ffffff;
+  border: 2px solid var(--honey-900);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 0 var(--honey-900);
+}
+.service-tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1.5px solid #fef3c7;
+  transition: background 0.15s;
+}
+.service-tile:last-child {
+  border-bottom: none;
+}
+.service-tile:active {
+  background: #fffbeb;
+}
+.st-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--honey-900);
+  box-shadow: 0 2px 0 var(--honey-900);
+}
+.st-text {
+  flex: 1;
+  min-width: 0;
+}
+.st-name {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--honey-900);
+  line-height: 1.2;
+}
+.st-desc {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #92400e;
+  opacity: 0.85;
+}
+.st-arrow {
+  font-size: 14px;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+/* ── 6. TAB 3: AKUN, KEAMANAN & HELP ── */
+.spec-card {
+  background: #ffffff;
+  border: 2px solid var(--honey-900);
+  border-radius: 16px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 0 var(--honey-900);
+  margin-bottom: 12px;
+}
+.spec-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 0;
+  border-bottom: 1.5px dashed #fde68a;
+  font-size: 11px;
+}
+.spec-row:last-child {
+  border-bottom: none;
+}
+.spec-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  color: var(--honey-800);
+}
+.spec-key i {
+  font-size: 14px;
+  color: var(--honey-600);
+}
+.spec-val {
+  font-weight: 900;
+  color: var(--honey-ink);
+  text-align: right;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Expandable form cards */
+.accordion-card {
+  background: #ffffff;
+  border: 2px solid var(--honey-900);
+  border-radius: 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 0 var(--honey-900);
+  overflow: hidden;
+}
+.acc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #fffbeb;
+  cursor: pointer;
+  user-select: none;
+  font-size: 11.5px;
+  font-weight: 900;
+  color: var(--honey-900);
+  transition: background 0.15s;
+}
+.acc-header:hover {
+  background: #fef3c7;
+}
+.acc-header-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.acc-header-left i {
+  font-size: 16px;
+  color: var(--honey-600);
+}
+.acc-chevron {
+  font-size: 13px;
+  color: var(--honey-600);
+  transition: transform 0.25s ease;
+}
+.acc-header.open .acc-chevron {
+  transform: rotate(180deg);
+}
+.acc-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
+  padding: 0 14px;
+}
+.acc-body.open {
+  max-height: 380px;
+  padding: 12px 14px 14px;
+  border-top: 1.5px solid #fde68a;
+}
+
+/* Inputs & Submit Button */
+.input-lbl {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--honey-900);
+  margin-bottom: 4px;
+  display: block;
+}
+.prof-input-ctrl {
+  width: 100%;
+  background: #ffffff;
+  border: 2px solid #fde68a;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--honey-ink);
+  margin-bottom: 10px;
+  outline: none;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.prof-input-ctrl:focus {
+  border-color: var(--honey-600);
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+}
+.prof-submit-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 2px solid var(--honey-900);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #ffffff;
+  box-shadow: 0 3px 0 var(--honey-900);
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: transform 0.1s;
+}
+.prof-submit-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--honey-900);
+}
+
+/* Contact Strip */
+.contact-hub {
+  background: #ffffff;
+  border: 2px solid var(--honey-900);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 4px 0 var(--honey-900);
+  margin-bottom: 14px;
+}
+.ch-title {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--honey-800);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.ch-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--honey-900);
+  box-shadow: 0 3px 0 var(--honey-900);
+  transition: transform 0.1s;
+  text-decoration: none;
+  color: #ffffff;
+}
+.ch-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--honey-900);
+}
+
+/* Logout action */
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #fee2e2;
+  border: 2.5px solid #dc2626;
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #dc2626;
+  text-decoration: none;
+  box-shadow: 0 4px 0 #dc2626;
+  transition: transform 0.1s;
+}
+.logout-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #dc2626;
+}
+
+/* Flash notification banner */
+.prof-banner-flash {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 900;
+  margin-bottom: 12px;
+  border: 2px solid;
+}
+.prof-banner-flash.success {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #065f46;
+}
+.prof-banner-flash.error {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #b91c1c;
 }
 </style>
 
-<!-- HERO -->
-<div class="prof-hero">
-  <!-- Hex decorations -->
-  <div class="hex-deco"></div><div class="hex-deco"></div><div class="hex-deco"></div><div class="hex-deco"></div><div class="hex-deco"></div>
-  <!-- Flying bees -->
-  <div class="fly-bee">🐝</div><div class="fly-bee">🐝</div><div class="fly-bee">🐝</div>
-
-  <div class="prof-ava-wrap">
-    <div class="prof-ava-ring">
-      <div class="prof-ava"><?= strtoupper(substr($user['username'], 0, 1)) ?></div>
-    </div>
-  </div>
-  <div class="prof-name"><?= htmlspecialchars($user['username']) ?></div>
-  <div class="prof-email"><?= htmlspecialchars($user['email']) ?></div>
-  <div style="text-align:center">
-    <span class="prof-tier <?= $is_premium ? 'prem' : '' ?>">
-      <?= $is_premium ? '★ '.$membership_name : '🐝 '.$membership_name ?>
-      <?= $user['membership_expires_at'] ? ' • '.date('d/m/y', strtotime($user['membership_expires_at'])) : '' ?>
-    </span>
-  </div>
-  <div class="prof-member-since">📅 Bergabung <?= $member_since ?> · <?= number_format($days_member) ?> hari</div>
-</div>
-
-<div class="prof-body">
+<div class="prof-container">
   <?php if ($flash): ?>
-  <div class="prof-flash prof-flash--<?= $flashType === 'error' ? 'error' : 'success' ?>">
-    <i class="ph-bold ph-<?= $flashType === 'error' ? 'warning-circle' : 'check-circle' ?>" style="font-size:15px;"></i>
+  <div class="prof-banner-flash <?= $flashType === 'error' ? 'error' : 'success' ?>">
+    <i class="ph-bold ph-<?= $flashType === 'error' ? 'warning-circle' : 'check-circle' ?>" style="font-size:16px;"></i>
     <?= htmlspecialchars($flash) ?>
   </div>
   <?php endif; ?>
 
-  <!-- BALANCE CARDS -->
-  <div class="prof-balance-row">
-    <div class="prof-bal-card gold">
-      <div class="prof-bal-icon">💰</div>
-      <div class="prof-bal-val"><?= format_rp((float)$user['balance_wd']) ?></div>
-      <div class="prof-bal-lbl">Saldo Tarik</div>
-    </div>
-    <div class="prof-bal-card">
-      <div class="prof-bal-icon">💎</div>
-      <div class="prof-bal-val"><?= format_rp((float)$user['balance_dep']) ?></div>
-      <div class="prof-bal-lbl">Saldo Beli</div>
-    </div>
-  </div>
-  <div class="prof-balance-row">
-    <div class="prof-bal-card honey">
-      <div class="prof-bal-icon">🍯</div>
-      <div class="prof-bal-val"><?= number_format((float)$user['honey_stock'], 1) ?> ml</div>
-      <div class="prof-bal-lbl">Stok Madu</div>
-    </div>
-    <div class="prof-bal-card">
-      <div class="prof-bal-icon">🪙</div>
-      <div class="prof-bal-val"><?= number_format((int)$user['plinko_coins']) ?></div>
-      <div class="prof-bal-lbl">Koin Plinko</div>
-    </div>
-  </div>
+  <!-- 1. DIGITAL BEEKEEPER PASS CARD -->
+  <div class="pass-card">
+    <div class="pass-sheen"></div>
 
-  <!-- STATS -->
-  <div class="prof-stats">
-    <div class="prof-stat">
-      <div class="prof-stat-emoji">🏆</div>
-      <div class="prof-stat-val"><?= format_rp((float)$user['total_earned']) ?></div>
-      <div class="prof-stat-lbl">Total Earned</div>
-    </div>
-    <div class="prof-stat">
-      <div class="prof-stat-emoji">👥</div>
-      <div class="prof-stat-val"><?= $refs ?></div>
-      <div class="prof-stat-lbl">Referral</div>
-    </div>
-    <div class="prof-stat">
-      <div class="prof-stat-emoji">📺</div>
-      <div class="prof-stat-val"><?= number_format($total_watches) ?></div>
-      <div class="prof-stat-lbl">Ditonton</div>
-    </div>
-  </div>
-
-  <div class="prof-stats">
-    <div class="prof-stat">
-      <div class="prof-stat-emoji">📥</div>
-      <div class="prof-stat-val"><?= $total_deposits ?></div>
-      <div class="prof-stat-lbl">Deposit</div>
-    </div>
-    <div class="prof-stat">
-      <div class="prof-stat-emoji">📤</div>
-      <div class="prof-stat-val"><?= $total_withdrawals ?></div>
-      <div class="prof-stat-lbl">Withdraw</div>
-    </div>
-    <div class="prof-stat">
-      <div class="prof-stat-emoji">📈</div>
-      <div class="prof-stat-val"><?= $active_investments ?></div>
-      <div class="prof-stat-lbl">Investasi</div>
-    </div>
-  </div>
-
-  <div class="prof-stats" style="grid-template-columns: 1fr 1fr;">
-    <div class="prof-stat">
-      <div class="prof-stat-emoji">🏠</div>
-      <div class="prof-stat-val"><?= $total_hives ?></div>
-      <div class="prof-stat-lbl">Sarang</div>
-    </div>
-    <div class="prof-stat">
-      <div class="prof-stat-emoji">🐝</div>
-      <div class="prof-stat-val"><?= $total_bees ?></div>
-      <div class="prof-stat-lbl">Lebah</div>
-    </div>
-  </div>
-
-  <!-- HONEYCOMB DIVIDER -->
-  <div class="honey-divider"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-
-  <!-- REFERRAL -->
-  <div class="prof-ref">
-    <div>
-      <div class="prof-ref-lbl">Kode Referral</div>
-      <div class="prof-ref-code" id="ref-code"><?= htmlspecialchars($user['referral_code']) ?></div>
-    </div>
-    <button class="prof-ref-btn" onclick="copyRef()"><i class="ph-bold ph-copy"></i> Salin</button>
-  </div>
-
-  <!-- NAV GRID -->
-  <div class="prof-nav-title">🧭 Menu Cepat</div>
-  <div class="prof-nav">
-    <a href="/edit-rekening" class="prof-nav-item pn-rek"><i class="ph-bold ph-bank"></i> Rekening</a>
-    <a href="/upgrade" class="prof-nav-item pn-upg"><i class="ph-bold ph-rocket-launch"></i> Upgrade</a>
-    <a href="/history" class="prof-nav-item pn-riw"><i class="ph-bold ph-receipt"></i> Riwayat</a>
-    <a href="/panduan" class="prof-nav-item pn-pan"><i class="ph-bold ph-book-open"></i> Panduan</a>
-    <a href="/farm" class="prof-nav-item pn-farm"><i class="ph-bold ph-tree"></i> Farm</a>
-    <a href="/videos" class="prof-nav-item pn-vid"><i class="ph-bold ph-play-circle"></i> Video</a>
-    <a href="/missions" class="prof-nav-item pn-misi"><i class="ph-bold ph-target"></i> Misi</a>
-    <a href="/plinko" class="prof-nav-item pn-plinko"><i class="ph-bold ph-game-controller"></i> Plinko</a>
-    <a href="/invest" class="prof-nav-item pn-inv"><i class="ph-bold ph-chart-line-up"></i> Investasi</a>
-  </div>
-
-  <!-- HONEYCOMB DIVIDER -->
-  <div class="honey-divider"><span></span><span></span><span></span><span></span><span></span></div>
-
-  <!-- SETTINGS ACCORDION -->
-  <div class="prof-group">
-    <div class="prof-acc-hdr" onclick="toggleAcc('info')" id="h-info">
-      <i class="icon ph-bold ph-identification-card"></i>
-      <span class="title">Info Akun</span>
-      <i class="caret ph-bold ph-caret-down"></i>
-    </div>
-    <div class="prof-acc-body" id="b-info">
-      <div class="prof-info-row">
-        <i class="ir-icon ph-bold ph-user"></i>
-        <span class="ir-lbl">Username</span>
-        <span class="ir-val"><?= htmlspecialchars($user['username']) ?></span>
+    <div class="pass-header">
+      <div class="pass-brand">
+        <i class="ph-fill ph-shield-check"></i>
+        <span>LebahCuan Citizen</span>
       </div>
-      <div class="prof-info-row">
-        <i class="ir-icon ph-bold ph-envelope"></i>
-        <span class="ir-lbl">Email</span>
-        <span class="ir-val"><?= htmlspecialchars($user['email']) ?></span>
+      <div class="pass-tier <?= $is_premium ? 'is-vip' : '' ?>">
+        <i class="ph-fill ph-crown"></i>
+        <span><?= htmlspecialchars($membership_name) ?></span>
       </div>
-      <div class="prof-info-row">
-        <i class="ir-icon ph-bold ph-whatsapp-logo"></i>
-        <span class="ir-lbl">WhatsApp</span>
-        <span class="ir-val"><?= htmlspecialchars(mask_account($user['whatsapp'] ?? '')) ?></span>
+    </div>
+
+    <div class="pass-body">
+      <div class="pass-avatar-wrap">
+        <div class="pass-avatar">
+          <span><?= strtoupper(substr($user['username'], 0, 1)) ?></span>
+        </div>
+        <div class="pass-status-dot"></div>
       </div>
-      <div class="prof-info-row">
-        <i class="ir-icon ph-bold ph-bank"></i>
-        <span class="ir-lbl">Bank</span>
-        <span class="ir-val"><?= $user['bank_name'] ? htmlspecialchars($user['bank_name'] . ' - ' . mask_account($user['account_number'] ?? '')) : 'Belum Ada' ?></span>
+      <div class="pass-user-info">
+        <div class="pass-username"><?= htmlspecialchars($user['username']) ?></div>
+        <div class="pass-email"><?= htmlspecialchars($user['email']) ?></div>
+        <div class="pass-meta">
+          <i class="ph-bold ph-calendar-blank"></i>
+          <span>Bergabung <?= $member_since ?> (<?= number_format($days_member) ?> Hari)</span>
+        </div>
       </div>
-      <div class="prof-info-row">
-        <i class="ir-icon ph-bold ph-calendar"></i>
-        <span class="ir-lbl">Terdaftar</span>
-        <span class="ir-val"><?= $member_since ?></span>
+      <div class="pass-chip" title="Verified Beekeeper Chip">
+        <i class="ph-bold ph-cpu"></i>
       </div>
-      <div class="prof-info-row">
-        <i class="ir-icon ph-bold ph-star"></i>
-        <span class="ir-lbl">Paket</span>
-        <span class="ir-val"><?= $membership_name ?></span>
+    </div>
+
+    <div class="pass-footer">
+      <div class="pass-ref-box">
+        <span class="pass-ref-label">KODE REFERRAL</span>
+        <span class="pass-ref-code" id="ref-code"><?= htmlspecialchars($user['referral_code']) ?></span>
+      </div>
+      <button class="pass-copy-btn" onclick="copyRef()" type="button">
+        <i class="ph-bold ph-copy"></i>
+        <span>Salin Kode</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. DUAL-FLOW VAULT CAPSULE -->
+  <div class="vault-capsule">
+    <!-- Zone 1: Rupiah Balances -->
+    <div class="vault-fiat-grid">
+      <div class="vault-fiat-item">
+        <div class="vf-badge">
+          <i class="ph-fill ph-wallet"></i> Saldo Tarik
+        </div>
+        <div class="vf-amount"><?= format_rp((float)$user['balance_wd']) ?></div>
+        <a href="/withdraw" class="vf-action-btn wd">
+          <span>Tarik Dana</span>
+          <i class="ph-bold ph-arrow-up-right"></i>
+        </a>
+      </div>
+
+      <div class="vf-divider"></div>
+
+      <div class="vault-fiat-item">
+        <div class="vf-badge">
+          <i class="ph-fill ph-coins"></i> Saldo Beli
+        </div>
+        <div class="vf-amount"><?= format_rp((float)$user['balance_dep']) ?></div>
+        <a href="/deposit" class="vf-action-btn dep">
+          <span>Top Up</span>
+          <i class="ph-bold ph-plus-circle"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Zone 2: Honey Reservoir Tank & Plinko -->
+    <div class="vault-reserves">
+      <div class="silo-meter">
+        <div class="silo-info">
+          <span class="silo-lbl">
+            <i class="ph-fill ph-drop"></i> Tangki Madu
+          </span>
+          <span class="silo-val"><?= number_format((float)$user['honey_stock'], 1) ?> ml</span>
+        </div>
+        <div class="silo-bar-track">
+          <?php
+            $honey_val = (float)$user['honey_stock'];
+            $honey_pct = min(100, max(6, ($honey_val / 500) * 100));
+          ?>
+          <div class="silo-bar-fill" style="width: <?= $honey_pct ?>%;"></div>
+        </div>
+      </div>
+
+      <div class="plinko-pill">
+        <div class="plinko-info">
+          <span class="pl-lbl">
+            <i class="ph-fill ph-game-controller"></i> Koin Plinko
+          </span>
+          <span class="pl-val"><?= number_format((int)$user['plinko_coins']) ?></span>
+        </div>
+        <a href="/plinko" class="pl-play-btn" title="Mainkan Plinko">
+          <i class="ph-bold ph-play"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. SEGMENTED TAB SWITCHER -->
+  <div class="prof-tabs">
+    <button class="prof-tab-btn <?= $initial_tab === 'summary' ? 'active' : '' ?>" id="btn-tab-summary" onclick="switchProfTab('summary')">
+      <i class="ph-bold ph-chart-polar"></i>
+      <span>Ringkasan</span>
+    </button>
+    <button class="prof-tab-btn" id="btn-tab-services" onclick="switchProfTab('services')">
+      <i class="ph-bold ph-squares-four"></i>
+      <span>Fitur & Menu</span>
+    </button>
+    <button class="prof-tab-btn <?= $initial_tab === 'security' ? 'active' : '' ?>" id="btn-tab-security" onclick="switchProfTab('security')">
+      <i class="ph-bold ph-shield-check"></i>
+      <span>Akun & Sandi</span>
+    </button>
+  </div>
+
+  <!-- ════════ TAB 1: RINGKASAN & AKTIVITAS ════════ -->
+  <div class="tab-content <?= $initial_tab === 'summary' ? 'active' : '' ?>" id="pane-summary">
+    <!-- Colony Status Ribbon -->
+    <div class="colony-ribbon">
+      <div class="cr-header">
+        <div class="cr-title">
+          <i class="ph-fill ph-tree"></i>
+          <span>Status Koloni Peternakan</span>
+        </div>
+        <a href="/farm" class="cr-link">
+          <span>Lahan Farm</span>
+          <i class="ph-bold ph-caret-right"></i>
+        </a>
+      </div>
+      <div class="cr-grid">
+        <div class="cr-item">
+          <span class="cr-item-val"><?= number_format($total_hives) ?></span>
+          <span class="cr-item-lbl"><i class="ph-bold ph-house-line"></i> Sarang</span>
+        </div>
+        <div class="cr-sep"></div>
+        <div class="cr-item">
+          <span class="cr-item-val"><?= number_format($total_bees) ?></span>
+          <span class="cr-item-lbl"><i class="ph-bold ph-sparkle"></i> Lebah</span>
+        </div>
+        <div class="cr-sep"></div>
+        <div class="cr-item">
+          <span class="cr-item-val"><?= number_format($active_investments) ?></span>
+          <span class="cr-item-lbl"><i class="ph-bold ph-chart-line-up"></i> Invest</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Milestones & Activity List -->
+    <div class="stream-card">
+      <div class="stream-row">
+        <div class="stream-icon si-gold">
+          <i class="ph-fill ph-trophy"></i>
+        </div>
+        <div class="stream-info">
+          <div class="stream-title">Total Pendapatan</div>
+          <div class="stream-desc">Akumulasi hasil panen & komisi</div>
+        </div>
+        <div class="stream-value"><?= format_rp((float)$user['total_earned']) ?></div>
+      </div>
+
+      <div class="stream-row">
+        <div class="stream-icon si-green">
+          <i class="ph-bold ph-arrow-down-left"></i>
+        </div>
+        <div class="stream-info">
+          <div class="stream-title">Deposit Disetujui</div>
+          <div class="stream-desc">Riwayat top up saldo sukses</div>
+        </div>
+        <div class="stream-value"><?= number_format($total_deposits) ?> transaksi</div>
+      </div>
+
+      <div class="stream-row">
+        <div class="stream-icon si-amber">
+          <i class="ph-bold ph-arrow-up-right"></i>
+        </div>
+        <div class="stream-info">
+          <div class="stream-title">Penarikan Dana</div>
+          <div class="stream-desc">Pencairan saldo ke rekening</div>
+        </div>
+        <div class="stream-value"><?= number_format($total_withdrawals) ?> transaksi</div>
+      </div>
+
+      <div class="stream-row">
+        <div class="stream-icon si-blue">
+          <i class="ph-fill ph-play-circle"></i>
+        </div>
+        <div class="stream-info">
+          <div class="stream-title">Video Ditonton</div>
+          <div class="stream-desc">Tayangan iklan tugas harian</div>
+        </div>
+        <div class="stream-value"><?= number_format($total_watches) ?> video</div>
+      </div>
+
+      <div class="stream-row">
+        <div class="stream-icon si-purple">
+          <i class="ph-fill ph-users-three"></i>
+        </div>
+        <div class="stream-info">
+          <div class="stream-title">Mitra Peternak (Squad)</div>
+          <div class="stream-desc">Teman bergabung lewat kodemu</div>
+        </div>
+        <div class="stream-value"><?= number_format($refs) ?> mitra</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 2: FITUR & LAYANAN ════════ -->
+  <div class="tab-content" id="pane-services">
+    <!-- Group: Game & Panen -->
+    <div class="service-group">
+      <div class="service-group-title">
+        <i class="ph-bold ph-game-controller"></i>
+        <span>Game & Peternakan</span>
+      </div>
+      <div class="service-card">
+        <a href="/farm" class="service-tile">
+          <div class="st-icon-box" style="background: #dcfce7; color: #166534; border-color: #166534;">
+            <i class="ph-fill ph-tree"></i>
+          </div>
+          <div class="st-text">
+            <div class="st-name">Kebun & Sarang Lebah (3D Farm)</div>
+            <div class="st-desc">Beli sarang, pekerjakan lebah & panen madu</div>
+          </div>
+          <i class="ph-bold ph-caret-right st-arrow"></i>
+        </a>
+
+        <a href="/videos" class="service-tile">
+          <div class="st-icon-box" style="background: #e0e7ff; color: #3730a3; border-color: #3730a3;">
+            <i class="ph-fill ph-film-strip"></i>
+          </div>
+          <div class="st-text">
+            <div class="st-name">Tonton Video Cuan</div>
+            <div class="st-desc">Selesaikan durasi video untuk komisi harian</div>
+          </div>
+          <i class="ph-bold ph-caret-right st-arrow"></i>
+        </a>
+
+        <a href="/missions" class="service-tile">
+          <div class="st-icon-box" style="background: #fce7f3; color: #9d174d; border-color: #9d174d;">
+            <i class="ph-fill ph-target"></i>
+          </div>
+          <div class="st-text">
+            <div class="st-name">Pusat Misi & Tantangan</div>
+            <div class="st-desc">Klaim bonus saldo & reward tugas harian</div>
+          </div>
+          <i class="ph-bold ph-caret-right st-arrow"></i>
+        </a>
+
+        <a href="/plinko" class="service-tile">
+          <div class="st-icon-box" style="background: #e0f2fe; color: #0369a1; border-color: #0369a1;">
+            <i class="ph-fill ph-diamonds-four"></i>
+          </div>
+          <div class="st-text">
+            <div class="st-name">Arena Game Plinko</div>
+            <div class="st-desc">Jatuhkan koin keberuntungan raih hadiah</div>
+          </div>
+          <i class="ph-bold ph-caret-right st-arrow"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Group: Finansial & Bisnis -->
+    <div class="service-group">
+      <div class="service-group-title">
+        <i class="ph-bold ph-bank"></i>
+        <span>Finansial & Bisnis</span>
+      </div>
+      <div class="service-card">
+        <a href="/upgrade" class="service-tile">
+          <div class="st-icon-box" style="background: #fef3c7; color: #b45309; border-color: #b45309;">
+            <i class="ph-fill ph-rocket-launch"></i>
+          </div>
+          <div class="st-text">
+            <div class="st-name">Upgrade Paket Member</div>
+            <div class="st-desc">Tingkatkan limit withdraw & profit peternak</div>
+          </div>
+          <i class="ph-bold ph-caret-right st-arrow"></i>
+        </a>
+
+        <a href="/invest" class="service-tile">
+          <div class="st-icon-box" style="background: #fef08a; color: #854d0e; border-color: #854d0e;">
+            <i class="ph-fill ph-chart-line-up"></i>
+          </div>
+          <div class="st-text">
+            <div class="st-name">Paket Investasi Madu</div>
+            <div class="st-desc">Kembangkan aset dengan return stabil</div>
+          </div>
+          <i class="ph-bold ph-caret-right st-arrow"></i>
+        </a>
+
+        <a href="/edit-rekening" class="service-tile">
+          <div class="st-icon-box" style="background: #ccfbf1; color: #0f766e; border-color: #0f766e;">
+            <i class="ph-fill ph-credit-card"></i>
+          </div>
+          <div class="st-text">
+            <div class="st-name">Pengaturan Rekening Bank</div>
+            <div class="st-desc">Daftarkan atau perbarui rekening penarikan</div>
+          </div>
+          <i class="ph-bold ph-caret-right st-arrow"></i>
+        </a>
+
+        <a href="/history" class="service-tile">
+          <div class="st-icon-box" style="background: #fed7aa; color: #9a3412; border-color: #9a3412;">
+            <i class="ph-fill ph-receipt"></i>
+          </div>
+          <div class="st-text">
+            <div class="st-name">Riwayat Transaksi & Mutasi</div>
+            <div class="st-desc">Laporan keluar masuk saldo secara rinci</div>
+          </div>
+          <i class="ph-bold ph-caret-right st-arrow"></i>
+        </a>
+
+        <a href="/panduan" class="service-tile">
+          <div class="st-icon-box" style="background: #f3f4f6; color: #374151; border-color: #374151;">
+            <i class="ph-fill ph-book-open"></i>
+          </div>
+          <div class="st-text">
+            <div class="st-name">Buku Panduan & Aturan</div>
+            <div class="st-desc">Pelajari panduan upgrade & tips profit optimal</div>
+          </div>
+          <i class="ph-bold ph-caret-right st-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 3: AKUN, KEAMANAN & HELP ════════ -->
+  <div class="tab-content <?= $initial_tab === 'security' ? 'active' : '' ?>" id="pane-security">
+    <!-- Account Specs -->
+    <div class="spec-card">
+      <div class="spec-row">
+        <span class="spec-key"><i class="ph-bold ph-user"></i> Username</span>
+        <span class="spec-val"><?= htmlspecialchars($user['username']) ?></span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key"><i class="ph-bold ph-envelope"></i> Email</span>
+        <span class="spec-val"><?= htmlspecialchars($user['email']) ?></span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key"><i class="ph-bold ph-phone"></i> WhatsApp</span>
+        <span class="spec-val"><?= htmlspecialchars(mask_account($user['whatsapp'] ?? '')) ?></span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key"><i class="ph-bold ph-bank"></i> Bank Tujuan</span>
+        <span class="spec-val"><?= $user['bank_name'] ? htmlspecialchars($user['bank_name'] . ' - ' . mask_account($user['account_number'] ?? '')) : 'Belum Didaftarkan' ?></span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-key"><i class="ph-bold ph-crown"></i> Membership</span>
+        <span class="spec-val"><?= htmlspecialchars($membership_name) ?></span>
       </div>
       <?php if ((int)$user['spin_tickets'] > 0): ?>
-      <div class="prof-info-row">
-        <i class="ir-icon ph-bold ph-ticket"></i>
-        <span class="ir-lbl">Tiket Spin</span>
-        <span class="ir-val"><?= (int)$user['spin_tickets'] ?></span>
+      <div class="spec-row">
+        <span class="spec-key"><i class="ph-bold ph-ticket"></i> Tiket Spin</span>
+        <span class="spec-val"><?= (int)$user['spin_tickets'] ?> Tiket</span>
       </div>
       <?php endif; ?>
     </div>
 
-    <div class="prof-acc-hdr <?= $active_section === 'edit' ? 'open' : '' ?>" onclick="toggleAcc('edit')" id="h-edit">
-      <i class="icon ph-bold ph-pencil-simple"></i>
-      <span class="title">Ubah Username</span>
-      <i class="caret ph-bold ph-caret-down"></i>
-    </div>
-    <div class="prof-acc-body <?= $active_section === 'edit' ? 'open' : '' ?>" id="b-edit">
-      <form method="POST">
-        <?= csrf_field() ?>
-        <input type="hidden" name="action" value="update_profile">
-        <label class="prof-lbl">Username Baru (Huruf/Angka/_)</label>
-        <input class="prof-input" type="text" name="username" value="<?= htmlspecialchars($user['username']) ?>" required minlength="3">
-        <button class="prof-btn"><i class="ph-bold ph-floppy-disk"></i> Simpan Username</button>
-      </form>
+    <!-- Accordion: Edit Username -->
+    <div class="accordion-card">
+      <div class="acc-header <?= $active_section === 'edit' ? 'open' : '' ?>" onclick="toggleAccordion('edit')" id="hdr-edit">
+        <div class="acc-header-left">
+          <i class="ph-bold ph-pencil-simple"></i>
+          <span>Ubah Username Akun</span>
+        </div>
+        <i class="ph-bold ph-caret-down acc-chevron"></i>
+      </div>
+      <div class="acc-body <?= $active_section === 'edit' ? 'open' : '' ?>" id="body-edit">
+        <form method="POST">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="update_profile">
+          <label class="input-lbl">Username Baru (Minimal 3 Karakter)</label>
+          <input class="prof-input-ctrl" type="text" name="username" value="<?= htmlspecialchars($user['username']) ?>" required minlength="3">
+          <button class="prof-submit-btn" type="submit">
+            <i class="ph-bold ph-floppy-disk"></i>
+            <span>Simpan Perubahan</span>
+          </button>
+        </form>
+      </div>
     </div>
 
-    <div class="prof-acc-hdr <?= $active_section === 'password' ? 'open' : '' ?>" onclick="toggleAcc('password')" id="h-password">
-      <i class="icon ph-bold ph-lock-key"></i>
-      <span class="title">Ganti Password</span>
-      <i class="caret ph-bold ph-caret-down"></i>
+    <!-- Accordion: Change Password -->
+    <div class="accordion-card">
+      <div class="acc-header <?= $active_section === 'password' ? 'open' : '' ?>" onclick="toggleAccordion('pass')" id="hdr-pass">
+        <div class="acc-header-left">
+          <i class="ph-bold ph-lock-key"></i>
+          <span>Ganti Kata Sandi</span>
+        </div>
+        <i class="ph-bold ph-caret-down acc-chevron"></i>
+      </div>
+      <div class="acc-body <?= $active_section === 'password' ? 'open' : '' ?>" id="body-pass">
+        <form method="POST">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="change_password">
+          <label class="input-lbl">Password Lama</label>
+          <input class="prof-input-ctrl" type="password" name="old_password" placeholder="Masukkan password saat ini" required minlength="6">
+          <label class="input-lbl">Password Baru (Minimal 6 Karakter)</label>
+          <input class="prof-input-ctrl" type="password" name="new_password" placeholder="Masukkan password baru" required minlength="6">
+          <button class="prof-submit-btn" type="submit">
+            <i class="ph-bold ph-key"></i>
+            <span>Perbarui Password</span>
+          </button>
+        </form>
+      </div>
     </div>
-    <div class="prof-acc-body <?= $active_section === 'password' ? 'open' : '' ?>" id="b-password">
-      <form method="POST">
-        <?= csrf_field() ?>
-        <input type="hidden" name="action" value="change_password">
-        <label class="prof-lbl">Password Lama</label>
-        <input class="prof-input" type="password" name="old_password" required minlength="6">
-        <label class="prof-lbl">Password Baru</label>
-        <input class="prof-input" type="password" name="new_password" required minlength="6">
-        <button class="prof-btn"><i class="ph-bold ph-key"></i> Update Password</button>
-      </form>
+
+    <!-- Contact & Community Hub -->
+    <div class="contact-hub">
+      <div class="ch-title">
+        <i class="ph-bold ph-headset"></i>
+        <span>Pusat Bantuan & Komunitas</span>
+      </div>
+      <div class="ch-buttons">
+        <?php foreach ($_contact_btns as $cb): ?>
+          <?php
+            $t = strtolower($cb['icon_value']);
+            $svg = $_psvg[$t] ?? $_psvg['cs'];
+            $c = match($t) {
+                'wa' => 'background:linear-gradient(135deg, #22c55e, #15803d);border-color:#14532d;box-shadow:0 3px 0 #14532d;',
+                'tele' => 'background:linear-gradient(135deg, #38bdf8, #0284c7);border-color:#0369a1;box-shadow:0 3px 0 #0369a1;',
+                'ig' => 'background:linear-gradient(135deg, #f43f5e, #be123c);border-color:#881337;box-shadow:0 3px 0 #881337;',
+                'fb' => 'background:linear-gradient(135deg, #3b82f6, #1d4ed8);border-color:#1e3a8a;box-shadow:0 3px 0 #1e3a8a;',
+                default => 'background:linear-gradient(135deg, #94a3b8, #475569);border-color:#1e293b;box-shadow:0 3px 0 #1e293b;'
+            };
+          ?>
+          <a href="<?= htmlspecialchars($cb['url']) ?>" class="ch-btn" target="_blank" style="<?= $c ?>" title="<?= htmlspecialchars($cb['title'] ?? 'Hubungi') ?>">
+            <?= $svg ?>
+          </a>
+        <?php endforeach; ?>
+      </div>
     </div>
+
+    <!-- Logout Action -->
+    <a href="/logout" class="logout-btn">
+      <i class="ph-bold ph-sign-out"></i>
+      <span>Keluar dari Akun</span>
+    </a>
   </div>
-
-  <!-- CONTACT -->
-  <div class="prof-nav-title">📞 Hubungi Kami</div>
-  <div class="prof-contact">
-    <?php foreach ($_contact_btns as $cb): ?>
-      <?php
-        $t = strtolower($cb['icon_value']);
-        $svg = $_psvg[$t] ?? $_psvg['cs'];
-        $c = match($t) {
-            'wa' => 'background:linear-gradient(135deg, #4ade80, #16a34a);border-color:#14532d;box-shadow:0 3px 0 #14532d;color:#fff;',
-            'tele' => 'background:linear-gradient(135deg, #60a5fa, #2563eb);border-color:#1e3a8a;box-shadow:0 3px 0 #1e3a8a;color:#fff;',
-            'ig' => 'background:linear-gradient(135deg, #f43f5e, #be123c);border-color:#881337;box-shadow:0 3px 0 #881337;color:#fff;',
-            'fb' => 'background:linear-gradient(135deg, #3b82f6, #1d4ed8);border-color:#1e3a8a;box-shadow:0 3px 0 #1e3a8a;color:#fff;',
-            default => 'background:linear-gradient(135deg, #94a3b8, #475569);border-color:#1e293b;box-shadow:0 3px 0 #1e293b;color:#fff;'
-        };
-      ?>
-      <a href="<?= htmlspecialchars($cb['url']) ?>" class="prof-contact-btn" target="_blank" style="<?= $c ?>">
-        <?= $svg ?>
-      </a>
-    <?php endforeach; ?>
-  </div>
-
-  <!-- HONEYCOMB DIVIDER -->
-  <div class="honey-divider"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-
-  <!-- LOGOUT -->
-  <a href="/logout" class="prof-logout">
-    <i class="ph-bold ph-sign-out"></i> Keluar
-  </a>
 </div>
 
 <script>
-function toggleAcc(id) {
-  const b = document.getElementById('b-' + id);
-  const h = document.getElementById('h-' + id);
+function switchProfTab(tabName) {
+  // Update buttons
+  document.querySelectorAll('.prof-tab-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('btn-tab-' + tabName);
+  if (btn) btn.classList.add('active');
+
+  // Update panels
+  document.querySelectorAll('.tab-content').forEach(p => p.classList.remove('active'));
+  const pane = document.getElementById('pane-' + tabName);
+  if (pane) pane.classList.add('active');
+}
+
+function toggleAccordion(id) {
+  const b = document.getElementById('body-' + id);
+  const h = document.getElementById('hdr-' + id);
+  if (!b || !h) return;
   const isOpen = b.classList.contains('open');
-  document.querySelectorAll('.prof-acc-body').forEach(el => el.classList.remove('open'));
-  document.querySelectorAll('.prof-acc-hdr').forEach(el => el.classList.remove('open'));
+
+  document.querySelectorAll('.acc-body').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.acc-header').forEach(el => el.classList.remove('open'));
+
   if (!isOpen) {
     b.classList.add('open');
     h.classList.add('open');
@@ -649,14 +1531,20 @@ function toggleAcc(id) {
 }
 
 function copyRef() {
-  const txt = document.getElementById('ref-code').innerText.trim();
+  const codeEl = document.getElementById('ref-code');
+  if (!codeEl) return;
+  const txt = codeEl.innerText.trim();
+
   if (typeof nToast !== 'undefined' && nToast.copy) {
     nToast.copy(txt, 'Kode Referral');
   } else {
     navigator.clipboard.writeText(txt).then(() => {
-      if (typeof nToast === 'function') nToast('🐝 Kode Referral disalin: ' + txt, 'success');
+      if (typeof nToast === 'function') {
+        nToast('Kode Referral disalin: ' + txt, 'success');
+      }
     });
   }
 }
 </script>
+
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
