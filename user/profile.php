@@ -84,123 +84,282 @@ $_psvg = [
 
 <style>
 /* ══════════════════════════════════════════════
-   PROFILE PAGE — AMBER HONEY THEME
+   PROFILE PAGE — DARK FOREST PREMIUM REDESIGN
    ══════════════════════════════════════════════ */
-body { 
-  background-color: #fef8ee !important; 
-  background-image: radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px) !important;
-  background-size: 16px 16px !important;
-  color: #78350f; 
+body {
+  background: #071a0c !important;
+  color: #e2e8f0;
 }
 
-/* ── TOP BANNER (HERO) ── */
-.wd-top { 
-  position: relative; 
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
-  padding: 18px 14px 24px; 
-  border-bottom: 3.5px solid #78350f; 
-  z-index: 10; 
-  display: flex; 
-  align-items: center; 
-  gap: 14px; 
-  box-shadow: 0 4px 0 #78350f;
+/* ── HERO BANNER ── */
+.prof-hero {
+  position: relative;
+  background: linear-gradient(160deg, #0c2e15 0%, #132d14 40%, #1a3a1d 100%);
+  padding: 28px 20px 60px;
+  overflow: hidden;
 }
-.wd-top::before { 
-  content: ''; 
-  position: absolute; 
-  inset: 0; 
-  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1.5px, transparent 1.5px); 
-  background-size: 16px 16px; 
-  pointer-events: none; 
+.prof-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(251,191,36,0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(34,197,94,0.06) 0%, transparent 50%);
+  pointer-events: none;
 }
-.prof-ava { 
-  width: 54px; height: 54px; 
-  background: #fde68a; 
-  border: 3px solid #78350f; 
-  border-radius: 16px; 
-  display: flex; align-items: center; justify-content: center; 
-  font-size: 24px; font-weight: 900; color: #78350f; 
-  box-shadow: 0 4px 0 #78350f; 
-  position: relative; z-index: 2; flex-shrink: 0; 
+.prof-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background: #071a0c;
+  clip-path: ellipse(55% 100% at 50% 100%);
 }
-.prof-info { flex: 1; min-width: 0; position: relative; z-index: 2; }
-.prof-name { font-size: 17px; font-weight: 900; color: #fff; text-shadow: 0 2px 0 #78350f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
-.prof-email { font-size: 11px; font-weight: 800; color: #fef3c7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
-.prof-tier { display: inline-block; font-size: 10px; font-weight: 900; padding: 3px 8px; background: #78350f; color: #fde68a; border-radius: 8px; border: 1.5px solid #fff; box-shadow: 0 2px 0 rgba(0,0,0,0.2); text-transform: uppercase; }
+
+/* Floating hexagons */
+.prof-hex-deco {
+  position: absolute;
+  background: rgba(251,191,36,0.06);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  pointer-events: none;
+}
+.prof-hex-deco:nth-child(1) { top: 12px; right: 20px; width: 28px; height: 28px; animation: hexFloat 6s ease-in-out infinite; }
+.prof-hex-deco:nth-child(2) { top: 50px; right: 55px; width: 18px; height: 18px; animation: hexFloat 8s ease-in-out infinite 1s; opacity: 0.6; }
+.prof-hex-deco:nth-child(3) { bottom: 40px; left: 15px; width: 22px; height: 22px; animation: hexFloat 7s ease-in-out infinite 2s; opacity: 0.5; }
+@keyframes hexFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(12deg); }
+}
+
+/* Avatar */
+.prof-ava-wrap {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center;
+  margin-bottom: 14px;
+}
+.prof-ava-ring {
+  width: 82px; height: 82px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #f59e0b, #22c55e, #f59e0b);
+  padding: 3px;
+  animation: avaRingSpin 6s linear infinite;
+  box-shadow: 0 0 20px rgba(251,191,36,0.2);
+}
+@keyframes avaRingSpin {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+.prof-ava {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a3a1d, #0f2a16);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px; font-weight: 900; color: #fbbf24;
+  text-shadow: 0 0 12px rgba(251,191,36,0.4);
+}
+.prof-name {
+  font-size: 20px; font-weight: 900; color: #fef3c7;
+  text-align: center; text-shadow: 0 1px 6px rgba(0,0,0,0.4);
+  margin-bottom: 3px; position: relative; z-index: 2;
+}
+.prof-email {
+  font-size: 11px; font-weight: 700; color: rgba(254,243,199,0.5);
+  text-align: center; margin-bottom: 10px; position: relative; z-index: 2;
+}
+.prof-tier-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(251,191,36,0.12);
+  border: 1.5px solid rgba(251,191,36,0.3);
+  backdrop-filter: blur(8px); border-radius: 20px;
+  padding: 5px 14px; font-size: 10px; font-weight: 900; color: #fbbf24;
+  text-transform: uppercase; letter-spacing: 0.5px; position: relative; z-index: 2;
+}
+.prof-tier-badge.premium {
+  background: linear-gradient(135deg, rgba(251,191,36,0.25), rgba(217,119,6,0.2));
+  border-color: rgba(251,191,36,0.5);
+  box-shadow: 0 0 12px rgba(251,191,36,0.15);
+}
 
 /* ── BODY ── */
-.wd-body { flex: 1; background: transparent; padding: 20px 14px 100px; position: relative; z-index: 2; }
+.prof-body {
+  padding: 0 14px 120px; margin-top: -24px;
+  position: relative; z-index: 5;
+}
 
-/* ── STATS ROW ── */
-.stat-row { display: flex; gap: 8px; margin-bottom: 16px; position: relative; z-index: 5; }
-.stat-box { flex: 1; background: #ffffff; border: 2.5px solid #78350f; border-radius: 14px; padding: 10px 4px; text-align: center; box-shadow: 0 4px 0 #78350f; }
-.stat-val { font-size: 13px; font-weight: 900; line-height: 1.2; color: #78350f; }
-.stat-val.blue { color: #d97706; }
-.stat-lbl { font-size: 9.5px; font-weight: 900; color: #92400e; margin-top: 3px; text-transform: uppercase; }
+/* ── STATS ── */
+.prof-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin-bottom: 16px;
+}
+.prof-stat-card {
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 12px 8px; text-align: center;
+  backdrop-filter: blur(6px);
+  transition: transform 0.2s, border-color 0.2s;
+}
+.prof-stat-card:hover { transform: translateY(-2px); border-color: rgba(251,191,36,0.2); }
+.prof-stat-val { font-size: 14px; font-weight: 900; color: #fbbf24; line-height: 1.2; margin-bottom: 3px; }
+.prof-stat-val.green { color: #4ade80; }
+.prof-stat-lbl { font-size: 9px; font-weight: 800; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.3px; }
 
-/* ── SHARE STRIP ── */
-.ref-strip { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 2.5px solid #78350f; border-radius: 14px; padding: 10px 12px; box-shadow: 0 4px 0 #78350f; margin-bottom: 16px; }
-.ref-lbl { font-size: 9.5px; font-weight: 900; color: #92400e; text-transform: uppercase; margin-bottom: 2px; }
-.ref-code { font-size: 14px; font-weight: 900; color: #78350f; letter-spacing: 0.5px; }
-.ref-btn { background: #f59e0b; border: 2px solid #78350f; border-radius: 10px; font-size: 11px; font-weight: 900; color: #78350f; padding: 8px 14px; box-shadow: 0 3px 0 #78350f; cursor: pointer; flex-shrink: 0; }
-.ref-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+/* ── REFERRAL ── */
+.prof-ref-strip {
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(251,191,36,0.06);
+  border: 1.5px solid rgba(251,191,36,0.15);
+  border-radius: 14px; padding: 12px 14px; margin-bottom: 16px;
+  backdrop-filter: blur(6px);
+}
+.prof-ref-label { font-size: 9px; font-weight: 800; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 2px; }
+.prof-ref-code { font-size: 15px; font-weight: 900; color: #fbbf24; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; }
+.prof-ref-btn {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1.5px solid rgba(120,53,15,0.5);
+  border-radius: 10px; padding: 8px 14px;
+  font-size: 11px; font-weight: 900; color: #fff;
+  cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; gap: 4px;
+  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow: 0 3px 0 rgba(120,53,15,0.5);
+  font-family: inherit;
+}
+.prof-ref-btn:active { transform: translateY(2px); box-shadow: none; }
 
-/* ── GRID NAV ── */
-.p-nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
-.p-nav-item { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 10px; border-radius: 14px; font-size: 12px; font-weight: 900; color: #78350f; text-decoration: none; border: 2.5px solid #78350f; box-shadow: 0 4px 0 #78350f; transition: transform 0.1s; }
-.p-nav-item:active { transform: translateY(3px); box-shadow: 0 1px 0 #78350f; }
-.p-nav-item i { font-size: 18px; }
-.p-nav-item.n-rek { background: #a7f3d0; border-color: #065f46; box-shadow: 0 4px 0 #065f46; color: #065f46; }
-.p-nav-item.n-upg { background: #fde68a; border-color: #78350f; box-shadow: 0 4px 0 #78350f; color: #78350f; }
-.p-nav-item.n-riw { background: #fed7aa; border-color: #78350f; box-shadow: 0 4px 0 #78350f; color: #78350f; }
-.p-nav-item.n-pan { background: #fef08a; border-color: #78350f; box-shadow: 0 4px 0 #78350f; color: #78350f; }
+/* ── NAV GRID ── */
+.prof-nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.prof-nav-item {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 10px; border-radius: 14px;
+  font-size: 12px; font-weight: 800; text-decoration: none;
+  border: 1.5px solid; transition: transform 0.15s, box-shadow 0.15s;
+  backdrop-filter: blur(4px);
+}
+.prof-nav-item:active { transform: translateY(2px); box-shadow: none !important; }
+.prof-nav-item i { font-size: 18px; }
+.prof-nav-item.n-rek { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.25); color: #4ade80; box-shadow: 0 3px 0 rgba(34,197,94,0.2); }
+.prof-nav-item.n-upg { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.25); color: #fbbf24; box-shadow: 0 3px 0 rgba(251,191,36,0.2); }
+.prof-nav-item.n-riw { background: rgba(251,146,60,0.1); border-color: rgba(251,146,60,0.25); color: #fb923c; box-shadow: 0 3px 0 rgba(251,146,60,0.2); }
+.prof-nav-item.n-pan { background: rgba(96,165,250,0.1); border-color: rgba(96,165,250,0.25); color: #60a5fa; box-shadow: 0 3px 0 rgba(96,165,250,0.2); }
 
-/* ── COMPACT ACCORDIONS ── */
-.c-group { background: #ffffff; border: 2.5px solid #78350f; border-radius: 16px; box-shadow: 0 4px 0 #78350f; overflow: hidden; margin-bottom: 16px; }
-.c-hdr { display: flex; align-items: center; gap: 8px; padding: 12px; background: #fffbeb; cursor: pointer; border-bottom: 2px solid transparent; user-select: none; }
-.c-hdr.open { border-bottom-color: #fde68a; background: #fef3c7; }
-.c-hdr i.icon { font-size: 16px; color: #d97706; width: 24px; text-align: center; }
-.c-hdr span { flex: 1; font-size: 11px; font-weight: 900; color: #78350f; text-transform: uppercase; }
-.c-hdr i.caret { font-size: 12px; color: #d97706; transition: transform 0.2s; }
-.c-hdr.open i.caret { transform: rotate(180deg); }
-.c-body { display: none; padding: 12px; background: #fff; }
-.c-body.open { display: block; }
+/* ── ACCORDION ── */
+.prof-settings {
+  background: rgba(255,255,255,0.03);
+  border: 1.5px solid rgba(255,255,255,0.06);
+  border-radius: 16px; overflow: hidden; margin-bottom: 16px;
+  backdrop-filter: blur(6px);
+}
+.prof-acc-hdr {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px; cursor: pointer; user-select: none;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.2s;
+}
+.prof-acc-hdr:hover { background: rgba(255,255,255,0.02); }
+.prof-acc-hdr.open { background: rgba(251,191,36,0.05); border-bottom-color: rgba(251,191,36,0.1); }
+.prof-acc-hdr .acc-icon {
+  width: 32px; height: 32px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.prof-acc-hdr .acc-icon.icon-info { background: rgba(96,165,250,0.12); color: #60a5fa; }
+.prof-acc-hdr .acc-icon.icon-edit { background: rgba(251,191,36,0.12); color: #fbbf24; }
+.prof-acc-hdr .acc-icon.icon-lock { background: rgba(248,113,113,0.12); color: #f87171; }
+.prof-acc-hdr .acc-title { flex: 1; font-size: 12px; font-weight: 800; color: #e2e8f0; }
+.prof-acc-hdr .acc-caret { font-size: 12px; color: rgba(255,255,255,0.3); transition: transform 0.3s; }
+.prof-acc-hdr.open .acc-caret { transform: rotate(180deg); color: #fbbf24; }
 
-/* Forms inside compact */
-.c-lbl { font-size: 10px; font-weight: 900; color: #78350f; margin-bottom: 4px; display: block; }
-.c-input { width: 100%; background: #ffffff; border: 2px solid #fde68a; border-radius: 10px; padding: 8px 10px; font-size: 12px; font-weight: 800; color: #78350f; margin-bottom: 8px; outline: none; box-sizing: border-box; }
-.c-input:focus { border-color: #d97706; box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.2); }
-.c-input:disabled { background: #f8fafc; color: #64748b; border-color: #e2e8f0; cursor: not-allowed; }
-.c-btn { width: 100%; background: #f59e0b; border: 2px solid #78350f; border-radius: 10px; padding: 10px; font-size: 12px; font-weight: 900; color: #78350f; box-shadow: 0 3px 0 #78350f; cursor: pointer; transition: transform 0.1s; }
-.c-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+.prof-acc-body {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s;
+  padding: 0 14px; background: rgba(0,0,0,0.15);
+}
+.prof-acc-body.open { max-height: 320px; padding: 14px; }
 
-/* ── CONTACT ROW ── */
-.contact-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; justify-content: center; }
-.contact-row::-webkit-scrollbar { display: none; }
-.contact-btn { flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 2.5px solid #78350f; box-shadow: 0 3px 0 #78350f; transition: transform 0.1s; text-decoration: none; color: #78350f; background: #fff; }
-.contact-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+/* Forms */
+.prof-lbl { font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 0.3px; }
+.prof-input {
+  width: 100%; background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 10px; padding: 10px 12px;
+  font-size: 13px; font-weight: 700; color: #e2e8f0;
+  margin-bottom: 10px; outline: none; box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit;
+}
+.prof-input:focus { border-color: rgba(251,191,36,0.4); box-shadow: 0 0 0 3px rgba(251,191,36,0.1); }
+.prof-input:disabled { background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.35); border-color: rgba(255,255,255,0.05); cursor: not-allowed; }
+.prof-submit {
+  width: 100%; background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: none; border-radius: 10px; padding: 11px;
+  font-size: 12px; font-weight: 900; color: #fff; cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow: 0 3px 0 rgba(120,53,15,0.5);
+  display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit;
+}
+.prof-submit:active { transform: translateY(2px); box-shadow: none; }
+
+/* ── CONTACT ── */
+.prof-contact-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+.prof-contact-btn {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid; transition: transform 0.15s;
+  text-decoration: none; color: #fff; backdrop-filter: blur(4px);
+}
+.prof-contact-btn:active { transform: scale(0.92); }
 
 /* ── LOGOUT ── */
-.logout-btn { display: flex; align-items: center; justify-content: center; gap: 6px; background: #fee2e2; border: 2.5px solid #dc2626; border-radius: 14px; padding: 12px; font-size: 13px; font-weight: 900; color: #dc2626; text-decoration: none; box-shadow: 0 4px 0 #dc2626; transition: transform 0.1s; margin-top: 10px; }
-.logout-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #dc2626; }
+.prof-logout {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: rgba(239,68,68,0.08);
+  border: 1.5px solid rgba(239,68,68,0.2);
+  border-radius: 14px; padding: 13px;
+  font-size: 13px; font-weight: 800; color: #f87171;
+  text-decoration: none; transition: background 0.2s, transform 0.1s; margin-top: 8px;
+}
+.prof-logout:active { transform: translateY(2px); }
+.prof-logout:hover { background: rgba(239,68,68,0.12); }
 
-#toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 8px 16px; border-radius: 10px; font-size: 11px; font-weight: 900; border: 2px solid #065f46; box-shadow: 0 3px 0 #065f46; display: none; z-index: 100; }
+/* ── FLASH ── */
+.prof-flash {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 12px;
+  font-size: 12px; font-weight: 800; margin-bottom: 14px;
+  animation: flashSlide 0.3s ease-out;
+}
+@keyframes flashSlide {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.prof-flash--success { background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.2); color: #4ade80; }
+.prof-flash--error { background: rgba(239,68,68,0.1); border: 1.5px solid rgba(239,68,68,0.2); color: #f87171; }
 </style>
 
-<!-- TOP BANNER (HERO) -->
-<div class="wd-top">
-  <div class="prof-ava"><?= strtoupper(substr($user['username'], 0, 1)) ?></div>
-  <div class="prof-info">
-    <div class="prof-name"><?= htmlspecialchars($user['username']) ?></div>
-    <div class="prof-email"><?= htmlspecialchars($user['email']) ?></div>
-    <div class="prof-tier">
+<!-- HERO BANNER -->
+<div class="prof-hero">
+  <div class="prof-hex-deco"></div>
+  <div class="prof-hex-deco"></div>
+  <div class="prof-hex-deco"></div>
+  
+  <div class="prof-ava-wrap">
+    <div class="prof-ava-ring">
+      <div class="prof-ava"><?= strtoupper(substr($user['username'], 0, 1)) ?></div>
+    </div>
+  </div>
+  
+  <div class="prof-name"><?= htmlspecialchars($user['username']) ?></div>
+  <div class="prof-email"><?= htmlspecialchars($user['email']) ?></div>
+  <div style="text-align:center;position:relative;z-index:2">
+    <span class="prof-tier-badge <?= $is_premium ? 'premium' : '' ?>">
       <?= $is_premium ? '★ '.$membership_name : $membership_name ?>
       <?= $user['membership_expires_at'] ? ' • '.date('d/m/y', strtotime($user['membership_expires_at'])) : '' ?>
-    </div>
+    </span>
   </div>
 </div>
 
-<div class="wd-body">
+<div class="prof-body">
   <?php if ($flash): ?>
   <div class="prof-flash prof-flash--<?= $flashType === 'error' ? 'error' : 'success' ?>">
     <i class="ph-bold ph-<?= $flashType === 'error' ? 'warning-circle' : 'check-circle' ?>" style="font-size:16px;"></i>
@@ -208,138 +367,145 @@ body {
   </div>
   <?php endif; ?>
 
-  <!-- STATS ROW -->
-  <div class="stat-row">
-    <div class="stat-box">
-      <div class="stat-val blue"><?= format_rp((float)$user['total_earned']) ?></div>
-      <div class="stat-lbl">Earned</div>
+  <!-- STATS -->
+  <div class="prof-stats">
+    <div class="prof-stat-card">
+      <div class="prof-stat-val green"><?= format_rp((float)$user['total_earned']) ?></div>
+      <div class="prof-stat-lbl">Total Earned</div>
     </div>
-    <div class="stat-box">
-      <div class="stat-val"><?= number_format($total_watches) ?></div>
-      <div class="stat-lbl">Ditonton</div>
+    <div class="prof-stat-card">
+      <div class="prof-stat-val"><?= number_format($total_watches) ?></div>
+      <div class="prof-stat-lbl">Ditonton</div>
     </div>
-    <div class="stat-box">
-      <div class="stat-val"><?= $refs ?></div>
-      <div class="stat-lbl">Referral</div>
+    <div class="prof-stat-card">
+      <div class="prof-stat-val"><?= $refs ?></div>
+      <div class="prof-stat-lbl">Referral</div>
     </div>
   </div>
 
-  <!-- SHARE STRIP -->
-  <div class="ref-strip">
+  <!-- REFERRAL -->
+  <div class="prof-ref-strip">
     <div>
-      <div class="ref-lbl">Kode Referral</div>
-      <div class="ref-code" id="ref-code"><?= htmlspecialchars($user['referral_code']) ?></div>
+      <div class="prof-ref-label">Kode Referral</div>
+      <div class="prof-ref-code" id="ref-code"><?= htmlspecialchars($user['referral_code']) ?></div>
     </div>
-    <button class="ref-btn" onclick="copyRef()"><i class="ph-bold ph-copy"></i> Salin</button>
+    <button class="prof-ref-btn" onclick="copyRef()"><i class="ph-bold ph-copy"></i> Salin</button>
   </div>
 
-  <!-- GRID NAV -->
-  <div class="p-nav-grid">
-    <a href="/edit-rekening" class="p-nav-item n-rek">
+  <!-- NAV GRID -->
+  <div class="prof-nav-grid">
+    <a href="/edit-rekening" class="prof-nav-item n-rek">
       <i class="ph-bold ph-bank"></i> <span>Rekening</span>
     </a>
-    <a href="/upgrade" class="p-nav-item n-upg">
+    <a href="/upgrade" class="prof-nav-item n-upg">
       <i class="ph-bold ph-rocket-launch"></i> <span>Upgrade</span>
     </a>
-    <a href="/history" class="p-nav-item n-riw">
+    <a href="/history" class="prof-nav-item n-riw">
       <i class="ph-bold ph-receipt"></i> <span>Riwayat</span>
     </a>
-    <a href="/panduan" class="p-nav-item n-pan">
+    <a href="/panduan" class="prof-nav-item n-pan">
       <i class="ph-bold ph-book-open"></i> <span>Panduan</span>
     </a>
   </div>
 
-  <!-- SETTINGS ACCORDION -->
-  <div class="c-group">
-    <div class="c-hdr" onclick="t('info')" id="h-info">
-      <i class="icon ph-bold ph-identification-card"></i> <span>Info Akun</span> <i class="caret ph-bold ph-caret-down" id="c-info"></i>
+  <!-- SETTINGS -->
+  <div class="prof-settings">
+    <div class="prof-acc-hdr" onclick="toggleAcc('info')" id="h-info">
+      <div class="acc-icon icon-info"><i class="ph-bold ph-identification-card"></i></div>
+      <span class="acc-title">Info Akun</span>
+      <i class="acc-caret ph-bold ph-caret-down" id="c-info"></i>
     </div>
-    <div class="c-body" id="b-info">
-      <div class="c-lbl">WhatsApp</div>
-      <input class="c-input" value="<?= htmlspecialchars(mask_account($user['whatsapp'] ?? '')) ?>" disabled>
-      <div class="c-lbl">Bank Terdaftar</div>
-      <input class="c-input" value="<?= $user['bank_name'] ? htmlspecialchars($user['bank_name'] . ' - ' . mask_account($user['account_number'] ?? '')) : 'Belum Ada' ?>" disabled>
+    <div class="prof-acc-body" id="b-info">
+      <label class="prof-lbl">WhatsApp</label>
+      <input class="prof-input" value="<?= htmlspecialchars(mask_account($user['whatsapp'] ?? '')) ?>" disabled>
+      <label class="prof-lbl">Bank Terdaftar</label>
+      <input class="prof-input" value="<?= $user['bank_name'] ? htmlspecialchars($user['bank_name'] . ' - ' . mask_account($user['account_number'] ?? '')) : 'Belum Ada' ?>" disabled>
     </div>
 
-    <div class="c-hdr <?= $active_section === 'edit' ? 'open' : '' ?>" onclick="t('edit')" id="h-edit">
-      <i class="icon ph-bold ph-pencil-simple"></i> <span>Ubah Username</span> <i class="caret ph-bold ph-caret-down <?= $active_section === 'edit' ? 'open' : '' ?>" id="c-edit"></i>
+    <div class="prof-acc-hdr <?= $active_section === 'edit' ? 'open' : '' ?>" onclick="toggleAcc('edit')" id="h-edit">
+      <div class="acc-icon icon-edit"><i class="ph-bold ph-pencil-simple"></i></div>
+      <span class="acc-title">Ubah Username</span>
+      <i class="acc-caret ph-bold ph-caret-down" id="c-edit"></i>
     </div>
-    <div class="c-body <?= $active_section === 'edit' ? 'open' : '' ?>" id="b-edit">
+    <div class="prof-acc-body <?= $active_section === 'edit' ? 'open' : '' ?>" id="b-edit">
       <form method="POST">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="update_profile">
-        <div class="c-lbl">Username Baru (Huruf/Angka/_)</div>
-        <input class="c-input" type="text" name="username" value="<?= htmlspecialchars($user['username']) ?>" required minlength="3">
-        <button class="c-btn"><i class="ph-bold ph-floppy-disk"></i> Simpan Username</button>
+        <label class="prof-lbl">Username Baru (Huruf/Angka/_)</label>
+        <input class="prof-input" type="text" name="username" value="<?= htmlspecialchars($user['username']) ?>" required minlength="3">
+        <button class="prof-submit"><i class="ph-bold ph-floppy-disk"></i> Simpan Username</button>
       </form>
     </div>
 
-    <div class="c-hdr <?= $active_section === 'password' ? 'open' : '' ?>" onclick="t('password')" id="h-password">
-      <i class="icon ph-bold ph-lock-key"></i> <span>Ganti Password</span> <i class="caret ph-bold ph-caret-down <?= $active_section === 'password' ? 'open' : '' ?>" id="c-password"></i>
+    <div class="prof-acc-hdr <?= $active_section === 'password' ? 'open' : '' ?>" onclick="toggleAcc('password')" id="h-password">
+      <div class="acc-icon icon-lock"><i class="ph-bold ph-lock-key"></i></div>
+      <span class="acc-title">Ganti Password</span>
+      <i class="acc-caret ph-bold ph-caret-down" id="c-password"></i>
     </div>
-    <div class="c-body <?= $active_section === 'password' ? 'open' : '' ?>" id="b-password">
+    <div class="prof-acc-body <?= $active_section === 'password' ? 'open' : '' ?>" id="b-password">
       <form method="POST">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="change_password">
-        <div class="c-lbl">Password Lama</div>
-        <input class="c-input" type="password" name="old_password" required minlength="6">
-        <div class="c-lbl">Password Baru</div>
-        <input class="c-input" type="password" name="new_password" required minlength="6">
-        <button class="c-btn"><i class="ph-bold ph-key"></i> Update Password</button>
+        <label class="prof-lbl">Password Lama</label>
+        <input class="prof-input" type="password" name="old_password" required minlength="6">
+        <label class="prof-lbl">Password Baru</label>
+        <input class="prof-input" type="password" name="new_password" required minlength="6">
+        <button class="prof-submit"><i class="ph-bold ph-key"></i> Update Password</button>
       </form>
     </div>
   </div>
 
-  <!-- CONTACT ROW -->
-  <div class="contact-row">
+  <!-- CONTACT -->
+  <div class="prof-contact-row">
     <?php foreach ($_contact_btns as $cb): ?>
       <?php
         $t = strtolower($cb['icon_value']);
         $svg = $_psvg[$t] ?? $_psvg['cs'];
         $c = match($t) {
-            'wa' => 'background:linear-gradient(135deg, #4ade80, #16a34a);border-color:#14532d;box-shadow:0 3px 0 #14532d;',
-            'tele' => 'background:linear-gradient(135deg, #60a5fa, #2563eb);border-color:#1e3a8a;box-shadow:0 3px 0 #1e3a8a;',
-            'ig' => 'background:linear-gradient(135deg, #f43f5e, #be123c);border-color:#881337;box-shadow:0 3px 0 #881337;',
-            'fb' => 'background:linear-gradient(135deg, #3b82f6, #1d4ed8);border-color:#1e3a8a;box-shadow:0 3px 0 #1e3a8a;',
-            default => 'background:linear-gradient(135deg, #94a3b8, #475569);border-color:#1e293b;box-shadow:0 3px 0 #1e293b;'
+            'wa' => 'background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.3);',
+            'tele' => 'background:rgba(96,165,250,0.15);border-color:rgba(96,165,250,0.3);',
+            'ig' => 'background:rgba(244,63,94,0.15);border-color:rgba(244,63,94,0.3);',
+            'fb' => 'background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.3);',
+            default => 'background:rgba(148,163,184,0.15);border-color:rgba(148,163,184,0.3);'
         };
       ?>
-      <a href="<?= htmlspecialchars($cb['url']) ?>" class="contact-btn" target="_blank" style="<?= $c ?>">
+      <a href="<?= htmlspecialchars($cb['url']) ?>" class="prof-contact-btn" target="_blank" style="<?= $c ?>">
         <?= $svg ?>
       </a>
     <?php endforeach; ?>
   </div>
 
   <!-- LOGOUT -->
-  <a href="/logout" class="logout-btn">
+  <a href="/logout" class="prof-logout">
     <i class="ph-bold ph-sign-out"></i> Keluar
   </a>
-
 </div>
 
-<div id="toast">✅ Tersalin!</div>
-<script src="/assets/js/toast.js"></script>
 <script>
-function t(id) {
-  let b = document.getElementById('b-'+id);
-  let h = document.getElementById('h-'+id);
-  let c = document.getElementById('c-'+id);
-  let o = b.classList.contains('open');
-  // close all
-  document.querySelectorAll('.c-body, .c-hdr, .caret').forEach(e => e.classList.remove('open'));
-  if(!o) {
+function toggleAcc(id) {
+  const b = document.getElementById('b-' + id);
+  const h = document.getElementById('h-' + id);
+  const isOpen = b.classList.contains('open');
+
+  // Close all
+  document.querySelectorAll('.prof-acc-body').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.prof-acc-hdr').forEach(el => el.classList.remove('open'));
+
+  if (!isOpen) {
     b.classList.add('open');
     h.classList.add('open');
-    c.classList.add('open');
   }
 }
+
 function copyRef() {
-  let txt = document.getElementById('ref-code').innerText;
-  navigator.clipboard.writeText(txt).then(()=>{
-    let t = document.getElementById('toast');
-    t.style.display='block';
-    setTimeout(()=>t.style.display='none', 2000);
-  });
+  const txt = document.getElementById('ref-code').innerText.trim();
+  if (typeof nToast !== 'undefined' && nToast.copy) {
+    nToast.copy(txt, 'Kode Referral');
+  } else {
+    navigator.clipboard.writeText(txt).then(() => {
+      if (typeof nToast === 'function') nToast('🐝 Kode Referral disalin: ' + txt, 'success');
+    });
+  }
 }
 </script>
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
