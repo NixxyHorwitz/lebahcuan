@@ -96,7 +96,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'depo' => '💰 Deposit',
                 'user_baru' => '🆕 User Baru',
                 'permintaan' => '💬 Permintaan',
-                'misi' => '🎯 Klaim Misi'
+                'misi' => '🎯 Klaim Misi',
+                'abuse' => '🚨 Deteksi Abuse'
             ];
             if ($topic_key && isset($topics[$topic_key])) {
                 $topics = [$topic_key => $topics[$topic_key]];
@@ -430,7 +431,8 @@ $tabs = [
                   'depo' => '💰 Deposit',
                   'user_baru' => '🆕 User Baru',
                   'permintaan' => '💬 Permintaan',
-                  'misi' => '🎯 Klaim Misi'
+                  'misi' => '🎯 Klaim Misi',
+                  'abuse' => '🚨 Deteksi Abuse'
               ];
               foreach ($tg_topics as $tk => $tn): ?>
               <form method="POST">
