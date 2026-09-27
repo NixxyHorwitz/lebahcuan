@@ -481,7 +481,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <div class="dep-tabs">
       <?php if ($qris_enabled && !empty($qris_raw)): ?>
       <div class="dep-tab" id="tab-qris" onclick="switchForm('qris')">
-        <img src="/assets/qris.png" alt="QRIS" style="height:18px;object-fit:contain;">
+        <img src="/assets/qris.png?v=3" alt="QRIS" style="height:26px;object-fit:contain;">
         <span>QRIS Otomatis</span>
       </div>
       <?php endif; ?>
@@ -502,12 +502,12 @@ require dirname(__DIR__) . '/partials/header.php';
         <input type="hidden" name="action" value="submit_qris">
 
         <!-- Official QRIS Header Badge -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;background:#fdfaf6;border:1.5px solid #fde68a;border-radius:12px;padding:8px 12px;">
-          <div style="font-size:11px;font-weight:900;color:#78350f;display:flex;align-items:center;gap:5px;">
-            <i class="ph-fill ph-shield-check" style="color:#059669;font-size:14px;"></i>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;background:#fdfaf6;border:1.5px solid #fde68a;border-radius:12px;padding:8px 14px;min-height:48px;">
+          <div style="font-size:11.5px;font-weight:900;color:#78350f;display:flex;align-items:center;gap:6px;">
+            <i class="ph-fill ph-shield-check" style="color:#059669;font-size:16px;"></i>
             <span>Standar Pembayaran Nasional</span>
           </div>
-          <img src="/assets/qris.png" alt="QRIS Resmi" style="height:22px;object-fit:contain;">
+          <img src="/assets/qris.png?v=3" alt="QRIS Resmi" style="height:34px;max-width:110px;object-fit:contain;">
         </div>
 
         <div class="dep-input-grp">
@@ -542,7 +542,7 @@ require dirname(__DIR__) . '/partials/header.php';
         </div>
 
         <button type="submit" class="dep-btn-submit dep-btn-submit--qris no-dbl-submit">
-          <img src="/assets/qris.png" alt="QRIS" style="height:20px;filter:brightness(0) invert(1);margin-right:2px;">
+          <img src="/assets/qris.png?v=3" alt="QRIS" style="height:26px;filter:brightness(0) invert(1);margin-right:6px;object-fit:contain;">
           <span>Lanjut Bayar dengan QRIS</span>
           <i class="ph-bold ph-arrow-right"></i>
         </button>
