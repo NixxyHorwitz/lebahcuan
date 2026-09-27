@@ -296,37 +296,45 @@ body {
   text-align: center;
 }
 .trust-lbl {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 900;
-  color: #92400e;
+  color: #78350f;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 9px;
 }
 .trust-logos {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  background: #fdfaf6;
-  border: 1.5px solid #fde68a;
-  border-radius: 12px;
-  padding: 8px 12px;
+  gap: 16px;
+  background: #ffffff;
+  border: 2px solid #fde68a;
+  border-radius: 14px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 6px rgba(120, 53, 15, 0.05);
 }
-.trust-logo-img {
-  height: 24px;
-  max-width: 95px;
+.trust-logo--ojk {
+  height: 40px;
+  max-width: 120px;
   object-fit: contain;
-  filter: contrast(1.05);
+  display: block;
+}
+.trust-logo--bap {
+  height: 32px;
+  max-width: 135px;
+  object-fit: contain;
+  display: block;
 }
 .trust-sep {
-  width: 1px;
-  height: 20px;
-  background: #cbd5e1;
+  width: 1.5px;
+  height: 32px;
+  background: #e2e8f0;
+  flex-shrink: 0;
 }
 </style>
 </head>
@@ -407,13 +415,13 @@ body {
     <!-- ── LOGO DIAWASI OJK & BAPPEBTI ── -->
     <div class="auth-trust-box">
       <div class="trust-lbl">
-        <i class="ph-fill ph-shield-check" style="color:#059669;font-size:12px;"></i>
+        <i class="ph-fill ph-shield-check" style="color:#059669;font-size:14px;"></i>
         <span>Diawasi & Terdaftar Resmi</span>
       </div>
       <div class="trust-logos">
-        <img src="/assets/ojkkk.png" alt="Otoritas Jasa Keuangan" class="trust-logo-img">
+        <img src="/assets/ojkkk.png?v=3" alt="Otoritas Jasa Keuangan" class="trust-logo--ojk">
         <div class="trust-sep"></div>
-        <img src="/assets/bap.png" alt="Bappebti" class="trust-logo-img">
+        <img src="/assets/bap.png?v=3" alt="Bappebti" class="trust-logo--bap">
       </div>
     </div>
 
