@@ -21,7 +21,7 @@ $ip_key = 'reg_' . md5($client_ip);
 $attempts = (int)($_SESSION[$ip_key . '_attempts'] ?? 0);
 $lock_until = (int)($_SESSION[$ip_key . '_lock'] ?? 0);
 
-// Captcha Generator Function
+// Compact SVG Captcha Generator
 function generate_captcha_challenge(): array {
     $n1 = rand(10, 35);
     $n2 = rand(2, 12);
@@ -40,16 +40,16 @@ function generate_captcha_challenge(): array {
     $secret = 'LebahCuan_SecCap_' . date('Ymd');
     $sig = hash_hmac('sha256', $token, $secret);
     
-    $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 46" width="160" height="46" style="display:block;border-radius:12px;background:#fffbeb;border:2px solid #fde68a;">'
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 38" width="120" height="38" style="display:block;border-radius:10px;background:#fffbeb;border:2px solid #78350f;">'
          . '<defs>'
-         . '<pattern id="hdots" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">'
-         . '<circle cx="5" cy="5" r="1.5" fill="#fde68a" opacity="0.6"/>'
+         . '<pattern id="hdots" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">'
+         . '<circle cx="4" cy="4" r="1.2" fill="#fde68a" opacity="0.6"/>'
          . '</pattern>'
          . '</defs>'
          . '<rect width="100%" height="100%" fill="url(#hdots)"/>'
-         . '<path d="M 8 23 Q 45 5, 85 23 T 152 21" fill="none" stroke="#fcd34d" stroke-width="2.5" opacity="0.6"/>'
-         . '<path d="M 12 33 Q 52 43, 92 31 T 148 25" fill="none" stroke="#fbbf24" stroke-width="1.8" opacity="0.4"/>'
-         . '<text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle" font-family="\'Nunito\', sans-serif" font-weight="900" font-size="20" fill="#78350f" letter-spacing="1">'
+         . '<path d="M 6 19 Q 32 4, 60 19 T 114 17" fill="none" stroke="#fcd34d" stroke-width="2" opacity="0.6"/>'
+         . '<path d="M 8 27 Q 38 35, 68 25 T 112 21" fill="none" stroke="#fbbf24" stroke-width="1.5" opacity="0.4"/>'
+         . '<text x="50%" y="62%" dominant-baseline="middle" text-anchor="middle" font-family="\'Nunito\', sans-serif" font-weight="900" font-size="16" fill="#78350f" letter-spacing="1">'
          . "{$n1} {$op} {$n2} = ?"
          . '</text>'
          . '</svg>';
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ── 2. SUBMISSION SPEED CHECK ──
     $form_time = (int)($_POST['form_time_sig'] ?? 0);
     if ($form_time > 0 && (time() - $form_time) < 2) {
-        $error = 'Pengisian formulir terlalu cepat (terindikasi bot otomatis). Silakan periksa kembali data Anda.';
+        $error = 'Pengisian formulir terlalu cepat (terindikasi bot otomatis).';
         goto end_reg;
     }
 
@@ -106,7 +106,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $secret = 'LebahCuan_SecCap_' . date('Ymd');
     $calc_sig = hash_hmac('sha256', $cap_token, $secret);
     if (!hash_equals($calc_sig, $cap_sig)) {
-        // Fallback for midnight rollover
         $secret_prev = 'LebahCuan_SecCap_' . date('Ymd', strtotime('-1 day'));
         $calc_sig = hash_hmac('sha256', $cap_token, $secret_prev);
     }
@@ -125,13 +124,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ((time() - $cap_data['ts']) > 900) {
-        $error = 'Waktu hitungan keamanan telah habis (lebih dari 15 menit). Silakan refresh soal!';
+        $error = 'Waktu hitungan keamanan telah habis. Silakan refresh soal!';
         $error_fields[] = 'f_captcha';
         goto end_reg;
     }
 
     if ($cap_answer === '' || (int)$cap_answer !== (int)$cap_data['ans']) {
-        $error = 'Jawaban hitungan keamanan salah. Silakan coba lagi!';
+        $error = 'Jawaban hitungan keamanan salah. Coba lagi!';
         $error_fields[] = 'f_captcha';
         goto end_reg;
     }
@@ -153,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ── 5. BASIC VALIDATIONS ──
     if (!$username || !$email || !$whatsapp || !$password || !$bank_name || !$account_number || !$account_name) {
-        $error = 'Semua field wajib diisi lengkap.';
+        $error = 'Semua kolom wajib diisi lengkap.';
         if (!$username) $error_fields[] = 'f_username';
         if (!$email) $error_fields[] = 'f_email';
         if (!$whatsapp) $error_fields[] = 'f_wa';
@@ -162,13 +161,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$account_number) $error_fields[] = 'f_account_number';
         if (!$account_name) $error_fields[] = 'f_account_name';
     } elseif (!preg_match('/^[a-zA-Z0-9_]{3,30}$/', $username)) {
-        $error = 'Username harus 3–30 karakter, hanya huruf, angka, dan underscore.';
+        $error = 'Username harus 3–30 karakter (huruf, angka, underscore).';
         $error_fields[] = 'f_username';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Format alamat email tidak valid.';
         $error_fields[] = 'f_email';
     } elseif (strlen($whatsapp) < 9 || strlen($whatsapp) > 16) {
-        $error = 'Nomor WhatsApp tidak valid (minimal 9 digit angka).';
+        $error = 'Nomor WhatsApp tidak valid (minimal 9 digit).';
         $error_fields[] = 'f_wa';
     } elseif (strlen($password) < 6) {
         $error = 'Password minimal 6 karakter.';
@@ -181,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $reg_24h = (int)$ip_cnt->fetchColumn();
             if ($reg_24h >= 3) {
                 $msg_abuse = "🚨 <b>PERINGATAN ABUSE: BATAS REGISTRASI IP TERLAMPAUI!</b>\n\n"
-                    . "⚠️ <b>Pelanggaran:</b> Terdeteksi {$reg_24h} akun dibuat dari IP yang sama dalam 24 jam terakhir (Indikasi Tuyul / Kloningan).\n"
+                    . "⚠️ <b>Pelanggaran:</b> Terdeteksi {$reg_24h} akun dibuat dari IP yang sama dalam 24 jam terakhir.\n"
                     . "👤 <b>Calon User:</b> <code>{$username}</code>\n"
                     . "🌐 <b>IP Address:</b> <code>{$client_ip}</code>\n"
                     . "🔗 <b>Kode Referral:</b> " . ($ref_input ?: "Tanpa Referral") . "\n"
@@ -189,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     . "🕐 <b>Waktu:</b> " . date('d M Y H:i:s');
                 send_telegram_notif($pdo, $msg_abuse, [], 'abuse');
                 
-                $error = 'Batas pembuatan akun harian untuk perangkat/jaringan ini telah tercapai (maksimal 3 akun per 24 jam). Silakan coba lagi besok.';
+                $error = 'Batas pendaftaran harian untuk jaringan ini telah tercapai (maksimal 3 akun per 24 jam).';
                 goto end_reg;
             }
         }
@@ -200,10 +199,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $existing_user = $chk_user->fetch();
         if ($existing_user) {
             if ($existing_user['username'] === $username) {
-                $error = 'Username sudah digunakan. Silakan pilih username lain.';
+                $error = 'Username sudah digunakan. Pilih username lain.';
                 $error_fields[] = 'f_username';
             } else {
-                $error = 'Alamat email sudah terdaftar. Silakan gunakan email lain atau login.';
+                $error = 'Alamat email sudah terdaftar. Silakan login.';
                 $error_fields[] = 'f_email';
             }
             $_SESSION[$ip_key . '_attempts'] = $attempts + 1;
@@ -218,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $chk_wa->execute([$whatsapp]);
         $existing_wa = $chk_wa->fetch();
         if ($existing_wa) {
-            $error = 'Nomor WhatsApp sudah digunakan oleh akun lain. Satu nomor WA hanya untuk satu akun.';
+            $error = 'Nomor WhatsApp sudah digunakan oleh akun lain.';
             $error_fields[] = 'f_wa';
             goto end_reg;
         }
@@ -229,7 +228,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $existing_bank = $chk_bank->fetch();
         if ($existing_bank) {
             if ($ref_input && $existing_bank['referral_code'] === $ref_input) {
-                // BLATANT SELF-REFERRAL (Same bank account as referrer)
                 $msg_abuse = "🚨 <b>PERINGATAN ABUSE: SELF-REFERRAL REKENING IDENTIK!</b>\n\n"
                     . "⚠️ <b>Pelanggaran:</b> User baru mendaftar menggunakan nomor rekening yang PERSIS SAMA dengan pemilik referralnya!\n"
                     . "👤 <b>Calon User:</b> <code>{$username}</code>\n"
@@ -245,7 +243,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 goto end_reg;
             }
 
-            // Bank account shared across multiple accounts
             $msg_abuse = "⚠️ <b>PERINGATAN ABUSE: DUPLIKASI REKENING BANK!</b>\n\n"
                 . "⚠️ <b>Pelanggaran:</b> Mencoba mendaftar dengan nomor rekening yang sudah dimiliki user lain.\n"
                 . "👤 <b>Calon User:</b> <code>{$username}</code>\n"
@@ -256,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 . "🕐 <b>Waktu:</b> " . date('d M Y H:i:s');
             send_telegram_notif($pdo, $msg_abuse, [], 'abuse');
             
-            $error = 'Nomor rekening/e-wallet ini sudah terdaftar di akun lain. Setiap pengguna wajib memiliki rekening terpisah.';
+            $error = 'Nomor rekening/e-wallet ini sudah terdaftar di akun lain. Satu rekening untuk satu akun.';
             $error_fields[] = 'f_account_number';
             goto end_reg;
         }
@@ -287,16 +284,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Check A: Same IP as Referrer
                 if ($client_ip !== '127.0.0.1' && !empty($referrer['registration_ip']) && $client_ip === $referrer['registration_ip']) {
                     $ref_abuse = true;
-                    $ref_abuse_note = "Self-referral: IP pendaftar sama dengan IP pendaftaran pengundang (@{$referrer['username']}) [{$client_ip}]";
+                    $ref_abuse_note = "Self-referral: IP pendaftar sama dengan IP pengundang (@{$referrer['username']}) [{$client_ip}]";
                 }
 
-                // Check B: Same device / browser fingerprint via cookie
+                // Check B: Same device via cookie
                 if (!empty($_COOKIE['self_ref_owner']) && $_COOKIE['self_ref_owner'] === $ref_input) {
                     $ref_abuse = true;
-                    $ref_abuse_note = "Self-referral: Browser/perangkat sama dengan pemilik referral (@{$referrer['username']})";
+                    $ref_abuse_note = "Self-referral: Perangkat sama dengan pemilik referral (@{$referrer['username']})";
                 }
 
-                // Check C: Referral Velocity (Tuyul Burst Attack)
+                // Check C: Referral Velocity
                 $vel_check = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
                 $vel_check->execute([$ref_input]);
                 $vel_cnt = (int)$vel_check->fetchColumn();
@@ -317,13 +314,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ->execute([$username, $email, $whatsapp, $hash, $code, $ref_by, $bank_name, $account_number, $account_name, $acc_num_input_type, $acc_name_input_type, $acc_num_record, $acc_name_record, $client_ip, $is_flagged_abuse, $abuse_reason]);
         $new_id = (int)$pdo->lastInsertId();
 
-        // Save self-referral tracking cookie for this browser
         setcookie('self_ref_owner', $code, time() + (86400 * 90), '/', '', false, true);
 
         // ── 12. REFERRAL BONUS LOGIC WITH ABUSE PROTECTION ──
         if ($ref_by) {
             if ($ref_abuse) {
-                // Suspicious tuyul referral: DO NOT CREDIT BONUS! Alert Telegram!
                 $msg_abuse = "🚨 <b>DETEKSI ABUSE: BONUS REFERRAL DITAHAN!</b>\n\n"
                     . "⚠️ <b>Alasan:</b> {$ref_abuse_note}\n"
                     . "👤 <b>User Baru:</b> <code>{$username}</code> (ID: #{$new_id})\n"
@@ -332,13 +327,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     . "🏦 <b>Rekening:</b> {$bank_name} - {$account_number} (a.n. {$account_name})\n\n"
                     . "🛡️ <b>Tindakan Sistem:</b>\n"
                     . "• Saldo Tarik (Bonus Ref) <b>TIDAK DIKREDITKAN</b> ke akun @{$ref_username}\n"
-                    . "• Akun baru ditandai [ABUSE FLAG] di panel admin untuk pengawasan.\n"
+                    . "• Akun baru ditandai [ABUSE FLAG] di panel admin.\n"
                     . "🕐 <b>Waktu:</b> " . date('d M Y H:i:s');
                 $site_url = rtrim(setting($pdo, 'lc_site_url', ''), '/');
                 $kb_abuse = $site_url ? [[['text' => '🔍 Cek Akun Baru', 'url' => "{$site_url}/console/user_detail.php?id={$new_id}"]]] : [];
                 send_telegram_notif($pdo, $msg_abuse, $kb_abuse, 'abuse');
             } else {
-                // Legitimate referral: Credit bonus!
                 $chk_prom = $pdo->prepare("SELECT is_promotor FROM users WHERE referral_code = ? LIMIT 1");
                 $chk_prom->execute([$ref_by]);
                 $is_prom = (int)$chk_prom->fetchColumn();
@@ -397,21 +391,25 @@ $_page_title = 'Daftar Akun Baru — ' . $_seo_title;
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#78350f">
 <title><?= htmlspecialchars($_page_title) ?></title>
 <?php if ($_seo_desc): ?><meta name="description" content="<?= htmlspecialchars($_seo_desc) ?>"><?php endif; ?>
 <?php if ($_favicon): ?>
-<link rel="icon" href="<?= htmlspecialchars($_favicon) ?>?v=<?= @filemtime(dirname(__DIR__).$_favicon)?:time() ?>">
+<link rel="icon" href="<?= htmlspecialchars($_favicon) ?>">
 <?php endif; ?>
 
 <!-- Google Fonts & Phosphor Icons -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
 
 <style>
+/* ══════════════════════════════════════════════════════════
+   LEBAHCUAN — ULTRA-COMPACT DENSE REGISTER (ZERO SCROLL)
+   2-Column Grid • Integrated Inline Captcha • Zero Emojis
+   ══════════════════════════════════════════════════════════ */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -422,188 +420,169 @@ $_page_title = 'Daftar Akun Baru — ' . $_seo_title;
 body {
   font-family: 'Nunito', sans-serif;
   background-color: #fef8ee;
-  background-image: radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px);
-  background-size: 16px 16px;
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(251, 191, 36, 0.22) 0%, transparent 45%),
+    radial-gradient(circle at 90% 90%, rgba(217, 119, 6, 0.16) 0%, transparent 50%),
+    radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px);
+  background-size: 100% 100%, 100% 100%, 16px 16px;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
+  padding: 12px 10px;
   color: #1e293b;
 }
 
-/* Card Container */
+/* Card Container (Ultra Compact) */
 .auth-card {
   width: 100%;
   max-width: 440px;
   background: #ffffff;
-  border: 3px solid #78350f;
-  border-radius: 28px;
-  box-shadow: 0 6px 0 #78350f, 0 16px 30px rgba(120, 53, 15, 0.12);
+  border: 2.5px solid #78350f;
+  border-radius: 20px;
+  box-shadow: 0 4.5px 0 #78350f, 0 12px 25px rgba(120, 53, 15, 0.12);
   overflow: hidden;
   position: relative;
 }
 
-/* Top Banner Header */
-.auth-header {
-  background: linear-gradient(180deg, #78350f 0%, #92400e 40%, #b45309 75%, #d97706 100%);
-  padding: 22px 18px 18px;
-  text-align: center;
+/* Header Strip (Compact Horizontal) */
+.auth-header-strip {
+  background: linear-gradient(180deg, #78350f 0%, #92400e 45%, #b45309 75%, #d97706 100%);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2.5px solid #78350f;
   position: relative;
-  border-bottom: 3px solid #78350f;
 }
-.auth-header::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(#fbbf24 1px, transparent 1px);
-  background-size: 14px 14px;
-  opacity: 0.18;
-  pointer-events: none;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
 }
-
-/* Close/Back Button */
-.auth-close-btn {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 34px;
-  height: 34px;
+.header-bee {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: #ffffff;
   border: 2px solid #78350f;
-  border-radius: 10px;
+  box-shadow: 0 2px 0 #78350f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.header-bee img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+.header-title-box h1 {
+  font-size: 16px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.15;
+  letter-spacing: -0.3px;
+  text-shadow: 0 1.5px 2px rgba(0,0,0,0.25);
+}
+.header-title-box p {
+  font-size: 10px;
+  font-weight: 800;
+  color: #fef3c7;
+  line-height: 1.2;
+}
+.auth-close-btn {
+  width: 28px;
+  height: 28px;
+  background: #ffffff;
+  border: 2px solid #78350f;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #78350f;
-  font-size: 18px;
+  font-size: 15px;
   text-decoration: none;
-  box-shadow: 0 2.5px 0 #78350f;
+  box-shadow: 0 2px 0 #78350f;
   transition: transform 0.1s;
-  z-index: 5;
+  flex-shrink: 0;
 }
 .auth-close-btn:active {
-  transform: translateY(2px);
+  transform: translateY(1.5px);
   box-shadow: 0 0.5px 0 #78350f;
-}
-
-.brand-badge {
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-  background: #ffffff;
-  border: 2.5px solid #78350f;
-  box-shadow: 0 3px 0 #78350f;
-  margin: 0 auto 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 2;
-}
-.brand-badge img {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-}
-
-.auth-title {
-  position: relative;
-  z-index: 2;
-  font-size: 20px;
-  font-weight: 900;
-  color: #ffffff;
-  letter-spacing: -0.3px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  margin-bottom: 2px;
-}
-.auth-sub {
-  position: relative;
-  z-index: 2;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #fef3c7;
 }
 
 /* Form Body */
 .auth-body {
-  padding: 20px 18px 18px;
+  padding: 12px 14px 10px;
 }
 
 /* Error Flash */
 .auth-err {
   background: #fee2e2;
   border: 2px solid #dc2626;
-  border-radius: 14px;
-  padding: 10px 14px;
-  font-size: 12px;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 11px;
   font-weight: 800;
   color: #991b1b;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 2px 0 #dc2626;
-  line-height: 1.35;
-}
-
-/* Section Header Dividers */
-.section-pill {
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
-  background: #fffbeb;
-  border: 1.5px solid #fde68a;
-  border-radius: 10px;
-  padding: 4px 10px;
-  font-size: 10.5px;
-  font-weight: 900;
-  color: #78350f;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  margin-bottom: 10px;
-}
-.section-wrap {
-  margin-bottom: 16px;
+  box-shadow: 0 2px 0 #dc2626;
+  line-height: 1.25;
 }
 
-/* Input Fields */
+/* ── 2-COLUMN COMPACT GRID ── */
+.reg-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px 8px;
+}
+.span-2 {
+  grid-column: span 2;
+}
+
 .inp-group {
-  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
 }
 .inp-label {
-  display: block;
-  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
   font-weight: 900;
   color: #78350f;
-  margin-bottom: 5px;
+  margin-bottom: 3px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 .inp-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: #ffffff;
   border: 2px solid #78350f;
-  border-radius: 14px;
-  padding: 0 12px;
-  height: 46px;
-  box-shadow: 0 2.5px 0 #78350f;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  border-radius: 12px;
+  padding: 0 10px;
+  height: 38px;
+  box-shadow: 0 2px 0 #78350f;
+  transition: all 0.15s ease;
   position: relative;
 }
 .inp-wrap:focus-within {
   border-color: #d97706;
-  box-shadow: 0 3px 0 #d97706, 0 0 8px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 2.5px 0 #d97706, 0 0 8px rgba(245, 158, 11, 0.2);
 }
 .inp-wrap--ref {
   background: #f0fdf4;
   border-color: #059669;
-  box-shadow: 0 2.5px 0 #059669;
+  box-shadow: 0 2px 0 #059669;
 }
 .inp-icon {
-  font-size: 18px;
+  font-size: 16px;
   color: #b45309;
   flex-shrink: 0;
 }
@@ -613,15 +592,16 @@ body {
   outline: none;
   background: transparent;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 800;
   color: #0f172a;
   width: 100%;
+  min-width: 0;
 }
 .inp-field::placeholder {
   color: #94a3b8;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 11px;
 }
 select.inp-field {
   cursor: pointer;
@@ -633,13 +613,12 @@ select.inp-field {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 2px;
   color: #94a3b8;
-  font-size: 18px;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.1s;
 }
 .eye-btn:hover {
   color: #78350f;
@@ -648,130 +627,111 @@ select.inp-field {
 .ref-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   background: #dcfce7;
   color: #166534;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
-  padding: 3px 8px;
-  border-radius: 8px;
+  padding: 2px 6px;
+  border-radius: 6px;
   border: 1px solid #86efac;
   white-space: nowrap;
 }
 
-/* Captcha Honey Challenge Card */
-.captcha-card {
-  background: #ffffff;
-  border: 2px solid #78350f;
-  border-radius: 16px;
-  padding: 12px 14px;
-  box-shadow: 0 3px 0 #78350f;
-  margin-bottom: 18px;
-}
-.captcha-head {
+/* ── COMPACT INLINE CAPTCHA BAR ── */
+.captcha-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 6px;
+  margin-top: 2px;
 }
-.captcha-lbl {
-  font-size: 11px;
-  font-weight: 900;
-  color: #78350f;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  text-transform: uppercase;
-}
-.captcha-refresh-btn {
-  background: #fef3c7;
-  border: 1.5px solid #78350f;
-  border-radius: 8px;
-  padding: 4px 8px;
-  font-size: 10.5px;
-  font-weight: 900;
-  color: #78350f;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  box-shadow: 0 1.5px 0 #78350f;
-  transition: transform 0.1s;
-  font-family: inherit;
-}
-.captcha-refresh-btn:active {
-  transform: translateY(1.5px);
-  box-shadow: 0 0 0 #78350f;
-}
-.captcha-body {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.captcha-svg-wrap {
+.captcha-svg-box {
   flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 38px;
 }
-.captcha-inp-wrap {
+.captcha-svg-box svg {
+  display: block;
+  height: 38px;
+  width: auto;
+}
+.captcha-ans-box {
   flex: 1;
 }
-.captcha-inp-wrap input {
+.captcha-ans-box input {
   width: 100%;
-  height: 46px;
+  height: 38px;
   border: 2px solid #78350f;
-  border-radius: 12px;
+  border-radius: 10px;
   text-align: center;
   font-family: inherit;
-  font-size: 18px;
+  font-size: 14.5px;
   font-weight: 900;
   color: #78350f;
   background: #fffbeb;
   outline: none;
   box-shadow: 0 2px 0 #78350f;
+  padding: 0 6px;
 }
-.captcha-inp-wrap input:focus {
+.captcha-ans-box input:focus {
   border-color: #d97706;
   background: #ffffff;
 }
-.captcha-hint {
-  font-size: 10px;
-  font-weight: 700;
-  color: #92400e;
-  margin-top: 6px;
+.btn-cap-refresh {
+  width: 38px;
+  height: 38px;
+  background: #fef3c7;
+  border: 2px solid #78350f;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #78350f;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #78350f;
+  transition: transform 0.1s;
+  flex-shrink: 0;
+}
+.btn-cap-refresh:active {
+  transform: translateY(1.5px);
+  box-shadow: 0 0.5px 0 #78350f;
 }
 
-/* Submit CTA Button */
+/* ── SUBMIT CTA BUTTON (COMPACT) ── */
 .btn-reg-submit {
   width: 100%;
-  height: 50px;
+  height: 42px;
   border: 2.5px solid #78350f;
-  border-radius: 16px;
+  border-radius: 14px;
   background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
   color: #ffffff;
-  font-size: 14.5px;
+  font-size: 13.5px;
   font-weight: 900;
   letter-spacing: 0.3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  box-shadow: 0 4px 0 #78350f;
+  gap: 6px;
+  box-shadow: 0 3.5px 0 #78350f;
   text-shadow: 0 1px 2px #78350f;
   cursor: pointer;
   font-family: inherit;
-  margin-top: 6px;
+  margin-top: 8px;
   transition: transform 0.1s;
 }
 .btn-reg-submit:active {
-  transform: translateY(3px);
+  transform: translateY(2.5px);
   box-shadow: 0 1px 0 #78350f;
 }
 
 /* Footer Login Link */
 .reg-footer-link {
   text-align: center;
-  margin-top: 14px;
-  font-size: 12px;
-  font-weight: 700;
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 800;
   color: #78350f;
 }
 .reg-login-link {
@@ -781,76 +741,77 @@ select.inp-field {
   margin-left: 3px;
 }
 
-/* ── TRUST & REGULATION BOX (OJK & BAPPEBTI) ── */
-.auth-trust-box {
-  margin-top: 18px;
-  padding-top: 14px;
+/* ── TRUST & REGULATION STRIP (COMPACT) ── */
+.auth-trust-strip {
+  margin-top: 10px;
+  padding-top: 8px;
   border-top: 1.5px dashed #fde68a;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #fdfaf6;
+  border: 1.5px solid #fde68a;
+  border-radius: 12px;
+  padding: 6px 12px;
 }
-.trust-lbl {
-  font-size: 11px;
+.trust-strip-lbl {
+  font-size: 9.5px;
   font-weight: 900;
   color: #78350f;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-bottom: 9px;
 }
-.trust-logos {
+.trust-strip-logos {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
-  background: #ffffff;
-  border: 2px solid #fde68a;
-  border-radius: 14px;
-  padding: 10px 14px;
-  box-shadow: 0 2px 6px rgba(120, 53, 15, 0.05);
+  gap: 10px;
 }
 .trust-logo--ojk {
-  height: 40px;
-  max-width: 120px;
+  height: 24px;
+  max-width: 75px;
   object-fit: contain;
   display: block;
 }
 .trust-logo--bap {
-  height: 32px;
-  max-width: 135px;
+  height: 18px;
+  max-width: 80px;
   object-fit: contain;
   display: block;
 }
-.trust-sep {
-  width: 1.5px;
-  height: 32px;
-  background: #e2e8f0;
-  flex-shrink: 0;
+.trust-strip-sep {
+  width: 1px;
+  height: 20px;
+  background: #cbd5e1;
 }
 </style>
 </head>
 <body>
 
 <div class="auth-card">
-  <!-- Top Banner Header -->
-  <div class="auth-header">
+  <!-- Horizontal Header Strip -->
+  <div class="auth-header-strip">
+    <div class="header-left">
+      <div class="header-bee">
+        <img src="/assets/game/bee_worker.png" alt="LebahCuan">
+      </div>
+      <div class="header-title-box">
+        <h1>Daftar Akun LebahCuan</h1>
+        <p>Tonton Video &amp; Panen Cuan Setiap Hari</p>
+      </div>
+    </div>
     <a href="/" class="auth-close-btn" title="Kembali ke Beranda">
       <i class="ph-bold ph-x"></i>
     </a>
-    <div class="brand-badge">
-      <img src="/assets/game/bee_worker.png" alt="LebahCuan">
-    </div>
-    <h1 class="auth-title">Daftar Akun LebahCuan</h1>
-    <p class="auth-sub">Tonton Video & Raih Saldo Rupiah Setiap Hari</p>
   </div>
 
   <!-- Form Body -->
   <div class="auth-body">
     <?php if ($error): ?>
       <div class="auth-err">
-        <i class="ph-bold ph-warning-circle" style="font-size:18px;flex-shrink:0;"></i>
+        <i class="ph-bold ph-warning-circle" style="font-size:15px;flex-shrink:0;"></i>
         <span><?= htmlspecialchars($error) ?></span>
       </div>
     <?php endif; ?>
@@ -868,62 +829,55 @@ select.inp-field {
       <input type="hidden" name="acc_num_record" id="f_acc_num_record" value="<?= htmlspecialchars($_POST['acc_num_record'] ?? '[]') ?>">
       <input type="hidden" name="acc_name_record" id="f_acc_name_record" value="<?= htmlspecialchars($_POST['acc_name_record'] ?? '[]') ?>">
 
-      <!-- SECTION 1: DATA AKUN -->
-      <div class="section-wrap">
-        <div class="section-pill">
-          <i class="ph-bold ph-user-circle"></i>
-          <span>1. Informasi Akun</span>
-        </div>
-
+      <!-- 2-COLUMN COMPACT GRID -->
+      <div class="reg-grid">
+        
+        <!-- Col 1: Username -->
         <div class="inp-group">
           <label class="inp-label" for="f_username">Username</label>
           <div class="inp-wrap">
             <i class="ph-bold ph-user inp-icon"></i>
-            <input type="text" class="inp-field" id="f_username" name="username" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" placeholder="Minimal 3 Karakter Huruf/Angka" autocomplete="username" required>
+            <input type="text" class="inp-field" id="f_username" name="username" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" placeholder="Min. 3 Huruf" autocomplete="username" required>
           </div>
         </div>
 
+        <!-- Col 2: WhatsApp -->
         <div class="inp-group">
-          <label class="inp-label" for="f_email">Alamat Email</label>
-          <div class="inp-wrap">
-            <i class="ph-bold ph-envelope-simple inp-icon"></i>
-            <input type="email" class="inp-field" id="f_email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" placeholder="emailkamu@gmail.com" autocomplete="email" required>
-          </div>
-        </div>
-
-        <div class="inp-group">
-          <label class="inp-label" for="f_wa">Nomor WhatsApp Aktif</label>
+          <label class="inp-label" for="f_wa">WhatsApp</label>
           <div class="inp-wrap">
             <i class="ph-bold ph-whatsapp-logo inp-icon"></i>
-            <input type="tel" class="inp-field" id="f_wa" name="whatsapp" value="<?= htmlspecialchars($_POST['whatsapp'] ?? '') ?>" placeholder="08xxxxxxxxxx" autocomplete="tel" required>
+            <input type="tel" class="inp-field" id="f_wa" name="whatsapp" value="<?= htmlspecialchars($_POST['whatsapp'] ?? '') ?>" placeholder="08xxxxxxxx" autocomplete="tel" required>
           </div>
         </div>
 
+        <!-- Col 3: Email -->
+        <div class="inp-group">
+          <label class="inp-label" for="f_email">Email</label>
+          <div class="inp-wrap">
+            <i class="ph-bold ph-envelope-simple inp-icon"></i>
+            <input type="email" class="inp-field" id="f_email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" placeholder="email@gmail.com" autocomplete="email" required>
+          </div>
+        </div>
+
+        <!-- Col 4: Password -->
         <div class="inp-group">
           <label class="inp-label" for="f_pwd">Kata Sandi</label>
           <div class="inp-wrap">
             <i class="ph-bold ph-lock-key inp-icon"></i>
-            <input type="password" class="inp-field" id="f_pwd" name="password" placeholder="Minimal 6 Karakter" autocomplete="new-password" required>
-            <button type="button" class="eye-btn" onclick="togglePasswordVisibility()" title="Lihat Password">
+            <input type="password" class="inp-field" id="f_pwd" name="password" placeholder="Min. 6 Karakter" autocomplete="new-password" required>
+            <button type="button" class="eye-btn" onclick="togglePasswordVisibility()" title="Lihat">
               <i class="ph-bold ph-eye" id="eye-icon"></i>
             </button>
           </div>
         </div>
-      </div>
 
-      <!-- SECTION 2: REKENING PENARIKAN -->
-      <div class="section-wrap">
-        <div class="section-pill">
-          <i class="ph-bold ph-bank"></i>
-          <span>2. Rekening Penarikan Cuan</span>
-        </div>
-
+        <!-- Col 5: Bank / E-Wallet -->
         <div class="inp-group">
-          <label class="inp-label" for="f_bank_name">Tujuan Bank / E-Wallet</label>
+          <label class="inp-label" for="f_bank_name">Bank / E-Wallet</label>
           <div class="inp-wrap">
             <i class="ph-bold ph-bank inp-icon"></i>
             <select class="inp-field" id="f_bank_name" name="bank_name" required>
-              <option value="">— Pilih Bank atau E-Wallet —</option>
+              <option value="">Pilih Bank</option>
               <?php if (!empty($_banks)): ?>
               <optgroup label="Bank Nasional">
                 <?php foreach ($_banks as $_ch): ?>
@@ -939,36 +893,31 @@ select.inp-field {
               </optgroup>
               <?php endif; ?>
             </select>
-            <i class="ph-bold ph-caret-down" style="color:#b45309;font-size:16px;"></i>
+            <i class="ph-bold ph-caret-down" style="color:#b45309;font-size:13px;flex-shrink:0;"></i>
           </div>
         </div>
 
+        <!-- Col 6: Account Number -->
         <div class="inp-group">
-          <label class="inp-label" for="f_account_number">Nomor Rekening / No. HP Akun</label>
+          <label class="inp-label" for="f_account_number">No. Rekening / HP</label>
           <div class="inp-wrap">
             <i class="ph-bold ph-credit-card inp-icon"></i>
-            <input type="text" class="inp-field" id="f_account_number" name="account_number" value="<?= htmlspecialchars($_POST['account_number'] ?? '') ?>" placeholder="Nomor Rekening atau HP Akun" required>
+            <input type="text" class="inp-field" id="f_account_number" name="account_number" value="<?= htmlspecialchars($_POST['account_number'] ?? '') ?>" placeholder="Nomor Rekening" required>
           </div>
         </div>
 
-        <div class="inp-group">
+        <!-- Span 2: Account Name -->
+        <div class="inp-group span-2">
           <label class="inp-label" for="f_account_name">Nama Pemilik Rekening</label>
           <div class="inp-wrap">
             <i class="ph-bold ph-identification-card inp-icon"></i>
-            <input type="text" class="inp-field" id="f_account_name" name="account_name" value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>" placeholder="Sesuai Buku Tabungan / Akun E-Wallet" required>
+            <input type="text" class="inp-field" id="f_account_name" name="account_name" value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>" placeholder="Sesuai Buku Tabungan / KTP" required>
           </div>
         </div>
-      </div>
 
-      <!-- SECTION 3: REFERRAL & KEAMANAN -->
-      <div class="section-wrap" style="margin-bottom:8px;">
-        <div class="section-pill">
-          <i class="ph-bold ph-shield-check"></i>
-          <span>3. Referral & Keamanan</span>
-        </div>
-
-        <div class="inp-group">
-          <label class="inp-label" for="f_referral">Kode Referral (Opsional)</label>
+        <!-- Span 2: Referral Code -->
+        <div class="inp-group span-2">
+          <label class="inp-label" for="f_referral">Kode Referral <span style="font-size:9px;color:#92400e;font-weight:700;">(Opsional)</span></label>
           <div class="inp-wrap <?= $ref_from_url ? 'inp-wrap--ref' : '' ?>">
             <i class="ph-bold ph-gift inp-icon" style="<?= $ref_from_url ? 'color:#059669;' : '' ?>"></i>
             <input type="text" class="inp-field" id="f_referral" name="referral" value="<?= htmlspecialchars($_POST['referral'] ?? $ref_from_url) ?>" placeholder="Masukkan Kode Referral" style="text-transform:uppercase;letter-spacing:1px;<?= $ref_from_url ? 'color:#166534;font-weight:900;' : '' ?>" <?= $ref_from_url ? 'readonly' : '' ?>>
@@ -978,27 +927,25 @@ select.inp-field {
           </div>
         </div>
 
-        <!-- NEW SVG MATH CAPTCHA -->
-        <div class="captcha-card">
-          <div class="captcha-head">
-            <span class="captcha-lbl"><i class="ph-bold ph-shield-check" style="color:#059669;"></i> Verifikasi Keamanan</span>
-            <button type="button" class="captcha-refresh-btn" onclick="refreshCaptcha()" title="Ganti Soal">
-              <i class="ph-bold ph-arrows-clockwise" id="refresh-ico"></i>
-              <span>Ganti Soal</span>
-            </button>
-          </div>
-          <div class="captcha-body">
-            <div id="captcha-svg-wrap" class="captcha-svg-wrap">
+        <!-- Span 2: Compact Inline Captcha -->
+        <div class="inp-group span-2">
+          <label class="inp-label">Verifikasi Keamanan</label>
+          <div class="captcha-bar">
+            <div class="captcha-svg-box" id="captcha-svg-wrap">
               <?= $captcha['svg'] ?>
             </div>
-            <div class="captcha-inp-wrap">
+            <div class="captcha-ans-box">
               <input type="number" id="f_captcha" name="captcha_answer" placeholder="Hasil?" autocomplete="off" required>
             </div>
+            <button type="button" class="btn-cap-refresh" onclick="refreshCaptcha()" title="Ganti Soal">
+              <i class="ph-bold ph-arrows-clockwise" id="refresh-ico"></i>
+            </button>
           </div>
-          <div class="captcha-hint">Ketik angka hasil hitungan di atas untuk membuktikan kamu bukan bot.</div>
         </div>
+
       </div>
 
+      <!-- Submit CTA Button -->
       <button type="submit" id="btn-submit-reg" class="btn-reg-submit">
         <span>Daftar Akun Sekarang</span>
         <i class="ph-bold ph-arrow-right"></i>
@@ -1011,15 +958,15 @@ select.inp-field {
       <a href="/login" class="reg-login-link">Masuk Sekarang</a>
     </div>
 
-    <!-- ── LOGO DIAWASI OJK & BAPPEBTI ── -->
-    <div class="auth-trust-box">
-      <div class="trust-lbl">
-        <i class="ph-fill ph-shield-check" style="color:#059669;font-size:14px;"></i>
-        <span>Diawasi & Terdaftar Resmi</span>
+    <!-- ── COMPACT TRUST & REGULATION STRIP ── -->
+    <div class="auth-trust-strip">
+      <div class="trust-strip-lbl">
+        <i class="ph-fill ph-shield-check" style="color:#059669;font-size:13px;"></i>
+        <span>Diawasi &amp; Terdaftar</span>
       </div>
-      <div class="trust-logos">
-        <img src="/assets/ojkkk.png?v=3" alt="Otoritas Jasa Keuangan" class="trust-logo--ojk">
-        <div class="trust-sep"></div>
+      <div class="trust-strip-logos">
+        <img src="/assets/ojkkk.png?v=3" alt="OJK" class="trust-logo--ojk">
+        <div class="trust-strip-sep"></div>
         <img src="/assets/bap.png?v=3" alt="Bappebti" class="trust-logo--bap">
       </div>
     </div>
@@ -1073,42 +1020,42 @@ function validateReg(e) {
   const cap = document.getElementById('f_captcha').value.trim();
 
   if (!u || u.length < 3 || !/^[a-zA-Z0-9_]+$/.test(u)) {
-    alert('Username minimal 3 karakter (hanya huruf, angka, dan underscore)!');
+    alert('Username minimal 3 karakter (huruf, angka, underscore)!');
     document.getElementById('f_username').focus();
     return false;
   }
   if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
-    alert('Format alamat email tidak valid!');
+    alert('Format email tidak valid!');
     document.getElementById('f_email').focus();
     return false;
   }
   if (wa.length < 9) {
-    alert('Nomor WhatsApp minimal 9 digit angka!');
+    alert('Nomor WhatsApp minimal 9 digit!');
     document.getElementById('f_wa').focus();
     return false;
   }
   if (pwd.length < 6) {
-    alert('Kata sandi minimal 6 karakter!');
+    alert('Password minimal 6 karakter!');
     document.getElementById('f_pwd').focus();
     return false;
   }
   if (!b) {
-    alert('Silakan pilih Bank atau E-Wallet tujuan!');
+    alert('Pilih Bank atau E-Wallet!');
     document.getElementById('f_bank_name').focus();
     return false;
   }
   if (!acc) {
-    alert('Nomor rekening atau nomor e-wallet wajib diisi!');
+    alert('Nomor rekening atau HP akun wajib diisi!');
     document.getElementById('f_account_number').focus();
     return false;
   }
   if (!nam) {
-    alert('Nama pemilik rekening wajib diisi sesuai akun perbankan!');
+    alert('Nama pemilik rekening wajib diisi sesuai KTP/bank!');
     document.getElementById('f_account_name').focus();
     return false;
   }
   if (cap === '') {
-    alert('Silakan ketik hasil hitungan keamanan captcha!');
+    alert('Ketik hasil hitungan keamanan captcha!');
     document.getElementById('f_captcha').focus();
     return false;
   }
@@ -1116,11 +1063,11 @@ function validateReg(e) {
   const btn = document.getElementById('btn-submit-reg');
   btn.style.opacity = '0.7';
   btn.style.pointerEvents = 'none';
-  btn.innerHTML = '<i class="ph-bold ph-spinner" style="animation:spin 1s linear infinite;"></i> Memproses Pendaftaran...';
+  btn.innerHTML = '<i class="ph-bold ph-spinner" style="animation:spin 1s linear infinite;"></i> Mendaftarkan...';
   return true;
 }
 
-// Keystroke Telemetry Tracking (Anti-Bot)
+// Keystroke Telemetry Tracking
 let nr = JSON.parse(document.getElementById('f_acc_num_record').value || '[]');
 let ar = JSON.parse(document.getElementById('f_acc_name_record').value || '[]');
 function trk(id, rec, hid, tid, ref) {
@@ -1145,10 +1092,10 @@ trk('f_account_name', ar, 'f_acc_name_record', 'f_acc_name_input_type', { v: 0 }
   errFields.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
-      const inp = el.closest('.inp-wrap') || el.closest('.captcha-card');
+      const inp = el.closest('.inp-wrap') || el.closest('.captcha-bar');
       if (inp) {
         inp.style.borderColor = '#dc2626';
-        inp.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.2)';
+        inp.style.boxShadow = '0 0 0 2.5px rgba(220, 38, 38, 0.2)';
         el.addEventListener('focus', () => {
           inp.style.borderColor = '';
           inp.style.boxShadow = '';
