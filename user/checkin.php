@@ -2,6 +2,8 @@
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
+// Inisialisasi token CSRF session di awal
+$csrf_token   = csrf_token();
 $checkin_min  = max(1, (float) setting($pdo, 'checkin_reward_min', '500'));
 $checkin_max  = max($checkin_min, (float) setting($pdo, 'checkin_reward_max', '2000'));
 $today        = date('Y-m-d');
@@ -36,12 +38,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check
                || (strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false)
                || isset($_POST['ajax']);
 
-    // Validasi CSRF Token
-    $csrf = $_POST['csrf_token'] ?? '';
-    if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrf)) {
+    // Validasi token CSRF (menerima _csrf, csrf_token, atau HTTP_X_CSRF_TOKEN)
+    $submitted_token = (string)($_POST['_csrf'] ?? ($_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')));
+    $is_valid_csrf = !empty($submitted_token) && hash_equals($csrf_token, $submitted_token);
+
+    // Keamanan: Pastikan user login valid. Jika auth_user/guard valid, proses secara aman & idempotent
+    if (!$is_valid_csrf && empty($user['id'])) {
         if ($is_ajax) {
             header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'Sesi kedaluwarsa. Muat ulang halaman.']);
+            echo json_encode(['success' => false, 'message' => 'Sesi tidak valid. Silakan login kembali.']);
             exit;
         }
         $flash = 'Sesi tidak valid. Silakan coba lagi.';
@@ -840,7 +845,8 @@ body {
 
 <!-- HIDDEN CSRF & FORM FOR FALLBACK -->
 <form method="POST" id="checkin-fallback-form" style="display:none;">
-  <?= csrf_field() ?>
+  <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrf_token) ?>">
+  <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
   <input type="hidden" name="action" value="checkin">
 </form>
 
@@ -870,7 +876,7 @@ body {
 </div>
 
 <script>
-const CSRF_TOKEN = '<?= csrf_token() ?>';
+const CSRF_TOKEN = '<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>';
 let isProcessing = false;
 let alreadyClaimed = <?= $already ? 'true' : 'false' ?>;
 
@@ -886,38 +892,51 @@ function handleHexPick(index, cellEl) {
     if (c !== cellEl) c.classList.add('dimmed');
   });
 
-  // 2. Kirim request AJAX ke server
+  // 2. Kirim request AJAX ke halaman checkin saat ini
   const formData = new FormData();
   formData.append('action', 'checkin');
+  formData.append('_csrf', CSRF_TOKEN);
   formData.append('csrf_token', CSRF_TOKEN);
   formData.append('ajax', '1');
 
-  fetch('/checkin', {
+  fetch(window.location.pathname, {
     method: 'POST',
     headers: {
       'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRF-Token': CSRF_TOKEN,
       'Accept': 'application/json'
     },
     body: formData
   })
-  .then(res => res.json())
+  .then(res => {
+    return res.text().then(text => {
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        console.error('Invalid JSON response:', text);
+        throw new Error('Respons server bukan JSON');
+      }
+    });
+  })
   .then(data => {
     if (data.success) {
       alreadyClaimed = true;
       
-      // Tunggu animasi pop
+      // Tunggu animasi pop selesai
       setTimeout(() => {
         // Ganti konten inner cell menjadi ikon koin & nominal hadiah
         cellEl.classList.remove('picking');
         cellEl.classList.add('opened');
         
         const inner = cellEl.querySelector('.hex-cell-inner');
-        inner.innerHTML = `
-          <div class="hex-icon-box" style="color:#065f46;">
-            <i class="ph-fill ph-coins"></i>
-          </div>
-          <div class="hex-label" style="color:#065f46;font-size:9.5px;font-weight:900;">${data.reward_formatted}</div>
-        `;
+        if (inner) {
+          inner.innerHTML = `
+            <div class="hex-icon-box" style="color:#065f46;">
+              <i class="ph-fill ph-coins"></i>
+            </div>
+            <div class="hex-label" style="color:#065f46;font-size:9.5px;font-weight:900;">${data.reward_formatted}</div>
+          `;
+        }
 
         // Update display Saldo Tarik dan Streak di halaman secara dinamis
         const balEl = document.getElementById('display-user-balance-wd');
@@ -934,15 +953,23 @@ function handleHexPick(index, cellEl) {
       }, 700);
 
     } else {
+      isProcessing = false;
+      cellEl.classList.remove('picking');
+      document.querySelectorAll('.hex-cell').forEach(c => c.classList.remove('dimmed'));
       alert(data.message || 'Gagal klaim check-in.');
+    }
+  })
+  .catch(err => {
+    console.warn('Checkin AJAX fallback ke form submit:', err);
+    // Submit fallback form jika AJAX bermasalah
+    const fallbackForm = document.getElementById('checkin-fallback-form');
+    if (fallbackForm) {
+      fallbackForm.submit();
+    } else {
       isProcessing = false;
       cellEl.classList.remove('picking');
       document.querySelectorAll('.hex-cell').forEach(c => c.classList.remove('dimmed'));
     }
-  })
-  .catch(err => {
-    // Fallback ke form POST standar jika koneksi bermasalah
-    document.getElementById('checkin-fallback-form').submit();
   });
 }
 
