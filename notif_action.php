@@ -55,7 +55,7 @@ if ($action === 'mark_read' && !empty($_POST['id'])) {
 }
 
 // ── Mark all as read ──────────────────────────────────────────────────────────
-if ($action === 'mark_all') {
+if ($action === 'mark_all' || $action === 'mark_all_read') {
     try {
         $notifs = $pdo->prepare(
             "SELECT n.id FROM notifications n
