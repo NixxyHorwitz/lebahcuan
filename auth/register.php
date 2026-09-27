@@ -383,7 +383,7 @@ $_banks    = array_filter($_pay_channels, fn($c) => $c['type'] === 'bank');
 $_ewallets = array_filter($_pay_channels, fn($c) => $c['type'] === 'ewallet');
 
 $_seo_title  = setting($pdo, 'seo_title', 'LebahCuan');
-$_seo_desc   = setting($pdo, 'seo_description', 'Daftar gratis dan mulai tonton video untuk dapat reward!');
+$_seo_desc   = setting($pdo, 'seo_description', 'Platform nonton video dan ternak lebah penghasil cuan resmi.');
 $_favicon    = setting($pdo, 'favicon_path', '');
 $_page_title = 'Daftar Akun Baru — ' . $_seo_title;
 ?>
@@ -407,8 +407,8 @@ $_page_title = 'Daftar Akun Baru — ' . $_seo_title;
 
 <style>
 /* ══════════════════════════════════════════════════════════
-   LEBAHCUAN — ULTRA-COMPACT DENSE REGISTER (ZERO SCROLL)
-   2-Column Grid • Integrated Inline Captcha • Zero Emojis
+   LEBAHCUAN — CARDLESS COMPACT REGISTER (LIKE LOGIN PAGE)
+   Seamless Form • Themed Honey Background • Zero Emojis
    ══════════════════════════════════════════════════════════ */
 * {
   box-sizing: border-box;
@@ -421,124 +421,198 @@ body {
   font-family: 'Nunito', sans-serif;
   background-color: #fef8ee;
   background-image: 
-    radial-gradient(circle at 10% 10%, rgba(251, 191, 36, 0.22) 0%, transparent 45%),
-    radial-gradient(circle at 90% 90%, rgba(217, 119, 6, 0.16) 0%, transparent 50%),
+    radial-gradient(circle at 15% 15%, rgba(251, 191, 36, 0.22) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(217, 119, 6, 0.16) 0%, transparent 50%),
     radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px);
-  background-size: 100% 100%, 100% 100%, 16px 16px;
+  background-size: 100% 100%, 100% 100%, 18px 18px;
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 12px 10px;
+  padding: 30px 16px 20px;
   color: #1e293b;
+  position: relative;
+  overflow-x: hidden;
 }
 
-/* Card Container (Ultra Compact) */
-.auth-card {
+/* ── TOP HONEY DRIP DECORATION ── */
+.honey-drip-top {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
-  max-width: 440px;
-  background: #ffffff;
-  border: 2.5px solid #78350f;
-  border-radius: 20px;
-  box-shadow: 0 4.5px 0 #78350f, 0 12px 25px rgba(120, 53, 15, 0.12);
-  overflow: hidden;
-  position: relative;
+  height: 60px;
+  pointer-events: none;
+  z-index: 1;
+}
+.honey-drip-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
-/* Header Strip (Compact Horizontal) */
-.auth-header-strip {
-  background: linear-gradient(180deg, #78350f 0%, #92400e 45%, #b45309 75%, #d97706 100%);
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 2.5px solid #78350f;
-  position: relative;
+/* ── FLOATING THEMED ASSETS ── */
+.decor-float {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1;
+  user-select: none;
 }
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-.header-bee {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #ffffff;
-  border: 2px solid #78350f;
-  box-shadow: 0 2px 0 #78350f;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.header-bee img {
-  width: 26px;
-  height: 26px;
+.decor-float img {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
-.header-title-box h1 {
-  font-size: 16px;
+.decor-tl {
+  top: 35px;
+  left: max(10px, calc(50% - 290px));
+  width: 65px;
+  height: 65px;
+  opacity: 0.85;
+  filter: drop-shadow(0 8px 16px rgba(120, 53, 15, 0.15));
+  animation: floatSlow 5s ease-in-out infinite;
+}
+.decor-br {
+  bottom: 30px;
+  right: max(10px, calc(50% - 290px));
+  width: 72px;
+  height: 72px;
+  opacity: 0.85;
+  filter: drop-shadow(0 8px 16px rgba(120, 53, 15, 0.15));
+  animation: floatSlower 6s ease-in-out infinite;
+}
+.decor-tr {
+  top: 75px;
+  right: max(15px, calc(50% - 260px));
+  width: 34px;
+  height: 34px;
+  opacity: 0.75;
+  animation: floatSlower 4.5s ease-in-out infinite;
+}
+.decor-bl {
+  bottom: 75px;
+  left: max(15px, calc(50% - 260px));
+  width: 38px;
+  height: 38px;
+  opacity: 0.75;
+  animation: floatSlow 5.5s ease-in-out infinite;
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(4deg); }
+}
+@keyframes floatSlower {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(12px) rotate(-4deg); }
+}
+
+/* ── CARDLESS REGISTER WRAPPER ── */
+.reg-wrapper {
+  width: 100%;
+  max-width: 440px;
+  position: relative;
+  z-index: 10;
+  margin: 0 auto;
+}
+
+/* Hero Header */
+.reg-hero {
+  text-align: center;
+  margin-bottom: 16px;
+  position: relative;
+}
+.mascot-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.mascot-badge {
+  width: 62px;
+  height: 62px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  box-shadow: 0 3.5px 0 #78350f, 0 8px 20px rgba(217, 119, 6, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: buzzyBob 3s ease-in-out infinite;
+  margin: 0 auto;
+}
+.mascot-badge img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+@keyframes buzzyBob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(3deg); }
+}
+
+.reg-title {
+  font-size: 21px;
   font-weight: 900;
-  color: #ffffff;
+  color: #78350f;
+  letter-spacing: -0.4px;
   line-height: 1.15;
-  letter-spacing: -0.3px;
-  text-shadow: 0 1.5px 2px rgba(0,0,0,0.25);
+  margin-bottom: 3px;
+  text-shadow: 0 1.5px 0 rgba(255, 255, 255, 0.8);
 }
-.header-title-box p {
-  font-size: 10px;
+.reg-sub {
+  font-size: 11px;
   font-weight: 800;
-  color: #fef3c7;
-  line-height: 1.2;
+  color: #92400e;
+  line-height: 1.3;
 }
-.auth-close-btn {
-  width: 28px;
-  height: 28px;
+
+/* Back/Close button */
+.reg-close-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
   background: #ffffff;
   border: 2px solid #78350f;
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #78350f;
-  font-size: 15px;
+  font-size: 16px;
   text-decoration: none;
   box-shadow: 0 2px 0 #78350f;
   transition: transform 0.1s;
-  flex-shrink: 0;
 }
-.auth-close-btn:active {
+.reg-close-btn:active {
   transform: translateY(1.5px);
   box-shadow: 0 0.5px 0 #78350f;
-}
-
-/* Form Body */
-.auth-body {
-  padding: 12px 14px 10px;
 }
 
 /* Error Flash */
 .auth-err {
   background: #fee2e2;
   border: 2px solid #dc2626;
-  border-radius: 10px;
-  padding: 6px 10px;
-  font-size: 11px;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 11.5px;
   font-weight: 800;
   color: #991b1b;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  box-shadow: 0 2px 0 #dc2626;
-  line-height: 1.25;
+  gap: 8px;
+  box-shadow: 0 2.5px 0 #dc2626;
+  line-height: 1.3;
 }
 
-/* ── 2-COLUMN COMPACT GRID ── */
+/* ── 2-COLUMN COMPACT FORM GRID ── */
 .reg-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 7px 8px;
+  gap: 8px;
 }
 .span-2 {
   grid-column: span 2;
@@ -565,24 +639,25 @@ body {
   gap: 6px;
   background: #ffffff;
   border: 2px solid #78350f;
-  border-radius: 12px;
+  border-radius: 13px;
   padding: 0 10px;
-  height: 38px;
-  box-shadow: 0 2px 0 #78350f;
+  height: 40px;
+  box-shadow: 0 2.5px 0 #78350f;
   transition: all 0.15s ease;
   position: relative;
 }
 .inp-wrap:focus-within {
   border-color: #d97706;
-  box-shadow: 0 2.5px 0 #d97706, 0 0 8px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 3px 0 #d97706, 0 0 10px rgba(245, 158, 11, 0.22);
+  transform: translateY(-1px);
 }
 .inp-wrap--ref {
   background: #f0fdf4;
   border-color: #059669;
-  box-shadow: 0 2px 0 #059669;
+  box-shadow: 0 2.5px 0 #059669;
 }
 .inp-icon {
-  font-size: 16px;
+  font-size: 17px;
   color: #b45309;
   flex-shrink: 0;
 }
@@ -592,7 +667,7 @@ body {
   outline: none;
   background: transparent;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 800;
   color: #0f172a;
   width: 100%;
@@ -601,7 +676,7 @@ body {
 .inp-field::placeholder {
   color: #94a3b8;
   font-weight: 700;
-  font-size: 11px;
+  font-size: 11.5px;
 }
 select.inp-field {
   cursor: pointer;
@@ -615,7 +690,7 @@ select.inp-field {
   cursor: pointer;
   padding: 2px;
   color: #94a3b8;
-  font-size: 16px;
+  font-size: 17px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -643,17 +718,17 @@ select.inp-field {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 .captcha-svg-box {
   flex-shrink: 0;
   border-radius: 10px;
   overflow: hidden;
-  height: 38px;
+  height: 40px;
 }
 .captcha-svg-box svg {
   display: block;
-  height: 38px;
+  height: 40px;
   width: auto;
 }
 .captcha-ans-box {
@@ -661,76 +736,76 @@ select.inp-field {
 }
 .captcha-ans-box input {
   width: 100%;
-  height: 38px;
+  height: 40px;
   border: 2px solid #78350f;
-  border-radius: 10px;
+  border-radius: 12px;
   text-align: center;
   font-family: inherit;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 900;
   color: #78350f;
-  background: #fffbeb;
+  background: #ffffff;
   outline: none;
-  box-shadow: 0 2px 0 #78350f;
+  box-shadow: 0 2.5px 0 #78350f;
   padding: 0 6px;
 }
 .captcha-ans-box input:focus {
   border-color: #d97706;
-  background: #ffffff;
+  box-shadow: 0 3px 0 #d97706;
 }
 .btn-cap-refresh {
-  width: 38px;
-  height: 38px;
-  background: #fef3c7;
+  width: 40px;
+  height: 40px;
+  background: #ffffff;
   border: 2px solid #78350f;
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #78350f;
-  font-size: 16px;
+  font-size: 18px;
   cursor: pointer;
-  box-shadow: 0 2px 0 #78350f;
+  box-shadow: 0 2.5px 0 #78350f;
   transition: transform 0.1s;
   flex-shrink: 0;
 }
 .btn-cap-refresh:active {
-  transform: translateY(1.5px);
+  transform: translateY(2px);
   box-shadow: 0 0.5px 0 #78350f;
 }
 
-/* ── SUBMIT CTA BUTTON (COMPACT) ── */
+/* ── SUBMIT CTA BUTTON ── */
 .btn-reg-submit {
   width: 100%;
-  height: 42px;
+  height: 48px;
   border: 2.5px solid #78350f;
-  border-radius: 14px;
+  border-radius: 16px;
   background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
   color: #ffffff;
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 900;
   letter-spacing: 0.3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  box-shadow: 0 3.5px 0 #78350f;
+  gap: 7px;
+  box-shadow: 0 4px 0 #78350f;
   text-shadow: 0 1px 2px #78350f;
   cursor: pointer;
   font-family: inherit;
-  margin-top: 8px;
-  transition: transform 0.1s;
+  margin-top: 12px;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 .btn-reg-submit:active {
-  transform: translateY(2.5px);
+  transform: translateY(3px);
   box-shadow: 0 1px 0 #78350f;
 }
 
 /* Footer Login Link */
 .reg-footer-link {
   text-align: center;
-  margin-top: 8px;
-  font-size: 11px;
+  margin-top: 12px;
+  font-size: 11.5px;
   font-weight: 800;
   color: #78350f;
 }
@@ -739,239 +814,264 @@ select.inp-field {
   color: #b45309;
   text-decoration: underline;
   margin-left: 3px;
+  transition: color 0.1s;
+}
+.reg-login-link:hover {
+  color: #78350f;
 }
 
-/* ── TRUST & REGULATION STRIP (COMPACT) ── */
+/* ── TRUST & REGULATION STRIP (CARDLESS) ── */
 .auth-trust-strip {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1.5px dashed #fde68a;
+  margin-top: 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  background: #fdfaf6;
-  border: 1.5px solid #fde68a;
-  border-radius: 12px;
-  padding: 6px 12px;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #78350f;
+  border-radius: 14px;
+  padding: 8px 14px;
+  box-shadow: 0 2.5px 0 #78350f;
 }
 .trust-strip-lbl {
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 900;
   color: #78350f;
   display: flex;
   align-items: center;
   gap: 4px;
   text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 .trust-strip-logos {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 .trust-logo--ojk {
-  height: 24px;
-  max-width: 75px;
+  height: 28px;
+  max-width: 85px;
   object-fit: contain;
   display: block;
 }
 .trust-logo--bap {
-  height: 18px;
-  max-width: 80px;
+  height: 22px;
+  max-width: 95px;
   object-fit: contain;
   display: block;
 }
 .trust-strip-sep {
-  width: 1px;
-  height: 20px;
+  width: 1.5px;
+  height: 22px;
   background: #cbd5e1;
 }
 </style>
 </head>
 <body>
 
-<div class="auth-card">
-  <!-- Horizontal Header Strip -->
-  <div class="auth-header-strip">
-    <div class="header-left">
-      <div class="header-bee">
-        <img src="/assets/game/bee_worker.png" alt="LebahCuan">
-      </div>
-      <div class="header-title-box">
-        <h1>Daftar Akun LebahCuan</h1>
-        <p>Tonton Video &amp; Panen Cuan Setiap Hari</p>
-      </div>
-    </div>
-    <a href="/" class="auth-close-btn" title="Kembali ke Beranda">
+<!-- TOP HONEY DRIP DECORATION -->
+<div class="honey-drip-top">
+  <svg viewBox="0 0 1440 90" preserveAspectRatio="none" class="honey-drip-svg">
+    <path d="M0,0 L1440,0 L1440,25 Q1380,75 1320,35 Q1260,-5 1200,45 Q1140,95 1080,40 Q1020,-15 960,30 Q900,75 840,35 Q780,-5 720,55 Q660,115 600,45 Q540,-25 480,40 Q420,105 360,35 Q300,-35 240,50 Q180,135 120,40 Q60,-50 0,30 Z" fill="#d97706" opacity="0.12"></path>
+    <path d="M0,0 L1440,0 L1440,18 Q1380,60 1320,25 Q1260,-8 1200,35 Q1140,80 1080,30 Q1020,-18 960,20 Q900,60 840,25 Q780,-8 720,45 Q660,95 600,35 Q540,-25 480,30 Q420,90 360,25 Q300,-35 240,40 Q180,115 120,30 Q60,-55 0,22 Z" fill="#f59e0b" opacity="0.22"></path>
+    <path d="M0,0 L1440,0 L1440,12 Q1350,45 1260,16 Q1170,-12 1080,28 Q990,70 900,20 Q810,-28 720,28 Q630,85 540,24 Q450,-38 360,20 Q270,78 180,20 Q90,-38 0,16 Z" fill="#fbbf24" opacity="0.28"></path>
+  </svg>
+</div>
+
+<!-- FLOATING THEMED ASSETS -->
+<div class="decor-float decor-tl">
+  <img src="/assets/game/honey_jar.png" alt="">
+</div>
+<div class="decor-float decor-br">
+  <img src="/assets/game/beehive_amber.png" alt="">
+</div>
+<div class="decor-float decor-tr">
+  <img src="/assets/game/honey_drop.png" alt="">
+</div>
+<div class="decor-float decor-bl">
+  <img src="/assets/game/honey_drop.png" alt="">
+</div>
+
+<!-- CARDLESS REGISTER WRAPPER -->
+<div class="reg-wrapper">
+
+  <!-- Hero Header -->
+  <div class="reg-hero">
+    <a href="/" class="reg-close-btn" title="Kembali ke Beranda">
       <i class="ph-bold ph-x"></i>
     </a>
+    <div class="mascot-wrap">
+      <div class="mascot-badge">
+        <img src="/assets/game/bee_worker.png" alt="LebahCuan">
+      </div>
+    </div>
+    <h1 class="reg-title">Daftar Akun LebahCuan</h1>
+    <p class="reg-sub">Tonton Video &amp; Panen Cuan Setiap Hari</p>
   </div>
 
-  <!-- Form Body -->
-  <div class="auth-body">
-    <?php if ($error): ?>
-      <div class="auth-err">
-        <i class="ph-bold ph-warning-circle" style="font-size:15px;flex-shrink:0;"></i>
-        <span><?= htmlspecialchars($error) ?></span>
-      </div>
-    <?php endif; ?>
+  <?php if ($error): ?>
+    <div class="auth-err">
+      <i class="ph-bold ph-warning-circle" style="font-size:16px;flex-shrink:0;"></i>
+      <span><?= htmlspecialchars($error) ?></span>
+    </div>
+  <?php endif; ?>
 
-    <form method="POST" id="reg-form" novalidate onsubmit="return validateReg(event)">
-      <?= csrf_field() ?>
+  <!-- Cardless Form -->
+  <form method="POST" id="reg-form" novalidate onsubmit="return validateReg(event)">
+    <?= csrf_field() ?>
+    
+    <!-- Anti-Bot Hidden Fields -->
+    <input type="hidden" name="form_time_sig" value="<?= time() ?>">
+    <input type="text" name="website_hp_check" value="" style="position:absolute;left:-9999px;opacity:0;pointer-events:none;" tabindex="-1" autocomplete="off">
+    <input type="hidden" name="captcha_token" id="captcha_token" value="<?= htmlspecialchars($captcha['token']) ?>">
+    <input type="hidden" name="captcha_sig" id="captcha_sig" value="<?= htmlspecialchars($captcha['sig']) ?>">
+    <input type="hidden" name="acc_num_input_type" id="f_acc_num_input_type" value="typed">
+    <input type="hidden" name="acc_name_input_type" id="f_acc_name_input_type" value="typed">
+    <input type="hidden" name="acc_num_record" id="f_acc_num_record" value="<?= htmlspecialchars($_POST['acc_num_record'] ?? '[]') ?>">
+    <input type="hidden" name="acc_name_record" id="f_acc_name_record" value="<?= htmlspecialchars($_POST['acc_name_record'] ?? '[]') ?>">
+
+    <!-- 2-COLUMN COMPACT GRID -->
+    <div class="reg-grid">
       
-      <!-- Anti-Bot Hidden Fields -->
-      <input type="hidden" name="form_time_sig" value="<?= time() ?>">
-      <input type="text" name="website_hp_check" value="" style="position:absolute;left:-9999px;opacity:0;pointer-events:none;" tabindex="-1" autocomplete="off">
-      <input type="hidden" name="captcha_token" id="captcha_token" value="<?= htmlspecialchars($captcha['token']) ?>">
-      <input type="hidden" name="captcha_sig" id="captcha_sig" value="<?= htmlspecialchars($captcha['sig']) ?>">
-      <input type="hidden" name="acc_num_input_type" id="f_acc_num_input_type" value="typed">
-      <input type="hidden" name="acc_name_input_type" id="f_acc_name_input_type" value="typed">
-      <input type="hidden" name="acc_num_record" id="f_acc_num_record" value="<?= htmlspecialchars($_POST['acc_num_record'] ?? '[]') ?>">
-      <input type="hidden" name="acc_name_record" id="f_acc_name_record" value="<?= htmlspecialchars($_POST['acc_name_record'] ?? '[]') ?>">
-
-      <!-- 2-COLUMN COMPACT GRID -->
-      <div class="reg-grid">
-        
-        <!-- Col 1: Username -->
-        <div class="inp-group">
-          <label class="inp-label" for="f_username">Username</label>
-          <div class="inp-wrap">
-            <i class="ph-bold ph-user inp-icon"></i>
-            <input type="text" class="inp-field" id="f_username" name="username" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" placeholder="Min. 3 Huruf" autocomplete="username" required>
-          </div>
+      <!-- Col 1: Username -->
+      <div class="inp-group">
+        <label class="inp-label" for="f_username">Username</label>
+        <div class="inp-wrap">
+          <i class="ph-bold ph-user inp-icon"></i>
+          <input type="text" class="inp-field" id="f_username" name="username" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" placeholder="Min. 3 Huruf" autocomplete="username" required>
         </div>
+      </div>
 
-        <!-- Col 2: WhatsApp -->
-        <div class="inp-group">
-          <label class="inp-label" for="f_wa">WhatsApp</label>
-          <div class="inp-wrap">
-            <i class="ph-bold ph-whatsapp-logo inp-icon"></i>
-            <input type="tel" class="inp-field" id="f_wa" name="whatsapp" value="<?= htmlspecialchars($_POST['whatsapp'] ?? '') ?>" placeholder="08xxxxxxxx" autocomplete="tel" required>
-          </div>
+      <!-- Col 2: WhatsApp -->
+      <div class="inp-group">
+        <label class="inp-label" for="f_wa">WhatsApp</label>
+        <div class="inp-wrap">
+          <i class="ph-bold ph-whatsapp-logo inp-icon"></i>
+          <input type="tel" class="inp-field" id="f_wa" name="whatsapp" value="<?= htmlspecialchars($_POST['whatsapp'] ?? '') ?>" placeholder="08xxxxxxxx" autocomplete="tel" required>
         </div>
+      </div>
 
-        <!-- Col 3: Email -->
-        <div class="inp-group">
-          <label class="inp-label" for="f_email">Email</label>
-          <div class="inp-wrap">
-            <i class="ph-bold ph-envelope-simple inp-icon"></i>
-            <input type="email" class="inp-field" id="f_email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" placeholder="email@gmail.com" autocomplete="email" required>
-          </div>
+      <!-- Col 3: Email -->
+      <div class="inp-group">
+        <label class="inp-label" for="f_email">Email</label>
+        <div class="inp-wrap">
+          <i class="ph-bold ph-envelope-simple inp-icon"></i>
+          <input type="email" class="inp-field" id="f_email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" placeholder="email@gmail.com" autocomplete="email" required>
         </div>
+      </div>
 
-        <!-- Col 4: Password -->
-        <div class="inp-group">
-          <label class="inp-label" for="f_pwd">Kata Sandi</label>
-          <div class="inp-wrap">
-            <i class="ph-bold ph-lock-key inp-icon"></i>
-            <input type="password" class="inp-field" id="f_pwd" name="password" placeholder="Min. 6 Karakter" autocomplete="new-password" required>
-            <button type="button" class="eye-btn" onclick="togglePasswordVisibility()" title="Lihat">
-              <i class="ph-bold ph-eye" id="eye-icon"></i>
-            </button>
-          </div>
+      <!-- Col 4: Password -->
+      <div class="inp-group">
+        <label class="inp-label" for="f_pwd">Kata Sandi</label>
+        <div class="inp-wrap">
+          <i class="ph-bold ph-lock-key inp-icon"></i>
+          <input type="password" class="inp-field" id="f_pwd" name="password" placeholder="Min. 6 Karakter" autocomplete="new-password" required>
+          <button type="button" class="eye-btn" onclick="togglePasswordVisibility()" title="Lihat">
+            <i class="ph-bold ph-eye" id="eye-icon"></i>
+          </button>
         </div>
+      </div>
 
-        <!-- Col 5: Bank / E-Wallet -->
-        <div class="inp-group">
-          <label class="inp-label" for="f_bank_name">Bank / E-Wallet</label>
-          <div class="inp-wrap">
-            <i class="ph-bold ph-bank inp-icon"></i>
-            <select class="inp-field" id="f_bank_name" name="bank_name" required>
-              <option value="">Pilih Bank</option>
-              <?php if (!empty($_banks)): ?>
-              <optgroup label="Bank Nasional">
-                <?php foreach ($_banks as $_ch): ?>
-                <option value="<?= htmlspecialchars($_ch['name']) ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
-                <?php endforeach; ?>
-              </optgroup>
-              <?php endif; ?>
-              <?php if (!empty($_ewallets)): ?>
-              <optgroup label="E-Wallet">
-                <?php foreach ($_ewallets as $_ch): ?>
-                <option value="<?= htmlspecialchars($_ch['name']) ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
-                <?php endforeach; ?>
-              </optgroup>
-              <?php endif; ?>
-            </select>
-            <i class="ph-bold ph-caret-down" style="color:#b45309;font-size:13px;flex-shrink:0;"></i>
-          </div>
-        </div>
-
-        <!-- Col 6: Account Number -->
-        <div class="inp-group">
-          <label class="inp-label" for="f_account_number">No. Rekening / HP</label>
-          <div class="inp-wrap">
-            <i class="ph-bold ph-credit-card inp-icon"></i>
-            <input type="text" class="inp-field" id="f_account_number" name="account_number" value="<?= htmlspecialchars($_POST['account_number'] ?? '') ?>" placeholder="Nomor Rekening" required>
-          </div>
-        </div>
-
-        <!-- Span 2: Account Name -->
-        <div class="inp-group span-2">
-          <label class="inp-label" for="f_account_name">Nama Pemilik Rekening</label>
-          <div class="inp-wrap">
-            <i class="ph-bold ph-identification-card inp-icon"></i>
-            <input type="text" class="inp-field" id="f_account_name" name="account_name" value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>" placeholder="Sesuai Buku Tabungan / KTP" required>
-          </div>
-        </div>
-
-        <!-- Span 2: Referral Code -->
-        <div class="inp-group span-2">
-          <label class="inp-label" for="f_referral">Kode Referral <span style="font-size:9px;color:#92400e;font-weight:700;">(Opsional)</span></label>
-          <div class="inp-wrap <?= $ref_from_url ? 'inp-wrap--ref' : '' ?>">
-            <i class="ph-bold ph-gift inp-icon" style="<?= $ref_from_url ? 'color:#059669;' : '' ?>"></i>
-            <input type="text" class="inp-field" id="f_referral" name="referral" value="<?= htmlspecialchars($_POST['referral'] ?? $ref_from_url) ?>" placeholder="Masukkan Kode Referral" style="text-transform:uppercase;letter-spacing:1px;<?= $ref_from_url ? 'color:#166534;font-weight:900;' : '' ?>" <?= $ref_from_url ? 'readonly' : '' ?>>
-            <?php if ($ref_from_url): ?>
-              <span class="ref-badge"><i class="ph-fill ph-check-circle"></i> Terverifikasi</span>
+      <!-- Col 5: Bank / E-Wallet -->
+      <div class="inp-group">
+        <label class="inp-label" for="f_bank_name">Bank / E-Wallet</label>
+        <div class="inp-wrap">
+          <i class="ph-bold ph-bank inp-icon"></i>
+          <select class="inp-field" id="f_bank_name" name="bank_name" required>
+            <option value="">Pilih Bank</option>
+            <?php if (!empty($_banks)): ?>
+            <optgroup label="Bank Nasional">
+              <?php foreach ($_banks as $_ch): ?>
+              <option value="<?= htmlspecialchars($_ch['name']) ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
+              <?php endforeach; ?>
+            </optgroup>
             <?php endif; ?>
-          </div>
+            <?php if (!empty($_ewallets)): ?>
+            <optgroup label="E-Wallet">
+              <?php foreach ($_ewallets as $_ch): ?>
+              <option value="<?= htmlspecialchars($_ch['name']) ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
+              <?php endforeach; ?>
+            </optgroup>
+            <?php endif; ?>
+          </select>
+          <i class="ph-bold ph-caret-down" style="color:#b45309;font-size:14px;flex-shrink:0;"></i>
         </div>
-
-        <!-- Span 2: Compact Inline Captcha -->
-        <div class="inp-group span-2">
-          <label class="inp-label">Verifikasi Keamanan</label>
-          <div class="captcha-bar">
-            <div class="captcha-svg-box" id="captcha-svg-wrap">
-              <?= $captcha['svg'] ?>
-            </div>
-            <div class="captcha-ans-box">
-              <input type="number" id="f_captcha" name="captcha_answer" placeholder="Hasil?" autocomplete="off" required>
-            </div>
-            <button type="button" class="btn-cap-refresh" onclick="refreshCaptcha()" title="Ganti Soal">
-              <i class="ph-bold ph-arrows-clockwise" id="refresh-ico"></i>
-            </button>
-          </div>
-        </div>
-
       </div>
 
-      <!-- Submit CTA Button -->
-      <button type="submit" id="btn-submit-reg" class="btn-reg-submit">
-        <span>Daftar Akun Sekarang</span>
-        <i class="ph-bold ph-arrow-right"></i>
-      </button>
-    </form>
+      <!-- Col 6: Account Number -->
+      <div class="inp-group">
+        <label class="inp-label" for="f_account_number">No. Rekening / HP</label>
+        <div class="inp-wrap">
+          <i class="ph-bold ph-credit-card inp-icon"></i>
+          <input type="text" class="inp-field" id="f_account_number" name="account_number" value="<?= htmlspecialchars($_POST['account_number'] ?? '') ?>" placeholder="Nomor Rekening" required>
+        </div>
+      </div>
 
-    <!-- Login Link -->
-    <div class="reg-footer-link">
-      <span>Sudah punya akun?</span>
-      <a href="/login" class="reg-login-link">Masuk Sekarang</a>
+      <!-- Span 2: Account Name -->
+      <div class="inp-group span-2">
+        <label class="inp-label" for="f_account_name">Nama Pemilik Rekening</label>
+        <div class="inp-wrap">
+          <i class="ph-bold ph-identification-card inp-icon"></i>
+          <input type="text" class="inp-field" id="f_account_name" name="account_name" value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>" placeholder="Sesuai Buku Tabungan / KTP" required>
+        </div>
+      </div>
+
+      <!-- Span 2: Referral Code -->
+      <div class="inp-group span-2">
+        <label class="inp-label" for="f_referral">Kode Referral <span style="font-size:9.5px;color:#92400e;font-weight:700;">(Opsional)</span></label>
+        <div class="inp-wrap <?= $ref_from_url ? 'inp-wrap--ref' : '' ?>">
+          <i class="ph-bold ph-gift inp-icon" style="<?= $ref_from_url ? 'color:#059669;' : '' ?>"></i>
+          <input type="text" class="inp-field" id="f_referral" name="referral" value="<?= htmlspecialchars($_POST['referral'] ?? $ref_from_url) ?>" placeholder="Masukkan Kode Referral" style="text-transform:uppercase;letter-spacing:1px;<?= $ref_from_url ? 'color:#166534;font-weight:900;' : '' ?>" <?= $ref_from_url ? 'readonly' : '' ?>>
+          <?php if ($ref_from_url): ?>
+            <span class="ref-badge"><i class="ph-fill ph-check-circle"></i> Terverifikasi</span>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <!-- Span 2: Compact Inline Captcha -->
+      <div class="inp-group span-2">
+        <label class="inp-label">Verifikasi Keamanan (Hitung Madu)</label>
+        <div class="captcha-bar">
+          <div class="captcha-svg-box" id="captcha-svg-wrap">
+            <?= $captcha['svg'] ?>
+          </div>
+          <div class="captcha-ans-box">
+            <input type="number" id="f_captcha" name="captcha_answer" placeholder="Hasil?" autocomplete="off" required>
+          </div>
+          <button type="button" class="btn-cap-refresh" onclick="refreshCaptcha()" title="Ganti Soal">
+            <i class="ph-bold ph-arrows-clockwise" id="refresh-ico"></i>
+          </button>
+        </div>
+      </div>
+
     </div>
 
-    <!-- ── COMPACT TRUST & REGULATION STRIP ── -->
-    <div class="auth-trust-strip">
-      <div class="trust-strip-lbl">
-        <i class="ph-fill ph-shield-check" style="color:#059669;font-size:13px;"></i>
-        <span>Diawasi &amp; Terdaftar</span>
-      </div>
-      <div class="trust-strip-logos">
-        <img src="/assets/ojkkk.png?v=3" alt="OJK" class="trust-logo--ojk">
-        <div class="trust-strip-sep"></div>
-        <img src="/assets/bap.png?v=3" alt="Bappebti" class="trust-logo--bap">
-      </div>
-    </div>
+    <!-- Submit CTA Button -->
+    <button type="submit" id="btn-submit-reg" class="btn-reg-submit">
+      <span>Daftar Akun Sekarang</span>
+      <i class="ph-bold ph-arrow-right"></i>
+    </button>
+  </form>
 
+  <!-- Login Link -->
+  <div class="reg-footer-link">
+    <span>Sudah punya akun?</span>
+    <a href="/login" class="reg-login-link">Masuk Sekarang</a>
   </div>
+
+  <!-- ── COMPACT TRUST & REGULATION STRIP ── -->
+  <div class="auth-trust-strip">
+    <div class="trust-strip-lbl">
+      <i class="ph-fill ph-shield-check" style="color:#059669;font-size:14px;"></i>
+      <span>Diawasi &amp; Terdaftar</span>
+    </div>
+    <div class="trust-strip-logos">
+      <img src="/assets/ojkkk.png?v=3" alt="OJK" class="trust-logo--ojk">
+      <div class="trust-strip-sep"></div>
+      <img src="/assets/bap.png?v=3" alt="Bappebti" class="trust-logo--bap">
+    </div>
+  </div>
+
 </div>
 
 <script>
