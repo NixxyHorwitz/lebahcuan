@@ -161,10 +161,13 @@ flowchart TD
 
 Konfigurasi aktif di database `caracuan`:
 
-| Parameter | Level 1: Warga Biasa (Free) | Level 2: Pejuang | Level 3: Jagoan | Level 4: Legenda |
+| Parameter | Level 1: Raw Amber (Free) | Level 2: Golden Amber | Level 3: Royal Amber | Level 4: Imperial Amber |
 | :--- | :--- | :--- | :--- | :--- |
 | **Harga Beli** | **Rp 0** | **Rp 48.000** *(Genjutsu: 69rb)* | **Rp 179.000** | **Rp 229.000** |
 | **Harga Coret** | - | Rp 99.000 | Rp 399.000 | Rp 599.000 |
+| **Lapak Madu Otomatis** | **Lapak Raw Amber** | **Lapak Golden Amber** | **Lapak Royal Amber** | **Lapak Imperial Amber** |
+| **Harga Jual Madu** | Rp 25 / ml | **Rp 35 / ml** (+40%) | **Rp 55 / ml** (+120%) | **Rp 85 / ml** (+240%) |
+| **Kuota Jual Madu/Hari** | 100 ml / hari | 600 ml / hari | 2.000 ml / hari | 6.000 ml / hari |
 | **Batas Video/Hari** | 7 Video | 30 Video | 60 Video | 120 Video |
 | **Masa Aktif** | 15 Hari | 30 Hari | 30 Hari | **60 Hari (2 Bulan)** |
 | **Min. Penarikan (WD)** | Rp 1.000 | Rp 50.000 | Rp 100.000 | Rp 100.000 |

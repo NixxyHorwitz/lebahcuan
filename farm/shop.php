@@ -273,8 +273,9 @@ body { background: #fef3c7 !important; font-family: 'Nunito', sans-serif; }
   <!-- TAB 3: SEWA LAPAK MADU -->
   <?php if ($tab === 'stalls'): ?>
     <div class="catalog-grid">
-      <div style="font-size:12px;font-weight:800;color:#78350f;margin-bottom:-4px;">
-        🏪 Tingkatkan lapak agar harga jual madu lebih mahal & kuota harian bertambah:
+      <div style="background:#fffbeb;border:2px solid #f59e0b;border-radius:14px;padding:12px;font-size:12px;font-weight:800;color:#78350f;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+        <i class="ph-fill ph-sparkle" style="color:#d97706;font-size:20px;flex-shrink:0;"></i>
+        <span>Lapak Penjualan Madu kini otomatis terintegrasi dengan <strong>Paket Level Amber</strong>! Cukup upgrade level untuk langsung menaikkan harga jual &amp; kuota madu.</span>
       </div>
 
       <?php foreach ($stall_masters as $sm): ?>
@@ -292,17 +293,14 @@ body { background: #fef3c7 !important; font-family: 'Nunito', sans-serif; }
                 Maks <?= number_format((float)$sm['daily_max_ml'], 0) ?> ml/hari
               </span>
             </div>
-            <div style="font-size:9.5px;font-weight:700;color:#64748b;">
-              Masa sewa: <?= $sm['duration_days'] ?> Hari
-            </div>
-            <div class="catalog-price-val">
-              Rp <?= number_format((float)$sm['price'], 0, ',', '.') ?>
+            <div style="font-size:10px;font-weight:800;color:#059669;margin-top:2px;">
+              <i class="ph-bold ph-check-circle"></i> Termasuk di Level <?= htmlspecialchars(str_replace('Lapak ', '', $sm['name'])) ?>
             </div>
           </div>
 
-          <button type="button" class="btn-buy-action" onclick="buyStall(<?= $sm['id'] ?>, '<?= addslashes($sm['name']) ?>', <?= (float)$sm['price'] ?>)">
-            Sewa
-          </button>
+          <a href="/upgrade" class="btn-buy-action" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:8px 12px;width:auto;">
+            <span>Upgrade</span> <i class="ph-bold ph-arrow-up-right"></i>
+          </a>
         </div>
       <?php endforeach; ?>
     </div>

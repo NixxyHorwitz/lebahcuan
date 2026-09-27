@@ -77,10 +77,27 @@ class BeeFarm
     }
 
     /**
-     * Ambil lapak madu aktif milik user
+     * Ambil lapak madu aktif milik user (Otomatis tersinkronisasi dengan Level Membership Amber)
      */
     public static function getUserActiveStall(PDO $pdo, int $user_id): ?array
     {
+        // 1. Ambil level membership aktif user
+        $uStmt = $pdo->prepare("SELECT membership_id, membership_expires_at FROM users WHERE id = ?");
+        $uStmt->execute([$user_id]);
+        $uData = $uStmt->fetch(PDO::FETCH_ASSOC);
+
+        $targetTierId = 1; // Default Tier 1: Lapak Raw Amber (Free)
+        $expiresAt = null;
+
+        if (!empty($uData['membership_id']) && (int)$uData['membership_id'] > 1) {
+            $isNotExpired = empty($uData['membership_expires_at']) || strtotime((string)$uData['membership_expires_at']) > time();
+            if ($isNotExpired) {
+                $targetTierId = (int)$uData['membership_id'];
+                $expiresAt = $uData['membership_expires_at'];
+            }
+        }
+
+        // 2. Ambil lapak aktif saat ini
         $stmt = $pdo->prepare("
             SELECT s.*, m.tier_level, m.name as tier_name, m.description as tier_desc,
                    m.image as tier_image, m.sell_price_per_ml, m.daily_max_ml, m.duration_days
@@ -92,6 +109,20 @@ class BeeFarm
         ");
         $stmt->execute([$user_id]);
         $stall = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // 3. Jika belum punya lapak atau lapak tidak cocok dengan level membership, auto-sinkronisasi!
+        if (!$stall || (int)$stall['stall_master_id'] !== $targetTierId) {
+            $pdo->prepare("UPDATE user_bee_stalls SET is_active = 0 WHERE user_id = ?")->execute([$user_id]);
+            $ins = $pdo->prepare("
+                INSERT INTO user_bee_stalls (user_id, stall_master_id, daily_sold_today, last_sold_date, created_at, expires_at, is_active)
+                VALUES (?, ?, 0, CURDATE(), NOW(), ?, 1)
+            ");
+            $ins->execute([$user_id, $targetTierId, $expiresAt]);
+
+            $stmt->execute([$user_id]);
+            $stall = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+
         if (!$stall) return null;
 
         // Reset harian jika hari sudah berganti

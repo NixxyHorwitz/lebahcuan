@@ -268,6 +268,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->prepare("UPDATE users SET membership_id=?, membership_expires_at=? WHERE id=?")
                         ->execute([$mid, $new_expires, $user['id']]);
                     
+                    // Otomatis sinkronkan Lapak Penjualan Madu setingkat level membership
+                    $pdo->prepare("UPDATE user_bee_stalls SET is_active = 0 WHERE user_id = ?")->execute([$user['id']]);
+                    $pdo->prepare("
+                        INSERT INTO user_bee_stalls (user_id, stall_master_id, daily_sold_today, last_sold_date, created_at, expires_at, is_active)
+                        VALUES (?, ?, 0, CURDATE(), NOW(), ?, 1)
+                    ")->execute([$user['id'], $mid, $new_expires]);
+                    
                     $pdo->commit();
                     
                     $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
@@ -296,13 +303,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 end_post:
 
-// Auto-rename ranks to Forest Bee Colony theme if they don't match yet
+// Auto-rename ranks to Amber Tier theme
 $rankMap = [
-  0 => ['name' => 'Pemanen Kanopi',   'icon' => '🍃'],
-  1 => ['name' => 'Panglima Rimba',   'icon' => '🍯'],
-  2 => ['name' => 'Ratu Hutan Raya',  'icon' => '👑'],
+  0 => ['name' => 'Golden Amber',   'icon' => 'ph-sparkle'],
+  1 => ['name' => 'Royal Amber',    'icon' => 'ph-crown'],
+  2 => ['name' => 'Imperial Amber', 'icon' => 'ph-shield-star'],
 ];
-$pdo->query("UPDATE memberships SET name='Pencari Nektar', icon='🌿' WHERE id=1 AND name!='Pencari Nektar'");
+$pdo->query("UPDATE memberships SET name='Raw Amber', icon='ph-drop' WHERE id=1 AND name!='Raw Amber'");
 $paid_ids = array_values(array_filter($memberships, fn($m) => (float)$m['price'] > 0));
 foreach ($paid_ids as $idx => $m) {
   if (isset($rankMap[$idx])) {
@@ -314,7 +321,7 @@ foreach ($paid_ids as $idx => $m) {
 // Reload after rename
 $memberships = $pdo->query("SELECT * FROM memberships WHERE is_active=1 ORDER BY sort_order ASC")->fetchAll();
 
-$pageTitle  = 'Belantara Lebah Cuan';
+$pageTitle  = 'Belantara Lebah Cuan — Tingkat Amber';
 $activePage = 'upgrade';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
@@ -917,7 +924,7 @@ body {
     <!-- LIVE TICKER -->
     <div class="live-ticker">
       <span class="live-dot"></span>
-      <span style="flex:1;"><strong>Live Panen:</strong> Member <code>@cuan***</code> baru bergabung ke <strong>Ratu Hutan Raya</strong>!</span>
+      <span style="flex:1;"><strong>Live Panen:</strong> Member <code>@cuan***</code> baru bergabung ke <strong>Imperial Amber</strong>!</span>
     </div>
 
     <!-- SALDO BELI TILE -->
@@ -955,7 +962,7 @@ body {
       $ratu     = $paid[2] ?? null;
       ?>
 
-      <!-- TIER 1: PEMANEN KANOPI -->
+      <!-- TIER 1: GOLDEN AMBER -->
       <?php if ($kanopi):
           $m = $kanopi;
           $active_price = get_active_price($m, $user);
@@ -969,10 +976,10 @@ body {
           <path d="M70,80 L75,60 L80,80 L85,55 L90,80 L95,65 L100,80" stroke="#166534" stroke-width="2"/>
         </svg>
 
-        <div class="lvl-ribbon lvl-ribbon--starter">🌿 STARTER RIMBA</div>
+        <div class="lvl-ribbon lvl-ribbon--starter">✨ GOLDEN AMBER</div>
         
         <div class="lvl-head">
-          <div class="lvl-icon-box" style="background:#f0fdf4;color:#16a34a;"><i class="ph-fill ph-drop"></i></div>
+          <div class="lvl-icon-box" style="background:#fef3c7;color:#d97706;"><i class="ph-fill ph-sparkle"></i></div>
           <div class="lvl-head-meta">
             <div class="lvl-title"><?= htmlspecialchars($m['name']) ?></div>
             <span class="lvl-dur-badge"><i class="ph-bold ph-hourglass"></i> Aktif <?= $m['duration_days'] ?> Hari</span>
@@ -993,18 +1000,21 @@ body {
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min WD: <strong><?= format_rp((float)$m['min_wd']) ?></strong></div>
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-up" style="color:#d97706;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
           <div class="lvl-spec-item"><i class="ph-bold ph-clock" style="color:#64748b;"></i> Proses 1-24 Jam</div>
+          <div class="lvl-spec-item lvl-spec-item--full" style="background:#fef3c7;border-color:#d97706;color:#92400e;">
+            <i class="ph-fill ph-storefront" style="color:#d97706;"></i> <strong>Bonus: Lapak Golden Amber (Jual Rp 35/ml · Kuota 600 ml/hari)</strong>
+          </div>
           <?php if ($m['description']): ?>
           <div class="lvl-spec-item lvl-spec-item--full" style="color:#92400e;"><i class="ph-bold ph-tree" style="color:#166534;"></i> <?= htmlspecialchars($m['description']) ?></div>
           <?php endif; ?>
         </div>
 
         <button type="button" class="lvl-btn-cta lvl-btn-cta--starter <?= !$can_afford ? 'lvl-btn-cta--disabled' : '' ?>">
-          <?= $can_afford ? 'AMBIL KASTA PEMANEN KANOPI' : 'Saldo Kurang — Topup Dulu' ?>
+          <?= $can_afford ? 'GABUNG LEVEL GOLDEN AMBER' : 'Saldo Kurang — Topup Dulu' ?>
         </button>
       </div>
       <?php endif; ?>
 
-      <!-- TIER 2: PANGLIMA RIMBA -->
+      <!-- TIER 2: ROYAL AMBER -->
       <?php if ($rimba):
           $m = $rimba;
           $active_price = get_active_price($m, $user);
@@ -1018,10 +1028,10 @@ body {
           <path d="M70,80 L75,55 L80,80 L85,50 L90,80 L95,60 L100,80" stroke="#d97706" stroke-width="2"/>
         </svg>
 
-        <div class="lvl-ribbon lvl-ribbon--popular">🔥 FAVORIT BELANTARA</div>
+        <div class="lvl-ribbon lvl-ribbon--popular">👑 ROYAL AMBER (FAVORIT)</div>
 
         <div class="lvl-head">
-          <div class="lvl-icon-box" style="background:#fef3c7;color:#d97706;"><i class="ph-fill ph-drop"></i></div>
+          <div class="lvl-icon-box" style="background:#fef3c7;color:#b45309;"><i class="ph-fill ph-crown"></i></div>
           <div class="lvl-head-meta">
             <div class="lvl-title"><?= htmlspecialchars($m['name']) ?></div>
             <span class="lvl-dur-badge" style="background:#fef3c7;"><i class="ph-bold ph-hourglass"></i> Aktif <?= $m['duration_days'] ?> Hari</span>
@@ -1042,19 +1052,21 @@ body {
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min WD: <strong><?= format_rp((float)$m['min_wd']) ?></strong></div>
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-up" style="color:#d97706;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
           <div class="lvl-spec-item"><i class="ph-bold ph-pencil-simple" style="color:#2563eb;"></i> Bebas Ganti Rekening</div>
-          <div class="lvl-spec-item lvl-spec-item--full" style="color:#b45309;"><i class="ph-bold ph-lightning" style="color:#f59e0b;"></i> Jalur Antrean Cepat</div>
+          <div class="lvl-spec-item lvl-spec-item--full" style="background:#fef3c7;border-color:#b45309;color:#78350f;">
+            <i class="ph-fill ph-storefront" style="color:#b45309;"></i> <strong>Bonus: Lapak Royal Amber (Jual Rp 55/ml · Kuota 2.000 ml/hari)</strong>
+          </div>
           <?php if ($m['description']): ?>
           <div class="lvl-spec-item lvl-spec-item--full" style="color:#78350f;"><i class="ph-bold ph-tree" style="color:#166534;"></i> <?= htmlspecialchars($m['description']) ?></div>
           <?php endif; ?>
         </div>
 
         <button type="button" class="lvl-btn-cta lvl-btn-cta--popular <?= !$can_afford ? 'lvl-btn-cta--disabled' : '' ?>">
-          <?= $can_afford ? 'GABUNG PANGLIMA RIMBA' : 'Saldo Kurang — Topup Dulu' ?>
+          <?= $can_afford ? 'GABUNG LEVEL ROYAL AMBER' : 'Saldo Kurang — Topup Dulu' ?>
         </button>
       </div>
       <?php endif; ?>
 
-      <!-- TIER 3: RATU HUTAN RAYA -->
+      <!-- TIER 3: IMPERIAL AMBER -->
       <?php if ($ratu):
           $m = $ratu;
           $active_price = get_active_price($m, $user);
@@ -1068,10 +1080,10 @@ body {
           <path d="M70,80 L75,50 L80,80 L85,45 L90,80 L95,55 L100,80" stroke="#78350f" stroke-width="2.5"/>
         </svg>
 
-        <div class="lvl-ribbon lvl-ribbon--sultan">👑 TAHTA SULTAN · 60 HARI (2 BULAN)</div>
+        <div class="lvl-ribbon lvl-ribbon--sultan">🛡️ IMPERIAL AMBER · 60 HARI (2 BULAN)</div>
 
         <div class="lvl-head">
-          <div class="lvl-icon-box" style="background:#fef08a;color:#78350f;"><i class="ph-fill ph-crown"></i></div>
+          <div class="lvl-icon-box" style="background:#fef08a;color:#78350f;"><i class="ph-fill ph-shield-star"></i></div>
           <div class="lvl-head-meta">
             <div class="lvl-title"><?= htmlspecialchars($m['name']) ?></div>
             <span class="lvl-dur-badge" style="background:#fde68a;font-weight:900;"><i class="ph-bold ph-hourglass"></i> AKTIF 60 HARI (2 BULAN)</span>
@@ -1092,6 +1104,9 @@ body {
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min WD: <strong><?= format_rp((float)$m['min_wd']) ?></strong></div>
           <div class="lvl-spec-item"><i class="ph-bold ph-rocket-launch" style="color:#ea580c;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
           <div class="lvl-spec-item"><i class="ph-bold ph-pencil-simple" style="color:#2563eb;"></i> Bebas Ganti Rekening</div>
+          <div class="lvl-spec-item lvl-spec-item--full" style="background:#fef08a;border-color:#78350f;color:#78350f;">
+            <i class="ph-fill ph-storefront" style="color:#78350f;"></i> <strong>Bonus: Lapak Imperial Amber (Jual Rp 85/ml · Kuota 6.000 ml/hari)</strong>
+          </div>
           <div class="lvl-spec-item lvl-spec-item--full" style="background:#fef3c7;border-color:#d97706;color:#78350f;">
             <i class="ph-fill ph-crown" style="color:#d97706;"></i> <strong>VIP Express (Pencairan Otomatis Tanpa Antre)</strong>
           </div>
@@ -1101,7 +1116,7 @@ body {
         </div>
 
         <button type="button" class="lvl-btn-cta lvl-btn-cta--sultan <?= !$can_afford ? 'lvl-btn-cta--disabled' : '' ?>">
-          <?= $can_afford ? 'KLAIM RATU HUTAN RAYA' : 'Saldo Kurang — Topup Dulu' ?>
+          <?= $can_afford ? 'KLAIM MAHKOTA IMPERIAL AMBER' : 'Saldo Kurang — Topup Dulu' ?>
         </button>
       </div>
       <?php endif; ?>
@@ -1177,7 +1192,7 @@ body {
     <div class="cg-mc-hdr" style="color:#b91c1c;"><i class="ph-bold ph-warning"></i> Ajukan Refund?</div>
     <div class="cg-mc-sub">Yakin ingin mengajukan pengembalian kasta aktifmu?</div>
     <div style="background:#fee2e2;border:2px solid #ef4444;border-radius:12px;padding:10px;margin-bottom:12px;font-size:10.5px;font-weight:800;color:#991b1b;line-height:1.4;">
-      Saldo akan dikembalikan ke <strong>Saldo Beli</strong> setelah verifikasi sistem dengan potongan biaya admin. Kasta aktif kamu akan ditutup kembali ke Pencari Nektar!
+      Saldo akan dikembalikan ke <strong>Saldo Beli</strong> setelah verifikasi sistem dengan potongan biaya admin. Level aktif kamu akan ditutup kembali ke Raw Amber!
     </div>
     <form method="POST">
       <?= csrf_field() ?>

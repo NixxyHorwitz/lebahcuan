@@ -228,13 +228,13 @@ body { background: #fef3c7 !important; font-family: 'Nunito', sans-serif; }
   <?php if (!$active_stall): ?>
     <!-- Belum Punya Lapak -->
     <div class="stall-hero-card" style="text-align:center;padding:24px 16px;">
-      <div style="font-size:48px;margin-bottom:10px;">🏪</div>
-      <div style="font-size:18px;font-weight:900;color:#78350f;margin-bottom:6px;">Kamu Belum Memiliki Lapak Madu!</div>
+      <div style="font-size:38px;color:#d97706;margin-bottom:10px;"><i class="ph-fill ph-storefront"></i></div>
+      <div style="font-size:18px;font-weight:900;color:#78350f;margin-bottom:6px;">Lapak Madu Terhubung ke Level Amber</div>
       <div style="font-size:12px;font-weight:700;color:#64748b;line-height:1.4;margin-bottom:16px;">
-        Sewa atau beli lapak madu di Toko agar kamu bisa mencairkan hasil panen madu menjadi Saldo Penarikan (Rupiah).
+        Lapak madu kamu otomatis aktif sesuai Level Membership Amber yang kamu miliki untuk mencairkan madu menjadi Saldo Penarikan (Rupiah).
       </div>
-      <a href="/farm/shop" class="btn-sell-madu" style="text-decoration:none;display:inline-flex;width:auto;padding:10px 24px;">
-        <i class="ph-fill ph-shopping-cart"></i> Sewa Lapak Sekarang
+      <a href="/upgrade" class="btn-sell-madu" style="text-decoration:none;display:inline-flex;width:auto;padding:10px 24px;">
+        <i class="ph-bold ph-rocket-launch"></i> Buka Level Amber Sekarang
       </a>
     </div>
   <?php else: 
@@ -258,7 +258,7 @@ body { background: #fef3c7 !important; font-family: 'Nunito', sans-serif; }
             <i class="ph-fill ph-tag"></i> Harga Jual: <strong>Rp <?= number_format($pricePerMl, 0, ',', '.') ?> / ml</strong>
           </div>
           <div style="font-size:10px;font-weight:700;color:#64748b;margin-top:3px;">
-            Masa aktif: <?= htmlspecialchars((string)$active_stall['expires_at']) ?>
+            Masa aktif: <?= $active_stall['expires_at'] ? date('d M Y', strtotime((string)$active_stall['expires_at'])) : 'Permanen' ?>
           </div>
         </div>
       </div>
@@ -276,7 +276,7 @@ body { background: #fef3c7 !important; font-family: 'Nunito', sans-serif; }
         </div>
         <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;color:#64748b;margin-top:4px;">
           <span>Sisa kuota hari ini: <strong id="quotaRemText"><?= number_format($dailyRem, 1) ?> ml</strong></span>
-          <a href="/farm/shop" style="color:#2563eb;text-decoration:none;font-weight:900;">+ Upgrade Lapak</a>
+          <a href="/upgrade" style="color:#d97706;text-decoration:none;font-weight:900;display:inline-flex;align-items:center;gap:3px;"><i class="ph-bold ph-arrow-up-right"></i> Upgrade Level Amber</a>
         </div>
       </div>
     </div>
