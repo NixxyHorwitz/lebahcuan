@@ -97,6 +97,11 @@ class BeeFarm
             }
         }
 
+        // Pastikan expires_at tidak null (default 10 tahun untuk lapak gratis / permanent)
+        if (empty($expiresAt)) {
+            $expiresAt = date('Y-m-d H:i:s', strtotime('+10 years'));
+        }
+
         // 2. Ambil lapak aktif saat ini
         $stmt = $pdo->prepare("
             SELECT s.*, m.tier_level, m.name as tier_name, m.description as tier_desc,
