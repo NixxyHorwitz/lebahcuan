@@ -6,9 +6,9 @@ $checkin_min  = max(1, (float) setting($pdo, 'checkin_reward_min', '500'));
 $checkin_max  = max($checkin_min, (float) setting($pdo, 'checkin_reward_max', '2000'));
 $today        = date('Y-m-d');
 $last_checkin = $user['last_checkin'] ?? null;
-$already      = $last_checkin === $today;
+$already      = ($last_checkin === $today);
 
-// Streak hitung
+// Hitung streak check-in / aktivitas
 $streak = 0;
 if ($last_checkin) {
     $diff = (int)((strtotime($today) - strtotime($last_checkin)) / 86400);
@@ -22,51 +22,101 @@ if ($last_checkin) {
 $flash = $flashType = '';
 $reward_given = 0;
 
-// Ambil reward dari session jika ada (untuk display setelah redirect)
-if (!empty($_SESSION['checkin_reward_display']) && ($already)) {
+// Ambil reward dari session jika ada (untuk display setelah form submit / redirect)
+if (!empty($_SESSION['checkin_reward_display']) && $already) {
     $reward_given = (int)$_SESSION['checkin_reward_display'];
     unset($_SESSION['checkin_reward_display']);
     $flash = 'checkin_ok';
     $flashType = 'success';
 }
 
+// ── PROSES KLAIM CHECK-IN ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'checkin') {
-    if ($already && $flash !== 'checkin_ok') {
+    $is_ajax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+               || (strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false)
+               || isset($_POST['ajax']);
+
+    // Validasi CSRF Token
+    $csrf = $_POST['csrf_token'] ?? '';
+    if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrf)) {
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Sesi kedaluwarsa. Muat ulang halaman.']);
+            exit;
+        }
+        $flash = 'Sesi tidak valid. Silakan coba lagi.';
+        $flashType = 'error';
+    } elseif ($already && $flash !== 'checkin_ok') {
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Kamu sudah membuka sarang madu hari ini. Kembali besok!']);
+            exit;
+        }
         $flash = 'Kamu sudah check-in hari ini. Kembali besok!';
         $flashType = 'warn';
-    } elseif ($flash !== 'checkin_ok') {
-        // Generate reward server-side — klien tidak bisa manipulasi
+    } else {
+        // Generate reward acak server-side
         $reward_given = rand((int)$checkin_min, (int)$checkin_max);
         try {
             $pdo->beginTransaction();
-            // Double-guard: WHERE clause pakai CURDATE() server → tanggal device klien tidak berpengaruh
+            // CRITICAL: Hadiah uang tunai langsung masuk ke Saldo Tarik (balance_wd) dan total_earned
             $stmt = $pdo->prepare(
-                "UPDATE users SET balance_dep=balance_dep+?, last_checkin=CURDATE()
-                 WHERE id=? AND (last_checkin IS NULL OR last_checkin < CURDATE())"
+                "UPDATE users SET balance_wd = balance_wd + ?, total_earned = total_earned + ?, last_checkin = CURDATE()
+                 WHERE id = ? AND (last_checkin IS NULL OR last_checkin < CURDATE())"
             );
-            $stmt->execute([$reward_given, $user['id']]);
+            $stmt->execute([$reward_given, $reward_given, $user['id']]);
+
             if ($stmt->rowCount() > 0) {
                 $pdo->commit();
-                // Simpan reward ke session untuk ditampilkan setelah page load
+
+                // Refresh saldo lokal
+                $user['balance_wd'] = (float)($user['balance_wd'] ?? 0) + $reward_given;
+                $user['total_earned'] = (float)($user['total_earned'] ?? 0) + $reward_given;
+                $user['last_checkin'] = $today;
+                $already = true;
+                $streak = max(1, $streak + 1);
+
+                if ($is_ajax) {
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'success' => true,
+                        'reward' => $reward_given,
+                        'reward_formatted' => format_rp((float)$reward_given),
+                        'new_balance_wd' => $user['balance_wd'],
+                        'new_balance_formatted' => format_rp((float)$user['balance_wd']),
+                        'streak' => $streak
+                    ]);
+                    exit;
+                }
+
                 $_SESSION['checkin_reward_display'] = $reward_given;
-                // PRG redirect untuk hindari double-submit
                 header('Location: /checkin');
                 exit;
             } else {
                 $pdo->rollBack();
+                if ($is_ajax) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['success' => false, 'message' => 'Kamu sudah membuka sarang hari ini!']);
+                    exit;
+                }
                 $flash = 'Kamu sudah check-in hari ini!';
                 $flashType = 'warn';
                 $already = true;
             }
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
             $pdo->rollBack();
-            $flash = 'Terjadi kesalahan.';
+            if ($is_ajax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Terjadi kesalahan sistem.']);
+                exit;
+            }
+            $flash = 'Terjadi kesalahan sistem.';
             $flashType = 'error';
         }
     }
 }
 
-$pageTitle  = 'Check-in Harian';
+$pageTitle  = 'Sarang Madu Harian';
 $activePage = 'checkin';
 require dirname(__DIR__) . '/partials/header.php';
 
@@ -75,272 +125,855 @@ if ($streak == 0 && $already) $completed_days = 1;
 ?>
 
 <style>
-/* ══════════════════════════════════════════════
-   CHECK-IN PAGE — CASUAL GAME STYLE (ULTRA COMPACT)
-   ══════════════════════════════════════════════ */
-body { background: #f97316 !important; color: #0f172a; }
+/* ══════════════════════════════════════════════════════════
+   SARANG MADU HARIAN (CHECK-IN) — AMBER ORGANIC HONEYCOMB
+   No Card Wrapper: Organic Interlocking Hexagon Beehive
+   ══════════════════════════════════════════════════════════ */
+body {
+  background: #fef8ee !important;
+  color: #1e293b;
+  font-family: 'Nunito', sans-serif;
+  overflow-x: hidden;
+}
 
 /* ── TOP BANNER ── */
-.wd-top { position: relative; background: linear-gradient(180deg, #3b82f6, #1d4ed8); padding: 16px 14px 24px; border-bottom: 3px solid #1e3a8a; z-index: 10; text-align: center; }
-.wd-top::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(255, 255, 255, 0.1) 2px, transparent 2px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 2px, transparent 2px); background-size: 20px 20px; pointer-events: none; }
-.wd-top-title { position: relative; font-size: 20px; font-weight: 900; color: #fff; text-shadow: 0 3px 0 #1e3a8a; z-index: 2; margin-bottom: 2px; letter-spacing: -0.5px; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.wd-top-sub { position: relative; font-size: 11px; font-weight: 800; color: #bae6fd; z-index: 2; }
+.ci-top-banner {
+  background: linear-gradient(180deg, #78350f 0%, #92400e 35%, #b45309 70%, #d97706 100%);
+  padding: 16px 14px 24px;
+  border-bottom: 3.5px solid #78350f;
+  position: relative;
+  text-align: center;
+  overflow: hidden;
+}
+.ci-top-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(#fbbf24 1px, transparent 1px);
+  background-size: 16px 16px;
+  opacity: 0.2;
+  pointer-events: none;
+}
+.ci-top-title {
+  position: relative;
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.ci-top-sub {
+  position: relative;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #fef3c7;
+}
 
-/* ── BODY ── */
-.wd-body { flex: 1; background: #f97316; padding: 20px 14px 100px; position: relative; z-index: 2; }
-.wd-body::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle, rgba(255,255,255,0.08) 10%, transparent 10%), radial-gradient(circle, rgba(255,255,255,0.08) 10%, transparent 10%); background-size: 40px 40px; background-position: 0 0, 20px 20px; pointer-events: none; z-index: -1; }
+/* ── BODY CONTAINER ── */
+.ci-page-wrap {
+  padding: 16px 14px 100px;
+  position: relative;
+  max-width: 480px;
+  margin: 0 auto;
+}
 
-/* ── STREAK BAR ── */
-.streak-bar { display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 16px; position: relative; z-index: 5; }
-.streak-day { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.streak-dot { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; border: 2.5px solid; transition: all 0.2s; }
-.streak-dot.done { background: linear-gradient(135deg,#34d399,#10b981); border-color: #047857; color: #fff; box-shadow: 0 3px 0 #064e3b; }
-.streak-dot.today { background: linear-gradient(135deg,#fde047,#eab308); border-color: #ca8a04; color: #713f12; box-shadow: 0 3px 0 #a16207; animation: pulse-today 1.5s ease infinite; }
-.streak-dot.future { background: #ffffff; border-color: #c2410c; color: #ea580c; box-shadow: 0 3px 0 #9a3412; opacity: 0.8; }
-.streak-lbl { font-size: 9px; font-weight: 900; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.3); }
-@keyframes pulse-today { 0%,100% { transform: scale(1); box-shadow:0 3px 0 #a16207; } 50% { transform: scale(1.1); box-shadow:0 5px 0 #a16207; } }
+/* ── DUAL VAULT CAPSULE (SALDO TARIK & STREAK) ── */
+.ci-vault-capsule {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.ci-vault-tile {
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  border-radius: 18px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 0 #78350f;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ci-vault-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  border: 2px solid #78350f;
+  box-shadow: 0 2px 0 #78350f;
+}
+.ci-vault-icon--wd {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+}
+.ci-vault-icon--streak {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+}
+.ci-vault-info {
+  flex: 1;
+  min-width: 0;
+}
+.ci-vault-lbl {
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #78350f;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.ci-vault-val {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-/* ── SHELL GAME CONTAINER ── */
-.game-wrap { position: relative; background: rgba(0,0,0,0.1); border: 3px dashed rgba(255,255,255,0.3); border-radius: 20px; padding: 30px 10px 20px; height: 180px; margin-bottom: 16px; overflow: visible; display: flex; align-items: flex-end; justify-content: space-around; perspective: 800px; }
-.game-hint { position: absolute; top: 12px; left: 0; right: 0; text-align: center; font-size: 14px; font-weight: 900; color: #fff; text-shadow: 0 2px 2px rgba(0,0,0,0.5); z-index: 20; pointer-events: none; }
-.game-hint.blink { animation: blinker 1s linear infinite; color: #fde047; }
-@keyframes blinker { 50% { opacity: 0.3; } }
+/* ── STREAK PROGRESS PILLS (NO CARD WRAPPER) ── */
+.ci-streak-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 20px;
+  padding: 4px 2px;
+}
+.ci-streak-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.ci-streak-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 2.5px solid #78350f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  transition: all 0.2s;
+  box-shadow: 0 3px 0 #78350f;
+}
+.ci-streak-dot.done {
+  background: linear-gradient(135deg, #34d399, #10b981);
+  color: #fff;
+}
+.ci-streak-dot.today {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #78350f;
+  animation: pulse-active-hex 1.8s infinite ease-in-out;
+}
+.ci-streak-dot.future {
+  background: #ffffff;
+  color: #94a3b8;
+  opacity: 0.75;
+}
+.ci-streak-lbl {
+  font-size: 9px;
+  font-weight: 900;
+  color: #78350f;
+}
+@keyframes pulse-active-hex {
+  0%, 100% { transform: scale(1); box-shadow: 0 3px 0 #78350f; }
+  50% { transform: scale(1.08); box-shadow: 0 5px 0 #78350f, 0 0 10px rgba(245, 158, 11, 0.5); }
+}
 
-/* ── THE CUPS ── */
-.cup { width: 70px; height: 90px; position: absolute; bottom: 20px; transform-origin: bottom center; cursor: pointer; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), left 0.35s ease; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
-/* The visual cup graphic (SVG or CSS shape) */
-.cup-graphic { width: 100%; height: 100%; background: linear-gradient(180deg, #ef4444 0%, #b91c1c 80%, #7f1d1d 100%); border-radius: 8px 8px 12px 12px; border: 3px solid #7f1d1d; border-top: 6px solid #fca5a5; box-shadow: inset 0 -10px 15px rgba(0,0,0,0.4), 0 8px 10px rgba(0,0,0,0.5); position: relative; z-index: 11; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
-/* Lift animation */
-.cup.lifted .cup-graphic { transform: translateY(-110px) rotate(-15deg); }
-.cup.disabled { pointer-events: none; }
+/* ══════════════════════════════════════════════════════════
+   ORGANIC HONEYCOMB BEEHIVE CLUSTER (NO CARD BOX WRAPPER)
+   ══════════════════════════════════════════════════════════ */
+.honeycomb-section-header {
+  text-align: center;
+  margin-bottom: 14px;
+}
+.honeycomb-heading {
+  font-size: 15px;
+  font-weight: 900;
+  color: #78350f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.honeycomb-subtext {
+  font-size: 11px;
+  font-weight: 700;
+  color: #92400e;
+  margin-top: 2px;
+}
 
-/* ── REVEAL CONTENT (Behind Cup) ── */
-.cup-content { position: absolute; bottom: 0; width: 60px; height: 60px; z-index: 9; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
-.cup.lifted .cup-content { opacity: 1; }
-/* The Rooster */
-.rooster { width: 100%; height: 100%; object-fit: contain; transform: scale(0.5) translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.cup.lifted .rooster { transform: scale(1.6) translateY(-20px); opacity: 1; }
-/* The Reward Text (appears after rooster) */
-.reward-text { position: absolute; font-size: 16px; font-weight: 900; color: #fde047; text-shadow: 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(253, 224, 71, 0.5); transform: translateY(20px); opacity: 0; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); white-space: nowrap; }
-.cup.show-reward .rooster { opacity: 0; transform: scale(0.8) translateY(20px); }
-.cup.show-reward .reward-text { opacity: 1; transform: translateY(-30px) scale(1.4); }
+/* The open organic hive stage */
+.honeycomb-hive-stage {
+  position: relative;
+  width: 100%;
+  padding: 10px 0 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+/* Natural honey background radial glow */
+.honeycomb-hive-stage::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 290px;
+  height: 290px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, rgba(245, 158, 11, 0.08) 50%, transparent 75%);
+  pointer-events: none;
+  z-index: 1;
+}
 
-/* Start Button */
-.btn-play { background: linear-gradient(180deg, #fde047, #eab308); border: 3px solid #ca8a04; border-radius: 12px; font-size: 16px; font-weight: 900; color: #713f12; padding: 12px 24px; box-shadow: 0 6px 0 #a16207; cursor: pointer; text-shadow: 0 1px 0 rgba(255,255,255,0.5); width: 100%; margin-bottom: 16px; transition: transform 0.1s; }
-.btn-play:active { transform: translateY(6px); box-shadow: 0 0 0 #a16207; }
+/* Hexagon Row Interlocking */
+.hex-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+}
+.hex-row:not(:first-child) {
+  margin-top: -24px; /* Exact vertical overlap for pointy-top hexagon tessellation */
+}
 
-/* ── DONE STATE ── */
-.done-card { background: #ffffff; border: 3px solid #1e3a8a; border-radius: 16px; padding: 24px 20px; text-align: center; box-shadow: 0 6px 0 #1e3a8a; margin-bottom: 16px; }
-.done-card-ico { font-size: 50px; margin-bottom: 10px; animation: bounce 2s infinite; }
-@keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-.done-card-title { font-size: 16px; font-weight: 900; color: #1e3a8a; margin-bottom: 4px; text-transform: uppercase; }
-.done-card-sub { font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 12px; }
-.done-card-amt { font-size: 32px; font-weight: 900; color: #10b981; text-shadow: 0 2px 0 rgba(16,185,129,0.3); letter-spacing: -1px; margin-bottom: 12px; }
-.done-card-badge { display: inline-flex; align-items: center; gap: 6px; background: #d1fae5; border: 2px solid #059669; border-radius: 10px; padding: 6px 14px; font-size: 11px; font-weight: 900; color: #047857; box-shadow: 0 3px 0 #059669; }
+/* The Pointy-topped Hexagon Cell */
+.hex-cell {
+  width: 86px;
+  height: 98px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: #78350f; /* Wax Outline */
+  padding: 3px;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease, opacity 0.3s ease;
+  filter: drop-shadow(0 5px 6px rgba(120, 53, 15, 0.3));
+}
+.hex-cell-inner {
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 30%, #f59e0b 75%, #d97706 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+}
 
-/* Stats Row */
-.ci-stats { display: flex; gap: 8px; margin-bottom: 16px; }
-.ci-stat { flex: 1; background: #ffffff; border: 2.5px solid #c2410c; border-radius: 12px; padding: 12px 6px; text-align: center; box-shadow: 0 4px 0 #9a3412; }
-.ci-stat-val { font-size: 18px; font-weight: 900; color: #0f172a; margin-bottom: 2px; }
-.ci-stat-lbl { font-size: 9px; font-weight: 900; color: #ea580c; text-transform: uppercase; }
+/* Ambient Honey Droplet shine reflection */
+.hex-cell-inner::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 18px;
+  right: 18px;
+  height: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 100%);
+  border-radius: 50%;
+  pointer-events: none;
+}
 
-/* Flash */
-.h-flash { background: #fee2e2; border: 2.5px solid #dc2626; border-radius: 12px; padding: 10px 12px; color: #7f1d1d; font-weight: 900; font-size: 11px; margin-bottom: 14px; box-shadow: 0 3px 0 #dc2626; display: flex; align-items: center; gap: 8px; }
+/* Unopened Hexagon Icons & Details */
+.hex-icon-box {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #78350f;
+  margin-top: 2px;
+  filter: drop-shadow(0 1px 1px rgba(255,255,255,0.6));
+  transition: transform 0.2s;
+}
+.hex-label {
+  font-size: 9px;
+  font-weight: 900;
+  color: #78350f;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+/* Hover & Active States (Only if eligible to play) */
+.hex-cell.active-play:hover {
+  transform: scale(1.08) translateY(-4px);
+  filter: drop-shadow(0 8px 12px rgba(245, 158, 11, 0.7));
+  z-index: 10;
+}
+.hex-cell.active-play:hover .hex-icon-box {
+  transform: scale(1.15);
+}
+.hex-cell.active-play:active {
+  transform: scale(0.96);
+}
+
+/* Shimmer pulse for available cells */
+.hex-cell.active-play {
+  animation: cell-float 3s infinite ease-in-out;
+}
+.hex-cell:nth-child(1) { animation-delay: 0s; }
+.hex-cell:nth-child(2) { animation-delay: 0.5s; }
+.hex-cell:nth-child(3) { animation-delay: 1s; }
+@keyframes cell-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Selected & Opening Animation */
+.hex-cell.picking {
+  animation: hex-burst 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+  z-index: 30;
+}
+@keyframes hex-burst {
+  0% { transform: scale(1) rotate(0deg); }
+  40% { transform: scale(1.25) rotate(-6deg); filter: drop-shadow(0 0 20px #f59e0b); }
+  70% { transform: scale(1.15) rotate(4deg); }
+  100% { transform: scale(1.2) rotate(0deg); filter: drop-shadow(0 0 25px #10b981); }
+}
+
+/* Opened / Won Hexagon State */
+.hex-cell.opened {
+  background: #064e3b !important;
+  z-index: 25;
+  filter: drop-shadow(0 6px 12px rgba(16, 185, 129, 0.4)) !important;
+}
+.hex-cell.opened .hex-cell-inner {
+  background: linear-gradient(180deg, #ecfdf5 0%, #a7f3d0 30%, #34d399 75%, #10b981 100%) !important;
+}
+.hex-cell.opened .hex-icon-box {
+  color: #065f46 !important;
+  font-size: 24px;
+}
+.hex-cell.opened .hex-label {
+  color: #065f46 !important;
+  font-size: 9.5px;
+  font-weight: 900;
+}
+
+/* Dimmed other cells during or after pick */
+.hex-cell.dimmed {
+  opacity: 0.45;
+  pointer-events: none;
+  filter: grayscale(0.3) drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+/* ── STATUS NOTICE BELOW HONEYCOMB ── */
+.ci-status-box {
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 0 #78350f;
+  text-align: center;
+  margin-top: 16px;
+}
+.ci-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+.ci-status-badge--ready {
+  background: #fef3c7;
+  color: #b45309;
+  border: 2px solid #d97706;
+}
+.ci-status-badge--done {
+  background: #dcfce7;
+  color: #065f46;
+  border: 2px solid #059669;
+}
+.ci-status-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: #78350f;
+  margin-bottom: 4px;
+}
+.ci-status-desc {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* ── DIRECT ACTION BUTTONS ── */
+.ci-action-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.ci-btn-action {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+  border: 2px solid #78350f;
+  box-shadow: 0 3px 0 #78350f;
+  transition: transform 0.1s;
+}
+.ci-btn-action:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
+.ci-btn-action--wd {
+  background: linear-gradient(180deg, #10b981, #059669);
+  color: #fff;
+  text-shadow: 0 1px 2px #064e3b;
+}
+.ci-btn-action--farm {
+  background: linear-gradient(180deg, #f59e0b, #d97706);
+  color: #fff;
+  text-shadow: 0 1px 2px #78350f;
+}
+
+/* ── FLASH MESSAGE ── */
+.ci-flash {
+  background: #fee2e2;
+  border: 2.5px solid #dc2626;
+  border-radius: 14px;
+  padding: 10px 14px;
+  color: #991b1b;
+  font-weight: 800;
+  font-size: 11.5px;
+  margin-bottom: 14px;
+  box-shadow: 0 3px 0 #dc2626;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── CELEBRATION MODAL OVERLAY ── */
+.ci-win-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(6px);
+  z-index: 100000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.ci-win-box {
+  background: #ffffff;
+  border: 4px solid #78350f;
+  border-radius: 28px;
+  box-shadow: 0 10px 0 #78350f, 0 25px 40px rgba(0,0,0,0.4);
+  padding: 26px 20px 22px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  transform: scale(0.85);
+  opacity: 0;
+  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.ci-win-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: 3px solid #78350f;
+  box-shadow: 0 5px 0 #78350f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: #fff;
+  margin: -56px auto 14px;
+  animation: win-icon-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes win-icon-pop {
+  0% { transform: scale(0.4) rotate(-20deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.ci-win-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #78350f;
+  margin-bottom: 4px;
+}
+.ci-win-sub {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+.ci-win-reward {
+  font-size: 30px;
+  font-weight: 900;
+  color: #10b981;
+  text-shadow: 0 2px 0 rgba(16, 185, 129, 0.25);
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+.ci-win-dest {
+  font-size: 10px;
+  font-weight: 900;
+  color: #047857;
+  background: #dcfce7;
+  border: 1.5px solid #059669;
+  border-radius: 8px;
+  padding: 3px 8px;
+  display: inline-block;
+  margin-bottom: 18px;
+}
 </style>
 
 <!-- TOP BANNER -->
-<div class="wd-top">
-  <div class="wd-top-title"><i class="ph-fill ph-calendar-check" style="color:#60a5fa"></i> Check-in Harian</div>
-  <div class="wd-top-sub">Tebak Gelas & Menangkan Saldo!</div>
+<div class="ci-top-banner">
+  <div class="ci-top-title">
+    <i class="ph-fill ph-hexagon" style="color:#fde047;"></i>
+    <span>Sarang Madu Harian</span>
+  </div>
+  <div class="ci-top-sub">Pilih Hexagon & Dapatkan Saldo Tarik Tunai</div>
 </div>
 
-<div class="wd-body">
+<div class="ci-page-wrap">
 
   <?php if ($flash && $flash !== 'checkin_ok'): ?>
-  <div class="h-flash">
-    <i class="ph-bold ph-warning-circle" style="font-size:16px;"></i> <?= htmlspecialchars($flash) ?>
-  </div>
+    <div class="ci-flash">
+      <i class="ph-bold ph-warning-circle" style="font-size:18px;"></i>
+      <span><?= htmlspecialchars($flash) ?></span>
+    </div>
   <?php endif; ?>
 
-  <!-- STREAK BAR -->
-  <div class="streak-bar">
+  <!-- DUAL VAULT CAPSULE (SALDO TARIK & HARI AKTIF) -->
+  <div class="ci-vault-capsule">
+    <div class="ci-vault-tile">
+      <div class="ci-vault-icon ci-vault-icon--wd">
+        <i class="ph-bold ph-wallet"></i>
+      </div>
+      <div class="ci-vault-info">
+        <div class="ci-vault-lbl">Saldo Tarik</div>
+        <div class="ci-vault-val" id="display-user-balance-wd"><?= format_rp((float)$user['balance_wd']) ?></div>
+      </div>
+    </div>
+
+    <div class="ci-vault-tile">
+      <div class="ci-vault-icon ci-vault-icon--streak">
+        <i class="ph-fill ph-fire"></i>
+      </div>
+      <div class="ci-vault-info">
+        <div class="ci-vault-lbl">Streak</div>
+        <div class="ci-vault-val"><span id="display-user-streak"><?= $streak ?></span> Hari</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7-DAY STREAK TRACKER (NO CARD CONTAINER) -->
+  <div class="ci-streak-strip">
     <?php for ($i = 1; $i <= 7; $i++):
       $is_done   = $i < $completed_days || ($i == $completed_days && $already);
       $is_today  = !$already && $i == $completed_days + 1;
       $cls = $is_done ? 'done' : ($is_today ? 'today' : 'future');
     ?>
-    <div class="streak-day">
-      <div class="streak-dot <?= $cls ?>">
-        <?php if ($is_done): ?><i class="ph-bold ph-check"></i><?php elseif ($is_today): ?><i class="ph-fill ph-star"></i><?php else: ?><?= $i ?><?php endif; ?>
+      <div class="ci-streak-item">
+        <div class="ci-streak-dot <?= $cls ?>" id="streak-dot-<?= $i ?>">
+          <?php if ($is_done): ?>
+            <i class="ph-bold ph-check"></i>
+          <?php elseif ($is_today): ?>
+            <i class="ph-fill ph-star"></i>
+          <?php else: ?>
+            <?= $i ?>
+          <?php endif; ?>
+        </div>
+        <span class="ci-streak-lbl">H<?= $i ?></span>
       </div>
-      <span class="streak-lbl">H<?= $i ?></span>
-    </div>
     <?php endfor; ?>
   </div>
 
-  <?php if (!$already): ?>
-  <!-- ── SHELL GAME ── -->
-  <button id="btn-play" class="btn-play" onclick="startShuffle()">Mulai Acak Gelas!</button>
+  <!-- HONEYCOMB SECTION HEADER -->
+  <div class="honeycomb-section-header">
+    <div class="honeycomb-heading">
+      <i class="ph-fill ph-sparkle" style="color:#f59e0b;"></i>
+      <span><?= $already ? 'Sarang Madu Terbuka' : 'Pilih Kotak Hexagon Madumu' ?></span>
+    </div>
+    <div class="honeycomb-subtext">
+      <?= $already ? 'Kamu telah memanen madu hari ini. Kembali besok untuk panen baru!' : 'Ketuk salah satu hexagon untuk memecahkan madu dan ambil uang tunai!' ?>
+    </div>
+  </div>
 
-  <div class="game-wrap" id="game-wrap">
-    <div class="game-hint" id="game-hint">Tekan Mulai!</div>
+  <!-- ══════════════════════════════════════════════════════════
+       THE ORGANIC HONEYCOMB BEEHIVE CLUSTER (NO CARD BOX WRAPPER)
+       Row 1: 2 Hexagons
+       Row 2: 3 Hexagons (Interlocking)
+       Row 3: 2 Hexagons (Interlocking)
+       Total 7 Authentic Hexagon Cells
+       ══════════════════════════════════════════════════════════ -->
+  <div class="honeycomb-hive-stage" id="hive-stage">
     
-    <!-- Cup 0 -->
-    <div class="cup disabled" id="cup-0" data-index="0" style="left: 10%;" onclick="pickCup(0)">
-      <div class="cup-content">
-        <img src="/assets/rooster_fuck.gif" class="rooster" alt="Rooster">
-        <div class="reward-text" id="reward-0"></div>
+    <!-- Row 1: 2 Cells -->
+    <div class="hex-row">
+      <!-- Hex 1 -->
+      <div class="hex-cell <?= !$already ? 'active-play' : ($reward_given > 0 ? 'opened' : 'dimmed') ?>" data-hex-index="1" onclick="handleHexPick(1, this)">
+        <div class="hex-cell-inner">
+          <div class="hex-icon-box">
+            <i class="ph-fill ph-drop"></i>
+          </div>
+          <span class="hex-label">Hex 1</span>
+        </div>
       </div>
-      <div class="cup-graphic"></div>
-    </div>
-    
-    <!-- Cup 1 -->
-    <div class="cup disabled" id="cup-1" data-index="1" style="left: 38%;" onclick="pickCup(1)">
-      <div class="cup-content">
-        <img src="/assets/rooster_fuck.gif" class="rooster" alt="Rooster">
-        <div class="reward-text" id="reward-1"></div>
+      <!-- Hex 2 -->
+      <div class="hex-cell <?= !$already ? 'active-play' : 'dimmed' ?>" data-hex-index="2" onclick="handleHexPick(2, this)">
+        <div class="hex-cell-inner">
+          <div class="hex-icon-box">
+            <i class="ph-fill ph-sparkle"></i>
+          </div>
+          <span class="hex-label">Hex 2</span>
+        </div>
       </div>
-      <div class="cup-graphic"></div>
     </div>
-    
-    <!-- Cup 2 -->
-    <div class="cup disabled" id="cup-2" data-index="2" style="left: 66%;" onclick="pickCup(2)">
-      <div class="cup-content">
-        <img src="/assets/rooster_fuck.gif" class="rooster" alt="Rooster">
-        <div class="reward-text" id="reward-2"></div>
+
+    <!-- Row 2: 3 Cells -->
+    <div class="hex-row">
+      <!-- Hex 3 -->
+      <div class="hex-cell <?= !$already ? 'active-play' : 'dimmed' ?>" data-hex-index="3" onclick="handleHexPick(3, this)">
+        <div class="hex-cell-inner">
+          <div class="hex-icon-box">
+            <i class="ph-fill ph-drop"></i>
+          </div>
+          <span class="hex-label">Hex 3</span>
+        </div>
       </div>
-      <div class="cup-graphic"></div>
+      <!-- Hex 4 (Center Queen Hive) -->
+      <div class="hex-cell <?= !$already ? 'active-play' : 'dimmed' ?>" data-hex-index="4" onclick="handleHexPick(4, this)">
+        <div class="hex-cell-inner">
+          <div class="hex-icon-box">
+            <i class="ph-fill ph-crown"></i>
+          </div>
+          <span class="hex-label">Royal</span>
+        </div>
+      </div>
+      <!-- Hex 5 -->
+      <div class="hex-cell <?= !$already ? 'active-play' : 'dimmed' ?>" data-hex-index="5" onclick="handleHexPick(5, this)">
+        <div class="hex-cell-inner">
+          <div class="hex-icon-box">
+            <i class="ph-fill ph-sparkle"></i>
+          </div>
+          <span class="hex-label">Hex 5</span>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <form method="POST" id="checkin-form" style="display:none">
-    <?= csrf_field() ?>
-    <input type="hidden" name="action" value="checkin">
-  </form>
-
-  <?php elseif ($flash === 'checkin_ok'): ?>
-  <!-- ── JUST FINISHED ── -->
-  <div class="done-card">
-    <div class="done-card-ico">🎊</div>
-    <div class="done-card-title">Check-in Sukses!</div>
-    <div class="done-card-sub">Hadiah Tebak Gelas masuk ke Saldo Beli</div>
-    <div class="done-card-amt">+ <?= format_rp($reward_given) ?></div>
-    <div class="done-card-badge"><i class="ph-bold ph-check-circle"></i> Selesai</div>
-  </div>
-
-  <?php else: ?>
-  <!-- ── ALREADY DONE TODAY ── -->
-  <div class="done-card">
-    <div class="done-card-ico" style="filter: grayscale(1)">⏳</div>
-    <div class="done-card-title">Sudah Main Hari Ini</div>
-    <div class="done-card-sub">Kembali lagi besok untuk menebak gelas lagi!</div>
-    <div class="done-card-amt" style="color:#64748b"><?= format_rp((float)$user['balance_dep']) ?></div>
-    <div style="font-size:10px;font-weight:900;color:#94a3b8;text-transform:uppercase">Saldo Beli Saat Ini</div>
-  </div>
-  <?php endif; ?>
-
-  <!-- Stats -->
-  <div class="ci-stats">
-    <div class="ci-stat">
-      <div class="ci-stat-val"><?= $streak ?> <span style="color:#ea580c">🔥</span></div>
-      <div class="ci-stat-lbl">Hari Aktif</div>
+    <!-- Row 3: 2 Cells -->
+    <div class="hex-row">
+      <!-- Hex 6 -->
+      <div class="hex-cell <?= !$already ? 'active-play' : 'dimmed' ?>" data-hex-index="6" onclick="handleHexPick(6, this)">
+        <div class="hex-cell-inner">
+          <div class="hex-icon-box">
+            <i class="ph-fill ph-drop"></i>
+          </div>
+          <span class="hex-label">Hex 6</span>
+        </div>
+      </div>
+      <!-- Hex 7 -->
+      <div class="hex-cell <?= !$already ? 'active-play' : 'dimmed' ?>" data-hex-index="7" onclick="handleHexPick(7, this)">
+        <div class="hex-cell-inner">
+          <div class="hex-icon-box">
+            <i class="ph-fill ph-sparkle"></i>
+          </div>
+          <span class="hex-label">Hex 7</span>
+        </div>
+      </div>
     </div>
-    <div class="ci-stat">
-      <div class="ci-stat-val" style="color:#059669"><?= format_rp((float)$user['balance_dep']) ?></div>
-      <div class="ci-stat-lbl">Saldo Beli</div>
-    </div>
+
   </div>
-  
-  <div style="text-align:center; font-size:9px; font-weight:900; color:rgba(255,255,255,0.7); text-transform:uppercase">
-    Range Hadiah: <?= format_rp($checkin_min) ?> - <?= format_rp($checkin_max) ?>
+
+  <!-- STATUS BOX BELOW HONEYCOMB -->
+  <div class="ci-status-box">
+    <?php if (!$already): ?>
+      <div class="ci-status-badge ci-status-badge--ready">
+        <i class="ph-fill ph-drop"></i> Sarang Madu Siap Dipanen
+      </div>
+      <div class="ci-status-title">Pilih Salah Satu Hexagon di Atas</div>
+      <div class="ci-status-desc">
+        Setiap hexagon menyimpan hadiah uang tunai acak berkisar <strong><?= format_rp($checkin_min) ?></strong> hingga <strong><?= format_rp($checkin_max) ?></strong> yang langsung masuk ke <strong>Saldo Tarik</strong>.
+      </div>
+    <?php else: ?>
+      <div class="ci-status-badge ci-status-badge--done">
+        <i class="ph-bold ph-check-circle"></i> Sudah Klaim Hari Ini
+      </div>
+      <div class="ci-status-title">Panen Berhasil Disimpan</div>
+      <div class="ci-status-desc">
+        Madu lebah sedang diproduksi kembali. Sarang baru akan siap dibuka besok pagi pukul 00:00 WIB!
+      </div>
+    <?php endif; ?>
+
+    <!-- Action Shortcuts -->
+    <div class="ci-action-btns">
+      <a href="/withdraw" class="ci-btn-action ci-btn-action--wd">
+        <i class="ph-bold ph-arrow-up-right"></i> Tarik Saldo
+      </a>
+      <a href="/farm" class="ci-btn-action ci-btn-action--farm">
+        <i class="ph-fill ph-binoculars"></i> Buka Peternakan
+      </a>
+    </div>
   </div>
 
 </div>
 
-<?php if (!$already): ?>
+<!-- HIDDEN CSRF & FORM FOR FALLBACK -->
+<form method="POST" id="checkin-fallback-form" style="display:none;">
+  <?= csrf_field() ?>
+  <input type="hidden" name="action" value="checkin">
+</form>
+
+<!-- ══════════════════════════════════════════════════════════
+     CELEBRATION WIN MODAL OVERLAY
+     ══════════════════════════════════════════════════════════ -->
+<div id="ci-win-modal" class="ci-win-overlay">
+  <div class="ci-win-box">
+    <div class="ci-win-icon">
+      <i class="ph-fill ph-coins"></i>
+    </div>
+    <div class="ci-win-title">Panen Madu Berhasil!</div>
+    <div class="ci-win-sub">Hadiah uang tunai dari sarang lebah:</div>
+    <div class="ci-win-reward" id="win-modal-amt">+Rp 0</div>
+    <div class="ci-win-dest">
+      <i class="ph-bold ph-check"></i> Masuk Langsung ke Saldo Tarik
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <a href="/withdraw" class="ci-btn-action ci-btn-action--wd" style="padding:12px;font-size:13px;">
+        <i class="ph-bold ph-arrow-up-right"></i> Tarik Tunai Sekarang
+      </a>
+      <button type="button" onclick="closeWinModal()" class="ci-btn-action ci-btn-action--farm" style="padding:10px;font-size:12px;background:#f8fafc;color:#475569;border-color:#cbd5e1;box-shadow:0 3px 0 #94a3b8;text-shadow:none;">
+        Tutup & Lanjut Nonton
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
-  const MIN_REWARD = <?= (int)$checkin_min ?>;
-  const MAX_REWARD = <?= (int)$checkin_max ?>;
-  const rewardAmt = Math.floor(Math.random() * (MAX_REWARD - MIN_REWARD + 1)) + MIN_REWARD;
+const CSRF_TOKEN = '<?= csrf_token() ?>';
+let isProcessing = false;
+let alreadyClaimed = <?= $already ? 'true' : 'false' ?>;
+
+function handleHexPick(index, cellEl) {
+  if (alreadyClaimed || isProcessing) return;
+  isProcessing = true;
+
+  // 1. Berikan efek burst/pop pada hexagon yang dipilih
+  cellEl.classList.add('picking');
   
-  const cups = [
-    document.getElementById('cup-0'),
-    document.getElementById('cup-1'),
-    document.getElementById('cup-2')
-  ];
-  const positions = ['10%', '38%', '66%']; // left percentages
-  let cupPositions = [0, 1, 2]; // Current logical positions of cups 0, 1, 2
-  let isShuffling = false;
+  // Redupkan hexagon lainnya
+  document.querySelectorAll('.hex-cell').forEach(c => {
+    if (c !== cellEl) c.classList.add('dimmed');
+  });
 
-  function startShuffle() {
-    if (isShuffling) return;
-    isShuffling = true;
-    document.getElementById('btn-play').style.display = 'none';
-    document.getElementById('game-hint').innerText = 'Mengacak... Perhatikan baik-baik!';
-    document.getElementById('game-hint').classList.remove('blink');
-    
-    let shuffles = 0;
-    const maxShuffles = 8 + Math.floor(Math.random() * 5); // 8-12 shuffles
-    const speed = 350; // ms per shuffle
+  // 2. Kirim request AJAX ke server
+  const formData = new FormData();
+  formData.append('action', 'checkin');
+  formData.append('csrf_token', CSRF_TOKEN);
+  formData.append('ajax', '1');
 
-    const interval = setInterval(() => {
-      // Pick two random indices to swap
-      let idx1 = Math.floor(Math.random() * 3);
-      let idx2 = (idx1 + 1 + Math.floor(Math.random() * 2)) % 3;
+  fetch('/checkin', {
+    method: 'POST',
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+      'Accept': 'application/json'
+    },
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alreadyClaimed = true;
       
-      // Swap their logical positions
-      let temp = cupPositions[idx1];
-      cupPositions[idx1] = cupPositions[idx2];
-      cupPositions[idx2] = temp;
-      
-      // Apply CSS left based on new logical positions
-      cups[idx1].style.left = positions[cupPositions[idx1]];
-      cups[idx2].style.left = positions[cupPositions[idx2]];
-
-      shuffles++;
-      if (shuffles >= maxShuffles) {
-        clearInterval(interval);
-        finishShuffle();
-      }
-    }, speed);
-  }
-
-  function finishShuffle() {
-    isShuffling = false;
-    document.getElementById('game-hint').innerText = 'Pilih Gelas Keberuntunganmu!';
-    document.getElementById('game-hint').classList.add('blink');
-    
-    // Enable clicking
-    cups.forEach(cup => cup.classList.remove('disabled'));
-  }
-
-  function pickCup(index) {
-    if (isShuffling || cups[index].classList.contains('disabled')) return;
-    
-    // Disable all cups
-    cups.forEach(cup => cup.classList.add('disabled'));
-    document.getElementById('game-hint').innerText = '';
-    document.getElementById('game-hint').classList.remove('blink');
-
-    const selectedCup = cups[index];
-    const rewardEl = document.getElementById('reward-' + index);
-    
-    // 1. Lift the cup to reveal the Rooster
-    selectedCup.classList.add('lifted');
-    
-    // 2. Wait a bit, then swap rooster for the reward amount
-    setTimeout(() => {
-      rewardEl.innerText = 'Rp ' + rewardAmt.toLocaleString('id-ID');
-      selectedCup.classList.add('show-reward');
-      
-      // 3. Submit form to claim
+      // Tunggu animasi pop
       setTimeout(() => {
-        document.getElementById('checkin-form').submit();
-      }, 2000);
-      
-    }, 2800); // Rooster mocks for 2.8 seconds
+        // Ganti konten inner cell menjadi ikon koin & nominal hadiah
+        cellEl.classList.remove('picking');
+        cellEl.classList.add('opened');
+        
+        const inner = cellEl.querySelector('.hex-cell-inner');
+        inner.innerHTML = `
+          <div class="hex-icon-box" style="color:#065f46;">
+            <i class="ph-fill ph-coins"></i>
+          </div>
+          <div class="hex-label" style="color:#065f46;font-size:9.5px;font-weight:900;">${data.reward_formatted}</div>
+        `;
+
+        // Update display Saldo Tarik dan Streak di halaman secara dinamis
+        const balEl = document.getElementById('display-user-balance-wd');
+        if (balEl && data.new_balance_formatted) {
+          balEl.innerText = data.new_balance_formatted;
+        }
+        const streakEl = document.getElementById('display-user-streak');
+        if (streakEl && data.streak) {
+          streakEl.innerText = data.streak;
+        }
+
+        // Tampilkan Modal Pemenang
+        showWinModal(data.reward_formatted);
+      }, 700);
+
+    } else {
+      alert(data.message || 'Gagal klaim check-in.');
+      isProcessing = false;
+      cellEl.classList.remove('picking');
+      document.querySelectorAll('.hex-cell').forEach(c => c.classList.remove('dimmed'));
+    }
+  })
+  .catch(err => {
+    // Fallback ke form POST standar jika koneksi bermasalah
+    document.getElementById('checkin-fallback-form').submit();
+  });
+}
+
+function showWinModal(amtFormatted) {
+  const modal = document.getElementById('ci-win-modal');
+  const amtEl = document.getElementById('win-modal-amt');
+  if (amtEl) amtEl.innerText = '+' + amtFormatted;
+  if (!modal) return;
+
+  modal.style.display = 'flex';
+  setTimeout(() => {
+    const box = modal.querySelector('.ci-win-box');
+    if (box) { box.style.transform = 'scale(1)'; box.style.opacity = '1'; }
+  }, 40);
+}
+
+function closeWinModal() {
+  const modal = document.getElementById('ci-win-modal');
+  if (modal) {
+    const box = modal.querySelector('.ci-win-box');
+    if (box) { box.style.transform = 'scale(0.85)'; box.style.opacity = '0'; }
+    setTimeout(() => { modal.style.display = 'none'; }, 280);
   }
-</script>
+}
+
+// Jika ada reward dari session (misal setelah redirect biasa)
+<?php if ($flash === 'checkin_ok' && $reward_given > 0): ?>
+document.addEventListener('DOMContentLoaded', () => {
+  showWinModal('<?= format_rp((float)$reward_given) ?>');
+});
 <?php endif; ?>
+</script>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>

@@ -126,6 +126,31 @@ if (!$membership_name) {
     if (!$membership_name) $membership_name = 'Member Gratis';
 }
 
+// ── STATUS CHECK-IN HARIAN ──
+$has_checked_in_today = false;
+if (!$is_guest) {
+    $has_checked_in_today = (($user['last_checkin'] ?? '') === date('Y-m-d'));
+}
+
+// ── KELAYAKAN FITUR UPGRADE ──
+// Menu upgrade hanya ditampilkan jika user sudah menonton dan menghasilkan cuan lumayan
+// (Kriteria: total_earned >= 1500 atau cuan nonton hari ini >= 1000 atau tonton >= 3 video atau sudah VIP)
+$show_upgrade_feature = !$is_guest && (
+    (float)($user['total_earned'] ?? 0) >= 1500 || 
+    $today_watch_earned >= 1000 || 
+    (int)($user['watch_count_today'] ?? 0) >= 3 || 
+    (!empty($user['membership_id']) && (int)$user['membership_id'] > 1)
+);
+
+// ── PENGATURAN POPUP ──
+$popup_enabled     = setting($pdo, 'popup_enabled', '1') === '1';
+$popup_title       = setting($pdo, 'popup_title', 'Informasi Spesial LebahCuan');
+$popup_body        = setting($pdo, 'popup_body', 'Biar makin lancar dapat reward, yuk tonton video pilihan dan buka sarang madu harian!');
+$popup_cta_text    = setting($pdo, 'popup_cta_text', 'Buka Sekarang');
+$popup_cta_url     = setting($pdo, 'popup_cta_url', '/panduan');
+$popup_delay       = max(200, (int) setting($pdo, 'popup_delay', '500'));
+$popup_reset_hours = max(0, (int) setting($pdo, 'popup_reset_hours', '0'));
+
 $pageTitle = 'Nonton Video & Ternak Lebah Cuan';
 $activePage = 'home';
 require dirname(__DIR__) . '/partials/header.php';
@@ -603,21 +628,43 @@ body {
 /* ── BENTO QUICK ACCESS MENU ── */
 .bento-menu-grid {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
-  margin-top: 10px; margin-bottom: 20px;
+  margin-top: 8px; margin-bottom: 18px;
 }
 .b-tile {
   background: #fff; border: 2.5px solid #78350f; border-radius: 18px;
   box-shadow: 0 4px 0 #78350f; padding: 10px 4px; text-decoration: none;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 5px; transition: transform 0.1s;
+  gap: 5px; transition: transform 0.1s; position: relative;
 }
 .b-tile:active { transform: translateY(3px); box-shadow: 0 1px 0 #78350f; }
 .b-tile__icon {
   width: 36px; height: 36px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   font-size: 20px; color: #fff; border: 2px solid #78350f; box-shadow: 0 2px 0 #78350f;
+  position: relative;
 }
 .b-tile__lbl { font-size: 9.5px; font-weight: 900; color: #78350f; text-align: center; }
+
+/* Pulse & Unlocked VIP effects */
+.b-tile--vip-glow {
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%) !important;
+  border-color: #b45309 !important;
+  box-shadow: 0 4px 0 #b45309, 0 0 10px rgba(245, 158, 11, 0.4) !important;
+  animation: vip-glow 2.5s infinite ease-in-out;
+}
+@keyframes vip-glow {
+  0%, 100% { box-shadow: 0 4px 0 #b45309, 0 0 8px rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 4px 0 #b45309, 0 0 16px rgba(245, 158, 11, 0.7); }
+}
+.b-tile-badge-dot {
+  position: absolute; top: -3px; right: -3px; width: 10px; height: 10px;
+  background: #ef4444; border: 2px solid #fff; border-radius: 50%;
+  animation: pulse-dot 1.2s infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.8; }
+}
 
 /* ── TIPS & ANNOUNCEMENTS ── */
 .amber-tips-box {
@@ -629,6 +676,58 @@ body {
   width: 38px; height: 38px; border-radius: 12px; background: #fef3c7;
   border: 2px solid #d97706; display: flex; align-items: center; justify-content: center;
   font-size: 20px; flex-shrink: 0;
+}
+
+/* ── MODAL POPUPS (AMBER THEME) ── */
+.amber-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(5px); z-index: 100000; display: none;
+  align-items: center; justify-content: center; padding: 20px;
+}
+.amber-modal-box {
+  background: #ffffff; border-radius: 28px; padding: 24px 20px 20px;
+  max-width: 320px; width: 100%; border: 3.5px solid #78350f;
+  box-shadow: 0 10px 0 #78350f, 0 20px 35px rgba(0,0,0,0.3);
+  position: relative; text-align: center;
+  transform: scale(0.85); opacity: 0;
+  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.amber-modal-close {
+  position: absolute; top: -14px; right: -14px;
+  background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff;
+  border: 3px solid #fff; width: 36px; height: 36px; border-radius: 50%;
+  font-size: 16px; font-weight: 900; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; box-shadow: 0 4px 0 #991b1b;
+  z-index: 10;
+}
+.amber-modal-badge {
+  width: 68px; height: 68px; border-radius: 22px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border: 3px solid #78350f; box-shadow: 0 5px 0 #78350f;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; color: #78350f; margin: -52px auto 14px;
+}
+.amber-modal-title {
+  font-size: 17px; font-weight: 900; color: #78350f; margin-bottom: 6px;
+  line-height: 1.25;
+}
+.amber-modal-body {
+  font-size: 11.5px; font-weight: 700; color: #64748b; line-height: 1.45;
+  margin-bottom: 18px;
+}
+.btn-modal-primary {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; font-size: 13px; font-weight: 900; padding: 13px 16px;
+  border-radius: 16px; background: linear-gradient(180deg, #f59e0b, #d97706);
+  border: 2.5px solid #78350f; box-shadow: 0 5px 0 #78350f;
+  color: #fff; text-decoration: none; text-shadow: 0 1px 2px #78350f;
+  cursor: pointer; transition: transform 0.1s;
+}
+.btn-modal-primary:active { transform: translateY(4px); box-shadow: 0 1px 0 #78350f; }
+.btn-modal-dismiss {
+  width: 100%; padding: 8px; background: transparent; border: none;
+  font-size: 11.5px; font-weight: 800; color: #94a3b8; cursor: pointer;
+  margin-top: 6px;
 }
 </style>
 
@@ -667,7 +766,9 @@ body {
 
   <!-- Mascot Speech Bubble -->
   <div class="mascot-dialogue">
-    <div class="mascot-dialogue__icon">🐝</div>
+    <div class="mascot-dialogue__icon">
+      <img src="/assets/game/bee_worker.png" alt="Buzzy" style="width:22px;height:22px;object-fit:contain;">
+    </div>
     <div class="mascot-dialogue__text">
       Halo <strong><?= htmlspecialchars($user['username']) ?></strong>! Nonton video hari ini & kumpulkan saldo Rupiah. Bagikan screenshot bukti cuanmu ke teman untuk raih komisi!
     </div>
@@ -680,7 +781,7 @@ body {
     <!-- Header Card -->
     <div class="cuan-card-header">
       <div class="cuan-card-brand">
-        <span class="cuan-card-brand-badge">⚡ VIP CASH</span>
+        <span class="cuan-card-brand-badge"><i class="ph-fill ph-lightning"></i> VIP CASH</span>
         <span>LEBAHCUAN RESMI</span>
       </div>
       <div class="cuan-card-status-verified">
@@ -775,10 +876,98 @@ body {
 <div class="home-feed">
 
   <!-- ══════════════════════════════════════════════════════════
-       1. TUGAS VIDEO PILIHAN HARI INI (FEATURED VIDEOS)
+       1. MENU CEPAT & AKSES UTAMA (QUICK ACCESS)
+       ══════════════════════════════════════════════════════════ -->
+  <div style="font-size:13px;font-weight:900;color:#78350f;display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <i class="ph-fill ph-squares-four" style="color:#d97706;font-size:18px;"></i>
+      <span>Menu Cepat & Fitur Cuan</span>
+    </div>
+  </div>
+
+  <div class="bento-menu-grid">
+    <!-- Tile 1: Nonton Video -->
+    <a href="/videos" class="b-tile">
+      <div class="b-tile__icon" style="background:linear-gradient(135deg,#f97316,#ea580c);">
+        <i class="ph-fill ph-film-strip"></i>
+      </div>
+      <span class="b-tile__lbl">Tonton</span>
+    </a>
+
+    <!-- Tile 2: Sidejob Lebah -->
+    <a href="/farm" class="b-tile">
+      <div class="b-tile__icon" style="background:linear-gradient(135deg,#16a34a,#15803d);">
+        <i class="ph-fill ph-drop"></i>
+      </div>
+      <span class="b-tile__lbl">Ternak Lebah</span>
+    </a>
+
+    <!-- Tile 3: Lapak Jual Madu -->
+    <a href="/farm/stall" class="b-tile">
+      <div class="b-tile__icon" style="background:linear-gradient(135deg,#eab308,#ca8a04);">
+        <i class="ph-fill ph-storefront"></i>
+      </div>
+      <span class="b-tile__lbl">Lapak Madu</span>
+    </a>
+
+    <!-- Tile 4: Toko Bibit & Sarang -->
+    <a href="/farm/shop" class="b-tile">
+      <div class="b-tile__icon" style="background:linear-gradient(135deg,#0284c7,#0369a1);border-color:#075985;">
+        <i class="ph-fill ph-shopping-bag"></i>
+      </div>
+      <span class="b-tile__lbl">Toko Bibit</span>
+    </a>
+
+    <!-- Tile 5: Absen Hexagon Sarang Madu (Checkin) -->
+    <a href="/checkin" class="b-tile">
+      <div class="b-tile__icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);border-color:#78350f;">
+        <i class="ph-fill ph-hexagon"></i>
+        <?php if (!$has_checked_in_today): ?>
+          <span class="b-tile-badge-dot"></span>
+        <?php endif; ?>
+      </div>
+      <span class="b-tile__lbl"><?= $has_checked_in_today ? 'Absen' : 'Buka Sarang' ?></span>
+    </a>
+
+    <!-- Tile 6: Misi Harian -->
+    <a href="/missions" class="b-tile">
+      <div class="b-tile__icon" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);border-color:#4c1d95;">
+        <i class="ph-fill ph-target"></i>
+      </div>
+      <span class="b-tile__lbl">Misi</span>
+    </a>
+
+    <!-- Tile 7: Squad Afiliasi -->
+    <a href="/referral" class="b-tile">
+      <div class="b-tile__icon" style="background:linear-gradient(135deg,#10b981,#047857);border-color:#064e3b;">
+        <i class="ph-fill ph-users-three"></i>
+      </div>
+      <span class="b-tile__lbl">Squad</span>
+    </a>
+
+    <!-- Tile 8: Upgrade VIP (Hanya muncul jika sudah menghasilkan cuan lumayan) / Panduan Cuan jika masih baru -->
+    <?php if ($show_upgrade_feature): ?>
+      <a href="/upgrade" class="b-tile b-tile--vip-glow">
+        <div class="b-tile__icon" style="background:linear-gradient(135deg,#fbbf24,#d97706);border-color:#78350f;">
+          <i class="ph-fill ph-crown" style="color:#78350f;"></i>
+        </div>
+        <span class="b-tile__lbl" style="color:#b45309;font-weight:900;">VIP Upgrade</span>
+      </a>
+    <?php else: ?>
+      <a href="/panduan" class="b-tile">
+        <div class="b-tile__icon" style="background:linear-gradient(135deg,#64748b,#475569);border-color:#334155;">
+          <i class="ph-fill ph-book-open"></i>
+        </div>
+        <span class="b-tile__lbl">Panduan</span>
+      </a>
+    <?php endif; ?>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       2. TUGAS VIDEO PILIHAN HARI INI (FEATURED VIDEOS)
        ══════════════════════════════════════════════════════════ -->
   <?php if (!empty($featured_videos)): ?>
-    <div class="amber-section-card" style="padding:14px;">
+    <div class="amber-section-card" style="padding:14px;margin-bottom:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <div style="font-size:14px;font-weight:900;color:#78350f;display:flex;align-items:center;gap:6px;">
           <i class="ph-fill ph-sparkle" style="color:#f59e0b;font-size:18px;"></i>
@@ -824,13 +1013,13 @@ body {
 
 
   <!-- ══════════════════════════════════════════════════════════
-       2. SIDEJOB: PETERNAKAN LEBAH 3D REALISTIS (IDLE TYCOON)
+       3. SIDEJOB: PETERNAKAN LEBAH 3D REALISTIS (IDLE TYCOON)
        ══════════════════════════════════════════════════════════ -->
   <div class="sidejob-3d-card">
     <div class="sidejob-badge-tag"><i class="ph-fill ph-hexagon"></i> Sidejob Cuan Pasif</div>
     
     <div class="sidejob-title-row">
-      <div class="sidejob-title">Peternakan Lebah Cuan 🌿</div>
+      <div class="sidejob-title">Peternakan Lebah Cuan <i class="ph-fill ph-plant" style="color:#16a34a;font-size:16px;"></i></div>
       <img src="/assets/game/beehive_wooden.png" alt="Sarang Lebah" style="width:42px;height:42px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
     </div>
 
@@ -876,82 +1065,9 @@ body {
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════
-       3. BENTO QUICK ACCESS MENU
-       ══════════════════════════════════════════════════════════ -->
-  <div style="font-size:13px;font-weight:900;color:#78350f;display:flex;align-items:center;gap:6px;">
-    <i class="ph-fill ph-squares-four"></i> Menu Cepat & Fitur Cuan
-  </div>
-
-  <div class="bento-menu-grid">
-    <!-- Tile 1: Nonton Video -->
-    <a href="/videos" class="b-tile">
-      <div class="b-tile__icon" style="background:linear-gradient(135deg,#f97316,#ea580c);">
-        <i class="ph-fill ph-film-strip"></i>
-      </div>
-      <span class="b-tile__lbl">Tonton</span>
-    </a>
-
-    <!-- Tile 2: Sidejob Lebah -->
-    <a href="/farm" class="b-tile">
-      <div class="b-tile__icon" style="background:linear-gradient(135deg,#16a34a,#15803d);">
-        <i class="ph-fill ph-drop"></i>
-      </div>
-      <span class="b-tile__lbl">Ternak Lebah</span>
-    </a>
-
-    <!-- Tile 3: Lapak Jual Madu -->
-    <a href="/farm/stall" class="b-tile">
-      <div class="b-tile__icon" style="background:linear-gradient(135deg,#eab308,#ca8a04);">
-        <i class="ph-fill ph-storefront"></i>
-      </div>
-      <span class="b-tile__lbl">Lapak Madu</span>
-    </a>
-
-    <!-- Tile 4: Toko Sarang & Lebah -->
-    <a href="/farm/shop" class="b-tile">
-      <div class="b-tile__icon" style="background:linear-gradient(135deg,#0284c7,#0369a1);border-color:#075985;">
-        <i class="ph-fill ph-shopping-bag"></i>
-      </div>
-      <span class="b-tile__lbl">Toko Bibit</span>
-    </a>
-
-    <!-- Tile 5: Absen Harian -->
-    <a href="/checkin" class="b-tile">
-      <div class="b-tile__icon" style="background:linear-gradient(135deg,#ec4899,#db2777);border-color:#9d174d;">
-        <i class="ph-fill ph-calendar-check"></i>
-      </div>
-      <span class="b-tile__lbl">Absen</span>
-    </a>
-
-    <!-- Tile 6: Misi Harian -->
-    <a href="/missions" class="b-tile">
-      <div class="b-tile__icon" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);border-color:#4c1d95;">
-        <i class="ph-fill ph-target"></i>
-      </div>
-      <span class="b-tile__lbl">Misi</span>
-    </a>
-
-    <!-- Tile 7: Squad Afiliasi -->
-    <a href="/referral" class="b-tile">
-      <div class="b-tile__icon" style="background:linear-gradient(135deg,#10b981,#047857);border-color:#064e3b;">
-        <i class="ph-fill ph-users-three"></i>
-      </div>
-      <span class="b-tile__lbl">Squad</span>
-    </a>
-
-    <!-- Tile 8: Upgrade VIP -->
-    <a href="/upgrade" class="b-tile">
-      <div class="b-tile__icon" style="background:linear-gradient(135deg,#f59e0b,#b45309);">
-        <i class="ph-fill ph-crown"></i>
-      </div>
-      <span class="b-tile__lbl">VIP</span>
-    </a>
-  </div>
-
   <!-- ── TIPS MASCOT BUZZY ── -->
   <div class="amber-tips-box">
-    <div class="amber-tips-icon">💡</div>
+    <div class="amber-tips-icon"><i class="ph-fill ph-lightbulb" style="color:#d97706;font-size:22px;"></i></div>
     <div>
       <div style="font-size:12px;font-weight:900;color:#78350f;margin-bottom:2px;">Tips Cuan dari Buzzy</div>
       <div style="font-size:10.5px;font-weight:700;color:#78350f;line-height:1.35;">
@@ -977,18 +1093,72 @@ body {
 
 </div>
 
+<!-- ══════════════════════════════════════════════════════════
+     MODAL POPUP 1: PENGUMUMAN / PROMO CONSOLE (JIKA AKTIF)
+     ══════════════════════════════════════════════════════════ -->
+<?php if ($popup_enabled): ?>
+<div id="custom-announcement-popup" class="amber-modal-backdrop">
+  <div class="amber-modal-box">
+    <button type="button" class="amber-modal-close" onclick="closeCustomPopup()">
+      <i class="ph-bold ph-x"></i>
+    </button>
+    <div class="amber-modal-badge">
+      <i class="ph-fill ph-megaphone-simple"></i>
+    </div>
+    <h3 class="amber-modal-title"><?= htmlspecialchars($popup_title) ?></h3>
+    <p class="amber-modal-body"><?= nl2br(htmlspecialchars($popup_body)) ?></p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <a href="<?= htmlspecialchars($popup_cta_url) ?>" class="btn-modal-primary">
+        <i class="ph-bold ph-arrow-up-right"></i> <?= htmlspecialchars($popup_cta_text) ?>
+      </a>
+      <button type="button" onclick="closeCustomPopup()" class="btn-modal-dismiss">Nanti Saja</button>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL POPUP 2: AJAKAN CHECK-IN HARIAN (SARANG MADU HEX)
+     Muncul setelah pop-up pertama ditutup, atau otomatis jika belum absen
+     ══════════════════════════════════════════════════════════ -->
+<?php if (!$has_checked_in_today && !$is_guest): ?>
+<div id="checkin-prompt-modal" class="amber-modal-backdrop">
+  <div class="amber-modal-box">
+    <button type="button" class="amber-modal-close" onclick="closeCheckinModal()">
+      <i class="ph-bold ph-x"></i>
+    </button>
+    <div class="amber-modal-badge" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;">
+      <i class="ph-fill ph-hexagon"></i>
+    </div>
+    <h3 class="amber-modal-title">Sarang Madu Harian Menantimu!</h3>
+    <p class="amber-modal-body">
+      Sarang lebah hari ini sudah dipenuhi madu manis berhadiah uang tunai. Pilih salah satu hexagon sarang lebah untuk membuka <strong>saldo tarik tunai</strong> langsung hari ini!
+    </p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <a href="/checkin" class="btn-modal-primary" style="background:linear-gradient(180deg,#10b981,#059669);border-color:#064e3b;box-shadow:0 5px 0 #064e3b;text-shadow:0 1px 2px #064e3b;">
+        <i class="ph-fill ph-sparkle"></i> Buka Sarang Madu Sekarang
+      </a>
+      <button type="button" onclick="closeCheckinModal()" class="btn-modal-dismiss">Nanti Saja</button>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
 <!-- Toast Container for Copy / Share feedback -->
 <div id="cuan-toast"></div>
 
 <script>
+window.__HAS_CHECKED_IN__ = <?= $has_checked_in_today ? 'true' : 'false' ?>;
+window.__IS_GUEST__ = <?= $is_guest ? 'true' : 'false' ?>;
+
 function copyRefCode(code) {
   if (!code || code === '-') {
-    showCuanToast('Silakan masuk akun untuk melihat kode referral!');
+    showCuanToast('<i class="ph-bold ph-warning-circle"></i> Silakan masuk akun untuk melihat kode referral!');
     return;
   }
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(code).then(() => {
-      showCuanToast('🐝 Kode Referral disalin: ' + code);
+      showCuanToast('<i class="ph-bold ph-check"></i> Kode Referral disalin: ' + code);
     }).catch(() => fallbackCopy(code));
   } else {
     fallbackCopy(code);
@@ -1005,9 +1175,9 @@ function fallbackCopy(text) {
   ta.select();
   try {
     document.execCommand('copy');
-    showCuanToast('🐝 Kode Referral disalin: ' + text);
+    showCuanToast('<i class="ph-bold ph-check"></i> Kode Referral disalin: ' + text);
   } catch (err) {
-    showCuanToast('Gagal menyalin kode referral.');
+    showCuanToast('<i class="ph-bold ph-warning-circle"></i> Gagal menyalin kode referral.');
   }
   document.body.removeChild(ta);
 }
@@ -1039,6 +1209,85 @@ function showCuanToast(msg) {
     t.classList.remove('show');
   }, 2600);
 }
+
+/* ── LOGIKA POP-UP BERANTAI (CHAINED MODALS) ── */
+function openCustomPopup() {
+  const p = document.getElementById('custom-announcement-popup');
+  if (!p) {
+    triggerCheckinPopupIfEligible();
+    return;
+  }
+  p.style.display = 'flex';
+  setTimeout(() => {
+    const b = p.querySelector('.amber-modal-box');
+    if (b) { b.style.transform = 'scale(1)'; b.style.opacity = '1'; }
+  }, 40);
+}
+
+function closeCustomPopup() {
+  const p = document.getElementById('custom-announcement-popup');
+  if (p) {
+    const b = p.querySelector('.amber-modal-box');
+    if (b) { b.style.transform = 'scale(0.85)'; b.style.opacity = '0'; }
+    setTimeout(() => { p.style.display = 'none'; }, 280);
+  }
+  try {
+    localStorage.setItem('lebah_popup_seen', JSON.stringify({ ts: Date.now() }));
+  } catch (e) {}
+
+  // Pemicu rantai: Munculkan popup check-in setelah popup pertama ditutup
+  setTimeout(triggerCheckinPopupIfEligible, 350);
+}
+
+function triggerCheckinPopupIfEligible() {
+  if (window.__HAS_CHECKED_IN__ || window.__IS_GUEST__) return;
+  if (sessionStorage.getItem('checkin_prompt_closed') === '1') return;
+
+  const m = document.getElementById('checkin-prompt-modal');
+  if (!m) return;
+  m.style.display = 'flex';
+  setTimeout(() => {
+    const b = m.querySelector('.amber-modal-box');
+    if (b) { b.style.transform = 'scale(1)'; b.style.opacity = '1'; }
+  }, 40);
+}
+
+function closeCheckinModal() {
+  const m = document.getElementById('checkin-prompt-modal');
+  if (m) {
+    const b = m.querySelector('.amber-modal-box');
+    if (b) { b.style.transform = 'scale(0.85)'; b.style.opacity = '0'; }
+    setTimeout(() => { m.style.display = 'none'; }, 280);
+  }
+  try {
+    sessionStorage.setItem('checkin_prompt_closed', '1');
+  } catch (e) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const customPopupEl = document.getElementById('custom-announcement-popup');
+  const resetMs = <?= $popup_reset_hours ?> * 3600000;
+  let showCustom = <?= $popup_enabled ? 'true' : 'false' ?>;
+
+  if (showCustom && customPopupEl) {
+    try {
+      const raw = localStorage.getItem('lebah_popup_seen');
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (resetMs > 0 && (Date.now() - data.ts) < resetMs) {
+          showCustom = false;
+        }
+      }
+    } catch(e){}
+  }
+
+  if (showCustom && customPopupEl) {
+    setTimeout(openCustomPopup, <?= $popup_delay ?>);
+  } else {
+    // Jika tidak ada custom popup atau sudah dilihat, langsung tampilkan modal ajakan checkin
+    setTimeout(triggerCheckinPopupIfEligible, 600);
+  }
+});
 </script>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
