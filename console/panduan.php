@@ -16,9 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $keys = ['popup_enabled','popup_title','popup_body','popup_cta_text',
                  'popup_cta_url','popup_delay','popup_reset_hours'];
         foreach ($keys as $k) {
-            if (array_key_exists($k, $_POST)) setting_set($pdo, $k, trim($_POST[$k]));
+            if (array_key_exists($k, $_POST)) {
+                $val = trim((string)$_POST[$k]);
+                // Hilangkan karakter ?? dan emoji yang tidak didukung
+                $val = preg_replace('/^\?+\s*/', '', $val);
+                setting_set($pdo, $k, $val);
+            }
         }
-        $flash = '✅ Pengaturan popup disimpan!';
+        $flash = 'Pengaturan popup berhasil disimpan!';
     }
 
     // Save panduan content
@@ -91,23 +96,23 @@ require __DIR__ . '/partials/header.php';
               <div class="c-form-group">
                 <label class="c-label">Judul Popup</label>
                 <input type="text" name="popup_title" class="c-form-control"
-                       value="<?= htmlspecialchars($s('popup_title','📖 Hei, sudah baca panduan?')) ?>"
-                       placeholder="📖 Hei, sudah baca panduan?">
+                       value="<?= htmlspecialchars(preg_replace('/^\?+\s*/', '', $s('popup_title','Hei, sudah baca panduan?'))) ?>"
+                       placeholder="Hei, sudah baca panduan?">
               </div>
             </div>
             <div class="col-12">
               <div class="c-form-group">
                 <label class="c-label">Isi / Body Popup</label>
                 <textarea name="popup_body" class="c-form-control" rows="3"
-                          placeholder="Teks yang muncul di dalam popup..."><?= htmlspecialchars($s('popup_body','Biar makin lancar dapat reward, yuk baca dulu cara kerja TontonCuan! Dari cara tonton, jenis saldo, sampai tips withdraw.')) ?></textarea>
+                          placeholder="Teks yang muncul di dalam popup..."><?= htmlspecialchars(str_replace('??', '', $s('popup_body','Biar makin lancar dapat reward, yuk baca dulu cara kerja LebahCuan! Dari cara tonton, jenis saldo, sampai tips withdraw.'))) ?></textarea>
               </div>
             </div>
             <div class="col-md-6">
               <div class="c-form-group">
                 <label class="c-label">Teks Tombol CTA</label>
                 <input type="text" name="popup_cta_text" class="c-form-control"
-                       value="<?= htmlspecialchars($s('popup_cta_text','📖 Baca Panduan →')) ?>"
-                       placeholder="📖 Baca Panduan →">
+                       value="<?= htmlspecialchars(preg_replace('/^\?+\s*/', '', $s('popup_cta_text','Baca Panduan Sekarang'))) ?>"
+                       placeholder="Baca Panduan Sekarang">
               </div>
             </div>
             <div class="col-md-6">
@@ -121,15 +126,15 @@ require __DIR__ . '/partials/header.php';
             <div class="col-12">
               <!-- Live Preview -->
               <div style="background:#1a1d2e;border:1px solid #2a2d40;border-radius:10px;padding:16px;margin-top:4px">
-                <div style="font-size:11px;color:#666;margin-bottom:10px;font-weight:600">👁 Preview Popup (tampilan di Beranda)</div>
+                <div style="font-size:11px;color:#666;margin-bottom:10px;font-weight:600">Preview Popup (tampilan di Beranda)</div>
                 <div style="background:#fff;color:#111;border-radius:16px 16px 0 0;padding:18px;max-width:380px;border:2px solid #111;box-shadow:0 -4px 0 #111;">
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-                    <div style="font-weight:900;font-size:14px" id="prev_title"><?= htmlspecialchars($s('popup_title','📖 Hei, sudah baca panduan?')) ?></div>
+                    <div style="font-weight:900;font-size:14px" id="prev_title"><?= htmlspecialchars(preg_replace('/^\?+\s*/', '', $s('popup_title','Hei, sudah baca panduan?'))) ?></div>
                     <span style="color:#999;font-size:18px">✕</span>
                   </div>
-                  <div style="font-size:12px;color:#555;margin-bottom:12px;line-height:1.5" id="prev_body"><?= htmlspecialchars($s('popup_body','Biar makin lancar dapat reward, yuk baca dulu cara kerja TontonCuan!')) ?></div>
+                  <div style="font-size:12px;color:#555;margin-bottom:12px;line-height:1.5" id="prev_body"><?= htmlspecialchars(str_replace('??', '', $s('popup_body','Biar makin lancar dapat reward, yuk baca dulu cara kerja LebahCuan!'))) ?></div>
                   <div style="display:flex;gap:8px">
-                    <div style="background:#111;color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;flex:1;text-align:center" id="prev_cta"><?= htmlspecialchars($s('popup_cta_text','📖 Baca Panduan →')) ?></div>
+                    <div style="background:#111;color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;flex:1;text-align:center" id="prev_cta"><?= htmlspecialchars(preg_replace('/^\?+\s*/', '', $s('popup_cta_text','Baca Panduan Sekarang'))) ?></div>
                     <div style="border:2px solid #111;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700">Nanti</div>
                   </div>
                 </div>

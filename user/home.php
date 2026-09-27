@@ -151,6 +151,17 @@ $popup_cta_url     = setting($pdo, 'popup_cta_url', '/panduan');
 $popup_delay       = max(200, (int) setting($pdo, 'popup_delay', '500'));
 $popup_reset_hours = max(0, (int) setting($pdo, 'popup_reset_hours', '0'));
 
+// Sanitize tanda tanya (??) dari database yang timbul akibat karakter emoji rusak
+$popup_title    = trim(preg_replace('/^\?+\s*/', '', (string)$popup_title));
+$popup_cta_text = trim(preg_replace('/^\?+\s*/', '', (string)$popup_cta_text));
+$popup_body     = trim(str_replace('??', '', (string)$popup_body));
+
+// Jika popup promosi mengarah ke /upgrade tetapi user belum menghasilkan cuan lumayan,
+// sembunyikan popup upgrade ini agar user baru tidak kabur/kaget, biarkan mereka fokus tonton/absen
+if ($popup_enabled && str_contains($popup_cta_url, 'upgrade') && !$show_upgrade_feature) {
+    $popup_enabled = false;
+}
+
 $pageTitle = 'Nonton Video & Ternak Lebah Cuan';
 $activePage = 'home';
 require dirname(__DIR__) . '/partials/header.php';
