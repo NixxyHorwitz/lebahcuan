@@ -454,7 +454,7 @@ require dirname(__DIR__) . '/partials/header.php';
 
     <!-- MINIMUM DEPOSIT ALERT -->
     <div class="dep-alert dep-alert--info">
-      <div class="dep-alert-icon">💡</div>
+      <div class="dep-alert-icon"><i class="ph-fill ph-lightbulb" style="color:#d97706;font-size:18px;"></i></div>
       <div style="flex:1;">
         Minimal top up adalah <strong><?= format_rp($min_deposit) ?></strong>. Saldo diproses cepat & aman.
       </div>
@@ -463,14 +463,16 @@ require dirname(__DIR__) . '/partials/header.php';
     <!-- FLASH MESSAGES -->
     <?php if ($flash): ?>
     <div class="dep-alert dep-alert--<?= $flashType === 'error' ? 'err' : 'succ' ?>">
-      <div class="dep-alert-icon"><?= $flashType === 'error' ? '❌' : '✨' ?></div>
+      <div class="dep-alert-icon">
+        <i class="ph-bold ph-<?= $flashType === 'error' ? 'warning-circle' : 'check-circle' ?>" style="font-size:18px;"></i>
+      </div>
       <div style="flex:1;"><?= htmlspecialchars($flash) ?></div>
     </div>
     <?php endif; ?>
 
     <?php if (!$bank_enabled && (!$qris_enabled || empty($qris_raw))): ?>
     <div class="dep-alert dep-alert--err">
-      <div class="dep-alert-icon">⚠️</div>
+      <div class="dep-alert-icon"><i class="ph-bold ph-warning-circle" style="font-size:18px;"></i></div>
       <div style="flex:1;">Tidak ada metode deposit yang aktif saat ini. Silakan hubungi admin.</div>
     </div>
     <?php else: ?>
@@ -479,7 +481,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <div class="dep-tabs">
       <?php if ($qris_enabled && !empty($qris_raw)): ?>
       <div class="dep-tab" id="tab-qris" onclick="switchForm('qris')">
-        <i class="ph-bold ph-qr-code" style="font-size:16px;"></i>
+        <img src="/assets/qris.png" alt="QRIS" style="height:18px;object-fit:contain;">
         <span>QRIS Otomatis</span>
       </div>
       <?php endif; ?>
@@ -498,6 +500,15 @@ require dirname(__DIR__) . '/partials/header.php';
         <?= csrf_field() ?>
         <input type="hidden" name="form_token" value="<?= htmlspecialchars($_form_token) ?>">
         <input type="hidden" name="action" value="submit_qris">
+
+        <!-- Official QRIS Header Badge -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;background:#fdfaf6;border:1.5px solid #fde68a;border-radius:12px;padding:8px 12px;">
+          <div style="font-size:11px;font-weight:900;color:#78350f;display:flex;align-items:center;gap:5px;">
+            <i class="ph-fill ph-shield-check" style="color:#059669;font-size:14px;"></i>
+            <span>Standar Pembayaran Nasional</span>
+          </div>
+          <img src="/assets/qris.png" alt="QRIS Resmi" style="height:22px;object-fit:contain;">
+        </div>
 
         <div class="dep-input-grp">
           <div class="dep-input-lbl">
@@ -524,14 +535,14 @@ require dirname(__DIR__) . '/partials/header.php';
         <?php endif; ?>
 
         <div class="dep-alert dep-alert--warn" style="margin-bottom:16px;">
-          <div class="dep-alert-icon">⚡</div>
+          <div class="dep-alert-icon"><i class="ph-fill ph-lightning" style="color:#d97706;font-size:18px;"></i></div>
           <div style="flex:1;">
-            Dukung semua e-wallet (DANA, OVO, GoPay, ShopeePay) & M-Banking. Pembayaran terverifikasi otomatis dalam detik!
+            Dukung semua e-wallet (DANA, OVO, GoPay, ShopeePay) & M-Banking. Pembayaran terverifikasi otomatis dalam hitungan detik!
           </div>
         </div>
 
         <button type="submit" class="dep-btn-submit dep-btn-submit--qris no-dbl-submit">
-          <i class="ph-fill ph-qr-code" style="font-size:20px;"></i>
+          <img src="/assets/qris.png" alt="QRIS" style="height:20px;filter:brightness(0) invert(1);margin-right:2px;">
           <span>Lanjut Bayar dengan QRIS</span>
           <i class="ph-bold ph-arrow-right"></i>
         </button>

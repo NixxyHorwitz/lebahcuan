@@ -636,6 +636,10 @@ body {
     <!-- QR Section -->
     <div class="pay-card-qr">
       <?php if ($qr_url): ?>
+      <!-- Official QRIS Logo -->
+      <div style="display:flex;align-items:center;justify-content:center;margin-bottom:10px;">
+        <img src="/assets/qris.png" alt="QRIS" style="height:28px;object-fit:contain;">
+      </div>
       <div class="qr-box">
         <img id="qr-img" src="<?= htmlspecialchars($qr_url) ?>" alt="QRIS Code">
       </div>

@@ -14,7 +14,7 @@ $lock_until = (int)($_SESSION[$ip_key . '_lock'] ?? 0);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (time() < $lock_until) {
         $wait  = ceil(($lock_until - time()) / 60);
-        $error = "Akun terkunci. Coba lagi dalam {$wait} menit.";
+        $error = "Akun terkunci sementara. Coba lagi dalam {$wait} menit.";
         goto end_login;
     }
 
@@ -36,22 +36,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION[$ip_key . '_att'] = $new_att;
     if ($new_att >= 5) {
         $_SESSION[$ip_key . '_lock'] = time() + 600;
-        $error = 'Terlalu banyak percobaan. Coba lagi dalam 10 menit.';
+        $error = 'Terlalu banyak percobaan gagal. Coba lagi dalam 10 menit.';
     } else {
         $left  = 5 - $new_att;
-        $error = "Username/email atau password salah. Sisa percobaan: {$left}";
+        $error = "Username/email atau kata sandi salah. Sisa percobaan: {$left}";
     }
 }
 end_login:
-?>
-<?php
+
 // Load SEO settings
-$_seo_title  = setting($pdo, 'seo_title', 'TontonCuan');
-$_seo_desc   = setting($pdo, 'seo_description', 'Tonton video dan kumpulkan reward di TontonCuan!');
-$_seo_kw     = setting($pdo, 'seo_keywords', '');
-$_seo_og     = setting($pdo, 'seo_og_image', '');
-$_seo_robots = setting($pdo, 'seo_robots', 'index,follow');
-$_seo_og_type = setting($pdo, 'seo_og_type', 'website');
+$_seo_title  = setting($pdo, 'seo_title', 'LebahCuan');
+$_seo_desc   = setting($pdo, 'seo_description', 'Platform nonton video dan ternak lebah penghasil cuan resmi.');
 $_favicon    = setting($pdo, 'favicon_path', '');
 $_page_title = 'Masuk — ' . $_seo_title;
 ?>
@@ -59,377 +54,387 @@ $_page_title = 'Masuk — ' . $_seo_title;
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#9a5aff">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#78350f">
 <title><?= htmlspecialchars($_page_title) ?></title>
-<?php if ($_seo_desc): ?><meta name="description" content="<?= htmlspecialchars($_seo_desc) ?>"><?php endif; ?>
-<?php if ($_seo_kw):   ?><meta name="keywords"    content="<?= htmlspecialchars($_seo_kw) ?>"><?php endif; ?>
-<meta name="robots" content="<?= htmlspecialchars($_seo_robots) ?>">
-<?php
-$absolute_og = $_seo_og ? (preg_match('~^https?://~', $_seo_og) ? $_seo_og : base_url(ltrim($_seo_og, '/'))) : '';
-$absolute_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : '/' . ltrim($_favicon, '/')) : '';
-$current_url = base_url(ltrim($_SERVER['REQUEST_URI'] ?? '', '/'));
-$final_og_desc = $_seo_desc;
-?>
-<meta property="og:url" content="<?= htmlspecialchars($current_url) ?>">
-<meta property="og:type" content="<?= htmlspecialchars($_seo_og_type) ?>">
-<meta property="og:title" content="<?= htmlspecialchars($_page_title) ?>">
-<?php if ($final_og_desc): ?><meta property="og:description" content="<?= htmlspecialchars($final_og_desc) ?>"><?php endif; ?>
-<?php if ($absolute_og): ?>
-<meta property="og:url" content="<?= htmlspecialchars($current_url) ?>">
-<meta property="og:image" content="<?= htmlspecialchars($absolute_og) ?>">
-<meta property="og:image:secure_url" content="<?= htmlspecialchars($absolute_og) ?>">
-<meta property="og:image:alt" content="<?= htmlspecialchars($_seo_title) ?>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<!-- Phosphor Icons (CDN) -->
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+
+<?php if ($_favicon): ?>
+<link rel="icon" href="<?= htmlspecialchars($_favicon) ?>">
 <?php endif; ?>
-<meta name="twitter:card" content="summary_large_image">
-<?php if ($absolute_fav): ?>
-<link rel="icon" href="<?= htmlspecialchars($absolute_fav) ?>?v=<?= @filemtime(dirname(__DIR__).$_favicon)?:time() ?>">
-<link rel="apple-touch-icon" href="<?= htmlspecialchars($absolute_fav) ?>?v=<?= @filemtime(dirname(__DIR__).$_favicon)?:time() ?>">
-<?php endif; ?>
+
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap');
-*{box-sizing:border-box;margin:0;padding:0}
+/* ══════════════════════════════════════════════════════════
+   LEBAHCUAN — COMPACT AMBER HONEY LOGIN
+   Zero Emojis • Phosphor Icons • OJK & Bappebti Badges
+   ══════════════════════════════════════════════════════════ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   font-family: 'Nunito', sans-serif;
-  background: #eaf7ec; /* Light pastel mint background */
+  background-color: #fef8ee;
+  background-image: radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px);
+  background-size: 16px 16px;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
+  color: #1e293b;
 }
 
-/* Container Wrapper simulating phone shell / card */
-.login-container {
-  background: #eaf7ec;
-  border: 4px solid #181818;
-  border-radius: 40px;
-  box-shadow: 8px 8px 0 #181818;
+/* Compact Login Wrapper */
+.login-card {
   width: 100%;
-  max-width: 395px;
-  position: relative;
+  max-width: 360px;
+  background: #ffffff;
+  border: 3px solid #78350f;
+  border-radius: 28px;
+  box-shadow: 0 6px 0 #78350f, 0 16px 30px rgba(120, 53, 15, 0.12);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Header Banner - Purple with Curve */
-.login-header {
-  background: #9a5aff; /* Bright purple */
-  border-bottom: 4px solid #181818;
-  border-bottom-left-radius: 200px 30px;
-  border-bottom-right-radius: 200px 80px;
-  padding: 30px 24px 44px 24px;
   position: relative;
-  color: #fff;
 }
 
-.header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* Top Banner Header */
+.login-header {
+  background: linear-gradient(180deg, #78350f 0%, #92400e 40%, #b45309 75%, #d97706 100%);
+  padding: 22px 18px 18px;
+  text-align: center;
+  position: relative;
+  border-bottom: 3px solid #78350f;
+}
+.login-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(#fbbf24 1px, transparent 1px);
+  background-size: 14px 14px;
+  opacity: 0.18;
+  pointer-events: none;
 }
 
-/* White Key Icon Box */
-.icon-box {
-  background: #fff;
-  border: 3px solid #181818;
-  border-radius: 18px;
-  box-shadow: 3px 3px 0 #181818;
+.brand-badge {
   width: 54px;
   height: 54px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  box-shadow: 0 3px 0 #78350f;
+  margin: 0 auto 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+.brand-badge img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
 }
 
-/* Portal Version Badge */
-.version-badge {
-  background: #facc15; /* Yellow */
-  border: 2px solid #181818;
-  border-radius: 9999px;
-  padding: 4px 12px;
-  color: #181818;
-  font-size: 10px;
+.login-title {
+  position: relative;
+  z-index: 2;
+  font-size: 19px;
   font-weight: 900;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 1.5px 1.5px 0 #181818;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  margin-bottom: 2px;
 }
-.version-badge .dot {
-  width: 6px;
-  height: 6px;
-  background: #181818;
-  border-radius: 50%;
-}
-
-/* Titles */
-.welcome-txt {
-  font-size: 18px;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.95);
-  margin-top: 24px;
-  line-height: 1;
-}
-.signin-txt {
-  font-size: 38px;
-  font-weight: 900;
-  color: #fff;
-  margin-top: 4px;
-  line-height: 1;
-  letter-spacing: -0.5px;
+.login-sub {
+  position: relative;
+  z-index: 2;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #fef3c7;
 }
 
-/* Body / Form Section */
+/* Form Body */
 .login-body {
-  padding: 32px 24px 28px 24px;
+  padding: 20px 18px 16px;
 }
 
-/* Error Alert */
+/* Error Flash */
 .auth-err {
   background: #fee2e2;
-  border: 3px solid #181818;
-  border-radius: 20px;
-  padding: 12px;
-  font-size: 13px;
-  font-weight: 800;
-  color: #b91c1c;
-  margin-bottom: 24px;
-  text-align: center;
-  box-shadow: 3px 3px 0 #181818;
-}
-
-/* Neo-brutalist Input Box Group */
-.inp-group {
-  position: relative;
-  margin-bottom: 28px;
-}
-
-/* Input Floating Label Badge */
-.inp-label {
-  position: absolute;
-  top: -12px;
-  left: 20px;
-  background: #fff;
-  border: 2px solid #181818;
-  border-radius: 8px;
-  padding: 1px 10px;
-  font-size: 10px;
-  font-weight: 900;
-  color: #181818;
-  z-index: 10;
-  letter-spacing: 0.2px;
-  text-transform: uppercase;
-}
-
-/* Main Input wrapper */
-.inp-wrapper {
-  background: #fff;
-  border: 4px solid #181818;
-  border-radius: 28px;
-  box-shadow: 4px 4px 0 #181818;
-  display: flex;
-  align-items: center;
-  height: 58px;
-  padding: 0 16px;
-  position: relative;
-  transition: transform 0.1s, box-shadow 0.1s;
-}
-.inp-wrapper:focus-within {
-  transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0 #181818;
-}
-
-/* Yellow prefix +62 badge */
-.prefix-badge {
-  background: #ffcf00; /* Yellow prefix */
-  border: 2.5px solid #181818;
+  border: 2px solid #dc2626;
   border-radius: 14px;
-  padding: 4px 10px;
-  font-weight: 900;
-  font-size: 13px;
-  color: #181818;
-  margin-right: 8px;
+  padding: 9px 12px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #991b1b;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 1.5px 1.5px 0 #181818;
-  user-select: none;
+  gap: 8px;
+  box-shadow: 0 2px 0 #dc2626;
 }
 
-.inp-wrapper input {
+/* Input Fields */
+.inp-group {
+  margin-bottom: 14px;
+}
+.inp-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  color: #78350f;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.inp-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 2px solid #78350f;
+  border-radius: 14px;
+  padding: 0 12px;
+  height: 46px;
+  box-shadow: 0 2.5px 0 #78350f;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.inp-wrap:focus-within {
+  border-color: #d97706;
+  box-shadow: 0 3px 0 #d97706, 0 0 8px rgba(245, 158, 11, 0.25);
+}
+.inp-icon {
+  font-size: 18px;
+  color: #b45309;
+  flex-shrink: 0;
+}
+.inp-field {
   flex: 1;
   border: none;
   outline: none;
-  background: none;
+  background: transparent;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 800;
-  color: #181818;
+  color: #0f172a;
   width: 100%;
 }
-.inp-wrapper input::placeholder {
-  color: #a1a1aa;
+.inp-field::placeholder {
+  color: #94a3b8;
   font-weight: 700;
+  font-size: 12.5px;
 }
-
-/* Visibility eye button */
 .eye-btn {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 6px;
-  color: #64748b;
+  padding: 4px;
+  color: #94a3b8;
+  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: color 0.1s;
 }
 .eye-btn:hover {
-  color: #181818;
-}
-.eye-btn svg {
-  width: 20px;
-  height: 20px;
-  stroke-width: 2.5;
+  color: #78350f;
 }
 
-/* Otentikasi Button */
-.submit-btn {
+/* Submit CTA */
+.btn-login-submit {
   width: 100%;
-  height: 56px;
-  border: 3px solid #181818;
-  border-radius: 28px;
-  background: #3b82f6; /* Blue button */
-  color: #fff;
-  font-size: 15px;
+  height: 48px;
+  border: 2.5px solid #78350f;
+  border-radius: 15px;
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  font-size: 14px;
   font-weight: 900;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 4px 4px 0 #181818;
+  box-shadow: 0 4px 0 #78350f;
+  text-shadow: 0 1px 2px #78350f;
   cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.1s;
-  margin-top: 32px;
+  font-family: inherit;
+  margin-top: 18px;
+  transition: transform 0.1s;
 }
-.submit-btn:active {
-  transform: translate(3px, 3px);
-  box-shadow: 1px 1px 0 #181818;
-}
-
-/* Footer / Links */
-.footer-divider {
-  border: none;
-  border-top: 2px dashed #cbd5e1;
-  margin: 28px 0 20px 0;
+.btn-login-submit:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #78350f;
 }
 
-.footer-links {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* Register link */
+.login-footer-links {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #78350f;
 }
-
-.footer-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.footer-label {
-  font-size: 9px;
+.login-reg-link {
   font-weight: 900;
-  color: #64748b;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-.footer-link {
-  font-size: 13px;
-  font-weight: 900;
-  color: #181818;
+  color: #b45309;
   text-decoration: underline;
-  transition: color 0.1s;
+  margin-left: 3px;
 }
-.footer-link:hover {
-  color: #3b82f6;
+
+/* ── TRUST & REGULATION BOX (OJK & BAPPEBTI) ── */
+.auth-trust-box {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1.5px dashed #fde68a;
+  text-align: center;
+}
+.trust-lbl {
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.trust-logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: #fdfaf6;
+  border: 1.5px solid #fde68a;
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+.trust-logo-img {
+  height: 24px;
+  max-width: 95px;
+  object-fit: contain;
+  filter: contrast(1.05);
+}
+.trust-sep {
+  width: 1px;
+  height: 20px;
+  background: #cbd5e1;
 }
 </style>
 </head>
 <body>
 
-<div class="login-container">
-  <!-- Header Banner -->
+<div class="login-card">
+  <!-- Top Banner Header -->
   <div class="login-header">
-    <div class="header-top">
-      <div class="icon-box">
-        <!-- SVG Key Icon -->
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#181818" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
-        </svg>
-      </div>
-
+    <div class="brand-badge">
+      <img src="/assets/game/bee_worker.png" alt="LebahCuan">
     </div>
-    <div class="welcome-txt">Welcome,</div>
-    <div class="signin-txt">Sign In!</div>
+    <h1 class="login-title">Masuk Akun LebahCuan</h1>
+    <p class="login-sub">Tonton Video & Raih Saldo Rupiah Setiap Hari</p>
   </div>
 
-  <!-- Body Content -->
+  <!-- Form Body -->
   <div class="login-body">
     <?php if ($error): ?>
-      <div class="auth-err">⚠️ <?= htmlspecialchars($error) ?></div>
+      <div class="auth-err">
+        <i class="ph-bold ph-warning-circle" style="font-size:16px;"></i>
+        <span><?= htmlspecialchars($error) ?></span>
+      </div>
     <?php endif; ?>
 
     <form method="POST">
       <?= csrf_field() ?>
 
-      <!-- Username / Email Input -->
+      <!-- Username / Email Field -->
       <div class="inp-group">
-        <div class="inp-label">Username / Email</div>
-        <div class="inp-wrapper">
-          <input type="text" name="login" value="<?= htmlspecialchars($_POST['login'] ?? '') ?>" placeholder="Masukkan username atau email" autofocus autocomplete="username" required>
+        <label class="inp-label">Username atau Email</label>
+        <div class="inp-wrap">
+          <i class="ph-bold ph-user inp-icon"></i>
+          <input type="text"
+                 name="login"
+                 class="inp-field"
+                 value="<?= htmlspecialchars($_POST['login'] ?? '') ?>"
+                 placeholder="Masukkan username / email"
+                 autocomplete="username"
+                 required
+                 autofocus>
         </div>
       </div>
 
-      <!-- Password Input -->
+      <!-- Password Field -->
       <div class="inp-group">
-        <div class="inp-label">Kata Sandi (Password)</div>
-        <div class="inp-wrapper">
-          <input type="password" id="pwd" name="password" placeholder="Masukkan kata sandi" autocomplete="current-password" required>
-          <button type="button" class="eye-btn" onclick="let p=document.getElementById('pwd');p.type=p.type==='password'?'text':'password'" title="Lihat password">
-            <!-- Eye icon -->
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
+        <label class="inp-label">Kata Sandi (Password)</label>
+        <div class="inp-wrap">
+          <i class="ph-bold ph-lock-key inp-icon"></i>
+          <input type="password"
+                 id="pwd-input"
+                 name="password"
+                 class="inp-field"
+                 placeholder="Masukkan kata sandi"
+                 autocomplete="current-password"
+                 required>
+          <button type="button"
+                  class="eye-btn"
+                  onclick="togglePasswordVisibility()"
+                  title="Lihat password">
+            <i class="ph-bold ph-eye" id="eye-icon"></i>
           </button>
         </div>
       </div>
 
-      <!-- Submit Button -->
-      <button type="submit" class="submit-btn">
-        <span>OTENTIKASI MASUK</span>
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-          <polyline points="12 5 19 12 12 19"></polyline>
-        </svg>
+      <!-- Submit CTA Button -->
+      <button type="submit" class="btn-login-submit">
+        <span>Masuk Sekarang</span>
+        <i class="ph-bold ph-arrow-right"></i>
       </button>
     </form>
 
-    <hr class="footer-divider">
-
-    <!-- Footer Links -->
-    <div class="footer-links">
-      <div class="footer-item">
-        <span class="footer-label">Belum punya akun?</span>
-        <a href="/register" class="footer-link">Daftar Baru</a>
-      </div>
-      
+    <!-- Register Link -->
+    <div class="login-footer-links">
+      <span>Belum punya akun?</span>
+      <a href="/register" class="login-reg-link">Daftar Akun Baru</a>
     </div>
+
+    <!-- ── LOGO DIAWASI OJK & BAPPEBTI ── -->
+    <div class="auth-trust-box">
+      <div class="trust-lbl">
+        <i class="ph-fill ph-shield-check" style="color:#059669;font-size:12px;"></i>
+        <span>Diawasi & Terdaftar Resmi</span>
+      </div>
+      <div class="trust-logos">
+        <img src="/assets/ojkkk.png" alt="Otoritas Jasa Keuangan" class="trust-logo-img">
+        <div class="trust-sep"></div>
+        <img src="/assets/bap.png" alt="Bappebti" class="trust-logo-img">
+      </div>
+    </div>
+
   </div>
 </div>
+
+<script>
+function togglePasswordVisibility() {
+  const inp = document.getElementById('pwd-input');
+  const ico = document.getElementById('eye-icon');
+  if (!inp || !ico) return;
+
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    ico.className = 'ph-bold ph-eye-slash';
+  } else {
+    inp.type = 'password';
+    ico.className = 'ph-bold ph-eye';
+  }
+}
+</script>
 
 </body>
 </html>
