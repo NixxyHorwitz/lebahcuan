@@ -9,6 +9,7 @@ if (!$user) {
     $user = [
         'id' => 0, 'username' => 'Sobat Lebah', 'balance_wd' => 0, 'balance_dep' => 0, 'honey_stock' => 0,
         'membership_id' => null, 'membership_expires_at' => null, 'referral_code' => '-', 'is_promotor' => 0,
+        'total_earned' => 0, 'watch_count_today' => 0, 'last_checkin' => null,
     ];
 }
 
@@ -809,7 +810,7 @@ body {
       </div>
       <div class="cuan-balance-main">
         <span class="curr">Rp</span>
-        <span><?= number_format((float)$user['balance_wd'], 0, ',', '.') ?></span>
+        <span><?= number_format((float)($user['balance_wd'] ?? 0), 0, ',', '.') ?></span>
       </div>
     </div>
 
@@ -828,7 +829,7 @@ body {
           <i class="ph-fill ph-trophy" style="color:#f59e0b;"></i> Total Dihasilkan
         </div>
         <div class="cuan-pill-val cuan-pill-val--total">
-          Rp <?= number_format((float)$user['total_earned'], 0, ',', '.') ?>
+          Rp <?= number_format((float)($user['total_earned'] ?? 0), 0, ',', '.') ?>
         </div>
       </div>
     </div>
