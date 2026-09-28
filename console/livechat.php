@@ -437,7 +437,50 @@ if ($cfg['livechat_enabled'] === '') $cfg['livechat_enabled'] = '1';
 if (!isset($cfg['lc_max_idle_minutes']) || $cfg['lc_max_idle_minutes'] === '') $cfg['lc_max_idle_minutes'] = '30';
 if (!isset($cfg['lc_attachment_enabled']) || $cfg['lc_attachment_enabled'] === '') $cfg['lc_attachment_enabled'] = '1';
 $activeSessCount = (int)$pdo->query("SELECT COUNT(*) FROM chat_sessions WHERE status='open'")->fetchColumn();
-$waitingQueueCount = (int)$pdo->query("SELECT COUNT(*) FROM chat_queue WHERE status='waiting'")->fetchColumn();
+
+// ── Defensive Queue Queries & Auto-Healing ────────────────────
+$waitingQueueCount = 0;
+$waitingQueueList  = [];
+try {
+    $waitingQueueCount = (int)$pdo->query("SELECT COUNT(*) FROM chat_queue WHERE status='waiting'")->fetchColumn();
+    $waitingQueueList  = $pdo->query(
+        "SELECT q.*, 
+            TIMESTAMPDIFF(SECOND, q.last_ping_at, NOW()) as ping_ago_sec,
+            TIMESTAMPDIFF(MINUTE, q.created_at, NOW()) as wait_mins
+         FROM chat_queue q 
+         WHERE q.status='waiting' 
+         ORDER BY q.id ASC"
+    )->fetchAll();
+} catch (\Throwable $th) {
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `chat_queue` (
+          `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+          `queue_token` varchar(64) NOT NULL,
+          `user_id` int(10) unsigned DEFAULT NULL,
+          `user_name` varchar(100) DEFAULT 'Guest',
+          `user_email` varchar(150) DEFAULT NULL,
+          `mode` varchar(20) NOT NULL DEFAULT 'admin',
+          `status` varchar(20) NOT NULL DEFAULT 'waiting',
+          `assigned_session_key` varchar(64) DEFAULT NULL,
+          `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `last_ping_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `uniq_queue_token` (`queue_token`),
+          KEY `idx_status` (`status`),
+          KEY `idx_user_id` (`user_id`),
+          KEY `idx_last_ping_at` (`last_ping_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+        $waitingQueueCount = (int)$pdo->query("SELECT COUNT(*) FROM chat_queue WHERE status='waiting'")->fetchColumn();
+        $waitingQueueList  = $pdo->query(
+            "SELECT q.*, 
+                TIMESTAMPDIFF(SECOND, q.last_ping_at, NOW()) as ping_ago_sec,
+                TIMESTAMPDIFF(MINUTE, q.created_at, NOW()) as wait_mins
+             FROM chat_queue q 
+             WHERE q.status='waiting' 
+             ORDER BY q.id ASC"
+        )->fetchAll();
+    } catch (\Throwable) {}
+}
 
 // ── Load active sessions specifically for manage tab ──────────
 $activeSessions = $pdo->query(
@@ -449,16 +492,6 @@ $activeSessions = $pdo->query(
      FROM chat_sessions s 
      WHERE s.status='open' 
      ORDER BY s.last_message_at DESC"
-)->fetchAll();
-
-// ── Load waiting queue list specifically for manage tab ───────
-$waitingQueueList = $pdo->query(
-    "SELECT q.*, 
-        TIMESTAMPDIFF(SECOND, q.last_ping_at, NOW()) as ping_ago_sec,
-        TIMESTAMPDIFF(MINUTE, q.created_at, NOW()) as wait_mins
-     FROM chat_queue q 
-     WHERE q.status='waiting' 
-     ORDER BY q.id ASC"
 )->fetchAll();
 
 $flashMsg = $_SESSION['flash_msg'] ?? null;

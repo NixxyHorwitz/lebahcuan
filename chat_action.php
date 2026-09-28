@@ -12,6 +12,33 @@ header('Content-Type: application/json; charset=utf-8');
 // Reconnect MySQL in case connection has gone away (error 2006/2013)
 pdo_reconnect($pdo);
 
+// Ensure chat_queue table exists
+function ensure_chat_queue_table(PDO $pdo): void {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `chat_queue` (
+          `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+          `queue_token` varchar(64) NOT NULL,
+          `user_id` int(10) unsigned DEFAULT NULL,
+          `user_name` varchar(100) DEFAULT 'Guest',
+          `user_email` varchar(150) DEFAULT NULL,
+          `mode` varchar(20) NOT NULL DEFAULT 'admin',
+          `status` varchar(20) NOT NULL DEFAULT 'waiting',
+          `assigned_session_key` varchar(64) DEFAULT NULL,
+          `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `last_ping_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `uniq_queue_token` (`queue_token`),
+          KEY `idx_status` (`status`),
+          KEY `idx_user_id` (`user_id`),
+          KEY `idx_last_ping_at` (`last_ping_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+    } catch (\Throwable) {}
+}
+ensure_chat_queue_table($pdo);
+
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 error_log('[chat_action] action=' . $action . ' method=' . ($_SERVER['REQUEST_METHOD'] ?? '?') . ' cookie=' . (isset($_COOKIE['chat_session']) ? 'yes' : 'no'));
 
