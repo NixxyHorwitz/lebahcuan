@@ -382,6 +382,35 @@ $_pay_channels = $pdo->query("SELECT name, type FROM payment_channels WHERE is_a
 $_banks    = array_filter($_pay_channels, fn($c) => $c['type'] === 'bank');
 $_ewallets = array_filter($_pay_channels, fn($c) => $c['type'] === 'ewallet');
 
+// Dynamic account labels & placeholders based on selected payment channel
+$_post_bank = $_POST['bank_name'] ?? '';
+$_selected_type = '';
+if (!empty($_post_bank)) {
+    foreach ($_pay_channels as $_pc) {
+        if ($_pc['name'] === $_post_bank) {
+            $_selected_type = $_pc['type'];
+            break;
+        }
+    }
+}
+
+$_lbl_acc_num  = 'No. Rekening / HP';
+$_ph_acc_num   = 'Nomor Rekening';
+$_lbl_acc_name = 'Nama Pemilik Rekening';
+$_ph_acc_name  = 'Sesuai Buku Tabungan / KTP';
+
+if ($_selected_type === 'bank') {
+    $_lbl_acc_num  = 'Nomor Rekening ' . (!empty($_post_bank) ? htmlspecialchars($_post_bank) : 'Bank');
+    $_ph_acc_num   = 'Nomor Rekening ' . (!empty($_post_bank) ? htmlspecialchars($_post_bank) : 'Bank');
+    $_lbl_acc_name = 'Nama Pemilik Rekening ' . (!empty($_post_bank) ? htmlspecialchars($_post_bank) : 'Bank');
+    $_ph_acc_name  = 'Sesuai Buku Tabungan / KTP';
+} elseif ($_selected_type === 'ewallet') {
+    $_lbl_acc_num  = 'Nomor HP ' . (!empty($_post_bank) ? htmlspecialchars($_post_bank) : 'E-Wallet');
+    $_ph_acc_num   = 'Contoh: 08xxxxxxxxxx';
+    $_lbl_acc_name = 'Nama Pemilik Akun ' . (!empty($_post_bank) ? htmlspecialchars($_post_bank) : 'E-Wallet');
+    $_ph_acc_name  = 'Nama Terdaftar di ' . (!empty($_post_bank) ? htmlspecialchars($_post_bank) : 'Akun E-Wallet');
+}
+
 $_seo_title  = setting($pdo, 'seo_title', 'LebahCuan');
 $_seo_desc   = setting($pdo, 'seo_description', 'Platform nonton video dan ternak lebah penghasil cuan resmi.');
 $_favicon    = setting($pdo, 'favicon_path', '');
@@ -976,20 +1005,20 @@ select.inp-field {
       <div class="inp-group">
         <label class="inp-label" for="f_bank_name">Bank / E-Wallet</label>
         <div class="inp-wrap">
-          <i class="ph-bold ph-bank inp-icon"></i>
-          <select class="inp-field" id="f_bank_name" name="bank_name" required>
-            <option value="">Pilih Bank</option>
+          <i class="ph-bold <?= $_selected_type === 'ewallet' ? 'ph-wallet' : 'ph-bank' ?> inp-icon" id="ico_bank"></i>
+          <select class="inp-field" id="f_bank_name" name="bank_name" required onchange="handleBankTypeChange()">
+            <option value="">Pilih Bank / E-Wallet</option>
             <?php if (!empty($_banks)): ?>
             <optgroup label="Bank Nasional">
               <?php foreach ($_banks as $_ch): ?>
-              <option value="<?= htmlspecialchars($_ch['name']) ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
+              <option value="<?= htmlspecialchars($_ch['name']) ?>" data-type="bank" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
               <?php endforeach; ?>
             </optgroup>
             <?php endif; ?>
             <?php if (!empty($_ewallets)): ?>
             <optgroup label="E-Wallet">
               <?php foreach ($_ewallets as $_ch): ?>
-              <option value="<?= htmlspecialchars($_ch['name']) ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
+              <option value="<?= htmlspecialchars($_ch['name']) ?>" data-type="ewallet" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
               <?php endforeach; ?>
             </optgroup>
             <?php endif; ?>
@@ -1000,19 +1029,19 @@ select.inp-field {
 
       <!-- Col 6: Account Number -->
       <div class="inp-group">
-        <label class="inp-label" for="f_account_number">No. Rekening / HP</label>
+        <label class="inp-label" for="f_account_number" id="lbl_account_number"><?= $_lbl_acc_num ?></label>
         <div class="inp-wrap">
-          <i class="ph-bold ph-credit-card inp-icon"></i>
-          <input type="text" class="inp-field" id="f_account_number" name="account_number" value="<?= htmlspecialchars($_POST['account_number'] ?? '') ?>" placeholder="Nomor Rekening" required>
+          <i class="ph-bold <?= $_selected_type === 'ewallet' ? 'ph-device-mobile' : 'ph-credit-card' ?> inp-icon" id="ico_account_number"></i>
+          <input type="text" class="inp-field" id="f_account_number" name="account_number" value="<?= htmlspecialchars($_POST['account_number'] ?? '') ?>" placeholder="<?= $_ph_acc_num ?>" required>
         </div>
       </div>
 
       <!-- Span 2: Account Name -->
       <div class="inp-group span-2">
-        <label class="inp-label" for="f_account_name">Nama Pemilik Rekening</label>
+        <label class="inp-label" for="f_account_name" id="lbl_account_name"><?= $_lbl_acc_name ?></label>
         <div class="inp-wrap">
-          <i class="ph-bold ph-identification-card inp-icon"></i>
-          <input type="text" class="inp-field" id="f_account_name" name="account_name" value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>" placeholder="Sesuai Buku Tabungan / KTP" required>
+          <i class="ph-bold <?= $_selected_type === 'ewallet' ? 'ph-user-check' : 'ph-identification-card' ?> inp-icon" id="ico_account_name"></i>
+          <input type="text" class="inp-field" id="f_account_name" name="account_name" value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>" placeholder="<?= $_ph_acc_name ?>" required>
         </div>
       </div>
 
@@ -1109,6 +1138,54 @@ async function refreshCaptcha() {
   }
 }
 
+function handleBankTypeChange() {
+  const sel     = document.getElementById('f_bank_name');
+  const icoBank = document.getElementById('ico_bank');
+  const lblNum  = document.getElementById('lbl_account_number');
+  const inpNum  = document.getElementById('f_account_number');
+  const icoNum  = document.getElementById('ico_account_number');
+  const lblName = document.getElementById('lbl_account_name');
+  const inpName = document.getElementById('f_account_name');
+  const icoName = document.getElementById('ico_account_name');
+
+  if (!sel) return;
+
+  const opt  = sel.options[sel.selectedIndex];
+  const type = opt ? opt.getAttribute('data-type') : '';
+  const val  = sel.value.trim();
+
+  if (type === 'ewallet') {
+    if (icoBank) icoBank.className = 'ph-bold ph-wallet inp-icon';
+    if (lblNum)  lblNum.textContent = val ? 'Nomor HP ' + val : 'Nomor HP E-Wallet';
+    if (inpNum)  inpNum.placeholder = 'Contoh: 08xxxxxxxxxx';
+    if (icoNum)  icoNum.className = 'ph-bold ph-device-mobile inp-icon';
+
+    if (lblName) lblName.textContent = val ? 'Nama Pemilik Akun ' + val : 'Nama Pemilik Akun E-Wallet';
+    if (inpName) inpName.placeholder = val ? 'Nama Terdaftar di ' + val : 'Nama Terdaftar di Akun E-Wallet';
+    if (icoName) icoName.className = 'ph-bold ph-user-check inp-icon';
+  } else if (type === 'bank') {
+    if (icoBank) icoBank.className = 'ph-bold ph-bank inp-icon';
+    if (lblNum)  lblNum.textContent = val ? 'Nomor Rekening ' + val : 'Nomor Rekening Bank';
+    if (inpNum)  inpNum.placeholder = val ? 'Nomor Rekening ' + val : 'Nomor Rekening Bank';
+    if (icoNum)  icoNum.className = 'ph-bold ph-credit-card inp-icon';
+
+    if (lblName) lblName.textContent = val ? 'Nama Pemilik Rekening ' + val : 'Nama Pemilik Rekening Bank';
+    if (inpName) inpName.placeholder = 'Sesuai Buku Tabungan / KTP';
+    if (icoName) icoName.className = 'ph-bold ph-identification-card inp-icon';
+  } else {
+    if (icoBank) icoBank.className = 'ph-bold ph-bank inp-icon';
+    if (lblNum)  lblNum.textContent = 'No. Rekening / HP';
+    if (inpNum)  inpNum.placeholder = 'Nomor Rekening';
+    if (icoNum)  icoNum.className = 'ph-bold ph-credit-card inp-icon';
+
+    if (lblName) lblName.textContent = 'Nama Pemilik Rekening';
+    if (inpName) inpName.placeholder = 'Sesuai Buku Tabungan / KTP';
+    if (icoName) icoName.className = 'ph-bold ph-identification-card inp-icon';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', handleBankTypeChange);
+
 function validateReg(e) {
   const u   = document.getElementById('f_username').value.trim();
   const em  = document.getElementById('f_email').value.trim();
@@ -1144,13 +1221,18 @@ function validateReg(e) {
     document.getElementById('f_bank_name').focus();
     return false;
   }
+
+  const selBank = document.getElementById('f_bank_name');
+  const optBank = selBank ? selBank.options[selBank.selectedIndex] : null;
+  const isEwallet = optBank && optBank.getAttribute('data-type') === 'ewallet';
+
   if (!acc) {
-    alert('Nomor rekening atau HP akun wajib diisi!');
+    alert(isEwallet ? ('Nomor HP akun ' + (b || 'e-wallet') + ' wajib diisi!') : ('Nomor rekening ' + (b || 'bank') + ' wajib diisi!'));
     document.getElementById('f_account_number').focus();
     return false;
   }
   if (!nam) {
-    alert('Nama pemilik rekening wajib diisi sesuai KTP/bank!');
+    alert(isEwallet ? ('Nama pemilik akun ' + (b || 'e-wallet') + ' wajib diisi sesuai akun!') : 'Nama pemilik rekening bank wajib diisi sesuai buku tabungan/KTP!');
     document.getElementById('f_account_name').focus();
     return false;
   }
