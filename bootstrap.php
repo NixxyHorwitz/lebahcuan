@@ -47,17 +47,36 @@ if (!empty($_GET['ref'])) {
 
 // PDO connection with automatic retry on connection spikes (Error 1040 / 1203) and emergency local fallback
 function createPdo(): PDO {
-    $hosts = [
-        [
-            'host'     => $_ENV['DB_HOST'] ?? '127.0.0.1',
-            'port'     => $_ENV['DB_PORT'] ?? '3306',
-            'dbname'   => $_ENV['DB_DATABASE'] ?? 'caracuan',
-            'username' => $_ENV['DB_USERNAME'] ?? 'root',
-            'password' => $_ENV['DB_PASSWORD'] ?? '',
-        ]
+    $primaryHost = $_ENV['DB_HOST'] ?? '127.0.0.1';
+    $primaryDb   = $_ENV['DB_DATABASE'] ?? 'caracuan';
+    $primaryUser = $_ENV['DB_USERNAME'] ?? 'root';
+    $primaryPass = $_ENV['DB_PASSWORD'] ?? '';
+    $primaryPort = $_ENV['DB_PORT'] ?? '3306';
+
+    $hosts = [];
+
+    // On Linux/cPanel where web & MySQL reside on the same server:
+    // Connecting to 'localhost' automatically uses local UNIX domain socket (/var/lib/mysql/mysql.sock),
+    // which bypasses network TCP overhead, prevents TCP port exhaustion, and avoids 'Too many connections' limits.
+    if (PHP_OS_FAMILY === 'Linux' && $primaryHost !== 'localhost') {
+        $hosts[] = [
+            'host'     => 'localhost',
+            'port'     => $primaryPort,
+            'dbname'   => $primaryDb,
+            'username' => $primaryUser,
+            'password' => $primaryPass,
+        ];
+    }
+
+    $hosts[] = [
+        'host'     => $primaryHost,
+        'port'     => $primaryPort,
+        'dbname'   => $primaryDb,
+        'username' => $primaryUser,
+        'password' => $primaryPass,
     ];
 
-    // If primary host is remote and fallback is configured or available, register fallback
+    // If fallback is explicitly configured, register fallback
     if (!empty($_ENV['DB_FALLBACK_HOST'])) {
         $hosts[] = [
             'host'     => $_ENV['DB_FALLBACK_HOST'],
@@ -66,7 +85,7 @@ function createPdo(): PDO {
             'username' => $_ENV['DB_FALLBACK_USERNAME'] ?? 'root',
             'password' => $_ENV['DB_FALLBACK_PASSWORD'] ?? '',
         ];
-    } elseif (($_ENV['DB_HOST'] ?? '') !== '127.0.0.1' && ($_ENV['DB_HOST'] ?? '') !== 'localhost') {
+    } elseif ($primaryHost !== '127.0.0.1' && $primaryHost !== 'localhost') {
         // Automatically provide local Laragon MySQL as emergency fallback if remote server is exhausted
         $hosts[] = [
             'host'     => '127.0.0.1',
@@ -82,7 +101,8 @@ function createPdo(): PDO {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
         PDO::ATTR_TIMEOUT            => 4,
-        PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone='+07:00', wait_timeout=30",
+        // Short wait_timeout prevents idle connections from accumulating and hitting max_connections
+        PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone='+07:00', wait_timeout=15, interactive_timeout=15",
     ];
 
     $lastException = null;
@@ -136,9 +156,17 @@ function pdo_reconnect(PDO &$pdo): void {
 
 try {
     $pdo = createPdo();
+    // Cleanly close connection when script finishes
+    register_shutdown_function(function() {
+        global $pdo;
+        $pdo = null;
+    });
 } catch (PDOException $e) {
     http_response_code(503);
-    die('<h1 style="font-family:sans-serif">⚠️ Database Error</h1><p>Please start MySQL and check .env config</p><pre style="background:#f5f5f5;padding:12px;border-radius:6px">' . htmlspecialchars($e->getMessage()) . '</pre>');
+    $msg = htmlspecialchars($e->getMessage());
+    $isConn = str_contains($msg, '1040') || str_contains($msg, 'Too many connections');
+    $hint = $isConn ? '<p style="color:#b45309;font-weight:bold;margin:12px 0;">💡 Tips cPanel: Pada file <code>.env</code> di hosting cPanel, pastikan <code>DB_HOST=localhost</code> (bukan IP publik) agar menggunakan UNIX domain socket lokal yang jauh lebih cepat, hemat port, dan tidak terkena limit TCP max_connections.</p>' : '';
+    die('<h1 style="font-family:sans-serif">⚠️ Database Error</h1><p>Please start MySQL and check .env config</p>' . $hint . '<pre style="background:#f5f5f5;padding:12px;border-radius:6px">' . $msg . '</pre>');
 }
 
 // ============================================================
