@@ -45,8 +45,8 @@ $farmSubPage = $farmSubPage ?? 'meadow';
       const btn = document.getElementById('btnAudioToggle');
       if (btn) {
         btn.innerHTML = isMuted 
-          ? '<i class="ph-bold ph-speaker-simple-slash"></i> <span class="d-none d-sm-inline">Bisu</span>'
-          : '<i class="ph-fill ph-speaker-high"></i> <span class="d-none d-sm-inline">SFX On</span>';
+          ? '<i class="ph-bold ph-speaker-simple-slash"></i> <span>Mute</span>'
+          : '<i class="ph-fill ph-speaker-high"></i> <span>SFX</span>';
         btn.classList.toggle('btn-muted', isMuted);
       }
       if (!isMuted) {
@@ -252,12 +252,12 @@ $farmSubPage = $farmSubPage ?? 'meadow';
 
 <!-- ── STYLING TYCOON HEADER & SUB-NAV ── -->
 <style>
-/* Tycoon Master Bar */
+/* Tycoon Master Bar - Ultra-Compact & Responsive */
 .tycoon-top-bar {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 60%, #b45309 100%);
-  padding: 10px 12px 8px;
-  border-bottom: 3px solid #78350f;
-  box-shadow: 0 4px 16px rgba(180,83,9,0.25);
+  padding: 5px 8px 4px;
+  border-bottom: 2px solid #78350f;
+  box-shadow: 0 2px 10px rgba(180,83,9,0.22);
   position: relative;
   z-index: 20;
 }
@@ -265,128 +265,145 @@ $farmSubPage = $farmSubPage ?? 'meadow';
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 4px;
 }
 .tycoon-brand {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   text-decoration: none;
+  min-width: 0;
+  overflow: hidden;
 }
 .tycoon-brand__icon {
-  width: 32px; height: 32px;
+  width: 24px; height: 24px;
   background: #fff;
-  border: 2px solid #78350f;
-  border-radius: 10px;
+  border: 1.5px solid #78350f;
+  border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 2.5px 0 #78350f;
+  box-shadow: 0 1.5px 0 #78350f;
   flex-shrink: 0;
 }
 .tycoon-brand__icon img {
-  width: 22px; height: 22px; object-fit: contain;
+  width: 16px; height: 16px; object-fit: contain;
 }
 .tycoon-brand__title {
-  font-size: 14.5px; font-weight: 900; color: #fff;
-  line-height: 1.1; text-shadow: 0 1.5px 0 #78350f;
+  font-size: 12px; font-weight: 900; color: #fff;
+  line-height: 1.1; text-shadow: 0 1px 0 #78350f;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .tycoon-brand__sub {
-  font-size: 9.5px; font-weight: 800; color: #fef3c7;
+  font-size: 8px; font-weight: 700; color: #fef3c7;
+  white-space: nowrap;
 }
 
 /* Audio & Back Action */
 .tycoon-top-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  flex-shrink: 0;
 }
 .tycoon-btn-ctrl {
   background: #fff;
-  border: 2px solid #78350f;
-  border-radius: 10px;
-  padding: 5px 9px;
-  font-size: 10.5px; font-weight: 900;
+  border: 1.5px solid #78350f;
+  border-radius: 7px;
+  padding: 3px 6px;
+  font-size: 9.5px; font-weight: 900;
   color: #78350f;
-  display: inline-flex; align-items: center; gap: 4px;
-  box-shadow: 0 2.5px 0 #78350f;
+  display: inline-flex; align-items: center; gap: 3px;
+  box-shadow: 0 1.5px 0 #78350f;
   text-decoration: none;
   cursor: pointer;
+  white-space: nowrap;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.1s;
 }
+.tycoon-btn-ctrl i {
+  font-size: 12px;
+}
 .tycoon-btn-ctrl:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 #78350f;
+  transform: translateY(1.5px);
+  box-shadow: 0 0.5px 0 #78350f;
 }
 .tycoon-btn-ctrl.btn-muted {
   background: #fee2e2;
   color: #991b1b;
   border-color: #991b1b;
-  box-shadow: 0 2.5px 0 #991b1b;
+  box-shadow: 0 1.5px 0 #991b1b;
 }
 
 /* 3-Pillar Balances Card (Deposit, WD, Honey) */
 .tycoon-stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 4px;
+  margin-bottom: 4px;
 }
 .tycoon-stat-box {
   background: #ffffff;
-  border: 2px solid #78350f;
-  border-radius: 12px;
-  padding: 5px 4px;
-  box-shadow: 0 2.5px 0 #78350f;
+  border: 1.5px solid #78350f;
+  border-radius: 8px;
+  padding: 3px 2px;
+  box-shadow: 0 1.5px 0 #78350f;
   text-align: center;
 }
 .tycoon-stat-box__lbl {
-  font-size: 8px; font-weight: 900;
+  font-size: 7.5px; font-weight: 900;
   text-transform: uppercase;
   color: #64748b;
-  margin-bottom: 1px;
+  margin-bottom: 0px;
+  letter-spacing: 0.2px;
 }
 .tycoon-stat-box__val {
-  font-size: 11.5px; font-weight: 900;
-  line-height: 1.1;
+  font-size: 10.5px; font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 .tycoon-stat-box__val--dep { color: #1d4ed8; }
 .tycoon-stat-box__val--wd  { color: #059669; }
 .tycoon-stat-box__val--honey { color: #d97706; }
+.tycoon-stat-box a, .tycoon-stat-box span {
+  font-size: 8px !important;
+  font-weight: 800;
+  display: block;
+  margin-top: 1px;
+}
 
 /* Sub-Nav Tycoon Tabs (Modular Pages) */
 .tycoon-nav-tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
+  gap: 3px;
 }
 .tycoon-tab {
-  background: rgba(255, 255, 255, 0.25);
-  border: 1.5px solid rgba(255, 255, 255, 0.4);
-  border-radius: 10px;
-  padding: 6px 3px;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1.2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 7px;
+  padding: 3px 2px;
   text-decoration: none;
   text-align: center;
   color: #fff;
-  font-size: 10px; font-weight: 900;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 8.5px; font-weight: 800;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition: all 0.15s ease;
 }
 .tycoon-tab i {
-  font-size: 16px;
+  font-size: 12px;
 }
 .tycoon-tab:active {
-  transform: translateY(2px);
+  transform: translateY(1px);
 }
 .tycoon-tab.active {
   background: #fff;
   color: #78350f;
-  border: 2.5px solid #78350f;
-  box-shadow: 0 3px 0 #78350f;
-  transform: translateY(-2px);
+  border: 1.5px solid #78350f;
+  box-shadow: 0 1.5px 0 #78350f;
+  transform: none;
 }
 .tycoon-tab.active i {
   color: #d97706;
@@ -400,9 +417,9 @@ $farmSubPage = $farmSubPage ?? 'meadow';
       <div class="tycoon-brand__icon">
         <img src="/assets/game/bee_queen.png" onerror="this.src='/assets/game/bee_worker.png'" alt="Tycoon">
       </div>
-      <div>
-        <div class="tycoon-brand__title">Peternakan Lebah Cuan 🍯</div>
-        <div class="tycoon-brand__sub">Simulator Penghasil Pasif</div>
+      <div style="min-width:0;">
+        <div class="tycoon-brand__title">Peternakan Lebah 🍯</div>
+        <div class="tycoon-brand__sub">Simulator Pasif</div>
       </div>
     </a>
 
@@ -410,13 +427,13 @@ $farmSubPage = $farmSubPage ?? 'meadow';
       <!-- SFX Audio Toggle Button -->
       <button type="button" id="btnAudioToggle" class="tycoon-btn-ctrl" onclick="FarmAudio.toggle()">
         <i class="ph-fill ph-speaker-high"></i>
-        <span class="d-none d-sm-inline">SFX On</span>
+        <span>SFX</span>
       </button>
 
       <!-- Back to Main Home -->
       <a href="/home" class="tycoon-btn-ctrl" title="Kembali ke Beranda">
         <i class="ph-bold ph-house"></i>
-        <span class="d-none d-sm-inline">Home</span>
+        <span>Home</span>
       </a>
     </div>
   </div>
@@ -484,7 +501,7 @@ document.addEventListener('DOMContentLoaded', function() {
   } catch(e) {}
   const btn = document.getElementById('btnAudioToggle');
   if (btn && isMuted) {
-    btn.innerHTML = '<i class="ph-bold ph-speaker-simple-slash"></i> <span class="d-none d-sm-inline">Bisu</span>';
+    btn.innerHTML = '<i class="ph-bold ph-speaker-simple-slash"></i> <span>Mute</span>';
     btn.classList.add('btn-muted');
   }
 });
