@@ -570,1001 +570,1404 @@ require_once __DIR__ . '/partials/header.php';
 ?>
 
 <style>
-.lc-tabs { display:flex; gap:4px; border-bottom:1px solid #1f2235; margin-bottom:20px; }
-.lc-tab  { padding:10px 18px; font-size:13px; font-weight:600; color:#666; cursor:pointer; border-bottom:2px solid transparent; text-decoration:none; }
-.lc-tab.active { color:var(--brand); border-bottom-color:var(--brand); }
+/* ── Livechat Console Theme Styling ── */
+.lc-nav-wrapper {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 6px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+.lc-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.lc-tabs::-webkit-scrollbar { display: none; }
+.lc-tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #94a3b8;
+  cursor: pointer;
+  border-radius: 10px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: all .2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+}
+.lc-tab:hover {
+  color: #f8fafc;
+  background: rgba(255,255,255,0.04);
+}
+.lc-tab.active {
+  color: #fff;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: rgba(245,158,11,0.5);
+  box-shadow: 0 4px 14px rgba(245,158,11,0.3);
+}
 
-.sess-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #1a1d27; }
-.sess-row:last-child { border-bottom:none; }
-.sess-row.selected { background:rgba(66,133,244,.07); border-radius:8px; }
-.sess-cb { accent-color:#4285F4; width:15px; height:15px; cursor:pointer; flex-shrink:0; }
-.sess-avatar { width:36px;height:36px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0; }
-.sess-body { flex:1;min-width:0; }
-.sess-name { font-size:13.5px;font-weight:700;color:#e0e0f0; }
-.sess-last { font-size:12px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px; }
-.sess-right { text-align:right;flex-shrink:0; }
-.sess-badge { display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px; }
-.sess-badge.open   { background:rgba(76,175,130,.2);color:#4CAF82; }
-.sess-badge.closed { background:rgba(255,255,255,.07);color:#555; }
-.sess-mode { font-size:10px;color:#555;margin-top:3px; }
-.bulk-bar { display:none;align-items:center;gap:8px;padding:8px 12px;background:rgba(66,133,244,.1);border:1px solid rgba(66,133,244,.25);border-radius:8px;margin-bottom:10px;font-size:12px;color:#a0b4f0; }
-.bulk-bar.visible { display:flex; }
+/* Stat Widgets */
+.lc-stat-box {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  transition: transform .2s ease, border-color .2s ease;
+}
+.lc-stat-box:hover {
+  transform: translateY(-2px);
+  border-color: rgba(245,158,11,0.35);
+}
+.lc-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
 
-.msg-bubble { min-width:60px;max-width:75%;padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.5;word-break:break-word;white-space:pre-wrap; }
-.msg-user  .msg-bubble { background:#2a2d3e;color:#ddd; border-radius:12px 12px 4px 12px; }
-.msg-ai    .msg-bubble { background:rgba(196,181,253,.15);color:#c4b5fd; border-radius:12px 12px 12px 4px; }
-.msg-admin .msg-bubble { background:rgba(168,240,220,.12);color:#a8f0dc; border-radius:12px 12px 12px 4px; }
-.msg-system .msg-bubble { background:transparent;color:#555;font-size:11px;font-style:italic;text-align:center;min-width:0; }
-.msg-row { display:flex;margin-bottom:8px; }
-.msg-row.msg-user  { justify-content:flex-end; }
-.msg-row.msg-system{ justify-content:center; }
-.msg-time { font-size:10px;color:#444;margin-top:3px; }
-.msg-row.msg-user .msg-time { text-align:right; }
+/* Session rows */
+.sess-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.015);
+  border: 1px solid #1c2237;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  transition: all .2s ease;
+}
+.sess-row:hover {
+  background: rgba(255,255,255,0.035);
+  border-color: rgba(245,158,11,0.3);
+  transform: translateX(2px);
+}
+.sess-row.selected {
+  background: rgba(245,158,11,0.08);
+  border-color: rgba(245,158,11,0.4);
+}
+.sess-cb {
+  accent-color: #f59e0b;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sess-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(245,158,11,0.25), rgba(217,119,6,0.15));
+  border: 1.5px solid rgba(245,158,11,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  color: #fbbf24;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.sess-body { flex: 1; min-width: 0; }
+.sess-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.sess-last {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 3px;
+}
+.sess-right { text-align: right; flex-shrink: 0; }
+.sess-badge {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2.5px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.sess-badge.open {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.sess-badge.closed {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.sess-mode { font-size: 11px; color: #64748b; margin-top: 3px; }
 
-.detail-panel { background:#131520;border:1px solid #1f2235;border-radius:12px;overflow:hidden; }
-.detail-header { padding:14px 18px;border-bottom:1px solid #1f2235;display:flex;align-items:center;gap:10px; }
-.detail-msgs { padding:14px;max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:2px; }
-.detail-msgs::-webkit-scrollbar{width:4px} .detail-msgs::-webkit-scrollbar-thumb{background:#2a2d3e;border-radius:4px;}
-.detail-reply { padding:14px;border-top:1px solid #1f2235; }
+/* Bulk Action Bar */
+.bulk-bar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  color: #fcd34d;
+}
+.bulk-bar.visible { display: flex; }
 
-.webhook-url { background:#0f1117;border:1px solid #1f2235;border-radius:8px;padding:10px 14px;font-size:12px;font-family:monospace;color:#a8f0dc;word-break:break-all; }
+/* Detail Messenger Panel */
+.detail-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+}
+.detail-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: rgba(255,255,255,0.015);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.detail-msgs {
+  padding: 20px;
+  max-height: 480px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #090b14;
+}
+.detail-msgs::-webkit-scrollbar { width: 5px; }
+.detail-msgs::-webkit-scrollbar-thumb { background: #1e243d; border-radius: 4px; }
+.detail-msgs::-webkit-scrollbar-thumb:hover { background: #2a3356; }
+
+/* Bubbles */
+.msg-row { display: flex; }
+.msg-row.msg-user { justify-content: flex-end; }
+.msg-row.msg-system { justify-content: center; }
+.msg-bubble {
+  min-width: 60px;
+  max-width: 78%;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+  white-space: pre-wrap;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+.msg-user .msg-bubble {
+  background: #1c2237;
+  border: 1px solid #2d385b;
+  color: #f8fafc;
+  border-radius: 14px 14px 4px 14px;
+}
+.msg-admin .msg-bubble {
+  background: linear-gradient(135deg, rgba(245,158,11,0.22), rgba(217,119,6,0.14));
+  border: 1px solid rgba(245,158,11,0.35);
+  color: #fef3c7;
+  border-radius: 14px 14px 14px 4px;
+}
+.msg-ai .msg-bubble {
+  background: rgba(139,92,246,0.15);
+  border: 1px solid rgba(139,92,246,0.3);
+  color: #ddd6fe;
+  border-radius: 14px 14px 14px 4px;
+}
+.msg-system .msg-bubble {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #94a3b8;
+  font-size: 11px;
+  font-style: italic;
+  text-align: center;
+  border-radius: 20px;
+  padding: 4px 14px;
+  box-shadow: none;
+}
+.msg-time {
+  font-size: 10.5px;
+  color: #64748b;
+  margin-top: 4px;
+  padding: 0 2px;
+}
+.msg-row.msg-user .msg-time { text-align: right; }
+
+.detail-reply {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(255,255,255,0.015);
+}
+
+.webhook-url {
+  background: #090b14;
+  border: 1px solid #1e243d;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #38bdf8;
+  word-break: break-all;
+}
 </style>
 
-<?php if ($saved): ?>
-<div class="alert alert-success mb-3" style="background:rgba(76,175,130,.15);border:1px solid rgba(76,175,130,.3);color:#4CAF82;padding:10px 16px;border-radius:8px;font-size:13px;">
-  ✅ Pengaturan berhasil disimpan.
-</div>
-<?php endif; ?>
-<?php if ($flashMsg): ?>
-<div class="alert alert-success mb-3" style="background:rgba(76,175,130,.15);border:1px solid rgba(76,175,130,.3);color:#4CAF82;padding:10px 16px;border-radius:8px;font-size:13px;">
-  <?= htmlspecialchars($flashMsg) ?>
-</div>
-<?php endif; ?>
-<?php if ($flashErr): ?>
-<div class="alert alert-danger mb-3" style="background:rgba(244,78,59,.15);border:1px solid rgba(244,78,59,.3);color:#F44E3B;padding:10px 16px;border-radius:8px;font-size:13px;">
-  <?= htmlspecialchars($flashErr) ?>
-</div>
-<?php endif; ?>
-<?php if (!empty($_GET['replied'])): ?>
-<div class="alert alert-success mb-3" style="background:rgba(76,175,130,.15);border:1px solid rgba(76,175,130,.3);color:#4CAF82;padding:10px 16px;border-radius:8px;font-size:13px;">
-  ✅ Balasan berhasil dikirim.
-</div>
-<?php endif; ?>
+<div class="c-content">
 
-<div class="lc-tabs">
-  <a href="/console/livechat.php" class="lc-tab <?= !$viewId && ($_GET['t']??'sessions')==='sessions' ? 'active':'' ?>">💬 Semua Sesi</a>
-  <a href="/console/livechat.php?t=manage" class="lc-tab <?= ($_GET['t']??'')==='manage' ? 'active':'' ?>">
-    ⚡ Manage Antrean & Sesi Aktif 
-    <?php if ($waitingQueueCount > 0): ?>
-      <span class="badge bg-warning text-dark ms-1" style="font-size:10px;"><?= $waitingQueueCount ?> Antre</span>
-    <?php endif; ?>
-    <?php if ($activeSessCount > 0): ?>
-      <span class="badge bg-success ms-1" style="font-size:10px;"><?= $activeSessCount ?> Aktif</span>
-    <?php endif; ?>
-  </a>
-  <a href="/console/livechat.php?t=settings" class="lc-tab <?= ($_GET['t']??'')==='settings' ? 'active':'' ?>">⚙️ Pengaturan</a>
-  <a href="/console/livechat.php?t=webhook" class="lc-tab <?= ($_GET['t']??'')==='webhook' ? 'active':'' ?>">🔗 Webhook Info</a>
-</div>
-
-<?php if (($viewId && $viewSess) || false): /* DETAIL VIEW */ ?>
-<!-- handled below -->
-<?php endif; ?>
-
-<?php $activeTab = $_GET['t'] ?? ($viewId ? 'view' : 'sessions'); ?>
-
-<!-- ═══ TAB: SESSIONS ══════════════════════════════════════ -->
-<?php if ($activeTab === 'sessions' || $viewId): ?>
-<!-- Livechat Quick Stats -->
-<div class="row g-2 mb-3">
-  <div class="col-md-4 col-sm-6">
-    <div style="background:#13151f;border:1px solid #1f2235;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
-      <div style="font-size:24px;"><?= $cfg['livechat_enabled']==='1' ? '🟢' : '🔴' ?></div>
-      <div>
-        <div style="font-size:11px;color:#888;text-transform:uppercase;font-weight:700;">Status Livechat</div>
-        <div style="font-size:14px;font-weight:900;color:#fff;"><?= $cfg['livechat_enabled']==='1' ? 'BUKA (Online)' : 'TUTUP (Offline)' ?></div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4 col-sm-6">
-    <div style="background:#13151f;border:1px solid #1f2235;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
-      <div style="font-size:24px;">💬</div>
-      <div>
-        <div style="font-size:11px;color:#888;text-transform:uppercase;font-weight:700;">Sesi Aktif / Batas Maks</div>
-        <div style="font-size:14px;font-weight:900;color:#fff;">
-          <?= $activeSessCount ?> <span style="font-size:12px;color:#888;">/ <?= (int)($cfg['lc_max_active_sessions'] ?? 0) > 0 ? (int)$cfg['lc_max_active_sessions'] . ' Sesi' : 'Unlimited' ?></span>
+  <!-- Header Title Bar -->
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:18px;">
+          <i class="ph-bold ph-chats-circle"></i>
         </div>
+        <h4 class="mb-0 fw-bold text-white" style="letter-spacing:-0.3px;">Live Chat Support Console</h4>
+        <span class="badge bg-dark border border-secondary text-muted px-2 py-1" style="font-size:11px;">Dual Mode AI &amp; Admin</span>
       </div>
+      <p class="text-secondary mb-0" style="font-size:13px;">Kelola obrolan langsung pengunjung, manajemen antrean kuota sesi, integrasi Telegram bot forum, dan pengaturan bot AI.</p>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <a href="/console/livechat.php?t=<?= urlencode($_GET['t'] ?? ($viewId ? 'manage' : 'sessions')) ?>" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" style="border-radius:10px;padding:8px 14px;font-weight:600;">
+        <i class="ph-bold ph-arrow-counter-clockwise"></i> Refresh Status
+      </a>
+      <a href="/user/livechat.php" target="_blank" class="btn btn-sm btn-outline-warning d-flex align-items-center gap-1" style="border-radius:10px;padding:8px 14px;font-weight:600;">
+        <i class="ph-bold ph-arrow-square-out"></i> Tes Widget User
+      </a>
     </div>
   </div>
-  <div class="col-md-4 col-sm-12">
-    <div style="background:#13151f;border:1px solid #1f2235;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
-      <div style="font-size:24px;">⏳</div>
-      <div>
-        <div style="font-size:11px;color:#888;text-transform:uppercase;font-weight:700;">User Menunggu Antrean</div>
-        <div style="font-size:14px;font-weight:900;color:<?= $waitingQueueCount > 0 ? '#FBBC04' : '#4CAF82' ?>;">
-          <?= $waitingQueueCount ?> User
+
+  <!-- Flash Alerts -->
+  <?php if ($saved): ?>
+  <div class="alert alert-success d-flex align-items-center gap-2 mb-3" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:12px 18px;border-radius:12px;font-size:13px;">
+    <i class="ph-bold ph-check-circle" style="font-size:18px;"></i>
+    <span>Pengaturan live chat berhasil diperbarui.</span>
+  </div>
+  <?php endif; ?>
+  <?php if ($flashMsg): ?>
+  <div class="alert alert-success d-flex align-items-center gap-2 mb-3" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:12px 18px;border-radius:12px;font-size:13px;">
+    <i class="ph-bold ph-check-circle" style="font-size:18px;"></i>
+    <span><?= htmlspecialchars($flashMsg) ?></span>
+  </div>
+  <?php endif; ?>
+  <?php if ($flashErr): ?>
+  <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#f87171;padding:12px 18px;border-radius:12px;font-size:13px;">
+    <i class="ph-bold ph-warning-circle" style="font-size:18px;"></i>
+    <span><?= htmlspecialchars($flashErr) ?></span>
+  </div>
+  <?php endif; ?>
+  <?php if (!empty($_GET['replied'])): ?>
+  <div class="alert alert-success d-flex align-items-center gap-2 mb-3" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:12px 18px;border-radius:12px;font-size:13px;">
+    <i class="ph-bold ph-paper-plane-tilt" style="font-size:18px;"></i>
+    <span>Balasan admin berhasil terkirim.</span>
+  </div>
+  <?php endif; ?>
+
+  <!-- Navigation Pill Tabs -->
+  <div class="lc-nav-wrapper">
+    <div class="lc-tabs">
+      <a href="/console/livechat.php" class="lc-tab <?= !$viewId && ($_GET['t']??'sessions')==='sessions' ? 'active':'' ?>">
+        <i class="ph-bold ph-chats-circle"></i>
+        <span>Semua Sesi</span>
+        <span class="badge bg-dark border border-secondary text-secondary ms-1" style="font-size:10.5px;"><?= count($sessions) ?></span>
+      </a>
+
+      <a href="/console/livechat.php?t=manage" class="lc-tab <?= ($_GET['t']??'')==='manage' ? 'active':'' ?>">
+        <i class="ph-bold ph-lightning"></i>
+        <span>Manage Antrean &amp; Sesi Aktif</span>
+        <?php if ($waitingQueueCount > 0): ?>
+          <span class="badge bg-warning text-dark ms-1" style="font-size:10px;font-weight:800;"><?= $waitingQueueCount ?> Antre</span>
+        <?php endif; ?>
+        <?php if ($activeSessCount > 0): ?>
+          <span class="badge bg-success ms-1" style="font-size:10px;font-weight:800;"><?= $activeSessCount ?> Aktif</span>
+        <?php endif; ?>
+      </a>
+
+      <a href="/console/livechat.php?t=settings" class="lc-tab <?= ($_GET['t']??'')==='settings' ? 'active':'' ?>">
+        <i class="ph-bold ph-gear"></i>
+        <span>Pengaturan Layanan</span>
+      </a>
+
+      <a href="/console/livechat.php?t=webhook" class="lc-tab <?= ($_GET['t']??'')==='webhook' ? 'active':'' ?>">
+        <i class="ph-bold ph-link"></i>
+        <span>Webhook Telegram</span>
+      </a>
+    </div>
+  </div>
+
+  <?php $activeTab = $_GET['t'] ?? ($viewId ? 'view' : 'sessions'); ?>
+
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <!-- ═══ TAB 1: SESSIONS & CHAT VIEW ═════════════════════════ -->
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <?php if ($activeTab === 'sessions' || $viewId): ?>
+  
+  <!-- Livechat Quick Stats Row -->
+  <div class="row g-3 mb-4">
+    <!-- Stat 1: Status Layanan -->
+    <div class="col-md-4 col-sm-6">
+      <div class="lc-stat-box">
+        <div class="lc-stat-icon" style="background:<?= $cfg['livechat_enabled']==='1' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)' ?>;color:<?= $cfg['livechat_enabled']==='1' ? '#10b981' : '#ef4444' ?>;border:1px solid <?= $cfg['livechat_enabled']==='1' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)' ?>;">
+          <i class="ph-bold <?= $cfg['livechat_enabled']==='1' ? 'ph-broadcast' : 'ph-power' ?>"></i>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="row g-3">
-  <!-- Session list -->
-  <div class="<?= $viewId ? 'col-lg-4' : 'col-12' ?>">
-    <div class="c-card">
-      <div class="c-card-header">
-        <span class="c-card-title">Sesi Chat</span>
-        <span style="font-size:12px;color:#555;"><?= count($sessions) ?> sesi</span>
-      </div>
-      <div class="c-card-body" style="padding:0 20px;">
-
-        <!-- Bulk action toolbar -->
-        <form method="post" id="bulk-form">
-          <input type="hidden" name="tab" value="bulk_delete">
-
-          <div class="bulk-bar" id="bulk-bar">
-            <input type="checkbox" id="cb-all" class="sess-cb" onchange="toggleAll(this)" title="Pilih semua">
-            <span id="bulk-count">0 dipilih</span>
-            <button type="submit" onclick="return confirmDelete()"
-              style="background:rgba(244,78,59,.2);border:1px solid rgba(244,78,59,.4);color:#F44E3B;padding:4px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto;">
-              🗑️ Hapus Terpilih
-            </button>
+        <div>
+          <div class="text-secondary text-uppercase fw-bold" style="font-size:11px;letter-spacing:0.5px;">Status Layanan</div>
+          <div class="fw-bold" style="font-size:15px;color:<?= $cfg['livechat_enabled']==='1' ? '#34d399' : '#f87171' ?>;margin-top:2px;">
+            <?= $cfg['livechat_enabled']==='1' ? '🟢 Online (Terbuka)' : '🔴 Offline (Tertutup)' ?>
           </div>
+        </div>
+      </div>
+    </div>
 
-        <?php if (empty($sessions)): ?>
-          <p style="color:#555;font-size:13px;padding:20px 0;text-align:center;">Belum ada sesi chat.</p>
-        <?php else: ?>
-          <?php foreach ($sessions as $s): ?>
-          <div class="sess-row" id="sess-row-<?= $s['id'] ?>">
-            <input type="checkbox" name="session_ids[]" value="<?= $s['id'] ?>" class="sess-cb sess-check"
-              onchange="onCheckChange()">
-            <div class="sess-avatar"><?= strtoupper(substr($s['user_name'],0,1)) ?></div>
-            <div class="sess-body">
-              <div class="sess-name"><?= htmlspecialchars($s['user_name']) ?>
-                <?php if ($s['user_email']): ?><span style="color:#555;font-size:11px;font-weight:400;"> — <?= htmlspecialchars($s['user_email']) ?></span><?php endif; ?>
-              </div>
-              <div class="sess-last"><?= htmlspecialchars(mb_substr($s['last_msg']??'(kosong)',0,60)) ?></div>
+    <!-- Stat 2: Sesi Aktif vs Quota -->
+    <div class="col-md-4 col-sm-6">
+      <div class="lc-stat-box">
+        <div class="lc-stat-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);">
+          <i class="ph-bold ph-chats-teardrop"></i>
+        </div>
+        <div>
+          <div class="text-secondary text-uppercase fw-bold" style="font-size:11px;letter-spacing:0.5px;">Sesi Aktif / Batas Kuota</div>
+          <div class="text-white fw-bold" style="font-size:15px;margin-top:2px;">
+            <?= $activeSessCount ?> <span style="font-size:12px;color:#94a3b8;font-weight:normal;">/ <?= (int)($cfg['lc_max_active_sessions'] ?? 0) > 0 ? (int)$cfg['lc_max_active_sessions'] . ' Sesi' : 'Unlimited' ?></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat 3: User Menunggu Antrean -->
+    <div class="col-md-4 col-sm-12">
+      <div class="lc-stat-box">
+        <div class="lc-stat-icon" style="background:<?= $waitingQueueCount > 0 ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)' ?>;color:<?= $waitingQueueCount > 0 ? '#f59e0b' : '#10b981' ?>;border:1px solid <?= $waitingQueueCount > 0 ? 'rgba(245,158,11,0.3)' : 'rgba(16,185,129,0.3)' ?>;">
+          <i class="ph-bold ph-hourglass-high"></i>
+        </div>
+        <div>
+          <div class="text-secondary text-uppercase fw-bold" style="font-size:11px;letter-spacing:0.5px;">User Menunggu Antrean</div>
+          <div class="fw-bold" style="font-size:15px;color:<?= $waitingQueueCount > 0 ? '#fbbf24' : '#34d399' ?>;margin-top:2px;">
+            <?= $waitingQueueCount ?> User <?= $waitingQueueCount > 0 ? 'Menunggu' : '(Antrean Kosong)' ?>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Session List Column -->
+    <div class="<?= $viewId ? 'col-lg-4' : 'col-12' ?>">
+      <div class="c-card">
+        <div class="c-card-header d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <i class="ph-bold ph-list-dashes text-warning"></i>
+            <span class="c-card-title mb-0">Daftar Sesi Obrolan</span>
+          </div>
+          <span class="badge bg-dark border border-secondary text-secondary" style="font-size:11px;font-weight:600;">
+            <?= count($sessions) ?> sesi terbaru
+          </span>
+        </div>
+
+        <div class="c-card-body p-3">
+          <!-- Bulk action toolbar -->
+          <form method="post" id="bulk-form">
+            <input type="hidden" name="tab" value="bulk_delete">
+
+            <div class="bulk-bar" id="bulk-bar">
+              <input type="checkbox" id="cb-all" class="sess-cb" onchange="toggleAll(this)" title="Pilih semua">
+              <span id="bulk-count" class="fw-bold">0 dipilih</span>
+              <button type="submit" onclick="return confirmDelete()"
+                class="btn btn-sm btn-danger ms-auto d-flex align-items-center gap-1"
+                style="padding:5px 12px;border-radius:8px;font-size:11.5px;font-weight:700;">
+                <i class="ph-bold ph-trash"></i> Hapus Terpilih
+              </button>
             </div>
-            <div class="sess-right">
-              <span class="sess-badge <?= $s['status'] ?>"><?= $s['status'] ?></span>
-              <div class="sess-mode">🤖 <?= $s['mode'] ?> · <?= $s['msg_count'] ?> pesan</div>
-              <div style="margin-top:5px;display:flex;gap:4px;justify-content:flex-end;">
-                <a href="/console/livechat.php?view=<?= $s['id'] ?>" class="btn btn-sm"
-                   style="background:#1f2235;border:1px solid #2a2d3e;color:#ccc;padding:3px 10px;font-size:11px;border-radius:6px;text-decoration:none;">Detail</a>
-                <?php if ($s['status']==='open'): ?>
-                 <form method="post" style="margin:0;" onsubmit="return promptCloseSession(this);">
-                   <input type="hidden" name="tab" value="close_session">
-                   <input type="hidden" name="session_id" value="<?= $s['id'] ?>">
-                   <input type="hidden" name="close_reason" value="">
-                   <button type="submit"
-                     style="background:rgba(244,78,59,.15);border:1px solid rgba(244,78,59,.3);color:#F44E3B;padding:3px 10px;font-size:11px;border-radius:6px;cursor:pointer;">Tutup</button>
-                 </form>
-                <?php endif; ?>
+
+            <?php if (empty($sessions)): ?>
+              <div class="text-center py-5">
+                <div style="font-size:32px;color:#64748b;margin-bottom:8px;"><i class="ph-bold ph-chat-teardrop-slash"></i></div>
+                <div class="text-white fw-bold" style="font-size:13.5px;">Belum Ada Sesi Chat</div>
+                <div class="text-secondary" style="font-size:12px;">Sesi baru akan muncul otomatis saat user mengirim pesan.</div>
               </div>
+            <?php else: ?>
+              <div class="d-flex flex-column">
+                <?php foreach ($sessions as $s): ?>
+                <div class="sess-row <?= ($viewId === (int)$s['id']) ? 'selected' : '' ?>" id="sess-row-<?= $s['id'] ?>">
+                  <input type="checkbox" name="session_ids[]" value="<?= $s['id'] ?>" class="sess-cb sess-check" onchange="onCheckChange()">
+                  
+                  <div class="sess-avatar">
+                    <?= strtoupper(substr((string)$s['user_name'], 0, 1)) ?>
+                  </div>
+
+                  <div class="sess-body">
+                    <div class="sess-name">
+                      <span><?= htmlspecialchars((string)$s['user_name']) ?></span>
+                      <?php if ($s['user_email']): ?>
+                        <span style="font-size:11px;color:#64748b;font-weight:normal;">(<?= htmlspecialchars((string)$s['user_email']) ?>)</span>
+                      <?php endif; ?>
+                    </div>
+                    <div class="sess-last">
+                      <?= htmlspecialchars(mb_substr($s['last_msg'] ?? '(Belum ada pesan)', 0, 60)) ?>
+                    </div>
+                  </div>
+
+                  <div class="sess-right">
+                    <span class="sess-badge <?= $s['status'] ?>"><?= $s['status'] ?></span>
+                    <div class="sess-mode">
+                      <?= $s['mode'] === 'admin' ? '👨‍💼 Admin' : '🤖 AI' ?> &middot; <?= $s['msg_count'] ?> pesan
+                    </div>
+                    <div style="margin-top:6px;display:flex;gap:4px;justify-content:flex-end;">
+                      <a href="/console/livechat.php?view=<?= $s['id'] ?>" class="btn btn-sm d-flex align-items-center gap-1"
+                         style="background:#1a2035;border:1px solid #283252;color:#f8fafc;padding:3px 10px;font-size:11px;border-radius:6px;text-decoration:none;font-weight:600;">
+                        <i class="ph-bold ph-chat-centered-text"></i> Detail
+                      </a>
+                      <?php if ($s['status'] === 'open'): ?>
+                      <form method="post" style="margin:0;" onsubmit="return promptCloseSession(this);">
+                        <input type="hidden" name="tab" value="close_session">
+                        <input type="hidden" name="session_id" value="<?= $s['id'] ?>">
+                        <input type="hidden" name="close_reason" value="">
+                        <button type="submit"
+                          class="btn btn-sm btn-outline-danger"
+                          style="padding:3px 8px;font-size:11px;border-radius:6px;font-weight:700;">
+                          Tutup
+                        </button>
+                      </form>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                </div>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multi-select & prompt close script -->
+    <script>
+    function onCheckChange() {
+      const checks = document.querySelectorAll('.sess-check');
+      const checked = document.querySelectorAll('.sess-check:checked');
+      const bar = document.getElementById('bulk-bar');
+      const cbAll = document.getElementById('cb-all');
+      document.getElementById('bulk-count').textContent = checked.length + ' dipilih';
+      bar.classList.toggle('visible', checked.length > 0);
+      cbAll.indeterminate = checked.length > 0 && checked.length < checks.length;
+      cbAll.checked = checked.length === checks.length && checks.length > 0;
+      checks.forEach(c => c.closest('.sess-row')?.classList.toggle('selected', c.checked));
+    }
+    function toggleAll(cb) {
+      document.querySelectorAll('.sess-check').forEach(c => {
+        c.checked = cb.checked;
+        c.closest('.sess-row')?.classList.toggle('selected', cb.checked);
+      });
+      onCheckChange();
+    }
+    function confirmDelete() {
+      const n = document.querySelectorAll('.sess-check:checked').length;
+      return n > 0 && confirm('Hapus ' + n + ' sesi beserta seluruh pesannya? Tindakan ini tidak bisa dibatalkan.');
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      if (document.querySelectorAll('.sess-check').length > 0) {
+        document.getElementById('bulk-bar').style.display = 'flex';
+        document.getElementById('bulk-bar').classList.remove('visible');
+        document.getElementById('bulk-bar').style.display = '';
+      }
+    });
+    function promptCloseSession(form) {
+      const reason = prompt("Masukkan alasan penutupan sesi chat (opsional/bisa dikosongkan):", "");
+      if (reason === null) return false;
+      form.querySelector('input[name="close_reason"]').value = reason.trim();
+      return true;
+    }
+    </script>
+
+    <!-- Detail Chat Panel Column -->
+    <?php if ($viewId && $viewSess): ?>
+    <div class="col-lg-8">
+      <div class="detail-panel" id="detail-panel">
+        <!-- Header -->
+        <div class="detail-header">
+          <div class="sess-avatar">
+            <?= strtoupper(substr((string)$viewSess['user_name'], 0, 1)) ?>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span style="font-weight:700;font-size:14.5px;color:#f8fafc;"><?= htmlspecialchars((string)$viewSess['user_name']) ?></span>
+              <span class="badge bg-dark border border-secondary text-secondary" style="font-size:10.5px;">Session #<?= $viewId ?></span>
+            </div>
+            <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">
+              <?= htmlspecialchars((string)($viewSess['user_email'] ?? '-')) ?> &nbsp;&middot;&nbsp;
+              Mode: <strong style="color:#a78bfa;" id="dp-mode"><?= strtoupper($viewSess['mode']) ?></strong> &nbsp;&middot;&nbsp;
+              Status: <strong style="color:<?= $viewSess['status']==='open'?'#34d399':'#94a3b8' ?>;" id="dp-status"><?= strtoupper($viewSess['status']) ?></strong>
+            </div>
+          </div>
+          <a href="/console/livechat.php" class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style="width:34px;height:34px;border-radius:10px;" title="Tutup Detail">
+            <i class="ph-bold ph-x"></i>
+          </a>
+        </div>
+
+        <!-- Messages stream -->
+        <div class="detail-msgs" id="detail-msgs">
+          <?php foreach ($viewMsgs as $m): ?>
+          <div class="msg-row msg-<?= $m['sender'] ?>" data-id="<?= $m['id'] ?>">
+            <div>
+              <div class="msg-bubble">
+                <?php if ($m['attachment']): ?>
+                  <?php $ext = strtolower(pathinfo((string)$m['attachment'], PATHINFO_EXTENSION)); ?>
+                  <?php if (in_array($ext, ['jpg','jpeg','png','gif'])): ?>
+                    <div style="margin-bottom:8px;">
+                      <a href="/<?= $m['attachment'] ?>" target="_blank">
+                        <img src="/<?= $m['attachment'] ?>" style="max-width:100%;max-height:220px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);object-fit:cover;">
+                      </a>
+                    </div>
+                  <?php else: ?>
+                    <div style="margin-bottom:8px;">
+                      <a href="/<?= $m['attachment'] ?>" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(255,255,255,.08);border-radius:8px;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.15);font-size:12px;font-weight:700;">
+                        <i class="ph-bold ph-paperclip"></i> Unduh Lampiran (<?= strtoupper($ext) ?>)
+                      </a>
+                    </div>
+                  <?php endif; ?>
+                <?php endif; ?>
+                <?= nl2br(htmlspecialchars((string)$m['message'])) ?>
+              </div>
+              <div class="msg-time"><?= date('H:i', strtotime($m['created_at'])) ?></div>
             </div>
           </div>
           <?php endforeach; ?>
-        <?php endif; ?>
-        </form>
-
-      </div>
-    </div>
-  </div>
-
-  <script>
-  // Multi-select logic
-  function onCheckChange() {
-    const checks = document.querySelectorAll('.sess-check');
-    const checked = document.querySelectorAll('.sess-check:checked');
-    const bar = document.getElementById('bulk-bar');
-    const cbAll = document.getElementById('cb-all');
-    document.getElementById('bulk-count').textContent = checked.length + ' dipilih';
-    bar.classList.toggle('visible', checked.length > 0);
-    cbAll.indeterminate = checked.length > 0 && checked.length < checks.length;
-    cbAll.checked = checked.length === checks.length && checks.length > 0;
-    // Highlight selected rows
-    checks.forEach(c => c.closest('.sess-row')?.classList.toggle('selected', c.checked));
-  }
-  function toggleAll(cb) {
-    document.querySelectorAll('.sess-check').forEach(c => {
-      c.checked = cb.checked;
-      c.closest('.sess-row')?.classList.toggle('selected', cb.checked);
-    });
-    onCheckChange();
-  }
-  function confirmDelete() {
-    const n = document.querySelectorAll('.sess-check:checked').length;
-    return n > 0 && confirm('Hapus ' + n + ' sesi beserta semua pesannya? Tindakan ini tidak bisa dibatalkan.');
-  }
-  // Show bulk bar only when there are sessions
-  document.addEventListener('DOMContentLoaded', () => {
-    if (document.querySelectorAll('.sess-check').length > 0) {
-      document.getElementById('bulk-bar').style.display = 'flex';
-      document.getElementById('bulk-bar').classList.remove('visible');
-      // Actually keep hidden until at least 1 checked — reset to hidden
-      document.getElementById('bulk-bar').style.display = '';
-    }
-  });
-
-  function promptCloseSession(form) {
-    const reason = prompt("Masukkan alasan penutupan sesi chat (opsional/bisa dikosongkan):", "");
-    if (reason === null) return false; // Cancel clicked
-    form.querySelector('input[name="close_reason"]').value = reason.trim();
-    return true;
-  }
-  </script>
-
-  <!-- Detail panel -->
-  <?php if ($viewId && $viewSess): ?>
-  <div class="col-lg-8">
-    <div class="detail-panel" id="detail-panel">
-      <div class="detail-header">
-        <div class="sess-avatar"><?= strtoupper(substr($viewSess['user_name'],0,1)) ?></div>
-        <div style="flex:1;">
-          <div style="font-weight:700;font-size:14px;color:#e0e0f0;"><?= htmlspecialchars($viewSess['user_name']) ?></div>
-          <div style="font-size:11px;color:#555;">
-            <?= htmlspecialchars($viewSess['user_email']??'-') ?> &nbsp;&middot;&nbsp;
-            Mode: <strong style="color:#a8f0dc" id="dp-mode"><?= $viewSess['mode'] ?></strong> &nbsp;&middot;&nbsp;
-            Status: <strong style="color:<?= $viewSess['status']==='open'?'#4CAF82':'#555' ?>" id="dp-status"><?= $viewSess['status'] ?></strong>
-          </div>
         </div>
-        <a href="/console/livechat.php" style="color:#555;font-size:20px;text-decoration:none;line-height:1;">&times;</a>
-      </div>
 
-      <div class="detail-msgs" id="detail-msgs">
-        <?php foreach ($viewMsgs as $m): ?>
-        <div class="msg-row msg-<?= $m['sender'] ?>" data-id="<?= $m['id'] ?>">
-          <div>
-            <div class="msg-bubble">
-              <?php if ($m['attachment']): ?>
-                <?php $ext = strtolower(pathinfo($m['attachment'], PATHINFO_EXTENSION)); ?>
-                <?php if (in_array($ext, ['jpg','jpeg','png','gif'])): ?>
-                  <div style="margin-bottom:6px;"><a href="/<?= $m['attachment'] ?>" target="_blank"><img src="/<?= $m['attachment'] ?>" style="max-width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.1);"></a></div>
-                <?php else: ?>
-                  <div style="margin-bottom:6px;"><a href="/<?= $m['attachment'] ?>" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:rgba(255,255,255,.1); border-radius:8px; text-decoration:none; color:inherit; border:1px solid rgba(255,255,255,.2); font-size:12px; font-weight:bold;">📎 Download Lampiran</a></div>
-                <?php endif; ?>
-              <?php endif; ?>
-              <?= nl2br(htmlspecialchars($m['message'])) ?>
-            </div>
-            <div class="msg-time"><?= date('H:i', strtotime($m['created_at'])) ?></div>
-          </div>
-        </div>
-        <?php endforeach; ?>
-      </div>
-
-      <?php if ($viewSess['status']==='open'): ?>
-      <div class="detail-reply" id="detail-reply">
-        <div style="display:flex;gap:8px;align-items:flex-end;">
-          <div style="flex:1; display:flex; flex-direction:column; gap:4px; position:relative;">
-            <div id="console-attachment-preview" style="display:none; font-size:11px; background:#1f2235; color:#a0b4f0; border-radius:8px; padding:4px 8px; border:1px solid #2a2d3e;">
+        <!-- Reply footer -->
+        <?php if ($viewSess['status'] === 'open'): ?>
+        <div class="detail-reply" id="detail-reply">
+          <div class="d-flex gap-2 align-items-end">
+            <div style="flex:1;display:flex;flex-direction:column;gap:6px;position:relative;">
+              <div id="console-attachment-preview" style="display:none;font-size:11.5px;background:#1a2035;color:#93c5fd;border-radius:8px;padding:6px 10px;border:1px solid #283252;">
+                <i class="ph-bold ph-file me-1"></i>
                 <span id="console-att-preview-name" style="font-weight:600;"></span>
-                <span style="color:#F44E3B; cursor:pointer; float:right; padding: 0 4px;" onclick="clearConsoleAttachment()">&times; Hapus</span>
+                <span style="color:#f87171;cursor:pointer;float:right;padding:0 4px;" onclick="clearConsoleAttachment()">&times; Hapus</span>
+              </div>
+              <textarea id="console-reply-input" class="c-form-control" rows="2"
+                placeholder="Ketik balasan sebagai <?= htmlspecialchars($cfg['chat_admin_name']) ?>..."
+                style="background:#090b14;border-color:#1e243d;border-radius:10px;width:100%;resize:none;"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendConsoleReply();}"
+              ></textarea>
             </div>
-            <textarea id="console-reply-input" class="c-form-control" rows="2"
-              placeholder="Ketik balasan sebagai <?= htmlspecialchars($cfg['chat_admin_name']) ?>..."
-              style="width:100%;resize:none;"
-              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendConsoleReply();}"
-            ></textarea>
+
+            <?php if (setting($pdo, 'lc_attachment_enabled', '1') === '1'): ?>
+            <button type="button" onclick="document.getElementById('console-attachment-input').click()"
+              class="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+              style="height:44px;width:44px;border-radius:10px;border-color:#1e243d;color:#94a3b8;flex-shrink:0;" title="Lampirkan File/Gambar">
+              <i class="ph-bold ph-paperclip" style="font-size:18px;"></i>
+            </button>
+            <input type="file" id="console-attachment-input" style="display:none;" accept="image/jpeg,image/png,image/gif,application/pdf,.zip,.rar" onchange="previewConsoleAttachment(this)">
+            <?php endif; ?>
+
+            <button type="button" onclick="sendConsoleReply()" id="console-reply-btn"
+              class="btn d-flex align-items-center justify-content-center gap-1"
+              style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-weight:700;font-size:13px;height:44px;padding:0 18px;border-radius:10px;border:none;flex-shrink:0;box-shadow:0 4px 12px rgba(245,158,11,0.25);">
+              <i class="ph-bold ph-paper-plane-tilt"></i> Kirim
+            </button>
           </div>
-          <?php if (setting($pdo, 'lc_attachment_enabled', '1') === '1'): ?>
-          <button onclick="document.getElementById('console-attachment-input').click()" style="background:#2a2d3e;border:1px solid #1f2235;color:#fff;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;height:fit-content;white-space:nowrap;">📎</button>
-          <input type="file" id="console-attachment-input" style="display:none;" accept="image/jpeg,image/png,image/gif,application/pdf,.zip,.rar" onchange="previewConsoleAttachment(this)">
-          <?php endif; ?>
-          <button onclick="sendConsoleReply()" id="console-reply-btn"
-            style="background:var(--brand);border:none;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;height:fit-content;white-space:nowrap;">
-            Kirim
-          </button>
+          <div class="d-flex align-items-center justify-content-between mt-2 flex-wrap gap-1" style="font-size:11px;color:#64748b;">
+            <span>Membalas sebagai <strong class="text-white"><?= htmlspecialchars($cfg['chat_admin_name']) ?></strong> &mdash; otomatis sinkron ke thread Telegram.</span>
+            <span>Tekan <kbd style="background:#1a2035;color:#94a3b8;border:1px solid #283252;padding:1px 4px;border-radius:4px;">Enter</kbd> untuk kirim</span>
+          </div>
         </div>
-        <p style="font-size:11px;color:#444;margin-top:5px;">Balas sebagai <strong style="color:#ccc;"><?= htmlspecialchars($cfg['chat_admin_name']) ?></strong> &mdash; juga dikirim ke Telegram.</p>
+        <?php else: ?>
+        <div style="padding:14px 20px;color:#94a3b8;font-size:12.5px;text-align:center;background:rgba(255,255,255,0.01);border-top:1px solid var(--border-color);">
+          <i class="ph-bold ph-lock me-1"></i> Sesi obrolan ini sudah ditutup.
+        </div>
+        <?php endif; ?>
       </div>
-      <?php else: ?>
-      <div style="padding:12px 18px;color:#555;font-size:12px;text-align:center;">🔒 Sesi sudah ditutup.</div>
-      <?php endif; ?>
+    </div>
+
+    <!-- Active Chat Poller and AJAX script -->
+    <script>
+    const CONSOLE_SESSION_ID = <?= $viewId ?>;
+    const dm = document.getElementById('detail-msgs');
+    if (dm) dm.scrollTop = dm.scrollHeight;
+    let consolePollTimer = null;
+    let consoleLastId    = <?= !empty($viewMsgs) ? (int)end($viewMsgs)['id'] : 0 ?>;
+
+    function appendConsoleBubble(sender, message, time, id, attachment = null) {
+      const row = document.createElement('div');
+      row.className = `msg-row msg-${sender}`;
+      row.dataset.id = id;
+      const t = time ? new Date(time).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '';
+      
+      let attHtml = '';
+      if (attachment) {
+          const ext = attachment.split('.').pop().toLowerCase();
+          if (['jpg','jpeg','png','gif'].includes(ext)) {
+              attHtml = `<div style="margin-bottom:8px;"><a href="/${attachment}" target="_blank"><img src="/${attachment}" style="max-width:100%;max-height:220px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);object-fit:cover;"></a></div>`;
+          } else {
+              attHtml = `<div style="margin-bottom:8px;"><a href="/${attachment}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(255,255,255,.08);border-radius:8px;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.15);font-size:12px;font-weight:700;"><i class="ph-bold ph-paperclip"></i> Unduh Lampiran (${ext.toUpperCase()})</a></div>`;
+          }
+      }
+      
+      row.innerHTML = `<div><div class="msg-bubble">${attHtml}${nl2html(message)}</div><div class="msg-time">${t}</div></div>`;
+      dm.appendChild(row);
+      dm.scrollTop = dm.scrollHeight;
+    }
+
+    function nl2html(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    }
+
+    function previewConsoleAttachment(input) {
+      const file = input.files[0];
+      if (file) {
+          if (file.size > 5 * 1024 * 1024) {
+              alert('Maksimal ukuran file lampiran adalah 5MB.');
+              clearConsoleAttachment();
+              return;
+          }
+          document.getElementById('console-attachment-preview').style.display = 'block';
+          document.getElementById('console-att-preview-name').textContent = file.name;
+      }
+    }
+
+    function clearConsoleAttachment() {
+      const input = document.getElementById('console-attachment-input');
+      if (input) input.value = '';
+      document.getElementById('console-attachment-preview').style.display = 'none';
+    }
+
+    async function sendConsoleReply() {
+      const input = document.getElementById('console-reply-input');
+      const attInput = document.getElementById('console-attachment-input');
+      const btn   = document.getElementById('console-reply-btn');
+      const msg   = input.value.trim();
+      const file  = attInput && attInput.files[0] ? attInput.files[0] : null;
+
+      if (!msg && !file) return;
+
+      input.value = ''; btn.disabled = true; btn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i>';
+      if (file) {
+          document.getElementById('console-attachment-preview').style.display = 'none';
+          if (attInput) attInput.value = '';
+      }
+
+      try {
+        const fd = new FormData();
+        fd.append('tab', 'reply');
+        fd.append('session_id', CONSOLE_SESSION_ID);
+        fd.append('reply_msg', msg);
+        if (file) fd.append('attachment', file);
+        
+        const res  = await fetch('/console/livechat.php', {method:'POST', body:fd});
+        const data = await res.json();
+        if (data.ok) {
+          appendConsoleBubble('admin', data.message, data.created_at, data.id, data.attachment);
+          if (data.id > consoleLastId) consoleLastId = data.id;
+        }
+      } catch(e) { alert('Gagal mengirim balasan: ' + e.message); }
+      btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-paper-plane-tilt"></i> Kirim';
+      input.focus();
+    }
+
+    async function consolePoll() {
+      try {
+        const res  = await fetch(`/console/livechat.php?action=console_poll&session_id=${CONSOLE_SESSION_ID}&after_id=${consoleLastId}`);
+        const data = await res.json();
+        if (!data.ok) return;
+        (data.messages||[]).forEach(m => {
+          if (parseInt(m.id) > consoleLastId) {
+            consoleLastId = parseInt(m.id);
+            appendConsoleBubble(m.sender, m.message, m.created_at, m.id, m.attachment);
+          }
+        });
+      } catch {}
+    }
+    consolePollTimer = setInterval(consolePoll, 3000);
+    </script>
+    <?php endif; ?>
+  </div>
+  <?php endif; ?>
+
+
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <!-- ═══ TAB 2: MANAGE SESSIONS & QUEUE ══════════════════════ -->
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <?php if ($activeTab === 'manage'): ?>
+
+  <!-- Top Quick Control Bar -->
+  <div class="c-card mb-4" style="background:var(--card-bg);border:1px solid var(--border-color);">
+    <div class="c-card-body p-3">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        
+        <!-- Left: Status Service Toggle -->
+        <div class="d-flex align-items-center gap-3">
+          <div style="width:42px;height:42px;border-radius:12px;background:<?= $cfg['livechat_enabled']==='1' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)' ?>;border:1px solid <?= $cfg['livechat_enabled']==='1' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)' ?>;color:<?= $cfg['livechat_enabled']==='1' ? '#10b981' : '#ef4444' ?>;display:flex;align-items:center;justify-content:center;font-size:20px;">
+            <i class="ph-bold <?= $cfg['livechat_enabled']==='1' ? 'ph-broadcast' : 'ph-power' ?>"></i>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Status Layanan LiveChat</div>
+            <div style="font-size:14.5px;font-weight:800;color:#fff;">
+              <?= $cfg['livechat_enabled']==='1' ? '🟢 BUKA (Online)' : '🔴 TUTUP (Offline)' ?>
+            </div>
+          </div>
+          <form method="POST" class="ms-2 mb-0">
+            <input type="hidden" name="tab" value="quick_toggle_livechat">
+            <button type="submit" class="btn btn-sm <?= $cfg['livechat_enabled']==='1' ? 'btn-outline-danger' : 'btn-outline-success' ?>" style="font-weight:700;font-size:12px;border-radius:8px;padding:6px 14px;">
+              <?= $cfg['livechat_enabled']==='1' ? '🔴 Tutup LiveChat' : '🟢 Buka LiveChat' ?>
+            </button>
+          </form>
+        </div>
+
+        <!-- Right: Quota Setting, Idle Timeout & Actions -->
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <div class="text-end d-none d-lg-block me-2">
+            <div style="font-size:10.5px;color:#94a3b8;font-weight:700;">KUOTA AKTIF</div>
+            <div style="font-size:13px;font-weight:800;color:#34d399;">
+              <?= $activeSessCount ?> Terpakai <span style="font-size:11px;color:#64748b;font-weight:normal;">/ <?= (int)($cfg['lc_max_active_sessions'] ?? 0) > 0 ? (int)$cfg['lc_max_active_sessions'] . ' Maks' : 'Unlimited' ?></span>
+            </div>
+          </div>
+
+          <!-- Quick Max Sessions Form -->
+          <form method="POST" class="d-flex align-items-center gap-1 mb-0" style="background:#090b14;padding:4px 8px;border-radius:10px;border:1px solid #1e243d;">
+            <input type="hidden" name="tab" value="quick_set_max_sessions">
+            <label style="font-size:11.5px;color:#94a3b8;font-weight:600;white-space:nowrap;margin:0;padding-left:4px;">Batas Sesi:</label>
+            <input type="number" name="lc_max_active_sessions" value="<?= (int)($cfg['lc_max_active_sessions'] ?? 0) ?>" min="0" step="1" 
+                   class="form-control form-control-sm bg-dark text-white border-secondary" style="width:58px;text-align:center;font-weight:bold;height:30px;" placeholder="0">
+            <button type="submit" class="btn btn-sm btn-primary" style="font-size:11.5px;padding:3px 10px;height:30px;font-weight:700;">Set</button>
+          </form>
+
+          <!-- Quick Idle Timeout Form -->
+          <form method="POST" class="d-flex align-items-center gap-1 mb-0" style="background:#090b14;padding:4px 8px;border-radius:10px;border:1px solid #1e243d;">
+            <input type="hidden" name="tab" value="quick_set_idle_timeout">
+            <label style="font-size:11.5px;color:#94a3b8;font-weight:600;white-space:nowrap;margin:0;padding-left:4px;">Idle Timeout:</label>
+            <input type="number" name="lc_max_idle_minutes" value="<?= (int)($cfg['lc_max_idle_minutes'] ?? 30) ?>" min="0" step="1" 
+                   class="form-control form-control-sm bg-dark text-white border-secondary" style="width:58px;text-align:center;font-weight:bold;height:30px;" placeholder="30">
+            <span style="font-size:11px;color:#64748b;">mnt</span>
+            <button type="submit" class="btn btn-sm btn-primary" style="font-size:11.5px;padding:3px 10px;height:30px;font-weight:700;">Set</button>
+          </form>
+
+          <a href="/console/livechat.php?t=manage" class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center" style="height:32px;width:32px;border-radius:8px;" title="Refresh Data">
+            <i class="ph-bold ph-arrow-counter-clockwise"></i>
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    
+    <!-- 🟢 KOLOM KIRI: SESI CHAT AKTIF -->
+    <div class="col-lg-6">
+      <div class="c-card h-100" style="border-top:3px solid #10b981;">
+        <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <i class="ph-bold ph-chats-circle text-success" style="font-size:16px;"></i>
+              <span class="c-card-title mb-0" style="color:#34d399;">Sesi Chat Aktif (<?= count($activeSessions) ?>)</span>
+            </div>
+            <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">User yang sedang terhubung dan berkomunikasi langsung.</div>
+          </div>
+          <?php if (!empty($activeSessions)): ?>
+          <form method="POST" onsubmit="return confirm('TUTUP SEMUA SESI AKTIF? Semua sesi chat yang sedang berjalan akan ditutup.');" class="mb-0">
+            <input type="hidden" name="tab" value="close_all_active">
+            <button type="submit" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" style="font-size:11px;padding:4px 10px;border-radius:8px;font-weight:700;">
+              <i class="ph-bold ph-lock"></i> Tutup Semua Sesi
+            </button>
+          </form>
+          <?php endif; ?>
+        </div>
+
+        <div class="c-card-body p-3">
+          <?php if (empty($activeSessions)): ?>
+            <div class="text-center py-5">
+              <div style="width:54px;height:54px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#64748b;">
+                <i class="ph-bold ph-chats"></i>
+              </div>
+              <div class="fw-bold text-white mb-1" style="font-size:13.5px;">Tidak Ada Sesi Chat Aktif</div>
+              <div class="text-secondary" style="font-size:11.5px;">User baru atau user dari antrean akan muncul di sini saat mulai chat.</div>
+            </div>
+          <?php else: ?>
+            <div class="d-flex flex-column gap-2">
+              <?php foreach ($activeSessions as $as): ?>
+              <?php 
+                $idleLimit = (int)($cfg['lc_max_idle_minutes'] ?? 30);
+                $isNearTimeout = ($idleLimit > 0 && (int)$as['idle_mins'] >= max(1, $idleLimit - 5));
+              ?>
+              <div style="background:#0c0e18;border:1px solid #1c2237;border-radius:12px;padding:14px;position:relative;">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="sess-avatar" style="width:34px;height:34px;font-size:12px;">
+                      <?= strtoupper(substr((string)$as['user_name'], 0, 1)) ?>
+                    </div>
+                    <div>
+                      <div style="font-size:13px;font-weight:bold;color:#f8fafc;">
+                        <?= htmlspecialchars((string)$as['user_name']) ?>
+                        <?php if ($as['user_id']): ?>
+                          <a href="/console/user_detail.php?id=<?= $as['user_id'] ?>" class="badge bg-dark border border-secondary text-secondary text-decoration-none ms-1" style="font-size:10px;" target="_blank">#UID: <?= $as['user_id'] ?></a>
+                        <?php else: ?>
+                          <span class="badge bg-dark border text-muted ms-1" style="font-size:10px;">Guest</span>
+                        <?php endif; ?>
+                      </div>
+                      <?php if ($as['user_email']): ?>
+                        <div style="font-size:11px;color:#64748b;"><?= htmlspecialchars((string)$as['user_email']) ?></div>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+
+                  <div class="text-end">
+                    <span class="badge <?= $as['mode']==='admin'?'bg-info text-dark':'bg-primary' ?>" style="font-size:10px;font-weight:700;">
+                      <?= $as['mode']==='admin' ? '👨‍💼 Admin' : '🤖 AI' ?>
+                    </span>
+                    <?php if ($isNearTimeout): ?>
+                      <div class="badge bg-danger mt-1 d-block" style="font-size:9.5px;">⚠️ Idle <?= (int)$as['idle_mins'] ?>/<?= $idleLimit ?> mnt (Auto-Close)</div>
+                    <?php elseif ($idleLimit > 0): ?>
+                      <div style="font-size:10px;color:#64748b;margin-top:2px;">Idle: <?= (int)$as['idle_mins'] ?>/<?= $idleLimit ?> mnt</div>
+                    <?php else: ?>
+                      <div style="font-size:10px;color:#64748b;margin-top:2px;">Idle: <?= (int)$as['idle_mins'] ?> mnt (No Limit)</div>
+                    <?php endif; ?>
+                  </div>
+                </div>
+
+                <!-- Last Message -->
+                <div style="background:#131726;border-radius:8px;padding:8px 12px;font-size:12px;color:#94a3b8;margin-bottom:12px;border-left:3px solid var(--brand);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  <strong style="color:#e2e8f0;">Pesan:</strong> <?= htmlspecialchars((string)($as['last_msg'] ?: '(Belum ada pesan baru)')) ?>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-2" style="border-top:1px dashed #1e243d;">
+                  <div class="d-flex gap-1">
+                    <a href="/console/livechat.php?view=<?= $as['id'] ?>" class="btn btn-sm btn-primary d-flex align-items-center gap-1" style="font-size:11px;padding:4px 10px;border-radius:6px;font-weight:600;">
+                      <i class="ph-bold ph-eye"></i> Buka Chat
+                    </a>
+                    <form method="POST" class="d-inline mb-0">
+                      <input type="hidden" name="tab" value="switch_mode">
+                      <input type="hidden" name="session_id" value="<?= $as['id'] ?>">
+                      <input type="hidden" name="mode" value="<?= $as['mode']==='admin' ? 'ai' : 'admin' ?>">
+                      <button type="submit" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" style="font-size:11px;padding:4px 8px;border-radius:6px;" title="Ganti mode obrolan AI / Admin">
+                        <?= $as['mode']==='admin' ? '🤖 Switch AI' : '👨‍💼 Switch Admin' ?>
+                      </button>
+                    </form>
+                  </div>
+
+                  <div class="d-flex gap-1">
+                    <?php if (!empty($waitingQueueList)): ?>
+                    <form method="POST" class="d-inline mb-0" onsubmit="return confirm('Tutup sesi ini dan langsung masukkan 1 antrean terdepan ke sesi aktif?');">
+                      <input type="hidden" name="tab" value="close_and_admit_next">
+                      <input type="hidden" name="session_id" value="<?= $as['id'] ?>">
+                      <button type="submit" class="btn btn-sm btn-outline-warning d-flex align-items-center gap-1" style="font-size:11px;padding:4px 8px;border-radius:6px;" title="Tutup sesi ini & masukkan antrean berikutnya">
+                        <i class="ph-bold ph-fast-forward"></i> Tutup &amp; Next
+                      </button>
+                    </form>
+                    <?php endif; ?>
+
+                    <form method="POST" class="d-inline mb-0" onsubmit="return promptCloseSession(this);">
+                      <input type="hidden" name="tab" value="close_session">
+                      <input type="hidden" name="session_id" value="<?= $as['id'] ?>">
+                      <input type="hidden" name="close_reason" value="">
+                      <button type="submit" class="btn btn-sm btn-outline-warning d-flex align-items-center gap-1" style="font-size:11px;padding:4px 8px;border-radius:6px;" title="Tutup sesi chat ini">
+                        <i class="ph-bold ph-lock"></i> Tutup
+                      </button>
+                    </form>
+
+                    <form method="POST" class="d-inline mb-0" onsubmit="return confirm('HAPUS PERMANEN sesi #<?= $as['id'] ?> (<?= htmlspecialchars($as['user_name']) ?>)? Sesi dan topik Telegram akan dihapus total.');">
+                      <input type="hidden" name="tab" value="delete_active_session">
+                      <input type="hidden" name="session_id" value="<?= $as['id'] ?>">
+                      <button type="submit" class="btn btn-sm btn-danger d-flex align-items-center gap-1" style="font-size:11px;padding:4px 8px;border-radius:6px;" title="Hapus sesi secara permanen">
+                        <i class="ph-bold ph-trash"></i> Hapus
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+              </div>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⏳ KOLOM KANAN: SESI ANTREAN -->
+    <div class="col-lg-6">
+      <div class="c-card h-100" style="border-top:3px solid #f59e0b;">
+        <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <i class="ph-bold ph-hourglass-high text-warning" style="font-size:16px;"></i>
+              <span class="c-card-title mb-0" style="color:#fbbf24;">Antrean Menunggu (<?= count($waitingQueueList) ?>)</span>
+            </div>
+            <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">User yang mengantre menunggu kuota sesi aktif tersedia.</div>
+          </div>
+          <?php if (!empty($waitingQueueList)): ?>
+          <div class="d-flex gap-1">
+            <form method="POST" onsubmit="return confirm('MASUKKAN SEMUA ANTREAN KE SESI AKTIF SEKARANG?');" class="mb-0">
+              <input type="hidden" name="tab" value="admit_all_queue">
+              <button type="submit" class="btn btn-sm btn-success d-flex align-items-center gap-1" style="font-size:11px;padding:4px 10px;border-radius:8px;font-weight:700;">
+                <i class="ph-bold ph-play"></i> Admit Semua
+              </button>
+            </form>
+            <form method="POST" onsubmit="return confirm('BERSIHKAN SEMUA ANTREAN? Semua user dalam antrean akan dibatalkan.');" class="mb-0">
+              <input type="hidden" name="tab" value="clear_all_queue">
+              <button type="submit" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" style="font-size:11px;padding:4px 8px;border-radius:8px;">
+                <i class="ph-bold ph-broom"></i> Bersihkan
+              </button>
+            </form>
+          </div>
+          <?php endif; ?>
+        </div>
+
+        <div class="c-card-body p-3">
+          <?php if (empty($waitingQueueList)): ?>
+            <div class="text-center py-5">
+              <div style="width:54px;height:54px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#64748b;">
+                <i class="ph-bold ph-hourglass-simple"></i>
+              </div>
+              <div class="fw-bold text-white mb-1" style="font-size:13.5px;">Antrean Bersih</div>
+              <div class="text-secondary" style="font-size:11.5px;">Jika sesi aktif penuh sesuai batas kuota, user baru akan mengantre di sini secara berurutan.</div>
+            </div>
+          <?php else: ?>
+            <div class="d-flex flex-column gap-2">
+              <?php foreach ($waitingQueueList as $idx => $wq): ?>
+              <div style="background:#0c0e18;border:1px solid #1c2237;border-radius:12px;padding:14px;">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <div style="background:#f59e0b;color:#000;font-weight:900;font-size:12px;border-radius:8px;padding:4px 8px;">
+                      #<?= $idx + 1 ?>
+                    </div>
+                    <div>
+                      <div style="font-size:13px;font-weight:bold;color:#f8fafc;">
+                        <?= htmlspecialchars((string)$wq['user_name']) ?>
+                        <?php if ($wq['user_id']): ?>
+                          <span class="badge bg-dark border border-secondary text-secondary ms-1" style="font-size:10px;">#UID: <?= $wq['user_id'] ?></span>
+                        <?php else: ?>
+                          <span class="badge bg-dark border text-muted ms-1" style="font-size:10px;">Guest</span>
+                        <?php endif; ?>
+                      </div>
+                      <?php if ($wq['user_email']): ?>
+                        <div style="font-size:11px;color:#64748b;"><?= htmlspecialchars((string)$wq['user_email']) ?></div>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+
+                  <div class="text-end">
+                    <span class="badge bg-dark border border-secondary text-secondary" style="font-size:10px;">
+                      Req: <?= $wq['mode']==='admin' ? '👨‍💼 Admin' : '🤖 AI' ?>
+                    </span>
+                    <?php if ((int)$wq['ping_ago_sec'] <= 25): ?>
+                      <div style="font-size:10px;color:#34d399;margin-top:2px;">🟢 Online (Ping <?= (int)$wq['ping_ago_sec'] ?>s)</div>
+                    <?php else: ?>
+                      <div style="font-size:10px;color:#fbbf24;margin-top:2px;">🟡 Idle (Ping <?= (int)$wq['ping_ago_sec'] ?>s)</div>
+                    <?php endif; ?>
+                  </div>
+                </div>
+
+                <!-- Queue Info -->
+                <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2" style="background:#131726;border-radius:8px;font-size:11.5px;color:#94a3b8;">
+                  <span>Menunggu sejak: <strong class="text-white"><?= date('H:i:s', strtotime($wq['created_at'])) ?></strong> (<?= (int)$wq['wait_mins'] ?> mnt)</span>
+                  <span>Token: <code style="color:#38bdf8;"><?= substr((string)$wq['queue_token'], 0, 8) ?>...</code></span>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-2" style="border-top:1px dashed #1e243d;">
+                  <form method="POST" class="mb-0">
+                    <input type="hidden" name="tab" value="admit_queue">
+                    <input type="hidden" name="queue_id" value="<?= $wq['id'] ?>">
+                    <button type="submit" class="btn btn-sm btn-success d-flex align-items-center gap-1" style="font-size:11.5px;padding:5px 14px;border-radius:8px;font-weight:700;">
+                      <i class="ph-bold ph-user-check"></i> Masukkan ke Sesi Aktif (Admit)
+                    </button>
+                  </form>
+
+                  <form method="POST" class="mb-0" onsubmit="return confirm('Keluarkan <?= htmlspecialchars($wq['user_name']) ?> dari antrean?');">
+                    <input type="hidden" name="tab" value="remove_queue">
+                    <input type="hidden" name="queue_id" value="<?= $wq['id'] ?>">
+                    <button type="submit" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" style="font-size:11px;padding:4px 10px;border-radius:8px;">
+                      <i class="ph-bold ph-trash"></i> Hapus
+                    </button>
+                  </form>
+                </div>
+
+              </div>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <?php endif; ?>
+
+
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <!-- ═══ TAB 3: SETTINGS ═════════════════════════════════════ -->
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <?php if ($activeTab === 'settings'): ?>
+  <form method="post">
+    <input type="hidden" name="tab" value="settings">
+    <div class="row g-3">
+
+      <!-- Telegram Bot Config -->
+      <div class="col-md-6">
+        <div class="c-card h-100">
+          <div class="c-card-header d-flex align-items-center gap-2">
+            <i class="ph-bold ph-telegram-logo text-info" style="font-size:18px;"></i>
+            <span class="c-card-title mb-0">Bot Livechat (Telegram Forum)</span>
+          </div>
+          <div style="background:rgba(245,158,11,0.08);border-bottom:1px solid rgba(245,158,11,0.2);padding:10px 18px;font-size:11.5px;color:#fbbf24;font-weight:600;">
+            <i class="ph-bold ph-info me-1"></i> Bot ini TERPISAH dari bot notifikasi Depo/WD agar pesan obrolan pelanggan tidak tercampur.
+          </div>
+          <div class="c-card-body p-4">
+            <div class="c-form-group mb-3">
+              <label class="c-label">Nama Admin (Tampil di Chat Pengguna)</label>
+              <input type="text" name="chat_admin_name" class="c-form-control" value="<?= htmlspecialchars($cfg['chat_admin_name']) ?>" placeholder="Admin Support">
+            </div>
+            <div class="c-form-group mb-3">
+              <label class="c-label">Bot Token Telegram <span class="text-secondary">(Khusus Livechat)</span></label>
+              <input type="text" name="lc_tg_token" class="c-form-control" value="<?= htmlspecialchars($cfg['lc_tg_token']) ?>" placeholder="1234567890:AAH...">
+              <small class="text-secondary" style="font-size:11px;">Dapatkan token via @BotFather. Disarankan menggunakan bot terpisah.</small>
+            </div>
+            <div class="c-form-group mb-3">
+              <label class="c-label">Supergroup / Chat ID <span class="text-secondary">(Dengan Fitur Topics Aktif)</span></label>
+              <input type="text" name="lc_tg_chat_id" class="c-form-control" value="<?= htmlspecialchars($cfg['lc_tg_chat_id']) ?>" placeholder="-100123456789">
+              <small class="text-secondary" style="font-size:11px;">ID Supergroup Telegram yang sudah diaktifkan fitur Topics / Forum.</small>
+            </div>
+            <div class="c-form-group mb-0">
+              <label class="c-label">Pesan Sambutan Otomatis (Welcome Message)</label>
+              <textarea name="chat_welcome_msg" class="c-form-control" rows="3"><?= htmlspecialchars($cfg['chat_welcome_msg']) ?></textarea>
+              <small class="text-secondary" style="font-size:11px;">Pesan pertama yang langsung dikirim oleh sistem saat sesi chat dimulai.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OpenAI & Livechat Operations -->
+      <div class="col-md-6">
+        <div class="c-card h-100">
+          <div class="c-card-header d-flex align-items-center gap-2">
+            <i class="ph-bold ph-sparkle text-warning" style="font-size:18px;"></i>
+            <span class="c-card-title mb-0">OpenAI &amp; Operasional LiveChat</span>
+          </div>
+          <div class="c-card-body p-4">
+            <div class="c-form-group mb-3">
+              <label class="c-label">OpenAI API Key (Mode AI)</label>
+              <input type="password" name="openai_api_key" class="c-form-control" value="<?= htmlspecialchars($cfg['openai_api_key']) ?>" placeholder="sk-...">
+            </div>
+            <div class="c-form-group mb-3">
+              <label class="c-label">Pilihan Model OpenAI</label>
+              <select name="openai_model" class="c-form-control">
+                <?php foreach (['gpt-4o-mini','gpt-4o','gpt-3.5-turbo'] as $m): ?>
+                <option value="<?= $m ?>" <?= $cfg['openai_model']===$m?'selected':'' ?>><?= $m ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div class="c-form-group mb-3">
+              <label class="c-label">System Prompt AI</label>
+              <textarea name="ai_system_prompt" class="c-form-control" rows="3"><?= htmlspecialchars($cfg['ai_system_prompt']) ?></textarea>
+              <small class="text-secondary" style="font-size:11px;">Instruksi dasar kepribadian dan cara bot menjawab pertanyaan pelanggan.</small>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-sm-6">
+                <div class="c-form-group mb-0">
+                  <label class="c-label">Batas Maks Sesi Aktif</label>
+                  <input type="number" name="lc_max_active_sessions" class="c-form-control" min="0" value="<?= htmlspecialchars((string)($cfg['lc_max_active_sessions'] ?? '0')) ?>" placeholder="0 (Unlimited)">
+                  <small class="text-secondary" style="font-size:10.5px;">Batas bersamaan. 0 = Tanpa batas.</small>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="c-form-group mb-0">
+                  <label class="c-label">Batas Idle Timeout (Menit)</label>
+                  <input type="number" name="lc_max_idle_minutes" class="c-form-control" min="0" value="<?= htmlspecialchars((string)($cfg['lc_max_idle_minutes'] ?? '30')) ?>" placeholder="30">
+                  <small class="text-secondary" style="font-size:10.5px;">Auto-close jika idle. 0 = Nonaktif.</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="c-form-group mb-3">
+              <label class="c-label">Pesan Livechat Ditutup (Offline)</label>
+              <textarea name="lc_offline_msg" class="c-form-control" rows="2" placeholder="Layanan live chat saat ini tidak tersedia. Silakan coba lagi nanti pada jam operasional."><?= htmlspecialchars($cfg['lc_offline_msg'] ?? 'Layanan live chat saat ini tidak tersedia. Silakan coba lagi nanti pada jam operasional.') ?></textarea>
+            </div>
+
+            <!-- Toggles container -->
+            <div class="p-3 rounded-3 mb-3" style="background:#090b14;border:1px solid #1e243d;">
+              <div class="row g-2">
+                <div class="col-sm-6">
+                  <label class="d-flex align-items-center gap-2 text-white" style="font-size:12.5px;cursor:pointer;">
+                    <input type="checkbox" name="livechat_enabled" value="1" <?= $cfg['livechat_enabled']==='1'?'checked':'' ?> style="accent-color:var(--brand);width:16px;height:16px;">
+                    <strong>Livechat Aktif</strong>
+                  </label>
+                </div>
+                <div class="col-sm-6">
+                  <label class="d-flex align-items-center gap-2 text-secondary" style="font-size:12.5px;cursor:pointer;">
+                    <input type="checkbox" name="chat_ai_enabled" value="1" <?= $cfg['chat_ai_enabled']==='1'?'checked':'' ?> style="accent-color:var(--brand);width:16px;height:16px;">
+                    Aktifkan Mode AI
+                  </label>
+                </div>
+                <div class="col-sm-6">
+                  <label class="d-flex align-items-center gap-2 text-secondary" style="font-size:12.5px;cursor:pointer;">
+                    <input type="checkbox" name="chat_admin_enabled" value="1" <?= $cfg['chat_admin_enabled']==='1'?'checked':'' ?> style="accent-color:var(--brand);width:16px;height:16px;">
+                    Aktifkan Mode Admin
+                  </label>
+                </div>
+                <div class="col-sm-6">
+                  <label class="d-flex align-items-center gap-2 text-secondary" style="font-size:12.5px;cursor:pointer;">
+                    <input type="checkbox" name="lc_attachment_enabled" value="1" <?= $cfg['lc_attachment_enabled']==='1'?'checked':'' ?> style="accent-color:var(--brand);width:16px;height:16px;">
+                    Fitur Lampiran Gambar/File
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Debug Panel Toggle -->
+            <div class="p-3 rounded-3" style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);">
+              <label class="d-flex align-items-center gap-2 mb-0" style="font-size:12.5px;cursor:pointer;">
+                <input type="checkbox" name="lc_debug_panel" value="1" <?= $cfg['lc_debug_panel']==='1'?'checked':'' ?> style="accent-color:var(--brand);width:16px;height:16px;">
+                <span>🐛 <strong class="text-warning">Debug Panel</strong> <span class="text-secondary" style="font-size:11px;">(tampilkan floating status debug di widget livechat user)</span></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 text-end mt-3">
+        <button type="submit" class="btn d-inline-flex align-items-center gap-2" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;padding:12px 32px;border-radius:10px;font-weight:700;font-size:13.5px;box-shadow:0 4px 16px rgba(245,158,11,0.3);">
+          <i class="ph-bold ph-floppy-disk"></i> Simpan Seluruh Pengaturan
+        </button>
+      </div>
+    </div>
+  </form>
+  <?php endif; ?>
+
+
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <!-- ═══ TAB 4: WEBHOOK INFO ═════════════════════════════════ -->
+  <!-- ═════════════════════════════════════════════════════════ -->
+  <?php if ($activeTab === 'webhook'): ?>
+  <?php
+    $scheme     = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS']!=='off') ? 'https' : 'http';
+    $host       = $_SERVER['HTTP_HOST'] ?? 'yourdomain.com';
+    $webhookUrl = $scheme . '://' . $host . '/chat_action?action=tg_webhook';
+    $botToken   = $cfg['lc_tg_token'];
+    $setWebhookUrl = $botToken
+      ? "https://api.telegram.org/bot{$botToken}/setWebhook?url=" . urlencode($webhookUrl)
+      : '';
+  ?>
+  <div class="row g-3">
+    <!-- Webhook Setup -->
+    <div class="col-md-7">
+      <div class="c-card h-100">
+        <div class="c-card-header d-flex align-items-center gap-2">
+          <i class="ph-bold ph-plugs-connected text-warning" style="font-size:18px;"></i>
+          <span class="c-card-title mb-0">Setup Telegram Webhook</span>
+        </div>
+        <div class="c-card-body p-4">
+          <p class="text-secondary mb-3" style="font-size:13px;line-height:1.6;">
+            Agar pesan balasan admin yang dikirim melalui aplikasi Telegram otomatis masuk ke obrolan pengguna di web, webhook bot Telegram harus diarahkan ke endpoint di bawah ini.
+          </p>
+
+          <div class="c-form-group mb-3">
+            <label class="c-label">URL Webhook Server Kamu</label>
+            <div class="d-flex align-items-center gap-2">
+              <div class="webhook-url flex-grow-1" id="wh-url-text"><?= htmlspecialchars($webhookUrl) ?></div>
+              <button type="button" class="btn btn-outline-secondary d-flex align-items-center justify-content-center" style="height:44px;width:44px;border-radius:10px;flex-shrink:0;" onclick="copyWebhookUrl()" title="Salin URL">
+                <i class="ph-bold ph-copy" style="font-size:16px;"></i>
+              </button>
+            </div>
+          </div>
+
+          <?php if ($setWebhookUrl): ?>
+          <?php
+            $wh_result = $_SESSION['wh_result'] ?? null;
+            $wh_info   = $_SESSION['wh_info']   ?? null;
+            unset($_SESSION['wh_result'], $_SESSION['wh_info']);
+          ?>
+          <?php if ($wh_result): ?>
+          <div class="mb-3 p-3 rounded-3" style="font-size:12.5px;font-family:ui-monospace,SFMono-Regular,monospace;background:<?= !empty($wh_result['ok']) ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)' ?>;border:1px solid <?= !empty($wh_result['ok']) ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)' ?>;color:<?= !empty($wh_result['ok']) ? '#34d399' : '#f87171' ?>;">
+            <div class="fw-bold mb-1"><?= !empty($wh_result['ok']) ? '✅ Webhook Berhasil Dikonfigurasi' : '❌ Gagal Mengatur Webhook' ?></div>
+            <?php if (!empty($wh_result['ok'])): ?>
+              Webhook berhasil diset ke: <strong><?= htmlspecialchars((string)($wh_result['webhook_url'] ?? '')) ?></strong>
+            <?php else: ?>
+              Error: <?= htmlspecialchars((string)($wh_result['description'] ?? $wh_result['error'] ?? 'Unknown error')) ?>
+            <?php endif; ?>
+          </div>
+          <?php endif; ?>
+
+          <?php if ($wh_info): ?>
+          <div class="mb-3 p-3 rounded-3" style="font-size:12px;font-family:ui-monospace,SFMono-Regular,monospace;background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);color:#7dd3fc;word-break:break-all;">
+            <strong><i class="ph-bold ph-info me-1"></i> Telegram Webhook Status:</strong><br>
+            URL: <?= htmlspecialchars((string)($wh_info['result']['url'] ?? '(kosong/belum diset)')) ?><br>
+            Pending Updates: <?= (int)($wh_info['result']['pending_update_count'] ?? 0) ?><br>
+            Last Error: <?= htmlspecialchars((string)($wh_info['result']['last_error_message'] ?? '–')) ?>
+          </div>
+          <?php endif; ?>
+
+          <div class="d-flex gap-2 flex-wrap mt-3">
+            <form method="POST" class="mb-0">
+              <input type="hidden" name="tab" value="sync_webhook">
+              <button type="submit" class="btn d-inline-flex align-items-center gap-2" style="background:linear-gradient(135deg,#f59e0b,#d97706);border:none;color:#fff;padding:10px 22px;border-radius:10px;font-weight:700;font-size:13px;box-shadow:0 4px 14px rgba(245,158,11,0.25);">
+                <i class="ph-bold ph-rocket-launch"></i> Sync Webhook via Server
+              </button>
+            </form>
+            <form method="POST" class="mb-0">
+              <input type="hidden" name="tab" value="check_webhook">
+              <button type="submit" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" style="padding:10px 20px;border-radius:10px;font-weight:700;font-size:13px;">
+                <i class="ph-bold ph-magnifying-glass"></i> Cek Status Webhook
+              </button>
+            </form>
+          </div>
+          <?php else: ?>
+          <div class="p-3 rounded-3" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);color:#fbbf24;font-size:12.5px;">
+            <i class="ph-bold ph-warning me-1"></i> Harap isi Bot Token Telegram terlebih dahulu di tab <strong>Pengaturan Layanan</strong>.
+          </div>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
+    <!-- How It Works Guide -->
+    <div class="col-md-5">
+      <div class="c-card h-100">
+        <div class="c-card-header d-flex align-items-center gap-2">
+          <i class="ph-bold ph-book-open text-warning" style="font-size:18px;"></i>
+          <span class="c-card-title mb-0">Cara Kerja Bot Forum</span>
+        </div>
+        <div class="c-card-body p-4">
+          <ol class="text-secondary mb-0 ps-3" style="font-size:13px;line-height:2.1;">
+            <li>Buat bot baru melalui <strong class="text-white">@BotFather</strong> di Telegram.</li>
+            <li>Buat Supergroup Telegram &amp; aktifkan fitur <strong class="text-white">Topics / Forum</strong>.</li>
+            <li>Tambahkan bot ke grup dan beri izin sebagai <strong class="text-white">Administrator</strong>.</li>
+            <li>Isi <strong class="text-white">Bot Token</strong> &amp; <strong class="text-white">Chat ID</strong> di tab Pengaturan.</li>
+            <li>Klik tombol <strong class="text-warning">Sync Webhook via Server</strong> di sebelah kiri.</li>
+            <li>Setiap user yang chat akan otomatis dibuatkan 1 <strong class="text-white">Thread Topic Baru</strong>.</li>
+            <li>Balas chat di thread Telegram tersebut, maka balasan otomatis masuk ke layar obrolan user.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Danger Zone Card -->
+  <div class="row g-3 mt-2">
+    <div class="col-12">
+      <div class="c-card" style="border-color:rgba(239,68,68,0.35);">
+        <div class="c-card-header d-flex align-items-center justify-content-between" style="background:rgba(239,68,68,0.06);border-bottom-color:rgba(239,68,68,0.2);">
+          <div class="d-flex align-items-center gap-2">
+            <i class="ph-bold ph-warning-octagon text-danger" style="font-size:18px;"></i>
+            <span class="c-card-title text-danger mb-0">Danger Zone</span>
+          </div>
+          <span class="badge bg-danger text-white px-2 py-1" style="font-size:10.5px;font-weight:700;">Tindakan Permanen</span>
+        </div>
+        <div class="c-card-body p-4">
+          <div class="d-flex gap-2 flex-wrap align-items-center">
+
+            <!-- Reset all sessions + delete topics -->
+            <form method="POST" onsubmit="return confirm('RESET SEMUA SESI? Tindakan ini akan menghapus seluruh rekaman chat di database dan seluruh topics di Telegram. Tidak bisa dibatalkan!');" class="mb-0">
+              <input type="hidden" name="tab" value="reset_all_sessions">
+              <button type="submit" class="btn btn-outline-danger d-inline-flex align-items-center gap-2" style="padding:10px 18px;border-radius:10px;font-weight:700;font-size:13px;">
+                <i class="ph-bold ph-trash"></i> Reset Sesi &amp; Topics
+              </button>
+            </form>
+
+            <!-- Delete Telegram topics only -->
+            <form method="POST" onsubmit="return confirm('Hapus semua Topics Telegram yang dibuat bot? Data sesi di database TETAP tersimpan.');" class="mb-0">
+              <input type="hidden" name="tab" value="delete_tg_topics">
+              <button type="submit" class="btn btn-outline-warning d-inline-flex align-items-center gap-2" style="padding:10px 18px;border-radius:10px;font-weight:700;font-size:13px;">
+                <i class="ph-bold ph-broom"></i> Hapus Topics Telegram Saja
+              </button>
+            </form>
+
+            <!-- Nuclear: delete ALL topics -->
+            <button type="button" id="btn-nuclear-topics" onclick="nuclearClearTopics()"
+              class="btn btn-danger d-inline-flex align-items-center gap-2"
+              style="padding:10px 18px;border-radius:10px;font-weight:700;font-size:13px;background:#dc2626;border-color:#b91c1c;">
+              <i class="ph-bold ph-radioactive"></i> Hapus SEMUA Topics (Nuclear)
+            </button>
+
+          </div>
+
+          <p class="text-secondary mt-3 mb-0" style="font-size:11.5px;">
+            ⚠️ Hanya topics yang dibuat oleh bot (memiliki <code>tg_thread_id</code> di database) yang akan dihapus.
+            Topic <strong>General</strong> dan topic yang dibuat secara manual tidak akan terhapus oleh bot.
+          </p>
+
+          <div id="nuclear-result" style="display:none;margin-top:14px;padding:12px 16px;border-radius:10px;font-size:12px;font-family:ui-monospace,SFMono-Regular,monospace;"></div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-  const CONSOLE_SESSION_ID = <?= $viewId ?>;
-  const dm = document.getElementById('detail-msgs');
-  if (dm) dm.scrollTop = dm.scrollHeight;
-  let consolePollTimer = null;
-  let consoleLastId    = <?= !empty($viewMsgs) ? (int)end($viewMsgs)['id'] : 0 ?>;
-
-  // ── Append bubble (console side) ──────────────────────────
-  function appendConsoleBubble(sender, message, time, id, attachment = null) {
-    const row = document.createElement('div');
-    row.className = `msg-row msg-${sender}`;
-    row.dataset.id = id;
-    const t = time ? new Date(time).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '';
-    
-    let attHtml = '';
-    if (attachment) {
-        const ext = attachment.split('.').pop().toLowerCase();
-        if (['jpg','jpeg','png','gif'].includes(ext)) {
-            attHtml = `<div style="margin-bottom:6px;"><a href="/${attachment}" target="_blank"><img src="/${attachment}" style="max-width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.1);"></a></div>`;
-        } else {
-            attHtml = `<div style="margin-bottom:6px;"><a href="/${attachment}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:rgba(255,255,255,.1); border-radius:8px; text-decoration:none; color:inherit; border:1px solid rgba(255,255,255,.2); font-size:12px; font-weight:bold;">📎 Download Lampiran</a></div>`;
-        }
-    }
-    
-    row.innerHTML = `<div><div class="msg-bubble">${attHtml}${nl2html(message)}</div><div class="msg-time">${t}</div></div>`;
-    dm.appendChild(row);
-    dm.scrollTop = dm.scrollHeight;
-  }
-  function nl2html(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  function copyWebhookUrl() {
+    const text = document.getElementById('wh-url-text').innerText.trim();
+    navigator.clipboard.writeText(text).then(() => {
+      alert('✅ URL Webhook berhasil disalin ke clipboard!');
+    }).catch(err => {
+      prompt('Salin URL webhook:', text);
+    });
   }
 
-  function previewConsoleAttachment(input) {
-    const file = input.files[0];
-    if (file) {
-        if (file.size > 5 * 1024 * 1024) {
-            alert('Maksimal ukuran file adalah 5MB.');
-            clearConsoleAttachment();
-            return;
-        }
-        document.getElementById('console-attachment-preview').style.display = 'block';
-        document.getElementById('console-att-preview-name').textContent = file.name;
-    }
-  }
-  function clearConsoleAttachment() {
-    const input = document.getElementById('console-attachment-input');
-    if (input) input.value = '';
-    document.getElementById('console-attachment-preview').style.display = 'none';
-  }
+  async function nuclearClearTopics() {
+    if (!confirm('HAPUS SEMUA TOPICS TELEGRAM? Bot akan mencoba menghapus semua topic ID mulai dari 2 hingga batas terdeteksi. General topic akan dilewati otomatis oleh Telegram. TIDAK BISA DIBATALKAN!')) return;
 
-  // ── Send reply via AJAX ────────────────────────────────────
-  async function sendConsoleReply() {
-    const input = document.getElementById('console-reply-input');
-    const attInput = document.getElementById('console-attachment-input');
-    const btn   = document.getElementById('console-reply-btn');
-    const msg   = input.value.trim();
-    const file = attInput && attInput.files[0] ? attInput.files[0] : null;
-
-    if (!msg && !file) return;
-
-    input.value = ''; btn.disabled = true; btn.textContent = '...';
-    if (file) {
-        document.getElementById('console-attachment-preview').style.display = 'none';
-        if (attInput) attInput.value = '';
-    }
+    const btn = document.getElementById('btn-nuclear-topics');
+    const result = document.getElementById('nuclear-result');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Menghapus Topics... (mohon tunggu)';
+    result.style.display = 'block';
+    result.style.background = 'rgba(56,189,248,0.08)';
+    result.style.border = '1px solid rgba(56,189,248,0.25)';
+    result.style.color = '#7dd3fc';
+    result.textContent = '⏳ Sedang memproses... bot mencoba menghapus semua topic. Jangan tutup halaman ini.';
 
     try {
       const fd = new FormData();
-      fd.append('tab', 'reply');
-      fd.append('session_id', CONSOLE_SESSION_ID);
-      fd.append('reply_msg', msg);
-      if (file) fd.append('attachment', file);
-      
-      const res  = await fetch('/console/livechat.php', {method:'POST',body:fd});
+      fd.append('tab', 'nuclear_clear_topics');
+      const res  = await fetch('/console/livechat.php', { method: 'POST', body: fd });
       const data = await res.json();
       if (data.ok) {
-        appendConsoleBubble('admin', data.message, data.created_at, data.id, data.attachment);
-        if (data.id > consoleLastId) consoleLastId = data.id;
+        result.style.background = 'rgba(16,185,129,0.12)';
+        result.style.border = '1px solid rgba(16,185,129,0.3)';
+        result.style.color = '#34d399';
+        result.textContent = `✅ Selesai! Topics dihapus: ${data.deleted} | Gagal/tidak ada: ${data.failed} | Range dicek: ${data.range}`;
+      } else {
+        result.style.background = 'rgba(239,68,68,0.12)';
+        result.style.border = '1px solid rgba(239,68,68,0.3)';
+        result.style.color = '#f87171';
+        result.textContent = '❌ Error: ' + (data.error || 'Unknown error');
       }
-    } catch(e) { alert('Gagal kirim: ' + e.message); }
-    btn.disabled = false; btn.textContent = 'Kirim';
-    input.focus();
+    } catch(e) {
+      result.style.background = 'rgba(239,68,68,0.12)';
+      result.style.border = '1px solid rgba(239,68,68,0.3)';
+      result.style.color = '#f87171';
+      result.textContent = '❌ Gagal: ' + e.message;
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ph-bold ph-radioactive"></i> Hapus SEMUA Topics (Nuclear)';
   }
-
-  // ── Poll new messages (user & AI) ─────────────────────────
-  async function consolePoll() {
-    try {
-      const res  = await fetch(`/console/livechat.php?action=console_poll&session_id=${CONSOLE_SESSION_ID}&after_id=${consoleLastId}`);
-      const data = await res.json();
-      if (!data.ok) return;
-      (data.messages||[]).forEach(m => {
-        if (parseInt(m.id) > consoleLastId) {
-          consoleLastId = parseInt(m.id);
-          appendConsoleBubble(m.sender, m.message, m.created_at, m.id, m.attachment);
-        }
-      });
-    } catch {}
-  }
-  consolePollTimer = setInterval(consolePoll, 3000);
   </script>
   <?php endif; ?>
-</div>
-<?php endif; ?>
-
-<!-- ═══ TAB: MANAGE SESSIONS & QUEUE ════════════════════════ -->
-<?php if ($activeTab === 'manage'): ?>
-
-<!-- Top Quick Control Bar -->
-<div class="c-card mb-3" style="background:#131520;border:1px solid #1f2235;">
-  <div class="c-card-body p-3">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-      
-      <!-- Left: Status Toggle -->
-      <div class="d-flex align-items-center gap-3">
-        <div style="font-size:26px;line-height:1;"><?= $cfg['livechat_enabled']==='1' ? '🟢' : '🔴' ?></div>
-        <div>
-          <div style="font-size:11px;color:#888;text-transform:uppercase;font-weight:700;">Status Layanan LiveChat</div>
-          <div style="font-size:14px;font-weight:900;color:#fff;">
-            <?= $cfg['livechat_enabled']==='1' ? 'BUKA (Online)' : 'TUTUP (Offline)' ?>
-          </div>
-        </div>
-        <form method="POST" class="ms-2 mb-0">
-          <input type="hidden" name="tab" value="quick_toggle_livechat">
-          <button type="submit" class="btn btn-sm <?= $cfg['livechat_enabled']==='1' ? 'btn-outline-danger' : 'btn-outline-success' ?>" style="font-weight:700;font-size:12px;border-radius:6px;padding:4px 12px;">
-            <?= $cfg['livechat_enabled']==='1' ? '🔴 Tutup LiveChat' : '🟢 Buka LiveChat' ?>
-          </button>
-        </form>
-      </div>
-
-      <!-- Right: Limit Setting, Idle Timeout & Counter -->
-      <div class="d-flex align-items-center gap-2 flex-wrap">
-        <div class="text-end d-none d-lg-block me-1">
-          <div style="font-size:10px;color:#888;font-weight:700;">KUOTA SESI AKTIF</div>
-          <div style="font-size:13px;font-weight:900;color:#4CAF82;">
-            <?= $activeSessCount ?> Terpakai <span style="font-size:11px;color:#888;font-weight:normal;">/ <?= (int)($cfg['lc_max_active_sessions'] ?? 0) > 0 ? (int)$cfg['lc_max_active_sessions'] . ' Maks' : 'Unlimited' ?></span>
-          </div>
-        </div>
-
-        <!-- Quick Max Sessions -->
-        <form method="POST" class="d-flex align-items-center gap-1 mb-0" style="background:#1a1d27;padding:4px 8px;border-radius:8px;border:1px solid #2d3149;">
-          <input type="hidden" name="tab" value="quick_set_max_sessions">
-          <label style="font-size:11px;color:#aaa;font-weight:600;white-space:nowrap;margin:0;">Batas Sesi:</label>
-          <input type="number" name="lc_max_active_sessions" value="<?= (int)($cfg['lc_max_active_sessions'] ?? 0) ?>" min="0" step="1" 
-                 class="form-control form-control-sm bg-dark text-white border-secondary" style="width:55px;text-align:center;font-weight:bold;height:28px;" placeholder="0">
-          <button type="submit" class="btn btn-sm btn-primary" style="font-size:11px;padding:3px 8px;height:28px;">Set</button>
-        </form>
-
-        <!-- Quick Idle Timeout -->
-        <form method="POST" class="d-flex align-items-center gap-1 mb-0" style="background:#1a1d27;padding:4px 8px;border-radius:8px;border:1px solid #2d3149;">
-          <input type="hidden" name="tab" value="quick_set_idle_timeout">
-          <label style="font-size:11px;color:#aaa;font-weight:600;white-space:nowrap;margin:0;">Batas Idle:</label>
-          <input type="number" name="lc_max_idle_minutes" value="<?= (int)($cfg['lc_max_idle_minutes'] ?? 30) ?>" min="0" step="1" 
-                 class="form-control form-control-sm bg-dark text-white border-secondary" style="width:55px;text-align:center;font-weight:bold;height:28px;" placeholder="30">
-          <span style="font-size:10px;color:#888;">mnt</span>
-          <button type="submit" class="btn btn-sm btn-primary" style="font-size:11px;padding:3px 8px;height:28px;">Set</button>
-        </form>
-
-        <a href="/console/livechat.php?t=manage" class="btn btn-sm btn-outline-secondary" style="height:28px;display:inline-flex;align-items:center;font-size:11px;" title="Refresh Data">🔄</a>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<div class="row g-3">
-  
-  <!-- 🟢 KOLOM KIRI: SESI CHAT AKTIF -->
-  <div class="col-lg-6">
-    <div class="c-card h-100" style="border-top:3px solid #4CAF82;">
-      <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <span class="c-card-title text-success">🟢 Sesi Chat Aktif (<?= count($activeSessions) ?>)</span>
-          <div style="font-size:11px;color:#888;">User yang sedang terhubung dan berkomunikasi langsung.</div>
-        </div>
-        <?php if (!empty($activeSessions)): ?>
-        <form method="POST" onsubmit="return confirm('TUTUP SEMUA SESI AKTIF? Semua sesi chat yang sedang berjalan akan ditutup.');" class="mb-0">
-          <input type="hidden" name="tab" value="close_all_active">
-          <button type="submit" class="btn btn-sm btn-outline-danger" style="font-size:11px;padding:3px 10px;border-radius:6px;font-weight:700;">
-            🔒 Tutup Semua Sesi
-          </button>
-        </form>
-        <?php endif; ?>
-      </div>
-
-      <div class="c-card-body p-3">
-        <?php if (empty($activeSessions)): ?>
-          <div class="text-center py-5" style="color:#666;">
-            <div style="font-size:36px;margin-bottom:8px;">💬</div>
-            <div style="font-weight:600;font-size:13px;color:#aaa;">Tidak ada sesi chat yang sedang aktif</div>
-            <div style="font-size:11px;margin-top:4px;">User baru atau user dari antrean akan muncul di sini saat mulai chat.</div>
-          </div>
-        <?php else: ?>
-          <div class="d-flex flex-column gap-2">
-            <?php foreach ($activeSessions as $as): ?>
-            <?php 
-              $idleLimit = (int)($cfg['lc_max_idle_minutes'] ?? 30);
-              $isNearTimeout = ($idleLimit > 0 && (int)$as['idle_mins'] >= max(1, $idleLimit - 5));
-            ?>
-            <div style="background:#12141c;border:1px solid #24283b;border-radius:10px;padding:12px 14px;position:relative;">
-              <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                <div class="d-flex align-items-center gap-2">
-                  <div class="sess-avatar" style="width:32px;height:32px;font-size:12px;"><?= strtoupper(substr($as['user_name'],0,1)) ?></div>
-                  <div>
-                    <div style="font-size:13px;font-weight:bold;color:#fff;">
-                      <?= htmlspecialchars($as['user_name']) ?>
-                      <?php if ($as['user_id']): ?>
-                        <a href="/console/users.php?q=<?= urlencode($as['user_name']) ?>" class="badge bg-secondary text-decoration-none ms-1" style="font-size:10px;" target="_blank">#UID: <?= $as['user_id'] ?></a>
-                      <?php else: ?>
-                        <span class="badge bg-dark border text-muted ms-1" style="font-size:10px;">Guest</span>
-                      <?php endif; ?>
-                    </div>
-                    <?php if ($as['user_email']): ?>
-                      <div style="font-size:11px;color:#777;"><?= htmlspecialchars($as['user_email']) ?></div>
-                    <?php endif; ?>
-                  </div>
-                </div>
-
-                <div class="text-end">
-                  <span class="badge <?= $as['mode']==='admin'?'bg-info text-dark':'bg-primary' ?>" style="font-size:10px;font-weight:700;">
-                    <?= $as['mode']==='admin' ? '👨‍💼 Admin' : '🤖 AI' ?>
-                  </span>
-                  <?php if ($isNearTimeout): ?>
-                    <div class="badge bg-danger mt-1 d-block" style="font-size:9px;">⚠️ Idle <?= (int)$as['idle_mins'] ?>/<?= $idleLimit ?> mnt (Auto-Close)</div>
-                  <?php elseif ($idleLimit > 0): ?>
-                    <div style="font-size:10px;color:#666;margin-top:2px;">Idle: <?= (int)$as['idle_mins'] ?>/<?= $idleLimit ?> mnt</div>
-                  <?php else: ?>
-                    <div style="font-size:10px;color:#666;margin-top:2px;">Idle: <?= (int)$as['idle_mins'] ?> mnt (No Limit)</div>
-                  <?php endif; ?>
-                </div>
-              </div>
-
-              <!-- Last Message -->
-              <div style="background:#181b26;border-radius:6px;padding:6px 10px;font-size:11.5px;color:#aaa;margin-bottom:10px;border-left:3px solid var(--brand);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                <strong style="color:#ddd;">Pesan:</strong> <?= htmlspecialchars($as['last_msg'] ?: '(Belum ada pesan baru)') ?>
-              </div>
-
-              <!-- Action Buttons -->
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 pt-1" style="border-top:1px dashed #24283b;">
-                <div class="d-flex gap-1">
-                  <a href="/console/livechat.php?view=<?= $as['id'] ?>" class="btn btn-sm btn-primary" style="font-size:11px;padding:3px 10px;border-radius:5px;font-weight:600;">
-                    👁️ Buka Chat
-                  </a>
-                  <form method="POST" class="d-inline mb-0">
-                    <input type="hidden" name="tab" value="switch_mode">
-                    <input type="hidden" name="session_id" value="<?= $as['id'] ?>">
-                    <input type="hidden" name="mode" value="<?= $as['mode']==='admin' ? 'ai' : 'admin' ?>">
-                    <button type="submit" class="btn btn-sm btn-outline-light" style="font-size:11px;padding:3px 8px;border-radius:5px;" title="Ganti mode obrolan AI / Admin">
-                      <?= $as['mode']==='admin' ? '🤖 Switch AI' : '👨‍💼 Switch Admin' ?>
-                    </button>
-                  </form>
-                </div>
-
-                <div class="d-flex gap-1">
-                  <?php if (!empty($waitingQueueList)): ?>
-                  <form method="POST" class="d-inline mb-0" onsubmit="return confirm('Tutup sesi ini dan langsung masukkan 1 antrean terdepan ke sesi aktif?');">
-                    <input type="hidden" name="tab" value="close_and_admit_next">
-                    <input type="hidden" name="session_id" value="<?= $as['id'] ?>">
-                    <button type="submit" class="btn btn-sm btn-outline-warning" style="font-size:11px;padding:3px 8px;border-radius:5px;" title="Tutup sesi ini & masukkan antrean berikutnya">
-                      ⏭️ Tutup & Next
-                    </button>
-                  </form>
-                  <?php endif; ?>
-
-                  <form method="POST" class="d-inline mb-0" onsubmit="return promptCloseSession(this);">
-                    <input type="hidden" name="tab" value="close_session">
-                    <input type="hidden" name="session_id" value="<?= $as['id'] ?>">
-                    <input type="hidden" name="close_reason" value="">
-                    <button type="submit" class="btn btn-sm btn-outline-warning" style="font-size:11px;padding:3px 8px;border-radius:5px;" title="Tutup sesi chat ini">
-                      🔒 Tutup
-                    </button>
-                  </form>
-
-                  <form method="POST" class="d-inline mb-0" onsubmit="return confirm('HAPUS PERMANEN sesi #<?= $as['id'] ?> (<?= htmlspecialchars($as['user_name']) ?>)? Sesi dan topik Telegram akan dihapus total.');">
-                    <input type="hidden" name="tab" value="delete_active_session">
-                    <input type="hidden" name="session_id" value="<?= $as['id'] ?>">
-                    <button type="submit" class="btn btn-sm btn-danger" style="font-size:11px;padding:3px 8px;border-radius:5px;" title="Hapus sesi secara permanen">
-                      🗑️ Hapus
-                    </button>
-                  </form>
-                </div>
-              </div>
-
-            </div>
-            <?php endforeach; ?>
-          </div>
-        <?php endif; ?>
-      </div>
-    </div>
-  </div>
-
-  <!-- ⏳ KOLOM KANAN: SESI ANTREAN -->
-  <div class="col-lg-6">
-    <div class="c-card h-100" style="border-top:3px solid #FBBC04;">
-      <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <span class="c-card-title text-warning">⏳ Antrean Menunggu (<?= count($waitingQueueList) ?>)</span>
-          <div style="font-size:11px;color:#888;">User yang mengantre menunggu kuota sesi aktif tersedia.</div>
-        </div>
-        <?php if (!empty($waitingQueueList)): ?>
-        <div class="d-flex gap-1">
-          <form method="POST" onsubmit="return confirm('MASUKKAN SEMUA ANTREAN KE SESI AKTIF SEKARANG?');" class="mb-0">
-            <input type="hidden" name="tab" value="admit_all_queue">
-            <button type="submit" class="btn btn-sm btn-success" style="font-size:11px;padding:3px 10px;border-radius:6px;font-weight:700;">
-              ▶️ Admit Semua
-            </button>
-          </form>
-          <form method="POST" onsubmit="return confirm('BERSIHKAN SEMUA ANTREAN? Semua user dalam antrean akan dibatalkan.');" class="mb-0">
-            <input type="hidden" name="tab" value="clear_all_queue">
-            <button type="submit" class="btn btn-sm btn-outline-danger" style="font-size:11px;padding:3px 8px;border-radius:6px;">
-              🧹 Bersihkan
-            </button>
-          </form>
-        </div>
-        <?php endif; ?>
-      </div>
-
-      <div class="c-card-body p-3">
-        <?php if (empty($waitingQueueList)): ?>
-          <div class="text-center py-5" style="color:#666;">
-            <div style="font-size:36px;margin-bottom:8px;">⏳</div>
-            <div style="font-weight:600;font-size:13px;color:#aaa;">Tidak ada user dalam antrean saat ini</div>
-            <div style="font-size:11px;margin-top:4px;">Jika sesi aktif penuh sesuai batas maks, user baru akan mengantre di sini.</div>
-          </div>
-        <?php else: ?>
-          <div class="d-flex flex-column gap-2">
-            <?php foreach ($waitingQueueList as $idx => $wq): ?>
-            <div style="background:#12141c;border:1px solid #24283b;border-radius:10px;padding:12px 14px;">
-              <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                <div class="d-flex align-items-center gap-2">
-                  <div style="background:#FBBC04;color:#000;font-weight:900;font-size:12px;border-radius:6px;padding:4px 8px;">
-                    #<?= $idx + 1 ?>
-                  </div>
-                  <div>
-                    <div style="font-size:13px;font-weight:bold;color:#fff;">
-                      <?= htmlspecialchars($wq['user_name']) ?>
-                      <?php if ($wq['user_id']): ?>
-                        <span class="badge bg-secondary ms-1" style="font-size:10px;">#UID: <?= $wq['user_id'] ?></span>
-                      <?php else: ?>
-                        <span class="badge bg-dark border text-muted ms-1" style="font-size:10px;">Guest</span>
-                      <?php endif; ?>
-                    </div>
-                    <?php if ($wq['user_email']): ?>
-                      <div style="font-size:11px;color:#777;"><?= htmlspecialchars($wq['user_email']) ?></div>
-                    <?php endif; ?>
-                  </div>
-                </div>
-
-                <div class="text-end">
-                  <span class="badge bg-dark border" style="font-size:10px;color:#aaa;">
-                    Req: <?= $wq['mode']==='admin' ? '👨‍💼 Admin' : '🤖 AI' ?>
-                  </span>
-                  <?php if ((int)$wq['ping_ago_sec'] <= 25): ?>
-                    <div style="font-size:10px;color:#4CAF82;margin-top:2px;">🟢 Online (Ping <?= (int)$wq['ping_ago_sec'] ?>s)</div>
-                  <?php else: ?>
-                    <div style="font-size:10px;color:#ff9800;margin-top:2px;">🟡 Idle (Ping <?= (int)$wq['ping_ago_sec'] ?>s)</div>
-                  <?php endif; ?>
-                </div>
-              </div>
-
-              <!-- Queue Info -->
-              <div class="d-flex justify-content-between align-items-center mb-2 px-2 py-1" style="background:#181b26;border-radius:6px;font-size:11px;color:#888;">
-                <span>Menunggu sejak: <strong><?= date('H:i:s', strtotime($wq['created_at'])) ?></strong> (<?= (int)$wq['wait_mins'] ?> mnt)</span>
-                <span>Token: <code style="color:#a8f0dc;"><?= substr($wq['queue_token'],0,8) ?>...</code></span>
-              </div>
-
-              <!-- Action Buttons -->
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-1" style="border-top:1px dashed #24283b;">
-                <form method="POST" class="mb-0">
-                  <input type="hidden" name="tab" value="admit_queue">
-                  <input type="hidden" name="queue_id" value="<?= $wq['id'] ?>">
-                  <button type="submit" class="btn btn-sm btn-success" style="font-size:11.5px;padding:4px 14px;border-radius:6px;font-weight:700;">
-                    ▶️ Masukkan ke Sesi Aktif (Admit)
-                  </button>
-                </form>
-
-                <form method="POST" class="mb-0" onsubmit="return confirm('Keluarkan <?= htmlspecialchars($wq['user_name']) ?> dari antrean?');">
-                  <input type="hidden" name="tab" value="remove_queue">
-                  <input type="hidden" name="queue_id" value="<?= $wq['id'] ?>">
-                  <button type="submit" class="btn btn-sm btn-outline-danger" style="font-size:11px;padding:3px 10px;border-radius:6px;">
-                    🗑️ Hapus dari Antrean
-                  </button>
-                </form>
-              </div>
-
-            </div>
-            <?php endforeach; ?>
-          </div>
-        <?php endif; ?>
-      </div>
-    </div>
-  </div>
 
 </div>
-<?php endif; ?>
-
-
-<!-- ═══ TAB: SETTINGS ══════════════════════════════════════ -->
-<?php if ($activeTab === 'settings'): ?>
-<form method="post">
-  <input type="hidden" name="tab" value="settings">
-  <div class="row g-3">
-
-    <!-- Telegram -->
-    <div class="col-md-6">
-      <div class="c-card h-100">
-        <div class="c-card-header">
-          <span class="c-card-title">💬 Bot Livechat (Telegram)</span>
-        </div>
-        <div style="background:rgba(242,153,0,.1);border-bottom:1px solid rgba(242,153,0,.2);padding:8px 16px;font-size:11px;color:#F29900;font-weight:700;">
-          ⚠️ Bot ini TERPISAH dari bot notifikasi Depo/WD.
-        </div>
-        <div class="c-card-body">
-          <div class="c-form-group">
-            <label class="c-label">Nama Admin (tampil di chat user)</label>
-            <input type="text" name="chat_admin_name" class="c-form-control" value="<?= htmlspecialchars($cfg['chat_admin_name']) ?>" placeholder="Admin">
-          </div>
-          <div class="c-form-group">
-            <label class="c-label">Bot Token <em style="color:#555;font-weight:400;">(khusus livechat)</em></label>
-            <input type="text" name="lc_tg_token" class="c-form-control" value="<?= htmlspecialchars($cfg['lc_tg_token']) ?>" placeholder="1234567890:AAH...">
-            <small style="color:#444;font-size:11px;">Buat bot baru via @BotFather. Beda dengan bot depo/WD.</small>
-          </div>
-          <div class="c-form-group">
-            <label class="c-label">Group / Chat ID <em style="color:#555;font-weight:400;">(livechat)</em></label>
-            <input type="text" name="lc_tg_chat_id" class="c-form-control" value="<?= htmlspecialchars($cfg['lc_tg_chat_id']) ?>" placeholder="-100123456789">
-            <small style="color:#444;font-size:11px;">Supergroup khusus livechat, beda dari group notif Depo/WD.</small>
-          </div>
-          <div class="c-form-group">
-            <label class="c-label">Pesan Sambutan</label>
-            <textarea name="chat_welcome_msg" class="c-form-control" rows="2"><?= htmlspecialchars($cfg['chat_welcome_msg']) ?></textarea>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- OpenAI -->
-    <div class="col-md-6">
-      <div class="c-card h-100">
-        <div class="c-card-header"><span class="c-card-title">✨ OpenAI (Mode AI)</span></div>
-        <div class="c-card-body">
-          <div class="c-form-group">
-            <label class="c-label">OpenAI API Key</label>
-            <input type="password" name="openai_api_key" class="c-form-control" value="<?= htmlspecialchars($cfg['openai_api_key']) ?>" placeholder="sk-...">
-          </div>
-          <div class="c-form-group">
-            <label class="c-label">Model</label>
-            <select name="openai_model" class="c-form-control">
-              <?php foreach (['gpt-4o-mini','gpt-4o','gpt-3.5-turbo'] as $m): ?>
-              <option value="<?= $m ?>" <?= $cfg['openai_model']===$m?'selected':'' ?>><?= $m ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="c-form-group">
-            <label class="c-label">System Prompt AI</label>
-            <textarea name="ai_system_prompt" class="c-form-control" rows="4"><?= htmlspecialchars($cfg['ai_system_prompt']) ?></textarea>
-            <small style="color:#444;font-size:11px;">Instruksi untuk AI tentang cara menjawab.</small>
-          </div>
-          <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;">
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-              <input type="checkbox" name="livechat_enabled" value="1" <?= $cfg['livechat_enabled']==='1'?'checked':'' ?>>
-              <strong style="color:#e0e0f0;">Livechat Aktif</strong>
-            </label>
-          </div>
-          <div class="row g-2 mb-2">
-            <div class="col-sm-6">
-              <div class="c-form-group">
-                <label class="c-label">Batas Maks Sesi Aktif</label>
-                <input type="number" name="lc_max_active_sessions" class="c-form-control" min="0" value="<?= htmlspecialchars((string)($cfg['lc_max_active_sessions'] ?? '0')) ?>" placeholder="0 (Unlimited)">
-                <small style="color:#444;font-size:10.5px;">Maks sesi bersamaan. 0 = Tanpa batas.</small>
-              </div>
-            </div>
-            <div class="col-sm-6">
-              <div class="c-form-group">
-                <label class="c-label">Batas Idle Timeout (Menit)</label>
-                <input type="number" name="lc_max_idle_minutes" class="c-form-control" min="0" value="<?= htmlspecialchars((string)($cfg['lc_max_idle_minutes'] ?? '30')) ?>" placeholder="30">
-                <small style="color:#444;font-size:10.5px;">Auto-close jika tanpa pesan. 0 = Nonaktif.</small>
-              </div>
-            </div>
-          </div>
-          <div class="c-form-group">
-            <label class="c-label">Pesan Livechat Ditutup (Offline)</label>
-            <textarea name="lc_offline_msg" class="c-form-control" rows="2" placeholder="Layanan live chat saat ini tidak tersedia. Silakan coba lagi nanti pada jam operasional."><?= htmlspecialchars($cfg['lc_offline_msg'] ?? 'Layanan live chat saat ini tidak tersedia. Silakan coba lagi nanti pada jam operasional.') ?></textarea>
-            <small style="color:#444;font-size:11px;">Pesan yang ditampilkan ke user jika Livechat dimatikan.</small>
-          </div>
-          <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;">
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
-              <input type="checkbox" name="chat_ai_enabled" value="1" <?= $cfg['chat_ai_enabled']==='1'?'checked':'' ?>>
-              Aktifkan Mode AI
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
-              <input type="checkbox" name="chat_admin_enabled" value="1" <?= $cfg['chat_admin_enabled']==='1'?'checked':'' ?>>
-              Aktifkan Mode Admin
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
-              <input type="checkbox" name="lc_attachment_enabled" value="1" <?= $cfg['lc_attachment_enabled']==='1'?'checked':'' ?>>
-              Aktifkan Fitur Lampiran (Gambar/File)
-            </label>
-          </div>
-          <!-- Debug Panel Toggle -->
-          <div style="display:flex;gap:20px;flex-wrap:wrap;padding:10px 14px;background:rgba(251,188,4,.07);border:1px solid rgba(251,188,4,.2);border-radius:8px;">
-            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-              <input type="checkbox" name="lc_debug_panel" value="1" <?= $cfg['lc_debug_panel']==='1'?'checked':'' ?>>
-              <span>🐛 <strong style="color:#FBBC04;">Debug Panel</strong> <span style="color:#555;font-size:11px;">(tampilkan panel debug di livechat user)</span></span>
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12 text-end">
-      <button type="submit" style="background:var(--brand);border:none;color:#fff;padding:10px 28px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
-        💾 Simpan Pengaturan
-      </button>
-    </div>
-  </div>
-</form>
-<?php endif; ?>
-
-
-<!-- ═══ TAB: WEBHOOK ══════════════════════════════════════ -->
-<?php if ($activeTab === 'webhook'): ?>
-<?php
-  $scheme     = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS']!=='off') ? 'https' : 'http';
-  $host       = $_SERVER['HTTP_HOST'] ?? 'yourdomain.com';
-  $webhookUrl = $scheme . '://' . $host . '/chat_action?action=tg_webhook';
-  $botToken   = $cfg['lc_tg_token'];
-  $setWebhookUrl = $botToken
-    ? "https://api.telegram.org/bot{$botToken}/setWebhook?url=" . urlencode($webhookUrl)
-    : '';
-?>
-<div class="row g-3">
-  <div class="col-md-7">
-    <div class="c-card">
-      <div class="c-card-header"><span class="c-card-title">🔗 Setup Telegram Webhook</span></div>
-      <div class="c-card-body">
-        <p style="font-size:13px;color:#888;margin-bottom:16px;">
-          Agar balasan admin dari Telegram masuk ke chat user, set webhook ini ke bot kamu.
-        </p>
-
-        <div class="c-form-group">
-          <label class="c-label">URL Webhook kamu</label>
-          <div class="webhook-url"><?= htmlspecialchars($webhookUrl) ?></div>
-        </div>
-
-        <?php if ($setWebhookUrl): ?>
-        <?php
-          $wh_result = $_SESSION['wh_result'] ?? null;
-          $wh_info   = $_SESSION['wh_info']   ?? null;
-          unset($_SESSION['wh_result'], $_SESSION['wh_info']);
-        ?>
-        <?php if ($wh_result): ?>
-        <div style="margin-bottom:14px;padding:12px 16px;border-radius:8px;font-size:12px;font-family:monospace;
-             background:<?= !empty($wh_result['ok']) ? 'rgba(76,175,130,.12)' : 'rgba(244,78,59,.1)' ?>;
-             border:1px solid <?= !empty($wh_result['ok']) ? 'rgba(76,175,130,.3)' : 'rgba(244,78,59,.3)' ?>;
-             color:<?= !empty($wh_result['ok']) ? '#4CAF82' : '#F44E3B' ?>">
-          <?= !empty($wh_result['ok']) ? '✅' : '❌' ?>
-          <?php if (!empty($wh_result['ok'])): ?>
-            Webhook berhasil diset ke: <strong><?= htmlspecialchars($wh_result['webhook_url'] ?? '') ?></strong>
-          <?php else: ?>
-            Gagal: <?= htmlspecialchars($wh_result['description'] ?? $wh_result['error'] ?? 'Unknown error') ?>
-          <?php endif; ?>
-        </div>
-        <?php endif; ?>
-
-        <?php if ($wh_info): ?>
-        <div style="margin-bottom:14px;padding:12px 16px;border-radius:8px;font-size:12px;font-family:monospace;
-             background:rgba(66,133,244,.08);border:1px solid rgba(66,133,244,.2);color:#a0b4f0;word-break:break-all;">
-          <strong>ℹ️ Webhook Info:</strong><br>
-          URL: <?= htmlspecialchars($wh_info['result']['url'] ?? '(kosong)') ?><br>
-          Pending: <?= (int)($wh_info['result']['pending_update_count'] ?? 0) ?><br>
-          Last Error: <?= htmlspecialchars($wh_info['result']['last_error_message'] ?? '–') ?>
-        </div>
-        <?php endif; ?>
-
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
-          <form method="POST">
-            <input type="hidden" name="tab" value="sync_webhook">
-            <button type="submit"
-              style="background:var(--brand);border:none;color:#fff;padding:10px 22px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
-              🚀 Sync Webhook via Server
-            </button>
-          </form>
-          <form method="POST">
-            <input type="hidden" name="tab" value="check_webhook">
-            <button type="submit"
-              style="background:#1f2235;border:1px solid #2a2d3e;color:#ccc;padding:10px 22px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
-              🔍 Cek Status Webhook
-            </button>
-          </form>
-        </div>
-        <?php else: ?>
-        <div style="background:rgba(242,153,0,.1);border:1px solid rgba(242,153,0,.3);color:#F29900;padding:10px 14px;border-radius:8px;font-size:12px;">
-          ⚠️ Isi Bot Token di tab Pengaturan dulu.
-        </div>
-        <?php endif; ?>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-5">
-    <div class="c-card">
-      <div class="c-card-header"><span class="c-card-title">📋 Cara Kerja</span></div>
-      <div class="c-card-body">
-        <ol style="font-size:13px;color:#888;line-height:2;padding-left:18px;margin:0;">
-          <li>Buat bot via <strong style="color:#ccc;">@BotFather</strong></li>
-          <li>Buat Supergroup &amp; aktifkan <strong style="color:#ccc;">Topics</strong></li>
-          <li>Tambahkan bot ke grup sebagai admin</li>
-          <li>Isi <strong style="color:#ccc;">Bot Token</strong> &amp; <strong style="color:#ccc;">Chat ID</strong></li>
-          <li>Set webhook dengan tombol di kiri</li>
-          <li>Setiap sesi chat baru = 1 Thread baru di grup</li>
-          <li>Balas thread di Telegram → pesan masuk ke chat user</li>
-        </ol>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Danger Zone card -->
-<div class="row g-3 mt-2">
-  <div class="col-12">
-    <div class="c-card" style="border-color:rgba(244,78,59,.3);">
-      <div class="c-card-header" style="background:rgba(244,78,59,.07);border-bottom-color:rgba(244,78,59,.2);">
-        <span class="c-card-title" style="color:#F44E3B;">⚠️ Danger Zone</span>
-        <span style="font-size:11px;color:#555;">Tindakan ini tidak bisa dibatalkan</span>
-      </div>
-      <div class="c-card-body">
-        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-
-          <!-- Reset all sessions + delete topics -->
-          <form method="POST" onsubmit="return confirm('RESET SEMUA SESI? Ini akan menghapus semua chat dari DB dan semua topics dari Telegram. Tidak bisa dibatalkan!');">
-            <input type="hidden" name="tab" value="reset_all_sessions">
-            <button type="submit"
-              style="background:rgba(244,78,59,.15);border:1.5px solid rgba(244,78,59,.4);color:#F44E3B;padding:10px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
-              🗑️ Reset Semua Sesi + Topics
-            </button>
-          </form>
-
-          <!-- Delete Telegram topics only -->
-          <form method="POST" onsubmit="return confirm('Hapus semua Topics Telegram yang dibuat bot? Data sesi di database TETAP tersimpan.');">
-            <input type="hidden" name="tab" value="delete_tg_topics">
-            <button type="submit"
-              style="background:rgba(251,188,4,.1);border:1.5px solid rgba(251,188,4,.3);color:#FBBC04;padding:10px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
-              🧹 Hapus Topics Telegram Saja
-            </button>
-          </form>
-
-          <!-- Nuclear: delete ALL topics -->
-          <button type="button" id="btn-nuclear-topics" onclick="nuclearClearTopics()"
-            style="background:rgba(139,0,0,.2);border:1.5px solid rgba(200,0,0,.5);color:#ff6b6b;padding:10px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
-            ☢️ Hapus SEMUA Topics (Nuclear)
-          </button>
-
-        </div>
-        <p style="font-size:11px;color:#555;margin-top:10px;margin-bottom:0;">
-          ⚠️ Hanya topics yang dibuat oleh bot (punya <code>tg_thread_id</code> di database) yang akan dihapus.
-          Topic <strong>General</strong> dan topic yang dibuat manual tidak akan tersentuh.
-        </p>
-        <div id="nuclear-result" style="display:none;margin-top:12px;padding:12px 16px;border-radius:8px;font-size:12px;font-family:monospace;"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-async function nuclearClearTopics() {
-  if (!confirm('HAPUS SEMUA TOPICS TELEGRAM? Bot akan mencoba menghapus semua topic ID mulai dari 2 hingga batas terdeteksi. General topic akan dilewati otomatis oleh Telegram. TIDAK BISA DIBATALKAN!')) return;
-
-  const btn = document.getElementById('btn-nuclear-topics');
-  const result = document.getElementById('nuclear-result');
-  btn.disabled = true;
-  btn.innerHTML = '⏳ Menghapus... (bisa 30-60 detik, mohon tunggu)';
-  result.style.display = 'block';
-  result.style.background = 'rgba(66,133,244,.08)';
-  result.style.border = '1px solid rgba(66,133,244,.2)';
-  result.style.color = '#a0b4f0';
-  result.textContent = '⏳ Sedang memproses... bot mencoba menghapus semua topic. Jangan tutup halaman ini.';
-
-  try {
-    const fd = new FormData();
-    fd.append('tab', 'nuclear_clear_topics');
-    const res  = await fetch('/console/livechat.php', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (data.ok) {
-      result.style.background = 'rgba(76,175,130,.12)';
-      result.style.border = '1px solid rgba(76,175,130,.3)';
-      result.style.color = '#4CAF82';
-      result.textContent = `✅ Selesai! Topics dihapus: ${data.deleted} | Gagal/tidak ada: ${data.failed} | Range dicek: ${data.range}`;
-    } else {
-      result.style.background = 'rgba(244,78,59,.1)';
-      result.style.border = '1px solid rgba(244,78,59,.3)';
-      result.style.color = '#F44E3B';
-      result.textContent = '❌ Error: ' + (data.error || 'Unknown');
-    }
-  } catch(e) {
-    result.style.background = 'rgba(244,78,59,.1)';
-    result.style.border = '1px solid rgba(244,78,59,.3)';
-    result.style.color = '#F44E3B';
-    result.textContent = '❌ Gagal: ' + e.message;
-  }
-  btn.disabled = false;
-  btn.innerHTML = '☢️ Hapus SEMUA Topics (Nuclear)';
-}
-</script>
-<?php endif; ?>
 
 <?php require_once __DIR__ . '/partials/footer.php'; ?>
