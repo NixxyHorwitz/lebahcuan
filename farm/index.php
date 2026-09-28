@@ -54,122 +54,139 @@ body { background: #071a0c !important; font-family: 'Nunito', sans-serif; overfl
 
 #farm3dCanvas {
   position: relative; width: 100%; 
-  height: 40vh; min-height: 250px; max-height: 340px;
-  border-bottom: 3.5px solid #1a5c2e; overflow: hidden;
+  height: 32vh; min-height: 220px; max-height: 280px;
+  border-bottom: 3px solid #1a5c2e; overflow: hidden;
   touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
 }
 @media (min-width: 640px) {
   #farm3dCanvas {
-    height: 48vh; min-height: 320px; max-height: 440px;
+    height: 42vh; min-height: 280px; max-height: 380px;
   }
 }
-#farm3dCanvas canvas { display: block; width: 100% !important; height: 100% !important; touch-action: pan-y; }
+#farm3dCanvas canvas { 
+  display: block; width: 100% !important; height: 100% !important; 
+  touch-action: pan-y; 
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* Loading */
 .farm3d-loading {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
   background: linear-gradient(180deg, #1a3d1f 0%, #071a0c 100%);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  z-index: 20; transition: opacity 0.5s;
+  z-index: 20; transition: opacity 0.4s;
   pointer-events: none;
 }
 .farm3d-loading.hidden { opacity: 0; pointer-events: none !important; display: none !important; }
-.farm3d-loading-spinner { width: 44px; height: 44px; border: 3.5px solid rgba(251,191,36,0.15); border-top: 3.5px solid #fbbf24; border-radius: 50%; animation: spin3d 0.8s linear infinite; }
+.farm3d-loading-spinner { width: 38px; height: 38px; border: 3px solid rgba(251,191,36,0.15); border-top: 3px solid #fbbf24; border-radius: 50%; animation: spin3d 0.8s linear infinite; }
 @keyframes spin3d { to { transform: rotate(360deg); } }
-.farm3d-loading-text { margin-top: 10px; font-size: 12px; font-weight: 800; color: #fbbf24; }
+.farm3d-loading-text { margin-top: 8px; font-size: 11px; font-weight: 800; color: #fbbf24; }
 
 /* Cinematic Nav */
 .cinema-nav {
-  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 8px; z-index: 18;
+  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 6px; z-index: 18;
 }
 .cinema-btn {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
-  border: 1.5px solid rgba(255,255,255,0.2);
-  color: #fbbf24; font-size: 16px; cursor: pointer;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  color: #fbbf24; font-size: 14px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s;
 }
-.cinema-btn:hover { background: rgba(251,191,36,0.2); border-color: #fbbf24; transform: scale(1.08); }
-.cinema-btn:active { transform: scale(0.95); }
+.cinema-btn:hover { background: rgba(251,191,36,0.25); border-color: #fbbf24; }
+.cinema-btn:active { transform: scale(0.92); }
 .cinema-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .cinema-indicator {
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
-  border: 1.5px solid rgba(255,255,255,0.15); border-radius: 12px;
-  padding: 4px 12px; text-align: center; min-width: 95px;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255,255,255,0.2); border-radius: 10px;
+  padding: 3px 10px; text-align: center; min-width: 85px;
 }
-.cinema-indicator-name { font-size: 10px; font-weight: 900; color: #fbbf24; }
-.cinema-indicator-sub { font-size: 8.5px; font-weight: 700; color: rgba(255,255,255,0.6); }
+.cinema-indicator-name { font-size: 9.5px; font-weight: 900; color: #fbbf24; }
+.cinema-indicator-sub { font-size: 8px; font-weight: 700; color: rgba(255,255,255,0.7); }
 
 /* Zoom buttons */
 .cinema-zoom {
-  position: absolute; bottom: 12px; right: 10px; z-index: 18;
-  display: flex; flex-direction: column; gap: 5px;
+  position: absolute; bottom: 10px; right: 8px; z-index: 18;
+  display: flex; flex-direction: column; gap: 4px;
 }
 .cinema-zoom-btn {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
-  border: 1.5px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.85); font-size: 15px; font-weight: 900;
+  width: 28px; height: 28px; border-radius: 8px;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 900;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
-.cinema-zoom-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+.cinema-zoom-btn:active { transform: scale(0.92); }
 
 /* Ambient toggle */
 .ambient-sound-toggle {
-  position: absolute; top: 10px; right: 10px; z-index: 18;
-  background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
-  border: 1.5px solid rgba(255,255,255,0.15); border-radius: 10px;
-  padding: 4px 9px; font-size: 10px; font-weight: 800; color: #fbbf24;
+  position: absolute; top: 8px; right: 8px; z-index: 18;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border: 1.5px solid rgba(255,255,255,0.2); border-radius: 9px;
+  padding: 3.5px 8px; font-size: 9.5px; font-weight: 800; color: #fbbf24;
   cursor: pointer; display: flex; align-items: center; gap: 4px;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
 
 /* Labels */
 #hiveLabelsContainer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 14; }
 .hive-3d-label {
   position: absolute; pointer-events: auto; cursor: pointer;
-  transform: translate(-50%, -100%); transition: transform 0.15s;
+  top: 0; left: 0; will-change: transform;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
-.hive-3d-label:hover { transform: translate(-50%, -100%) scale(1.1); }
 .hive-label-bubble {
-  background: linear-gradient(135deg, rgba(251,191,36,0.85), rgba(230,138,0,0.85));
-  border: 1.5px solid #78350f; border-radius: 10px;
-  padding: 3px 8px; box-shadow: 0 2px 0 #78350f, 0 3px 8px rgba(0,0,0,0.3);
+  transform: translate(-50%, -100%);
+  background: linear-gradient(135deg, rgba(251,191,36,0.92), rgba(217,119,6,0.92));
+  border: 1.5px solid #78350f; border-radius: 9px;
+  padding: 2.5px 7px; box-shadow: 0 2px 0 #78350f, 0 3px 8px rgba(0,0,0,0.35);
   text-align: center; white-space: nowrap; position: relative;
 }
 .hive-label-name { font-size: 8px; font-weight: 800; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.5); }
 .hive-label-honey { font-size: 7px; font-weight: 700; color: #fef3c7; }
 .hive-label-bubble::after {
-  content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
-  border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 8px solid #78350f;
+  content: ''; position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%);
+  border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 7px solid #78350f;
 }
 
-/* Ground UI */
-.farm-ground-ui { background: linear-gradient(180deg, #0f2a16 0%, #071a0c 100%); padding: 12px 12px 140px; }
-.ground-section-title { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
-.ground-section-title .pill { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(251,191,36,0.25); border-radius: 10px; padding: 4px 10px; font-size: 11px; font-weight: 800; color: #fbbf24; }
-.hive-quick-list { display: flex; flex-direction: column; gap: 8px; }
-.hive-quick-card { background: rgba(255,255,255,0.035); border: 1.5px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s; }
-.hive-quick-card:hover { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.3); transform: translateX(3px); }
-.hive-quick-card img { width: 42px; height: 42px; object-fit: contain; border-radius: 10px; background: rgba(255,255,255,0.05); padding: 3px; flex-shrink: 0; }
+/* Ground UI - Compact & Ergonomic */
+.farm-ground-ui { background: linear-gradient(180deg, #0f2a16 0%, #071a0c 100%); padding: 10px 10px 120px; }
+.ground-section-title { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.ground-section-title .pill { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(251,191,36,0.25); border-radius: 9px; padding: 3px 8px; font-size: 10.5px; font-weight: 800; color: #fbbf24; }
+.hive-quick-list { display: flex; flex-direction: column; gap: 6px; }
+.hive-quick-card { 
+  background: rgba(255,255,255,0.035); 
+  border: 1.5px solid rgba(255,255,255,0.07); 
+  border-radius: 12px; padding: 7px 10px; 
+  display: flex; align-items: center; gap: 9px; 
+  cursor: pointer; 
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s; 
+}
+.hive-quick-card:hover { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.3); transform: translateX(2px); }
+.hive-quick-card img { width: 36px; height: 36px; object-fit: contain; border-radius: 8px; background: rgba(255,255,255,0.05); padding: 2px; flex-shrink: 0; }
 .hive-quick-info { flex: 1; min-width: 0; }
-.hive-quick-name { font-size: 12px; font-weight: 800; color: #f8fafc; }
-.hive-quick-meta { font-size: 10px; font-weight: 700; color: #94a3b8; margin-top: 1px; }
-.hive-quick-honey { font-size: 13px; font-weight: 900; color: #fbbf24; text-align: right; flex-shrink: 0; }
-.hive-quick-honey small { font-size: 9.5px; color: #94a3b8; display: block; font-weight: 700; }
-.farm-empty-cta { text-align: center; padding: 22px 16px; background: rgba(255,255,255,0.03); border: 2px dashed rgba(251,191,36,0.2); border-radius: 16px; }
-.farm-empty-cta .emoji { font-size: 38px; margin-bottom: 8px; }
-.farm-empty-cta .title { font-size: 14.5px; font-weight: 900; color: #f8fafc; }
-.farm-empty-cta .sub { font-size: 11px; color: #94a3b8; margin-top: 3px; }
-.farm-empty-cta .btn-cta { margin-top: 10px; display: inline-flex; align-items: center; gap: 5px; background: linear-gradient(135deg, #f59e0b, #d97706); border: 2px solid #78350f; border-radius: 12px; padding: 8px 16px; color: #fff; font-size: 12px; font-weight: 900; text-decoration: none; box-shadow: 0 3px 0 #78350f; }
+.hive-quick-name { font-size: 11.5px; font-weight: 800; color: #f8fafc; }
+.hive-quick-meta { font-size: 9px; font-weight: 700; color: #94a3b8; margin-top: 1px; }
+.hive-quick-honey { font-size: 12px; font-weight: 900; color: #fbbf24; text-align: right; flex-shrink: 0; }
+.hive-quick-honey small { font-size: 8.5px; color: #94a3b8; display: block; font-weight: 700; }
+.farm-empty-cta { text-align: center; padding: 20px 14px; background: rgba(255,255,255,0.03); border: 2px dashed rgba(251,191,36,0.2); border-radius: 14px; }
+.farm-empty-cta .emoji { font-size: 32px; margin-bottom: 6px; }
+.farm-empty-cta .title { font-size: 13.5px; font-weight: 900; color: #f8fafc; }
+.farm-empty-cta .sub { font-size: 10.5px; color: #94a3b8; margin-top: 2px; }
+.farm-empty-cta .btn-cta { margin-top: 8px; display: inline-flex; align-items: center; gap: 5px; background: linear-gradient(135deg, #f59e0b, #d97706); border: 2px solid #78350f; border-radius: 10px; padding: 7px 14px; color: #fff; font-size: 11.5px; font-weight: 900; text-decoration: none; box-shadow: 0 2.5px 0 #78350f; touch-action: manipulation; }
+
 .meadow-sticky-bar {
   position: fixed;
-  bottom: 96px;
+  bottom: 84px;
   left: 50%;
   transform: translateX(-50%);
-  width: calc(100% - 24px);
+  width: calc(100% - 20px);
   max-width: 440px;
   z-index: 50;
   pointer-events: none;
@@ -178,24 +195,25 @@ body { background: #071a0c !important; font-family: 'Nunito', sans-serif; overfl
   pointer-events: auto;
   width: 100%;
   background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 45%, #d97706 100%);
-  border: 2.5px solid #78350f;
-  border-radius: 18px;
-  box-shadow: 0 4px 0 #78350f, 0 8px 20px rgba(180,83,9,0.35);
-  padding: 10px 16px;
+  border: 2px solid #78350f;
+  border-radius: 14px;
+  box-shadow: 0 3px 0 #78350f, 0 6px 16px rgba(180,83,9,0.35);
+  padding: 8px 14px;
   color: #fff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   font-family: 'Nunito', sans-serif;
-  text-shadow: 0 1.5px 0 #78350f;
+  text-shadow: 0 1px 0 #78350f;
   transition: transform 0.1s;
 }
 .btn-harvest-all:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 #78350f;
+  box-shadow: 0 1px 0 #78350f;
 }
 .btn-harvest-all:disabled {
   background: #cbd5e1;
@@ -208,7 +226,7 @@ body { background: #071a0c !important; font-family: 'Nunito', sans-serif; overfl
 
 /* Floating contact button on Farm Meadow page - positioned cleanly above harvest bar */
 body .float-contact-wrap {
-  bottom: 154px !important;
+  bottom: 144px !important;
 }
 
 /* Inspection Modal - CRITICAL FIX: display:none & pointer-events:none when inactive */
@@ -440,6 +458,141 @@ body .float-contact-wrap {
 const USER_HIVES_MAP = <?= json_encode(array_column($user_hives, null, 'id')) ?>;
 const HIVES_ARRAY = <?= json_encode(array_values($user_hives)) ?>;
 let currentInspectedHiveId = 0;
+
+// ── INTERACTION LOGIC (DEFINED EARLY & GLOBALLY FOR INSTANT TOUCH/CLICK RESPONSE) ──
+function renderHexagonCells(fp, gid) {
+  const tc=24, hc=Math.min(tc, Math.round(tc*(fp/100))), g=document.getElementById(gid||'inspectionHexGrid');
+  if(!g) return; g.innerHTML=''; let ci=0;
+  [6,5,6,5,2].forEach((cc,ri) => { 
+    const r=document.createElement('div'); 
+    r.className='hex-row'+(ri%2===1?' hex-row--offset':''); 
+    for(let c=0;c<cc;c++){
+      const cl=document.createElement('div'); 
+      cl.className='hex-cell '+(ci<hc?'hex-cell--honey':'hex-cell--empty'); 
+      r.appendChild(cl); 
+      ci++;
+    } 
+    g.appendChild(r); 
+  });
+}
+function openHiveInspection(hiveId) {
+  currentInspectedHiveId = hiveId; 
+  const h = USER_HIVES_MAP[hiveId]; 
+  if(!h) return;
+  if (typeof FarmAudio !== 'undefined') {
+    try { FarmAudio.playPop(); FarmAudio.playBee(0.5); } catch(e) {}
+  }
+  const d=h.details||{}, th=parseFloat(d.total_honey)||0, mc=parseFloat(d.max_capacity)||100, pct=parseFloat(d.fill_percentage)||0;
+  const nameEl = document.getElementById('inspectionHiveName');
+  if (nameEl) nameEl.innerHTML='<i class="ph-fill ph-hexagon" style="color:#fbbf24;"></i> '+(h.master_name||'Sarang');
+  const amtEl = document.getElementById('inspectionHoneyAmt');
+  if (amtEl) amtEl.innerText=th.toFixed(2)+' ml';
+  const capEl = document.getElementById('inspectionHoneyCap');
+  if (capEl) capEl.innerText='Kapasitas: '+th.toFixed(1)+' / '+mc.toFixed(0)+' ml ('+pct+'%)';
+  const beeEl = document.getElementById('inspectionBeeInfo');
+  if (beeEl) beeEl.innerHTML='<i class="ph-fill ph-bug-beetle"></i><span>'+(parseInt(d.bee_count)||0)+'/'+(parseInt(h.max_slots)||0)+' Lebah • +'+(parseFloat(d.hourly_production)||0).toFixed(1)+' ml/jam</span>';
+  const btnH = document.getElementById('btnInspectionHarvest');
+  if (btnH) btnH.disabled = th<0.1;
+  renderHexagonCells(pct,'inspectionHexGrid');
+  const overlay = document.getElementById('hiveInspectionOverlay');
+  if (overlay) overlay.classList.add('active');
+  document.body.style.overflow='hidden';
+}
+function closeHiveInspection() { 
+  const overlay = document.getElementById('hiveInspectionOverlay');
+  if (overlay) overlay.classList.remove('active'); 
+  document.body.style.overflow=''; 
+  currentInspectedHiveId=0; 
+}
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeHiveInspection(); });
+
+function spawnHoneyFly(t,el) { 
+  const r=el?el.getBoundingClientRect():{top:innerHeight/2,left:innerWidth/2}; 
+  const b=document.createElement('div'); 
+  b.className='floating-honey-fly'; 
+  b.innerText='+ '+t+' ml'; 
+  b.style.top=(r.top+10)+'px'; 
+  b.style.left=(r.left+20)+'px'; 
+  document.body.appendChild(b); 
+  setTimeout(()=>b.remove(),1200); 
+}
+
+function harvestInspectedHive() {
+  if(!currentInspectedHiveId) return; 
+  const btn=document.getElementById('btnInspectionHarvest'); 
+  if(!btn||btn.disabled) return;
+  btn.disabled=true;
+  const harvestingHiveId = currentInspectedHiveId;
+  const targetIdx = HIVES_ARRAY.findIndex(h => h.id == harvestingHiveId);
+  closeHiveInspection();
+  if (typeof triggerBeekeeperHarvest === 'function') {
+    try { triggerBeekeeperHarvest(targetIdx >= 0 ? targetIdx : 0, 10); } catch(e) {}
+  }
+  const fd=new FormData(); 
+  fd.append('action','harvest_hive'); 
+  fd.append('hive_id',harvestingHiveId); 
+  fd.append('_csrf',document.querySelector('input[name="_csrf"]')?.value||'');
+  fetch('/api/farm_action',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
+    if(d.ok){
+      const hs=document.getElementById('hudHoneyStock');
+      if(hs&&d.new_honey_stock!==undefined)hs.innerText=Number(d.new_honey_stock).toLocaleString('id-ID',{minimumFractionDigits:1})+' ml';
+      if(USER_HIVES_MAP[harvestingHiveId]?.details){
+        USER_HIVES_MAP[harvestingHiveId].details.total_honey=0;
+        USER_HIVES_MAP[harvestingHiveId].details.fill_percentage=0;
+      }
+      const labelHoney = document.getElementById('hiveLabelHoney_' + harvestingHiveId);
+      if (labelHoney) labelHoney.innerHTML = '<i class="ph-fill ph-drop"></i> 0.0 ml';
+      spawnHoneyFly(d.harvested_ml, document.getElementById('btnHarvestAll') || document.body);
+    } else { 
+      if(typeof nToast==='function') nToast(d.msg||'Gagal memanen','error'); 
+    }
+  }).catch(()=>{if(typeof nToast==='function') nToast('Error jaringan, coba lagi.','error');});
+}
+
+function harvestAllHives() {
+  const btn=document.getElementById('btnHarvestAll'); 
+  if(!btn||btn.disabled) return;
+  btn.disabled=true; 
+  const ot=btn.innerHTML; 
+  btn.innerHTML='<i class="ph-bold ph-spinner ph-spin"></i> Memanen...';
+  if (typeof triggerBeekeeperHarvest === 'function') {
+    try { triggerBeekeeperHarvest(0, 50); } catch(e) {}
+  }
+  const fd=new FormData(); 
+  fd.append('action','harvest_all'); 
+  fd.append('_csrf',document.querySelector('input[name="_csrf"]')?.value||'');
+  fetch('/api/farm_action',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
+    if(d.ok){
+      spawnHoneyFly(d.harvested_ml,btn);
+      const hs=document.getElementById('hudHoneyStock');
+      if(hs&&d.new_honey_stock!==undefined)hs.innerText=Number(d.new_honey_stock).toLocaleString('id-ID',{minimumFractionDigits:1})+' ml';
+      const tb=document.getElementById('totalUnharvestedBadge');
+      if(tb)tb.innerText='0.0 ml';
+      HIVES_ARRAY.forEach(h => {
+        if (h.details) {
+          h.details.total_honey = 0;
+          h.details.fill_percentage = 0;
+        }
+        if (USER_HIVES_MAP[h.id]?.details) {
+          USER_HIVES_MAP[h.id].details.total_honey = 0;
+          USER_HIVES_MAP[h.id].details.fill_percentage = 0;
+        }
+        const labelHoney = document.getElementById('hiveLabelHoney_' + h.id);
+        if (labelHoney) labelHoney.innerHTML = '<i class="ph-fill ph-drop"></i> 0.0 ml';
+      });
+      btn.innerHTML='<i class="ph-bold ph-check"></i> '+(d.msg||'Berhasil!');
+      setTimeout(()=>{btn.innerHTML=ot;btn.disabled=true;},2000);
+    } else { 
+      if(typeof nToast==='function') nToast(d.msg||'Gagal memanen','error'); 
+      btn.disabled=false; 
+      btn.innerHTML=ot; 
+    }
+  }).catch(()=>{
+    btn.disabled=false;
+    btn.innerHTML=ot;
+    if(typeof nToast==='function') nToast('Error jaringan, coba lagi.','error');
+  });
+}
 
 // ── AMBIENT SOUND ENGINE (LOUDER, REALISTIC MULTI-LAYER BEE SWARMS & NATURE) ──
 const AmbientEngine = (function(){
@@ -707,12 +860,17 @@ window.cineZoomOut = function() {};
   scene.add(new THREE.AmbientLight(0xfff5e0, 0.5));
   scene.add(new THREE.HemisphereLight(0x87ceeb, 0x4ade80, 0.4));
   const sun = new THREE.DirectionalLight(0xfff8e8, 1.4);
-  sun.position.set(14, 20, 12); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 60;
-  sun.shadow.camera.left = -20; sun.shadow.camera.right = 20;
-  sun.shadow.camera.top = 20; sun.shadow.camera.bottom = -20;
-  sun.shadow.bias = -0.0005;
+  sun.position.set(14, 20, 12);
+  if (!isMobile) {
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 60;
+    sun.shadow.camera.left = -20; sun.shadow.camera.right = 20;
+    sun.shadow.camera.top = 20; sun.shadow.camera.bottom = -20;
+    sun.shadow.bias = -0.0005;
+  } else {
+    sun.castShadow = false;
+  }
   scene.add(sun);
   const fillL = new THREE.DirectionalLight(0x88ccff, 0.3);
   fillL.position.set(-8, 12, -8);
@@ -735,7 +893,8 @@ window.cineZoomOut = function() {};
   }
 
   // ── GROUND — vibrant green ──
-  const gGeo = new THREE.PlaneGeometry(100, 100, 80, 80);
+  const gSegs = isMobile ? 40 : 80;
+  const gGeo = new THREE.PlaneGeometry(100, 100, gSegs, gSegs);
   const gPos = gGeo.getAttribute('position');
   for (let i = 0; i < gPos.count; i++) {
     const x = gPos.getX(i), y = gPos.getY(i);
@@ -743,12 +902,12 @@ window.cineZoomOut = function() {};
   }
   gGeo.computeVertexNormals();
   const ground = new THREE.Mesh(gGeo, new THREE.MeshStandardMaterial({ color: 0x38b764, roughness: 0.88 }));
-  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = !isMobile; scene.add(ground);
 
   // ── SMOOTH ORGANIC MOUNTAINS ──
   function createSmoothMountain(x, z, height, baseW, color) {
     const pts = [];
-    const segments = 12;
+    const segments = isMobile ? 8 : 12;
     for (let i = 0; i <= segments; i++) {
       const t = i / segments;
       const r = baseW * (1 - Math.pow(t, 1.3));
@@ -756,7 +915,7 @@ window.cineZoomOut = function() {};
       const wobble = Math.sin(t * 5 + x * 0.3 + z * 0.2) * baseW * 0.08;
       pts.push(new THREE.Vector2(Math.max(0.01, r + wobble), y));
     }
-    const geo = new THREE.LatheGeometry(pts, 8 + Math.floor(Math.random() * 4));
+    const geo = new THREE.LatheGeometry(pts, isMobile ? 6 : (8 + Math.floor(Math.random() * 4)));
     const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.9, flatShading: false });
     const m = new THREE.Mesh(geo, mat);
     m.position.set(x, -0.3, z);
@@ -765,12 +924,13 @@ window.cineZoomOut = function() {};
 
     if (height > 7) {
       const snowPts = [];
-      for (let i = 0; i <= 6; i++) {
-        const t = i / 6;
+      const sSegs = isMobile ? 4 : 6;
+      for (let i = 0; i <= sSegs; i++) {
+        const t = i / sSegs;
         const r2 = baseW * 0.35 * (1 - Math.pow(t, 1.2));
         snowPts.push(new THREE.Vector2(Math.max(0.01, r2), t * height * 0.22));
       }
-      const sg = new THREE.LatheGeometry(snowPts, 6);
+      const sg = new THREE.LatheGeometry(snowPts, isMobile ? 5 : 6);
       const sm = new THREE.Mesh(sg, new THREE.MeshStandardMaterial({ color: 0xf0f8ff, roughness: 0.6 }));
       sm.position.set(x, height * 0.78 - 0.3, z);
       sm.rotation.y = m.rotation.y;
@@ -783,15 +943,17 @@ window.cineZoomOut = function() {};
   const mtColors = [0x3a7d44, 0x4a8a54, 0x2d6b38, 0x558b5e, 0x1f5c2a];
   const mtFarColors = [0x2d5a36, 0x1a4d28, 0x3a6b42];
 
-  for (let i = 0; i < 20; i++) {
-    const angle = (i / 20) * Math.PI * 2;
+  const mtCountInner = isMobile ? 8 : 20;
+  for (let i = 0; i < mtCountInner; i++) {
+    const angle = (i / mtCountInner) * Math.PI * 2;
     const dist = 28 + Math.random() * 7;
     const h = 3 + Math.random() * 5;
     const w = 3 + Math.random() * 3;
     createSmoothMountain(Math.sin(angle) * dist, Math.cos(angle) * dist, h, w, mtColors[i % mtColors.length]);
   }
-  for (let i = 0; i < 14; i++) {
-    const angle = (i / 14) * Math.PI * 2 + 0.15;
+  const mtCountOuter = isMobile ? 5 : 14;
+  for (let i = 0; i < mtCountOuter; i++) {
+    const angle = (i / mtCountOuter) * Math.PI * 2 + 0.15;
     const dist = 38 + Math.random() * 12;
     const h = 6 + Math.random() * 8;
     const w = 4 + Math.random() * 5;
@@ -802,27 +964,28 @@ window.cineZoomOut = function() {};
   function mkTree(x, z, s) {
     const g = new THREE.Group();
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1*s, 0.16*s, 1.3*s, 6), new THREE.MeshStandardMaterial({ color: 0x7a4a25, roughness: 0.85 }));
-    trunk.position.y = 0.65*s; trunk.castShadow = true; g.add(trunk);
+    trunk.position.y = 0.65*s; if (!isMobile) trunk.castShadow = true; g.add(trunk);
     const greens = [0x3ec95c, 0x2db84a, 0x45d468, 0x28a745];
     [[0.65,1.3],[0.5,1.8],[0.3,2.2]].forEach(([r,h], i) => {
-      const f = new THREE.Mesh(new THREE.SphereGeometry(r*s, 7, 5), new THREE.MeshStandardMaterial({ color: greens[i % greens.length], roughness: 0.78 }));
-      f.position.y = h*s; f.castShadow = true; g.add(f);
+      const f = new THREE.Mesh(new THREE.SphereGeometry(r*s, isMobile ? 5 : 7, isMobile ? 4 : 5), new THREE.MeshStandardMaterial({ color: greens[i % greens.length], roughness: 0.78 }));
+      f.position.y = h*s; if (!isMobile) f.castShadow = true; g.add(f);
     });
     g.position.set(x, 0, z); scene.add(g); return g;
   }
   function mkPine(x, z, s) {
     const g = new THREE.Group();
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06*s,0.1*s,0.8*s,5), new THREE.MeshStandardMaterial({ color: 0x6b4a30 }));
-    trunk.position.set(0, 0.4*s, 0); trunk.castShadow = true; g.add(trunk);
-    for (let i = 0; i < 4; i++) {
-      const c = new THREE.Mesh(new THREE.ConeGeometry((0.55-i*0.1)*s, 0.55*s, 6), new THREE.MeshStandardMaterial({ color: 0x1a8a3a, roughness: 0.82 }));
-      c.position.y = (0.8+i*0.42)*s; c.castShadow = true; g.add(c);
+    trunk.position.set(0, 0.4*s, 0); if (!isMobile) trunk.castShadow = true; g.add(trunk);
+    for (let i = 0; i < (isMobile ? 3 : 4); i++) {
+      const c = new THREE.Mesh(new THREE.ConeGeometry((0.55-i*0.1)*s, 0.55*s, 5), new THREE.MeshStandardMaterial({ color: 0x1a8a3a, roughness: 0.82 }));
+      c.position.y = (0.8+i*0.42)*s; if (!isMobile) c.castShadow = true; g.add(c);
     }
     g.position.set(x, 0, z); scene.add(g);
   }
 
   const treeSpots = [];
-  for (let i = 0; i < 30; i++) {
+  const treeCount = isMobile ? 12 : 30;
+  for (let i = 0; i < treeCount; i++) {
     const angle = Math.random() * Math.PI * 2;
     const dist = 8 + Math.random() * 12;
     const x = Math.sin(angle) * dist, z = Math.cos(angle) * dist;
@@ -831,36 +994,40 @@ window.cineZoomOut = function() {};
   treeSpots.forEach(([x,z,s]) => Math.random() > 0.3 ? mkTree(x,z,s) : mkPine(x,z,s));
 
   // ── ROCKS — outside r=5 ──
-  for (let i = 0; i < 10; i++) {
+  const rockCount = isMobile ? 5 : 10;
+  for (let i = 0; i < rockCount; i++) {
     const angle = Math.random() * Math.PI * 2;
     const dist = 5 + Math.random() * 10;
     const x = Math.sin(angle) * dist, z = Math.cos(angle) * dist;
     const s = 0.5 + Math.random() * 0.8;
-    const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3*s, 1), new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 0.92, flatShading: true }));
+    const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3*s, 0), new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 0.92, flatShading: true }));
     r.position.set(x, 0.08*s, z); r.rotation.set(Math.random()*0.5, Math.random()*Math.PI, 0); r.scale.y = 0.55;
-    r.castShadow = true; scene.add(r);
+    if (!isMobile) r.castShadow = true; scene.add(r);
   }
 
   // ── FLOWERS — vibrant, outside r=4 ──
   const fColors = [0xff5ca8, 0xffd500, 0xff4444, 0xaa66ff, 0xff8c00, 0x00ccff, 0xff1493];
-  for (let f = 0; f < 15; f++) {
+  const flowerCount = isMobile ? 6 : 15;
+  for (let f = 0; f < flowerCount; f++) {
     const angle = Math.random() * Math.PI * 2;
     const dist = 4 + Math.random() * 10;
     const fx = Math.sin(angle) * dist, fz = Math.cos(angle) * dist;
     const g = new THREE.Group();
-    for (let i = 0; i < 6; i++) {
-      const a = (i/6)*Math.PI*2, rad = 0.1+Math.random()*0.1;
+    const petalNum = isMobile ? 4 : 6;
+    for (let i = 0; i < petalNum; i++) {
+      const a = (i/petalNum)*Math.PI*2, rad = 0.1+Math.random()*0.1;
       const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.01,0.2,3), new THREE.MeshStandardMaterial({ color: 0x38b764 }));
       stem.position.set(Math.cos(a)*rad, 0.1, Math.sin(a)*rad); g.add(stem);
-      const pet = new THREE.Mesh(new THREE.SphereGeometry(0.04+Math.random()*0.02,5,3), new THREE.MeshStandardMaterial({ color: fColors[i%fColors.length] }));
+      const pet = new THREE.Mesh(new THREE.SphereGeometry(0.04+Math.random()*0.02,4,3), new THREE.MeshStandardMaterial({ color: fColors[i%fColors.length] }));
       pet.position.set(Math.cos(a)*rad, 0.24, Math.sin(a)*rad); g.add(pet);
     }
     g.position.set(fx, 0, fz); scene.add(g);
   }
 
   // ── GRASS TUFTS outside r=3 ──
+  const grassCount = isMobile ? 15 : 100;
   const grassMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < grassCount; i++) {
     const angle = Math.random() * Math.PI * 2, dist = 3 + Math.random() * 15;
     const blade = new THREE.Mesh(new THREE.PlaneGeometry(0.06+Math.random()*0.05, 0.12+Math.random()*0.12), grassMat);
     blade.position.set(Math.sin(angle)*dist, 0.06, Math.cos(angle)*dist);
@@ -1380,21 +1547,24 @@ window.cineZoomOut = function() {};
     const coreMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.95 });
     const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.75, side: THREE.DoubleSide });
 
-    const spots = [
+    const allSpots = [
       [-9.2, -3.8, 2.1], [-8.6, -4.2, 1.8], [-6.2, -4.5, 2.3], [-4.0, -5.2, 2.0],
       [3.2, -5.0, 1.9], [5.5, -4.8, 2.2], [7.0, -4.2, 2.4], [8.4, -3.5, 1.8]
     ];
+    const spots = isMobile ? [allSpots[0], allSpots[2], allSpots[5], allSpots[7]] : allSpots;
+    const leafCount = isMobile ? 2 : 4;
+    const petalCount = isMobile ? 8 : 16;
 
     spots.forEach(([sx, sz, sh]) => {
       const g = new THREE.Group();
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.055, sh, 6), stemMat);
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.055, sh, 5), stemMat);
       stem.position.y = sh / 2;
-      stem.castShadow = true; g.add(stem);
+      if (!isMobile) stem.castShadow = true; g.add(stem);
 
-      for (let l = 0; l < 4; l++) {
-        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.22, 5, 4), leafMat);
+      for (let l = 0; l < leafCount; l++) {
+        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.22, 4, 3), leafMat);
         leaf.scale.set(1.4, 0.15, 0.8);
-        const lY = 0.5 + l * 0.35;
+        const lY = 0.5 + l * 0.45;
         const lRot = (l % 2 === 0 ? 1 : -1) * 0.4;
         leaf.position.set(Math.sin(lRot)*0.25, lY, Math.cos(lRot)*0.25);
         leaf.rotation.z = lRot;
@@ -1405,12 +1575,12 @@ window.cineZoomOut = function() {};
       head.position.y = sh;
       head.rotation.x = 0.28;
 
-      const core = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.06, 12), coreMat);
+      const core = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.06, isMobile ? 8 : 12), coreMat);
       core.rotation.x = Math.PI / 2;
       head.add(core);
 
-      for (let p = 0; p < 16; p++) {
-        const pAng = (p / 16) * Math.PI * 2;
+      for (let p = 0; p < petalCount; p++) {
+        const pAng = (p / petalCount) * Math.PI * 2;
         const pet = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.28, 4), petalMat);
         pet.position.set(Math.cos(pAng) * 0.24, Math.sin(pAng) * 0.24, 0);
         pet.rotation.z = pAng - Math.PI / 2;
@@ -1617,17 +1787,19 @@ window.cineZoomOut = function() {};
   }
 
   // Particle Pools (Smoker Smoke + Honey Extraction Sparkles)
-  for (let i = 0; i < 20; i++) {
+  const smokerPuffCount = isMobile ? 8 : 20;
+  for (let i = 0; i < smokerPuffCount; i++) {
     const p = new THREE.Mesh(
-      new THREE.SphereGeometry(0.09, 5, 5),
+      new THREE.SphereGeometry(0.09, 4, 4),
       new THREE.MeshStandardMaterial({ color: 0xf1f5f9, transparent: true, opacity: 0 })
     );
     scene.add(p);
     smokerPuffParticles.push(p);
   }
-  for (let i = 0; i < 30; i++) {
+  const sparkleCount = isMobile ? 12 : 30;
+  for (let i = 0; i < sparkleCount; i++) {
     const spk = new THREE.Mesh(
-      new THREE.SphereGeometry(0.055, 5, 4),
+      new THREE.SphereGeometry(0.055, 4, 3),
       new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xf59e0b, emissiveIntensity: 0.8, transparent: true, opacity: 0 })
     );
     scene.add(spk);
@@ -1727,11 +1899,15 @@ window.cineZoomOut = function() {};
   camCurrent.x = camTarget.x; camCurrent.y = camTarget.y; camCurrent.z = camTarget.z;
   camCurrent.lx = camTarget.lx; camCurrent.ly = camTarget.ly; camCurrent.lz = camTarget.lz;
 
-  // Click on 3D hive
+  // Pointer & Tap Handling on 3D Canvas (Supports Mouse Click & Mobile Touch Tap)
   const ray = new THREE.Raycaster(), mP = new THREE.Vector2();
-  renderer.domElement.addEventListener('click', e => {
+  let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+
+  function handleCanvasTap(clientX, clientY) {
+    if (!renderer || !camera || hive3D.length === 0) return;
     const r = renderer.domElement.getBoundingClientRect();
-    mP.x = ((e.clientX-r.left)/r.width)*2-1; mP.y = -((e.clientY-r.top)/r.height)*2+1;
+    mP.x = ((clientX - r.left) / r.width) * 2 - 1;
+    mP.y = -((clientY - r.top) / r.height) * 2 + 1;
     ray.setFromCamera(mP, camera);
     for (let i = 0; i < hive3D.length; i++) {
       if (ray.intersectObjects(hive3D[i].children, true).length > 0) {
@@ -1741,28 +1917,100 @@ window.cineZoomOut = function() {};
         break;
       }
     }
+  }
+
+  renderer.domElement.addEventListener('click', e => {
+    handleCanvasTap(e.clientX, e.clientY);
   });
 
-  // ── LABELS ──
-  function updateLabels() {
+  renderer.domElement.addEventListener('touchstart', e => {
+    if (e.touches && e.touches.length === 1) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+    }
+  }, { passive: true });
+
+  renderer.domElement.addEventListener('touchend', e => {
+    if (e.changedTouches && e.changedTouches.length === 1) {
+      const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
+      const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+      const dt = Date.now() - touchStartTime;
+      // Quick tap under 350ms and minimal movement (< 12px)
+      if (dt < 350 && dx < 12 && dy < 12) {
+        handleCanvasTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      }
+    }
+  }, { passive: true });
+
+  // ── PRE-INSTANTIATED LABELS (Zero DOM Mutation During Animate, 60 FPS Smooth) ──
+  const hiveLabelElements = [];
+  function initLabels() {
+    if (!labelsC) return;
     labelsC.innerHTML = '';
     hive3D.forEach((obj, i) => {
-      const hive = HIVES_ARRAY[i]; if (!hive) return;
-      // In cinematic hive view, hide label on the active inspected hive to keep the view clean
-      if (cineIdx === i) return;
-      const wp = hiveWP[i].clone(); wp.project(camera);
-      if (wp.z > 1) return;
-      const sx = (wp.x*container.clientWidth/2)+container.clientWidth/2;
-      const sy = -(wp.y*container.clientHeight/2)+container.clientHeight/2;
+      const hive = HIVES_ARRAY[i];
+      if (!hive) return;
       const det = hive.details || {};
       const honey = parseFloat(det.total_honey) || 0;
+
       const lbl = document.createElement('div');
-      lbl.className = 'hive-3d-label'; lbl.style.left = sx+'px'; lbl.style.top = sy+'px';
-      lbl.onclick = () => { openHiveInspection(hive.id); setCineHive(i); };
-      lbl.innerHTML = '<div class="hive-label-bubble"><div class="hive-label-name">'+hive.master_name+'</div><div class="hive-label-honey"><i class="ph-fill ph-drop"></i> '+honey.toFixed(1)+' ml</div></div>';
+      lbl.className = 'hive-3d-label';
+      lbl.style.display = 'none'; // Hidden until projected
+      lbl.innerHTML = '<div class="hive-label-bubble">' +
+        '<div class="hive-label-name">' + (hive.master_name || 'Sarang') + '</div>' +
+        '<div class="hive-label-honey" id="hiveLabelHoney_' + hive.id + '"><i class="ph-fill ph-drop"></i> ' + honey.toFixed(1) + ' ml</div>' +
+      '</div>';
+
+      const onLabelClick = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        openHiveInspection(hive.id);
+        setCineHive(i);
+      };
+      lbl.addEventListener('click', onLabelClick);
+      lbl.addEventListener('touchend', onLabelClick, { passive: false });
+
       labelsC.appendChild(lbl);
+      hiveLabelElements.push(lbl);
     });
   }
+
+  function updateLabelsPosition() {
+    if (!labelsC || hiveLabelElements.length === 0) return;
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    if (cw === 0 || ch === 0) return;
+    const halfW = cw / 2;
+    const halfH = ch / 2;
+
+    for (let i = 0; i < hive3D.length; i++) {
+      const lbl = hiveLabelElements[i];
+      if (!lbl) continue;
+
+      // In cinematic hive view, hide label of current inspected hive
+      if (cineIdx === i) {
+        if (lbl.style.display !== 'none') lbl.style.display = 'none';
+        continue;
+      }
+
+      const wp = hiveWP[i].clone();
+      wp.project(camera);
+
+      // Frustum clip
+      if (wp.z > 1 || wp.z < -1 || Math.abs(wp.x) > 1.2 || Math.abs(wp.y) > 1.2) {
+        if (lbl.style.display !== 'none') lbl.style.display = 'none';
+        continue;
+      }
+
+      const sx = Math.round(wp.x * halfW + halfW);
+      const sy = Math.round(-wp.y * halfH + halfH);
+
+      if (lbl.style.display !== 'block') lbl.style.display = 'block';
+      lbl.style.transform = `translate3d(${sx}px, ${sy}px, 0)`;
+    }
+  }
+
+  initLabels();
 
   // ── AUTO ASPECT RATIO CHECK ──
   function checkResize() {
@@ -2094,7 +2342,7 @@ window.cineZoomOut = function() {};
     });
 
     renderer.render(scene, camera);
-    updateLabels();
+    updateLabelsPosition();
   }
 
   animate();
@@ -2106,86 +2354,5 @@ window.cineZoomOut = function() {};
     renderer.setSize(container.clientWidth, container.clientHeight); 
   });
 })();
-
-// ── INTERACTION LOGIC ──
-function renderHexagonCells(fp, gid) {
-  const tc=24, hc=Math.min(tc, Math.round(tc*(fp/100))), g=document.getElementById(gid||'inspectionHexGrid');
-  if(!g) return; g.innerHTML=''; let ci=0;
-  [6,5,6,5,2].forEach((cc,ri) => { const r=document.createElement('div'); r.className='hex-row'+(ri%2===1?' hex-row--offset':''); for(let c=0;c<cc;c++){const cl=document.createElement('div'); cl.className='hex-cell '+(ci<hc?'hex-cell--honey':'hex-cell--empty'); r.appendChild(cl); ci++;} g.appendChild(r); });
-}
-function openHiveInspection(hiveId) {
-  currentInspectedHiveId = hiveId; const h = USER_HIVES_MAP[hiveId]; if(!h) return;
-  if (typeof FarmAudio !== 'undefined') {
-    try { FarmAudio.playPop(); FarmAudio.playBee(0.5); } catch(e) {}
-  }
-  const d=h.details||{}, th=parseFloat(d.total_honey)||0, mc=parseFloat(d.max_capacity)||100, pct=parseFloat(d.fill_percentage)||0;
-  const nameEl = document.getElementById('inspectionHiveName');
-  if (nameEl) nameEl.innerHTML='<i class="ph-fill ph-hexagon" style="color:#fbbf24;"></i> '+(h.master_name||'Sarang');
-  const amtEl = document.getElementById('inspectionHoneyAmt');
-  if (amtEl) amtEl.innerText=th.toFixed(2)+' ml';
-  const capEl = document.getElementById('inspectionHoneyCap');
-  if (capEl) capEl.innerText='Kapasitas: '+th.toFixed(1)+' / '+mc.toFixed(0)+' ml ('+pct+'%)';
-  const beeEl = document.getElementById('inspectionBeeInfo');
-  if (beeEl) beeEl.innerHTML='<i class="ph-fill ph-bug-beetle"></i><span>'+(parseInt(d.bee_count)||0)+'/'+(parseInt(h.max_slots)||0)+' Lebah • +'+(parseFloat(d.hourly_production)||0).toFixed(1)+' ml/jam</span>';
-  const btnH = document.getElementById('btnInspectionHarvest');
-  if (btnH) btnH.disabled = th<0.1;
-  renderHexagonCells(pct,'inspectionHexGrid');
-  const overlay = document.getElementById('hiveInspectionOverlay');
-  if (overlay) overlay.classList.add('active');
-  document.body.style.overflow='hidden';
-}
-function closeHiveInspection() { 
-  const overlay = document.getElementById('hiveInspectionOverlay');
-  if (overlay) overlay.classList.remove('active'); 
-  document.body.style.overflow=''; 
-  currentInspectedHiveId=0; 
-}
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeHiveInspection(); });
-function spawnHoneyFly(t,el) { const r=el?el.getBoundingClientRect():{top:innerHeight/2,left:innerWidth/2}; const b=document.createElement('div'); b.className='floating-honey-fly'; b.innerText='+ '+t+' ml'; b.style.top=(r.top+10)+'px'; b.style.left=(r.left+20)+'px'; document.body.appendChild(b); setTimeout(()=>b.remove(),1200); }
-function harvestInspectedHive() {
-  if(!currentInspectedHiveId) return; const btn=document.getElementById('btnInspectionHarvest'); if(!btn||btn.disabled) return;
-  btn.disabled=true;
-  const harvestingHiveId = currentInspectedHiveId; // Save before closing modal
-  const targetIdx = HIVES_ARRAY.findIndex(h => h.id == harvestingHiveId);
-  // Close modal immediately so user can see the 3D harvest animation & progress bar
-  closeHiveInspection();
-  if (typeof triggerBeekeeperHarvest === 'function') {
-    triggerBeekeeperHarvest(targetIdx >= 0 ? targetIdx : 0, 10);
-  }
-  const fd=new FormData(); fd.append('action','harvest_hive'); fd.append('hive_id',harvestingHiveId); fd.append('_csrf',document.querySelector('input[name="_csrf"]')?.value||'');
-  fetch('/api/farm_action',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
-    if(d.ok){
-      const hs=document.getElementById('hudHoneyStock');
-      if(hs&&d.new_honey_stock!==undefined)hs.innerText=Number(d.new_honey_stock).toLocaleString('id-ID',{minimumFractionDigits:1})+' ml';
-      if(USER_HIVES_MAP[harvestingHiveId]?.details){
-        USER_HIVES_MAP[harvestingHiveId].details.total_honey=0;
-        USER_HIVES_MAP[harvestingHiveId].details.fill_percentage=0;
-      }
-      // Show floating honey fly on screen
-      spawnHoneyFly(d.harvested_ml, document.getElementById('btnHarvestAll') || document.body);
-    }
-    else{ if(typeof nToast==='function') nToast(d.msg||'Gagal memanen','error'); }
-  }).catch(()=>{if(typeof nToast==='function') nToast('Error jaringan, coba lagi.','error');});
-}
-function harvestAllHives() {
-  const btn=document.getElementById('btnHarvestAll'); if(!btn||btn.disabled) return;
-  btn.disabled=true; const ot=btn.innerHTML; btn.innerHTML='<i class="ph-bold ph-spinner ph-spin"></i> Memanen...';
-  if (typeof triggerBeekeeperHarvest === 'function') {
-    triggerBeekeeperHarvest(0, 50);
-  }
-  const fd=new FormData(); fd.append('action','harvest_all'); fd.append('_csrf',document.querySelector('input[name="_csrf"]')?.value||'');
-  fetch('/api/farm_action',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
-    if(d.ok){
-      spawnHoneyFly(d.harvested_ml,btn);
-      const hs=document.getElementById('hudHoneyStock');
-      if(hs&&d.new_honey_stock!==undefined)hs.innerText=Number(d.new_honey_stock).toLocaleString('id-ID',{minimumFractionDigits:1})+' ml';
-      const tb=document.getElementById('totalUnharvestedBadge');
-      if(tb)tb.innerText='0.0 ml';
-      btn.innerHTML='<i class="ph-bold ph-check"></i> '+(d.msg||'Berhasil!');
-      setTimeout(()=>{btn.innerHTML=ot;btn.disabled=true;},2000);
-    }
-    else{ if(typeof nToast==='function') nToast(d.msg||'Gagal memanen','error'); btn.disabled=false; btn.innerHTML=ot; }
-  }).catch(()=>{btn.disabled=false;btn.innerHTML=ot;if(typeof nToast==='function') nToast('Error jaringan, coba lagi.','error');});
-}
 </script>
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>

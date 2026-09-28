@@ -17,7 +17,10 @@ $farmSubPage = $farmSubPage ?? 'meadow';
 <script>
 (function() {
   let audioCtx = null;
-  let isMuted = localStorage.getItem('farm_sfx_muted') === 'true';
+  let isMuted = false;
+  try {
+    isMuted = localStorage.getItem('farm_sfx_muted') === 'true';
+  } catch(e) {}
 
   function getAudioContext() {
     if (!audioCtx) {
@@ -36,7 +39,9 @@ $farmSubPage = $farmSubPage ?? 'meadow';
     isMuted: function() { return isMuted; },
     toggle: function() {
       isMuted = !isMuted;
-      localStorage.setItem('farm_sfx_muted', isMuted ? 'true' : 'false');
+      try {
+        localStorage.setItem('farm_sfx_muted', isMuted ? 'true' : 'false');
+      } catch(e) {}
       const btn = document.getElementById('btnAudioToggle');
       if (btn) {
         btn.innerHTML = isMuted 
@@ -306,6 +311,8 @@ $farmSubPage = $farmSubPage ?? 'meadow';
   box-shadow: 0 2.5px 0 #78350f;
   text-decoration: none;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition: transform 0.1s;
 }
 .tycoon-btn-ctrl:active {
@@ -364,6 +371,8 @@ $farmSubPage = $farmSubPage ?? 'meadow';
   color: #fff;
   font-size: 10px; font-weight: 900;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition: all 0.15s ease;
 }
 .tycoon-tab i {
@@ -469,7 +478,10 @@ $farmSubPage = $farmSubPage ?? 'meadow';
 <script>
 // Sync initial audio button state
 document.addEventListener('DOMContentLoaded', function() {
-  const isMuted = localStorage.getItem('farm_sfx_muted') === 'true';
+  let isMuted = false;
+  try {
+    isMuted = localStorage.getItem('farm_sfx_muted') === 'true';
+  } catch(e) {}
   const btn = document.getElementById('btnAudioToggle');
   if (btn && isMuted) {
     btn.innerHTML = '<i class="ph-bold ph-speaker-simple-slash"></i> <span class="d-none d-sm-inline">Bisu</span>';
