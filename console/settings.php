@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'save_general') {
         $keys = ['site_name','site_tagline','free_watch_limit','referral_bonus',
-                 'referral_commission_percent','checkin_reward_min','checkin_reward_max','min_deposit',
+                 'referral_commission_percent','referral_hold_days','checkin_reward_min','checkin_reward_max','min_deposit',
                  'depo_unique_code_min','depo_unique_code_max',
                  'target_deposit_daily','target_member_daily'];
         foreach ($keys as $k) {
@@ -263,8 +263,21 @@ $tabs = [
               <small style="color:#888;font-size:11px">Jika dimatikan, seluruh menu dan halaman investasi tidak akan dapat diakses oleh user.</small>
             </div>
 
-            <div class="c-form-group"><label class="c-label">Bonus Referral Registrasi (Rp) <small style="color:#888">(opsional)</small></label>
-              <input type="number" name="referral_bonus" class="c-form-control" value="<?= $s('referral_bonus','1000') ?>" min="0"></div>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <div class="c-form-group">
+                  <label class="c-label">Bonus Referral Registrasi (Rp) <small style="color:#888">(opsional)</small></label>
+                  <input type="number" name="referral_bonus" class="c-form-control" value="<?= $s('referral_bonus','1000') ?>" min="0">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="c-form-group">
+                  <label class="c-label">Masa Tahan Komisi (Hari) <small style="color:#888">(Holding Period)</small></label>
+                  <input type="number" name="referral_hold_days" class="c-form-control" value="<?= $s('referral_hold_days','3') ?>" min="0">
+                </div>
+              </div>
+            </div>
+            <small style="color:#888;font-size:11px;display:block;margin-top:-6px;margin-bottom:12px">Komisi referral baru akan berstatus beku dan baru bisa dicairkan oleh user setelah jumlah hari ini tercapai (Isi 0 jika ingin langsung cair otomatis tanpa beku).</small>
             
             <div style="border-top:1px solid #2d3149;margin:20px 0 16px;"></div>
             

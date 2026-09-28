@@ -198,8 +198,9 @@ if (setting($pdo, 'maintenance_mode', '0') === '1') {
 
 /**
  * Processes deposit referral commission for the upline user.
- * Credits balance_wd and total_earned, and creates a record in referral_commissions.
- * Returns the commission amount credited (0.0 if none).
+ * If referral_hold_days > 0, commission is inserted as 'locked' with unlock_at in the future.
+ * If referral_hold_days == 0, commission is credited immediately to balance_wd.
+ * Returns the commission amount (0.0 if none).
  */
 function credit_deposit_referral_commission(PDO $pdo, int $depositor_user_id, float $deposit_amount): float {
     if ($deposit_amount <= 0) return 0.0;
@@ -220,10 +221,25 @@ function credit_deposit_referral_commission(PDO $pdo, int $depositor_user_id, fl
         
         $commission = round(($deposit_amount * $pct) / 100, 2);
         if ($commission > 0) {
-            $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id = ?")
-                ->execute([$commission, $commission, $ref['id']]);
-            $pdo->prepare("INSERT INTO referral_commissions (user_id, from_user_id, amount) VALUES (?, ?, ?)")
-                ->execute([$ref['id'], $depositor_user_id, $commission]);
+            $hold_days = max(0, (int) setting($pdo, 'referral_hold_days', '3'));
+            
+            if ($hold_days > 0) {
+                // Frozen / Locked commission: holding period before claiming
+                $unlock_at = date('Y-m-d H:i:s', strtotime("+{$hold_days} days"));
+                $pdo->prepare(
+                    "INSERT INTO referral_commissions (user_id, from_user_id, amount, status, unlock_at) 
+                     VALUES (?, ?, ?, 'locked', ?)"
+                )->execute([$ref['id'], $depositor_user_id, $commission, $unlock_at]);
+            } else {
+                // Instant credit
+                $now = date('Y-m-d H:i:s');
+                $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id = ?")
+                    ->execute([$commission, $commission, $ref['id']]);
+                $pdo->prepare(
+                    "INSERT INTO referral_commissions (user_id, from_user_id, amount, status, unlock_at, claimed_at) 
+                     VALUES (?, ?, ?, 'claimed', ?, ?)"
+                )->execute([$ref['id'], $depositor_user_id, $commission, $now, $now]);
+            }
             return $commission;
         }
     }
@@ -232,8 +248,9 @@ function credit_deposit_referral_commission(PDO $pdo, int $depositor_user_id, fl
 
 /**
  * Processes registration referral bonus for the upline user.
- * Credits balance_wd and total_earned, and creates a record in referral_commissions.
- * Returns the bonus amount credited (0.0 if none).
+ * If referral_hold_days > 0, bonus is inserted as 'locked' with unlock_at in the future.
+ * If referral_hold_days == 0, bonus is credited immediately to balance_wd.
+ * Returns the bonus amount (0.0 if none).
  */
 function credit_registration_referral_bonus(PDO $pdo, int $new_user_id, string $ref_code): float {
     $ref_code = strtoupper(trim($ref_code));
@@ -252,13 +269,147 @@ function credit_registration_referral_bonus(PDO $pdo, int $new_user_id, string $
     }
     
     if ($bonus > 0) {
-        $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id = ?")
-            ->execute([$bonus, $bonus, $upline['id']]);
-        $pdo->prepare("INSERT INTO referral_commissions (user_id, from_user_id, amount) VALUES (?, ?, ?)")
-            ->execute([$upline['id'], $new_user_id, $bonus]);
+        $hold_days = max(0, (int) setting($pdo, 'referral_hold_days', '3'));
+        
+        if ($hold_days > 0) {
+            // Frozen / Locked bonus
+            $unlock_at = date('Y-m-d H:i:s', strtotime("+{$hold_days} days"));
+            $pdo->prepare(
+                "INSERT INTO referral_commissions (user_id, from_user_id, amount, status, unlock_at) 
+                 VALUES (?, ?, ?, 'locked', ?)"
+            )->execute([$upline['id'], $new_user_id, $bonus, $unlock_at]);
+        } else {
+            // Instant credit
+            $now = date('Y-m-d H:i:s');
+            $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id = ?")
+                ->execute([$bonus, $bonus, $upline['id']]);
+            $pdo->prepare(
+                "INSERT INTO referral_commissions (user_id, from_user_id, amount, status, unlock_at, claimed_at) 
+                 VALUES (?, ?, ?, 'claimed', ?, ?)"
+            )->execute([$upline['id'], $new_user_id, $bonus, $now, $now]);
+        }
         return $bonus;
     }
     return 0.0;
+}
+
+/**
+ * Claims all unlocked referral commissions for a user and transfers to balance_wd.
+ * Uses atomic transaction and row locking to guarantee consistency.
+ * Returns ['success' => bool, 'claimed_amount' => float, 'count' => int, 'message' => string]
+ */
+function claim_user_referral_commissions(PDO $pdo, int $user_id): array {
+    if ($user_id <= 0) {
+        return ['success' => false, 'claimed_amount' => 0.0, 'count' => 0, 'message' => 'User tidak valid.'];
+    }
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Lock rows eligible for claiming (status 'locked' and unlock_at <= NOW)
+        $stmt = $pdo->prepare(
+            "SELECT id, amount 
+             FROM referral_commissions 
+             WHERE user_id = ? AND status = 'locked' AND (unlock_at IS NULL OR unlock_at <= NOW()) 
+             FOR UPDATE"
+        );
+        $stmt->execute([$user_id]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (empty($rows)) {
+            $pdo->rollBack();
+            return [
+                'success' => false, 
+                'claimed_amount' => 0.0, 
+                'count' => 0, 
+                'message' => 'Belum ada komisi yang siap dicairkan atau masa tunggu belum selesai.'
+            ];
+        }
+        
+        $totalClaim = 0.0;
+        $ids = [];
+        foreach ($rows as $r) {
+            $totalClaim += (float)$r['amount'];
+            $ids[] = (int)$r['id'];
+        }
+        
+        if ($totalClaim <= 0 || empty($ids)) {
+            $pdo->rollBack();
+            return [
+                'success' => false, 
+                'claimed_amount' => 0.0, 
+                'count' => 0, 
+                'message' => 'Nominal komisi tidak mencukupi untuk dicairkan.'
+            ];
+        }
+        
+        // Update referral_commissions status to claimed
+        $inPlaceholders = implode(',', array_fill(0, count($ids), '?'));
+        $updateStmt = $pdo->prepare(
+            "UPDATE referral_commissions 
+             SET status = 'claimed', claimed_at = NOW() 
+             WHERE id IN ($inPlaceholders)"
+        );
+        $updateStmt->execute($ids);
+        
+        // Update user balances (balance_wd and total_earned)
+        $userStmt = $pdo->prepare(
+            "UPDATE users 
+             SET balance_wd = balance_wd + ?, total_earned = total_earned + ? 
+             WHERE id = ?"
+        );
+        $userStmt->execute([$totalClaim, $totalClaim, $user_id]);
+        
+        $pdo->commit();
+        
+        return [
+            'success' => true,
+            'claimed_amount' => $totalClaim,
+            'count' => count($ids),
+            'message' => 'Berhasil mencairkan komisi sebesar ' . format_rp($totalClaim) . ' ke Saldo Penarikan!'
+        ];
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return [
+            'success' => false, 
+            'claimed_amount' => 0.0, 
+            'count' => 0, 
+            'message' => 'Terjadi kesalahan sistem saat mencairkan komisi: ' . $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Gets summary of referral commissions for a user:
+ * - locked_amount (frozen, unlock_at > NOW)
+ * - claimable_amount (unlocked, ready to claim)
+ * - claimed_amount (already claimed into balance_wd)
+ * - total_earned (sum of all commissions ever earned)
+ * - earliest_unlock (next unlock timestamp or null)
+ */
+function get_user_referral_commission_summary(PDO $pdo, int $user_id): array {
+    $stmt = $pdo->prepare(
+        "SELECT 
+            COALESCE(SUM(CASE WHEN status = 'locked' AND unlock_at > NOW() THEN amount ELSE 0 END), 0) as locked_amount,
+            COALESCE(SUM(CASE WHEN status = 'locked' AND (unlock_at IS NULL OR unlock_at <= NOW()) THEN amount ELSE 0 END), 0) as claimable_amount,
+            COALESCE(SUM(CASE WHEN status = 'claimed' THEN amount ELSE 0 END), 0) as claimed_amount,
+            COALESCE(SUM(amount), 0) as total_earned,
+            MIN(CASE WHEN status = 'locked' AND unlock_at > NOW() THEN unlock_at ELSE NULL END) as earliest_unlock
+         FROM referral_commissions 
+         WHERE user_id = ?"
+    );
+    $stmt->execute([$user_id]);
+    $res = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    
+    return [
+        'locked_amount'    => (float)($res['locked_amount'] ?? 0),
+        'claimable_amount' => (float)($res['claimable_amount'] ?? 0),
+        'claimed_amount'   => (float)($res['claimed_amount'] ?? 0),
+        'total_earned'     => (float)($res['total_earned'] ?? 0),
+        'earliest_unlock'  => $res['earliest_unlock'] ?? null,
+    ];
 }
 
 // Backward-compatible alias

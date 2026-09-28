@@ -2,21 +2,53 @@
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
-$ref_bonus = (float) setting($pdo, 'referral_bonus', '1000');
-$ref_pct   = (float) setting($pdo, 'referral_commission_percent', '5');
+$ref_bonus     = (float) setting($pdo, 'referral_bonus', '1000');
+$ref_pct       = (float) setting($pdo, 'referral_commission_percent', '5');
+$ref_hold_days = max(0, (int) setting($pdo, 'referral_hold_days', '3'));
+
+$flash     = $_SESSION['ref_flash'] ?? '';
+$flashType = $_SESSION['ref_flash_type'] ?? '';
+unset($_SESSION['ref_flash'], $_SESSION['ref_flash_type']);
+
+// Handle Claim POST request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'claim_commissions') {
+    if (!csrf_verify()) {
+        $_SESSION['ref_flash'] = 'Sesi keamanan tidak valid. Silakan muat ulang halaman.';
+        $_SESSION['ref_flash_type'] = 'error';
+    } else {
+        $claimRes = claim_user_referral_commissions($pdo, (int)$user['id']);
+        $_SESSION['ref_flash'] = $claimRes['message'];
+        $_SESSION['ref_flash_type'] = $claimRes['success'] ? 'success' : 'error';
+    }
+    header('Location: ' . base_url('user/referral.php'));
+    exit;
+}
+
+// Refresh user balance in case it changed
+$uStmt = $pdo->prepare("SELECT balance_wd, total_earned FROM users WHERE id = ?");
+$uStmt->execute([$user['id']]);
+$freshUser = $uStmt->fetch();
+if ($freshUser) {
+    $user['balance_wd'] = $freshUser['balance_wd'];
+    $user['total_earned'] = $freshUser['total_earned'];
+}
 
 // Referral stats
 $s = $pdo->prepare("SELECT COUNT(*) FROM users WHERE TRIM(UPPER(referred_by)) = TRIM(UPPER(?))");
 $s->execute([$user['referral_code']]);
 $ref_count = (int)$s->fetchColumn();
 
-$e = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM referral_commissions WHERE user_id = ?");
-$e->execute([$user['id']]);
-$ref_earned = (float)$e->fetchColumn();
+// Commission Breakdown Summary
+$commSummary   = get_user_referral_commission_summary($pdo, (int)$user['id']);
+$ref_locked    = $commSummary['locked_amount'];
+$ref_claimable = $commSummary['claimable_amount'];
+$ref_claimed   = $commSummary['claimed_amount'];
+$ref_earned    = $commSummary['total_earned'];
+$earliest_unlock = $commSummary['earliest_unlock'];
 
-// Referral history (recent commissions)
+// Referral history (recent commissions with status & unlock date)
 $hist = $pdo->prepare(
-  "SELECT rc.amount, rc.created_at, u.username
+  "SELECT rc.id, rc.amount, rc.status, rc.unlock_at, rc.claimed_at, rc.created_at, u.username
    FROM referral_commissions rc
    JOIN users u ON u.id = rc.from_user_id
    WHERE rc.user_id = ?
@@ -173,10 +205,35 @@ body {
   box-shadow: none;
 }
 
-/* ── 3-PILLAR KPI STATS ── */
+/* ── FLASH ALERT ── */
+.ref-flash {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  border: 2px solid;
+}
+.ref-flash.success {
+  background: #ecfdf5;
+  border-color: #059669;
+  color: #065f46;
+  box-shadow: 0 3px 0 #059669;
+}
+.ref-flash.error {
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #991b1b;
+  box-shadow: 0 3px 0 #dc2626;
+}
+
+/* ── 4-PILLAR KPI STATS GRID ── */
 .ref-stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -184,45 +241,151 @@ body {
   background: #ffffff;
   border: 2px solid var(--honey-900);
   border-radius: 14px;
-  padding: 10px 6px;
-  text-align: center;
+  padding: 9px 10px;
   box-shadow: 0 3.5px 0 var(--honey-900);
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  gap: 8px;
   position: relative;
   overflow: hidden;
 }
-.ref-stat-icon {
-  font-size: 16px;
-  margin-bottom: 2px;
-  display: inline-flex;
+.ref-stat-icon-wrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
 }
-.ref-stat-card.blue .ref-stat-icon { color: #0284c7; }
-.ref-stat-card.green .ref-stat-icon { color: #16a34a; }
-.ref-stat-card.amber .ref-stat-icon { color: var(--honey-600); }
+.ref-stat-card.blue .ref-stat-icon-wrap { background: #e0f2fe; color: #0284c7; }
+.ref-stat-card.amber .ref-stat-icon-wrap { background: var(--honey-100); color: var(--honey-700); }
+.ref-stat-card.ice .ref-stat-icon-wrap { background: #e0f7fa; color: #00838f; }
+.ref-stat-card.green .ref-stat-icon-wrap { background: #dcfce7; color: #16a34a; }
 
+.ref-stat-content {
+  flex: 1;
+  min-width: 0;
+}
 .ref-stat-val {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 900;
-  line-height: 1.2;
+  line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .ref-stat-card.blue .ref-stat-val { color: #0369a1; }
-.ref-stat-card.green .ref-stat-val { color: #15803d; }
 .ref-stat-card.amber .ref-stat-val { color: var(--honey-800); }
+.ref-stat-card.ice .ref-stat-val { color: #006064; }
+.ref-stat-card.green .ref-stat-val { color: #15803d; }
 
 .ref-stat-lbl {
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 800;
   color: #78716c;
   margin-top: 2px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+}
+
+/* ── CLAIM ACTION BOX ── */
+.ref-claim-box {
+  background: #ffffff;
+  border: 2px solid var(--honey-900);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 3.5px 0 var(--honey-900);
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.ref-claim-box.active-claim {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #059669;
+  box-shadow: 0 3.5px 0 #064e3b, 0 8px 16px -4px rgba(16, 185, 129, 0.25);
+}
+.ref-claim-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.ref-claim-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--honey-900);
+}
+.ref-claim-box.active-claim .ref-claim-title-wrap {
+  color: #065f46;
+}
+.ref-claim-tag {
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+}
+.ref-claim-tag.ready {
+  background: #16a34a;
+  color: #ffffff;
+}
+.ref-claim-tag.locked {
+  background: #e2e8f0;
+  color: #475569;
+}
+.ref-claim-body {
+  margin-bottom: 10px;
+}
+.ref-claim-amt {
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.2;
+  color: var(--honey-900);
+}
+.ref-claim-box.active-claim .ref-claim-amt {
+  color: #047857;
+}
+.ref-claim-desc {
+  font-size: 10px;
+  font-weight: 700;
+  color: #78716c;
+  margin-top: 2px;
+  line-height: 1.35;
+}
+.ref-claim-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 2px solid #064e3b;
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 900;
+  box-shadow: 0 3px 0 #064e3b;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.ref-claim-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #064e3b;
+}
+.ref-claim-btn.disabled {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #94a3b8;
+  box-shadow: 0 2.5px 0 #cbd5e1;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* ── REFERRAL CODE & LINK CARD ── */
@@ -529,14 +692,26 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  background: #ecfdf5;
-  border: 1.5px solid #059669;
-  color: #059669;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 15px;
   flex-shrink: 0;
+}
+.ref-hist-icon.claimed {
+  background: #ecfdf5;
+  border: 1.5px solid #059669;
+  color: #059669;
+}
+.ref-hist-icon.ready {
+  background: #fef3c7;
+  border: 1.5px solid #f59e0b;
+  color: #d97706;
+}
+.ref-hist-icon.locked {
+  background: #e0f2fe;
+  border: 1.5px solid #0284c7;
+  color: #0284c7;
 }
 .ref-hist-body {
   flex: 1;
@@ -550,11 +725,42 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.ref-hist-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
 .ref-hist-date {
   font-size: 9.5px;
   font-weight: 700;
   color: #78716c;
-  margin-top: 1px;
+}
+.ref-status-badge {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1.5px 5px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5px;
+  text-transform: uppercase;
+}
+.ref-status-badge.claimed {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+.ref-status-badge.ready {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+.ref-status-badge.locked {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
 }
 .ref-hist-amt {
   font-size: 12px;
@@ -628,6 +834,14 @@ body {
 
 <div class="ref-page-wrap">
 
+  <!-- FLASH ALERT -->
+  <?php if ($flash): ?>
+    <div class="ref-flash <?= $flashType === 'error' ? 'error' : 'success' ?>">
+      <i class="ph-bold ph-<?= $flashType === 'error' ? 'warning-circle' : 'check-circle' ?>" style="font-size: 16px;"></i>
+      <span><?= htmlspecialchars($flash) ?></span>
+    </div>
+  <?php endif; ?>
+
   <!-- HERO BANNER -->
   <div class="ref-hero-card">
     <div class="ref-hero-top">
@@ -657,23 +871,88 @@ body {
   </div>
   <?php endif; ?>
 
-  <!-- 3-PILLAR KPI STATS -->
+  <!-- 4-PILLAR KPI STATS -->
   <div class="ref-stats-grid">
     <div class="ref-stat-card blue">
-      <div class="ref-stat-icon"><i class="ph-bold ph-users"></i></div>
-      <div class="ref-stat-val"><?= number_format($ref_count, 0, ',', '.') ?></div>
-      <div class="ref-stat-lbl">Kawan</div>
-    </div>
-    <div class="ref-stat-card green">
-      <div class="ref-stat-icon"><i class="ph-bold ph-coins"></i></div>
-      <div class="ref-stat-val"><?= format_rp($ref_earned) ?></div>
-      <div class="ref-stat-lbl">Komisi</div>
+      <div class="ref-stat-icon-wrap"><i class="ph-bold ph-users-three"></i></div>
+      <div class="ref-stat-content">
+        <div class="ref-stat-val"><?= number_format($ref_count, 0, ',', '.') ?></div>
+        <div class="ref-stat-lbl">Kawan Terdaftar</div>
+      </div>
     </div>
     <div class="ref-stat-card amber">
-      <div class="ref-stat-icon"><i class="ph-bold ph-wallet"></i></div>
-      <div class="ref-stat-val"><?= format_rp((float)$user['balance_wd']) ?></div>
-      <div class="ref-stat-lbl">Saldo Tarik</div>
+      <div class="ref-stat-icon-wrap"><i class="ph-bold ph-wallet"></i></div>
+      <div class="ref-stat-content">
+        <div class="ref-stat-val"><?= format_rp((float)$user['balance_wd']) ?></div>
+        <div class="ref-stat-lbl">Saldo Siap WD</div>
+      </div>
     </div>
+    <div class="ref-stat-card ice">
+      <div class="ref-stat-icon-wrap"><i class="ph-bold ph-lock-key"></i></div>
+      <div class="ref-stat-content">
+        <div class="ref-stat-val"><?= format_rp($ref_locked) ?></div>
+        <div class="ref-stat-lbl">Komisi Beku</div>
+      </div>
+    </div>
+    <div class="ref-stat-card green">
+      <div class="ref-stat-icon-wrap"><i class="ph-bold ph-lightning"></i></div>
+      <div class="ref-stat-content">
+        <div class="ref-stat-val"><?= format_rp($ref_claimable) ?></div>
+        <div class="ref-stat-lbl">Siap Dicairkan</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PENCAIRAN KOMISI ACTION CARD -->
+  <div class="ref-claim-box <?= $ref_claimable > 0 ? 'active-claim' : '' ?>">
+    <div class="ref-claim-header">
+      <div class="ref-claim-title-wrap">
+        <i class="ph-bold <?= $ref_claimable > 0 ? 'ph-lightning' : ($ref_locked > 0 ? 'ph-lock-key' : 'ph-coins') ?>"></i>
+        <span>Pencairan Komisi Referral</span>
+      </div>
+      <?php if ($ref_claimable > 0): ?>
+        <span class="ref-claim-tag ready">Siap Dicairkan</span>
+      <?php elseif ($ref_locked > 0): ?>
+        <span class="ref-claim-tag locked">Tertahan</span>
+      <?php else: ?>
+        <span class="ref-claim-tag locked">Info Sistem</span>
+      <?php endif; ?>
+    </div>
+
+    <div class="ref-claim-body">
+      <div class="ref-claim-amt">
+        <?= format_rp($ref_claimable > 0 ? $ref_claimable : $ref_locked) ?>
+      </div>
+      <div class="ref-claim-desc">
+        <?php if ($ref_claimable > 0): ?>
+          Masa beku telah selesai! Klik tombol di bawah untuk mencairkan langsung ke Saldo Penarikan Anda.
+        <?php elseif ($ref_locked > 0): ?>
+          <?php if ($earliest_unlock): ?>
+            Komisi terdekat dapat dicairkan pada: <strong><?= date('d M Y, H:i', strtotime($earliest_unlock)) ?> WIB</strong> (Masa tahan: <?= $ref_hold_days ?> hari).
+          <?php else: ?>
+            Menunggu masa tahan <?= $ref_hold_days ?> hari sebelum dapat dicairkan ke saldo penarikan.
+          <?php endif; ?>
+        <?php else: ?>
+          Komisi baru dari pendaftaran (+<?= format_rp($ref_bonus) ?>) dan deposit (+<?= (float)$ref_pct ?>%) akan berstatus beku selama <?= $ref_hold_days ?> hari sebelum siap dicairkan.
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <?php if ($ref_claimable > 0): ?>
+      <form method="POST" action="" onsubmit="this.querySelector('button').disabled = true;">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="claim_commissions">
+        <button type="submit" class="ref-claim-btn" id="btn-claim-commissions">
+          <i class="ph-bold ph-hand-coins" style="font-size: 16px;"></i>
+          <span>Cairkan <?= format_rp($ref_claimable) ?> Sekarang</span>
+        </button>
+      </form>
+    <?php else: ?>
+      <button type="button" class="ref-claim-btn disabled" disabled>
+        <i class="ph-bold <?= $ref_locked > 0 ? 'ph-lock' : 'ph-check-circle' ?>"></i>
+        <span><?= $ref_locked > 0 ? 'Menunggu Waktu Buka' : 'Tidak Ada Komisi Tertahan' ?></span>
+      </button>
+    <?php endif; ?>
   </div>
 
   <!-- REFERRAL CODE & QUICK SHARE -->
@@ -804,14 +1083,29 @@ body {
       </div>
     <?php else: ?>
       <div class="ref-list-container">
-        <?php foreach ($history as $h): ?>
+        <?php foreach ($history as $h): 
+          $isClaimed = ($h['status'] === 'claimed');
+          $isReady   = ($h['status'] === 'locked' && ($h['unlock_at'] === null || strtotime($h['unlock_at']) <= time()));
+          $isLocked  = ($h['status'] === 'locked' && !empty($h['unlock_at']) && strtotime($h['unlock_at']) > time());
+        ?>
           <div class="ref-hist-row">
-            <div class="ref-hist-icon">
-              <i class="ph-fill ph-coins"></i>
+            <div class="ref-hist-icon <?= $isClaimed ? 'claimed' : ($isReady ? 'ready' : 'locked') ?>">
+              <i class="ph-bold <?= $isClaimed ? 'ph-check' : ($isReady ? 'ph-lightning' : 'ph-lock') ?>"></i>
             </div>
             <div class="ref-hist-body">
               <div class="ref-hist-title">Komisi dari <?= htmlspecialchars($h['username']) ?></div>
-              <div class="ref-hist-date"><?= date('d M Y, H:i', strtotime($h['created_at'])) ?> WIB</div>
+              <div class="ref-hist-meta-row">
+                <span class="ref-hist-date"><?= date('d M Y, H:i', strtotime($h['created_at'])) ?> WIB</span>
+                <?php if ($isClaimed): ?>
+                  <span class="ref-status-badge claimed"><i class="ph-bold ph-check-circle"></i> Dicairkan</span>
+                <?php elseif ($isReady): ?>
+                  <span class="ref-status-badge ready"><i class="ph-bold ph-lightning"></i> Siap Cair</span>
+                <?php else: ?>
+                  <span class="ref-status-badge locked" title="Bisa dicairkan pada <?= date('d M Y H:i', strtotime($h['unlock_at'])) ?> WIB">
+                    <i class="ph-bold ph-lock-key"></i> Buka <?= date('d M H:i', strtotime($h['unlock_at'])) ?>
+                  </span>
+                <?php endif; ?>
+              </div>
             </div>
             <div class="ref-hist-amt">
               +<?= format_rp((float)$h['amount']) ?>
