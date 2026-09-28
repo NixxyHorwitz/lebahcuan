@@ -45,20 +45,74 @@ if (!empty($_GET['ref'])) {
     $_COOKIE['ref_code'] = $ref_code;
 }
 
-// PDO connection
+// PDO connection with automatic retry on connection spikes (Error 1040 / 1203) and emergency local fallback
 function createPdo(): PDO {
-    $dsn = sprintf(
-        'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
-        $_ENV['DB_HOST'] ?? '127.0.0.1',
-        $_ENV['DB_PORT'] ?? '3306',
-        $_ENV['DB_DATABASE'] ?? 'tonton'
-    );
-    return new PDO($dsn, $_ENV['DB_USERNAME'] ?? 'root', $_ENV['DB_PASSWORD'] ?? '', [
+    $hosts = [
+        [
+            'host'     => $_ENV['DB_HOST'] ?? '127.0.0.1',
+            'port'     => $_ENV['DB_PORT'] ?? '3306',
+            'dbname'   => $_ENV['DB_DATABASE'] ?? 'caracuan',
+            'username' => $_ENV['DB_USERNAME'] ?? 'root',
+            'password' => $_ENV['DB_PASSWORD'] ?? '',
+        ]
+    ];
+
+    // If primary host is remote and fallback is configured or available, register fallback
+    if (!empty($_ENV['DB_FALLBACK_HOST'])) {
+        $hosts[] = [
+            'host'     => $_ENV['DB_FALLBACK_HOST'],
+            'port'     => $_ENV['DB_FALLBACK_PORT'] ?? '3306',
+            'dbname'   => $_ENV['DB_FALLBACK_DATABASE'] ?? 'caracuan',
+            'username' => $_ENV['DB_FALLBACK_USERNAME'] ?? 'root',
+            'password' => $_ENV['DB_FALLBACK_PASSWORD'] ?? '',
+        ];
+    } elseif (($_ENV['DB_HOST'] ?? '') !== '127.0.0.1' && ($_ENV['DB_HOST'] ?? '') !== 'localhost') {
+        // Automatically provide local Laragon MySQL as emergency fallback if remote server is exhausted
+        $hosts[] = [
+            'host'     => '127.0.0.1',
+            'port'     => '3306',
+            'dbname'   => 'caracuan',
+            'username' => 'root',
+            'password' => '',
+        ];
+    }
+
+    $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
-        PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone='+07:00', wait_timeout=600",
-    ]);
+        PDO::ATTR_TIMEOUT            => 4,
+        PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone='+07:00', wait_timeout=30",
+    ];
+
+    $lastException = null;
+
+    foreach ($hosts as $cfg) {
+        $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $cfg['host'], $cfg['port'], $cfg['dbname']);
+        $isLocal = ($cfg['host'] === '127.0.0.1' || $cfg['host'] === 'localhost');
+        $maxRetries = $isLocal ? 1 : 3;
+        $retryDelayMs = 150;
+
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                return new PDO($dsn, $cfg['username'], $cfg['password'], $options);
+            } catch (PDOException $e) {
+                $lastException = $e;
+                $code = (int)($e->errorInfo[1] ?? 0);
+                $msg = $e->getMessage();
+                $isConnLimit = ($code === 1040 || $code === 1203 || str_contains($msg, 'Too many connections') || str_contains($msg, 'max_user_connections'));
+
+                if ($isConnLimit && $attempt < $maxRetries) {
+                    usleep($retryDelayMs * 1000);
+                    $retryDelayMs *= 2;
+                    continue;
+                }
+                break;
+            }
+        }
+    }
+
+    throw $lastException ?? new PDOException("Could not connect to any database host.");
 }
 
 /**
