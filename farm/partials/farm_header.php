@@ -250,8 +250,8 @@ $farmSubPage = $farmSubPage ?? 'meadow';
 /* Tycoon Master Bar */
 .tycoon-top-bar {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 60%, #b45309 100%);
-  padding: 14px 14px 12px;
-  border-bottom: 3.5px solid #78350f;
+  padding: 10px 12px 8px;
+  border-bottom: 3px solid #78350f;
   box-shadow: 0 4px 16px rgba(180,83,9,0.25);
   position: relative;
   z-index: 20;
@@ -260,33 +260,33 @@ $farmSubPage = $farmSubPage ?? 'meadow';
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 .tycoon-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   text-decoration: none;
 }
 .tycoon-brand__icon {
-  width: 38px; height: 38px;
+  width: 32px; height: 32px;
   background: #fff;
-  border: 2.5px solid #78350f;
-  border-radius: 12px;
+  border: 2px solid #78350f;
+  border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 3px 0 #78350f;
+  box-shadow: 0 2.5px 0 #78350f;
   flex-shrink: 0;
 }
 .tycoon-brand__icon img {
-  width: 26px; height: 26px; object-fit: contain;
+  width: 22px; height: 22px; object-fit: contain;
 }
 .tycoon-brand__title {
-  font-size: 16px; font-weight: 900; color: #fff;
-  line-height: 1.1; text-shadow: 0 2px 0 #78350f;
+  font-size: 14.5px; font-weight: 900; color: #fff;
+  line-height: 1.1; text-shadow: 0 1.5px 0 #78350f;
 }
 .tycoon-brand__sub {
-  font-size: 10px; font-weight: 800; color: #fef3c7;
+  font-size: 9.5px; font-weight: 800; color: #fef3c7;
 }
 
 /* Audio & Back Action */
@@ -297,13 +297,13 @@ $farmSubPage = $farmSubPage ?? 'meadow';
 }
 .tycoon-btn-ctrl {
   background: #fff;
-  border: 2.5px solid #78350f;
-  border-radius: 12px;
-  padding: 6px 10px;
-  font-size: 11px; font-weight: 900;
+  border: 2px solid #78350f;
+  border-radius: 10px;
+  padding: 5px 9px;
+  font-size: 10.5px; font-weight: 900;
   color: #78350f;
-  display: inline-flex; align-items: center; gap: 5px;
-  box-shadow: 0 3px 0 #78350f;
+  display: inline-flex; align-items: center; gap: 4px;
+  box-shadow: 0 2.5px 0 #78350f;
   text-decoration: none;
   cursor: pointer;
   transition: transform 0.1s;
@@ -316,32 +316,32 @@ $farmSubPage = $farmSubPage ?? 'meadow';
   background: #fee2e2;
   color: #991b1b;
   border-color: #991b1b;
-  box-shadow: 0 3px 0 #991b1b;
+  box-shadow: 0 2.5px 0 #991b1b;
 }
 
 /* 3-Pillar Balances Card (Deposit, WD, Honey) */
 .tycoon-stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 .tycoon-stat-box {
   background: #ffffff;
-  border: 2.5px solid #78350f;
-  border-radius: 14px;
-  padding: 7px 6px;
-  box-shadow: 0 3px 0 #78350f;
+  border: 2px solid #78350f;
+  border-radius: 12px;
+  padding: 5px 4px;
+  box-shadow: 0 2.5px 0 #78350f;
   text-align: center;
 }
 .tycoon-stat-box__lbl {
-  font-size: 9px; font-weight: 900;
+  font-size: 8px; font-weight: 900;
   text-transform: uppercase;
   color: #64748b;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 .tycoon-stat-box__val {
-  font-size: 12.5px; font-weight: 900;
+  font-size: 11.5px; font-weight: 900;
   line-height: 1.1;
 }
 .tycoon-stat-box__val--dep { color: #1d4ed8; }
@@ -352,22 +352,22 @@ $farmSubPage = $farmSubPage ?? 'meadow';
 .tycoon-nav-tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  gap: 5px;
 }
 .tycoon-tab {
   background: rgba(255, 255, 255, 0.25);
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-radius: 12px;
-  padding: 8px 4px;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  border-radius: 10px;
+  padding: 6px 3px;
   text-decoration: none;
   text-align: center;
   color: #fff;
-  font-size: 11px; font-weight: 900;
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 900;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
   transition: all 0.15s ease;
 }
 .tycoon-tab i {
-  font-size: 18px;
+  font-size: 16px;
 }
 .tycoon-tab:active {
   transform: translateY(2px);

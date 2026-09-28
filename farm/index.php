@@ -53,69 +53,77 @@ require dirname(__DIR__) . '/partials/header.php';
 body { background: #071a0c !important; font-family: 'Nunito', sans-serif; overflow-x: hidden; }
 
 #farm3dCanvas {
-  position: relative; width: 100%; height: 70vh; min-height: 420px;
-  border-bottom: 4px solid #1a5c2e; overflow: hidden;
+  position: relative; width: 100%; 
+  height: 40vh; min-height: 250px; max-height: 340px;
+  border-bottom: 3.5px solid #1a5c2e; overflow: hidden;
+  touch-action: pan-y;
 }
-#farm3dCanvas canvas { display: block; width: 100% !important; height: 100% !important; }
+@media (min-width: 640px) {
+  #farm3dCanvas {
+    height: 48vh; min-height: 320px; max-height: 440px;
+  }
+}
+#farm3dCanvas canvas { display: block; width: 100% !important; height: 100% !important; touch-action: pan-y; }
 
 /* Loading */
 .farm3d-loading {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
   background: linear-gradient(180deg, #1a3d1f 0%, #071a0c 100%);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  z-index: 20; transition: opacity 0.8s;
+  z-index: 20; transition: opacity 0.5s;
+  pointer-events: none;
 }
-.farm3d-loading.hidden { opacity: 0; pointer-events: none; }
-.farm3d-loading-spinner { width: 52px; height: 52px; border: 4px solid rgba(251,191,36,0.15); border-top: 4px solid #fbbf24; border-radius: 50%; animation: spin3d 0.8s linear infinite; }
+.farm3d-loading.hidden { opacity: 0; pointer-events: none !important; display: none !important; }
+.farm3d-loading-spinner { width: 44px; height: 44px; border: 3.5px solid rgba(251,191,36,0.15); border-top: 3.5px solid #fbbf24; border-radius: 50%; animation: spin3d 0.8s linear infinite; }
 @keyframes spin3d { to { transform: rotate(360deg); } }
-.farm3d-loading-text { margin-top: 14px; font-size: 14px; font-weight: 800; color: #fbbf24; }
+.farm3d-loading-text { margin-top: 10px; font-size: 12px; font-weight: 800; color: #fbbf24; }
 
 /* Cinematic Nav */
 .cinema-nav {
-  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 10px; z-index: 18;
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px; z-index: 18;
 }
 .cinema-btn {
-  width: 44px; height: 44px; border-radius: 50%;
-  background: rgba(0,0,0,0.55); backdrop-filter: blur(8px);
-  border: 2px solid rgba(255,255,255,0.15);
-  color: #fbbf24; font-size: 20px; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  color: #fbbf24; font-size: 16px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
 }
-.cinema-btn:hover { background: rgba(251,191,36,0.2); border-color: #fbbf24; transform: scale(1.1); }
+.cinema-btn:hover { background: rgba(251,191,36,0.2); border-color: #fbbf24; transform: scale(1.08); }
 .cinema-btn:active { transform: scale(0.95); }
 .cinema-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .cinema-indicator {
-  background: rgba(0,0,0,0.55); backdrop-filter: blur(8px);
-  border: 1.5px solid rgba(255,255,255,0.1); border-radius: 14px;
-  padding: 6px 16px; text-align: center; min-width: 120px;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255,255,255,0.15); border-radius: 12px;
+  padding: 4px 12px; text-align: center; min-width: 95px;
 }
-.cinema-indicator-name { font-size: 11px; font-weight: 900; color: #fbbf24; }
-.cinema-indicator-sub { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.5); }
+.cinema-indicator-name { font-size: 10px; font-weight: 900; color: #fbbf24; }
+.cinema-indicator-sub { font-size: 8.5px; font-weight: 700; color: rgba(255,255,255,0.6); }
 
 /* Zoom buttons */
 .cinema-zoom {
-  position: absolute; bottom: 16px; right: 14px; z-index: 18;
-  display: flex; flex-direction: column; gap: 6px;
+  position: absolute; bottom: 12px; right: 10px; z-index: 18;
+  display: flex; flex-direction: column; gap: 5px;
 }
 .cinema-zoom-btn {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: rgba(0,0,0,0.5); backdrop-filter: blur(6px);
-  border: 1.5px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.7); font-size: 18px; font-weight: 900;
+  width: 30px; height: 30px; border-radius: 8px;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.85); font-size: 15px; font-weight: 900;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
 }
-.cinema-zoom-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.cinema-zoom-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
 
 /* Ambient toggle */
 .ambient-sound-toggle {
-  position: absolute; top: 12px; right: 12px; z-index: 18;
-  background: rgba(0,0,0,0.5); backdrop-filter: blur(6px);
-  border: 1.5px solid rgba(255,255,255,0.1); border-radius: 12px;
-  padding: 6px 12px; font-size: 11px; font-weight: 800; color: #fbbf24;
-  cursor: pointer; display: flex; align-items: center; gap: 5px;
+  position: absolute; top: 10px; right: 10px; z-index: 18;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+  border: 1.5px solid rgba(255,255,255,0.15); border-radius: 10px;
+  padding: 4px 9px; font-size: 10px; font-weight: 800; color: #fbbf24;
+  cursor: pointer; display: flex; align-items: center; gap: 4px;
 }
 
 /* Labels */
@@ -139,23 +147,23 @@ body { background: #071a0c !important; font-family: 'Nunito', sans-serif; overfl
 }
 
 /* Ground UI */
-.farm-ground-ui { background: linear-gradient(180deg, #0f2a16 0%, #071a0c 100%); padding: 16px 14px 180px; }
-.ground-section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-.ground-section-title .pill { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(251,191,36,0.25); border-radius: 12px; padding: 5px 14px; font-size: 12px; font-weight: 800; color: #fbbf24; }
-.hive-quick-list { display: flex; flex-direction: column; gap: 10px; }
-.hive-quick-card { background: rgba(255,255,255,0.035); border: 1.5px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; }
-.hive-quick-card:hover { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.3); transform: translateX(4px); }
-.hive-quick-card img { width: 50px; height: 50px; object-fit: contain; border-radius: 12px; background: rgba(255,255,255,0.05); padding: 4px; flex-shrink: 0; }
+.farm-ground-ui { background: linear-gradient(180deg, #0f2a16 0%, #071a0c 100%); padding: 12px 12px 140px; }
+.ground-section-title { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.ground-section-title .pill { background: rgba(255,255,255,0.06); border: 1.5px solid rgba(251,191,36,0.25); border-radius: 10px; padding: 4px 10px; font-size: 11px; font-weight: 800; color: #fbbf24; }
+.hive-quick-list { display: flex; flex-direction: column; gap: 8px; }
+.hive-quick-card { background: rgba(255,255,255,0.035); border: 1.5px solid rgba(255,255,255,0.07); border-radius: 14px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s; }
+.hive-quick-card:hover { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.3); transform: translateX(3px); }
+.hive-quick-card img { width: 42px; height: 42px; object-fit: contain; border-radius: 10px; background: rgba(255,255,255,0.05); padding: 3px; flex-shrink: 0; }
 .hive-quick-info { flex: 1; min-width: 0; }
-.hive-quick-name { font-size: 13px; font-weight: 800; color: #f8fafc; }
-.hive-quick-meta { font-size: 10.5px; font-weight: 700; color: #94a3b8; margin-top: 1px; }
-.hive-quick-honey { font-size: 14px; font-weight: 900; color: #fbbf24; text-align: right; flex-shrink: 0; }
-.hive-quick-honey small { font-size: 10px; color: #94a3b8; display: block; font-weight: 700; }
-.farm-empty-cta { text-align: center; padding: 30px 20px; background: rgba(255,255,255,0.03); border: 2px dashed rgba(251,191,36,0.2); border-radius: 20px; }
-.farm-empty-cta .emoji { font-size: 48px; margin-bottom: 10px; }
-.farm-empty-cta .title { font-size: 16px; font-weight: 900; color: #f8fafc; }
-.farm-empty-cta .sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
-.farm-empty-cta .btn-cta { margin-top: 14px; display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #f59e0b, #d97706); border: 2px solid #78350f; border-radius: 14px; padding: 10px 20px; color: #fff; font-size: 13px; font-weight: 900; text-decoration: none; box-shadow: 0 4px 0 #78350f; }
+.hive-quick-name { font-size: 12px; font-weight: 800; color: #f8fafc; }
+.hive-quick-meta { font-size: 10px; font-weight: 700; color: #94a3b8; margin-top: 1px; }
+.hive-quick-honey { font-size: 13px; font-weight: 900; color: #fbbf24; text-align: right; flex-shrink: 0; }
+.hive-quick-honey small { font-size: 9.5px; color: #94a3b8; display: block; font-weight: 700; }
+.farm-empty-cta { text-align: center; padding: 22px 16px; background: rgba(255,255,255,0.03); border: 2px dashed rgba(251,191,36,0.2); border-radius: 16px; }
+.farm-empty-cta .emoji { font-size: 38px; margin-bottom: 8px; }
+.farm-empty-cta .title { font-size: 14.5px; font-weight: 900; color: #f8fafc; }
+.farm-empty-cta .sub { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+.farm-empty-cta .btn-cta { margin-top: 10px; display: inline-flex; align-items: center; gap: 5px; background: linear-gradient(135deg, #f59e0b, #d97706); border: 2px solid #78350f; border-radius: 12px; padding: 8px 16px; color: #fff; font-size: 12px; font-weight: 900; text-decoration: none; box-shadow: 0 3px 0 #78350f; }
 .meadow-sticky-bar {
   position: fixed;
   bottom: 96px;
@@ -203,10 +211,25 @@ body .float-contact-wrap {
   bottom: 154px !important;
 }
 
-/* Inspection Modal */
-.hive-inspection-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s; }
-.hive-inspection-overlay.active { opacity: 1; visibility: visible; }
-.hive-inspection-vignette { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background: radial-gradient(circle at center, rgba(45,20,5,0.82) 0%, rgba(30,12,3,0.92) 35%, rgba(15,6,1,0.97) 65%, rgba(5,2,0,0.99) 100%); backdrop-filter: blur(8px); }
+/* Inspection Modal - CRITICAL FIX: display:none & pointer-events:none when inactive */
+.hive-inspection-overlay { 
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; 
+  display: none !important; 
+  pointer-events: none !important;
+  align-items: center; justify-content: center; 
+  opacity: 0; visibility: hidden; 
+  transition: opacity 0.3s ease; 
+}
+.hive-inspection-overlay.active { 
+  display: flex !important; 
+  pointer-events: auto !important;
+  opacity: 1; visibility: visible; 
+}
+.hive-inspection-vignette { 
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; 
+  background: radial-gradient(circle at center, rgba(45,20,5,0.82) 0%, rgba(30,12,3,0.92) 35%, rgba(15,6,1,0.97) 65%, rgba(5,2,0,0.99) 100%); 
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
 .hive-inspection-close { position: absolute; top: 18px; right: 18px; width: 44px; height: 44px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; color: #fef3c7; font-size: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; }
 .hive-inspection-title { position: absolute; top: 22px; left: 0; right: 0; text-align: center; z-index: 50; }
 .hive-inspection-title span { display: inline-flex; align-items: center; gap: 8px; background: rgba(120,53,15,0.6); border: 2px solid rgba(251,191,36,0.4); border-radius: 16px; padding: 6px 16px; font-size: 14px; font-weight: 900; color: #fde68a; backdrop-filter: blur(4px); }
@@ -624,13 +647,12 @@ function toggleAmbientSound() {
     b.innerHTML = '<i class="ph-fill ph-speaker-high"></i> Ambient';
   }
 }
-// Auto-start ambient on first canvas click if not yet started
-document.addEventListener('pointerdown', function startAmbientOnce() {
-  if (!ambientOn) {
-    toggleAmbientSound();
-  }
-  document.removeEventListener('pointerdown', startAmbientOnce);
-}, { once: true });
+
+// Fallback stubs for camera controls
+window.cineNext = function() {};
+window.cinePrev = function() {};
+window.cineZoomIn = function() {};
+window.cineZoomOut = function() {};
 
 // ══════════════════════════════════════════════════════════
 // THREE.JS — CINEMATIC CAM + SMOOTH MOUNTAINS + VIBRANT
@@ -640,17 +662,36 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
   const loadingEl = document.getElementById('farm3dLoading');
   const labelsC = document.getElementById('hiveLabelsContainer');
 
+  if (!container) return;
+
+  const isMobile = window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ 
+      antialias: !isMobile, 
+      powerPreference: 'high-performance' 
+    });
+  } catch(e) {
+    console.warn("WebGL initialization failed:", e);
+    if (loadingEl) loadingEl.classList.add('hidden');
+    return;
+  }
+
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x8ec8e8, 35, 90);
 
-  const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 300);
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const camera = new THREE.PerspectiveCamera(50, (container.clientWidth || 360) / (container.clientHeight || 260), 0.1, 300);
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
+  if (!isMobile) {
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  } else {
+    renderer.shadowMap.enabled = false;
+  }
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.3;
+  renderer.domElement.style.touchAction = 'pan-y';
   container.insertBefore(renderer.domElement, container.firstChild);
 
   // Sky
@@ -2057,8 +2098,13 @@ document.addEventListener('pointerdown', function startAmbientOnce() {
   }
 
   animate();
-  setTimeout(() => loadingEl.classList.add('hidden'), 700);
-  window.addEventListener('resize', () => { camera.aspect = container.clientWidth/container.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(container.clientWidth, container.clientHeight); });
+  setTimeout(() => { if (loadingEl) loadingEl.classList.add('hidden'); }, 400);
+  window.addEventListener('resize', () => { 
+    if (!container || !camera || !renderer) return;
+    camera.aspect = container.clientWidth/container.clientHeight; 
+    camera.updateProjectionMatrix(); 
+    renderer.setSize(container.clientWidth, container.clientHeight); 
+  });
 })();
 
 // ── INTERACTION LOGIC ──
@@ -2069,18 +2115,31 @@ function renderHexagonCells(fp, gid) {
 }
 function openHiveInspection(hiveId) {
   currentInspectedHiveId = hiveId; const h = USER_HIVES_MAP[hiveId]; if(!h) return;
-  FarmAudio.playPop(); FarmAudio.playBee(0.5);
+  if (typeof FarmAudio !== 'undefined') {
+    try { FarmAudio.playPop(); FarmAudio.playBee(0.5); } catch(e) {}
+  }
   const d=h.details||{}, th=parseFloat(d.total_honey)||0, mc=parseFloat(d.max_capacity)||100, pct=parseFloat(d.fill_percentage)||0;
-  document.getElementById('inspectionHiveName').innerHTML='<i class="ph-fill ph-hexagon" style="color:#fbbf24;"></i> '+(h.master_name||'Sarang');
-  document.getElementById('inspectionHoneyAmt').innerText=th.toFixed(2)+' ml';
-  document.getElementById('inspectionHoneyCap').innerText='Kapasitas: '+th.toFixed(1)+' / '+mc.toFixed(0)+' ml ('+pct+'%)';
-  document.getElementById('inspectionBeeInfo').innerHTML='<i class="ph-fill ph-bug-beetle"></i><span>'+(parseInt(d.bee_count)||0)+'/'+(parseInt(h.max_slots)||0)+' Lebah • +'+(parseFloat(d.hourly_production)||0).toFixed(1)+' ml/jam</span>';
-  document.getElementById('btnInspectionHarvest').disabled = th<0.1;
+  const nameEl = document.getElementById('inspectionHiveName');
+  if (nameEl) nameEl.innerHTML='<i class="ph-fill ph-hexagon" style="color:#fbbf24;"></i> '+(h.master_name||'Sarang');
+  const amtEl = document.getElementById('inspectionHoneyAmt');
+  if (amtEl) amtEl.innerText=th.toFixed(2)+' ml';
+  const capEl = document.getElementById('inspectionHoneyCap');
+  if (capEl) capEl.innerText='Kapasitas: '+th.toFixed(1)+' / '+mc.toFixed(0)+' ml ('+pct+'%)';
+  const beeEl = document.getElementById('inspectionBeeInfo');
+  if (beeEl) beeEl.innerHTML='<i class="ph-fill ph-bug-beetle"></i><span>'+(parseInt(d.bee_count)||0)+'/'+(parseInt(h.max_slots)||0)+' Lebah • +'+(parseFloat(d.hourly_production)||0).toFixed(1)+' ml/jam</span>';
+  const btnH = document.getElementById('btnInspectionHarvest');
+  if (btnH) btnH.disabled = th<0.1;
   renderHexagonCells(pct,'inspectionHexGrid');
-  document.getElementById('hiveInspectionOverlay').classList.add('active');
+  const overlay = document.getElementById('hiveInspectionOverlay');
+  if (overlay) overlay.classList.add('active');
   document.body.style.overflow='hidden';
 }
-function closeHiveInspection() { document.getElementById('hiveInspectionOverlay').classList.remove('active'); document.body.style.overflow=''; currentInspectedHiveId=0; }
+function closeHiveInspection() { 
+  const overlay = document.getElementById('hiveInspectionOverlay');
+  if (overlay) overlay.classList.remove('active'); 
+  document.body.style.overflow=''; 
+  currentInspectedHiveId=0; 
+}
 document.addEventListener('keydown', e => { if(e.key==='Escape') closeHiveInspection(); });
 function spawnHoneyFly(t,el) { const r=el?el.getBoundingClientRect():{top:innerHeight/2,left:innerWidth/2}; const b=document.createElement('div'); b.className='floating-honey-fly'; b.innerText='+ '+t+' ml'; b.style.top=(r.top+10)+'px'; b.style.left=(r.left+20)+'px'; document.body.appendChild(b); setTimeout(()=>b.remove(),1200); }
 function harvestInspectedHive() {
