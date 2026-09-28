@@ -279,14 +279,18 @@ if (isset($update['callback_query'])) {
         if ($dep && $dep['status'] === 'pending') {
             $pdo->prepare("UPDATE deposits SET status='confirmed', confirmed_at=NOW() WHERE id=?")->execute([$id]);
             $pdo->prepare("UPDATE users SET balance_dep=balance_dep+? WHERE id=?")->execute([$dep['amount'], $dep['user_id']]);
-            credit_deposit_referral_commission($pdo, (int)$dep['user_id'], (float)$dep['amount']);
+            $comm = credit_deposit_referral_commission($pdo, (int)$dep['user_id'], (float)$dep['amount']);
             $pdo->commit();
-            answer_cb($token, $cb_id, '✅ Deposit Approved!');
+            $toast = $comm > 0 ? '✅ Deposit Approved! (+Komisi ' . format_rp($comm) . ' ke upline)' : '✅ Deposit Approved!';
+            answer_cb($token, $cb_id, $toast);
             
             $msg = "✅ <b>DEPOSIT QRIS BERHASIL (CONFIRMED)</b>\n";
             $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
             $msg .= "👤 <b>User:</b> <code>" . htmlspecialchars($dep['username']) . "</code>\n";
             $msg .= "💵 <b>Amount:</b> <code>" . format_rp((float)$dep['amount']) . "</code>\n";
+            if ($comm > 0) {
+                $msg .= "🎁 <b>Komisi Referral:</b> <code>" . format_rp($comm) . "</code> (dikirim ke upline)\n";
+            }
             $msg .= "🕒 <b>Time:</b> <code>" . date('d-m-Y H:i:s') . " WIB</code>\n";
             $msg .= "💳 <b>Method:</b> <code>QRIS Otomatis</code>\n";
             $msg .= "✅ <b>Status:</b> <code>Approved via Bot</code>\n";
@@ -314,9 +318,10 @@ if (isset($update['callback_query'])) {
                 $pdo->prepare("UPDATE deposits SET status='confirmed', admin_note='Dikonfirmasi manual oleh Admin', confirmed_at=NOW() WHERE id=?")->execute([$id]);
                 
                 // 3. Process referral commission
-                credit_deposit_referral_commission($pdo, (int)$dep['user_id'], (float)$dep['amount']);
+                $comm = credit_deposit_referral_commission($pdo, (int)$dep['user_id'], (float)$dep['amount']);
                 $pdo->commit();
-                answer_cb($token, $cb_id, '✅ Deposit Expired Berhasil Di-Acc!');
+                $toast = $comm > 0 ? '✅ Acc Expired Berhasil! (+Komisi ' . format_rp($comm) . ' ke upline)' : '✅ Deposit Expired Berhasil Di-Acc!';
+                answer_cb($token, $cb_id, $toast);
                 
                 $u_stmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
                 $u_stmt->execute([$dep['user_id']]);
@@ -326,6 +331,9 @@ if (isset($update['callback_query'])) {
                 $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
                 $msg .= "👤 <b>User:</b> <code>" . htmlspecialchars($uname) . "</code>\n";
                 $msg .= "💵 <b>Amount:</b> <code>" . format_rp((float)$dep['amount']) . "</code>\n";
+                if ($comm > 0) {
+                    $msg .= "🎁 <b>Komisi Referral:</b> <code>" . format_rp($comm) . "</code> (dikirim ke upline)\n";
+                }
                 $msg .= "🕒 <b>Time:</b> <code>" . date('d-m-Y H:i:s') . " WIB</code>\n";
                 $msg .= "💳 <b>Method:</b> <code>QRIS Otomatis</code>\n";
                 $msg .= "✅ <b>Status:</b> <code>Approved (Acc Expired)</code>\n";

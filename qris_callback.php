@@ -89,7 +89,7 @@ try {
 
 
     // 3. Process referral commission
-    credit_deposit_referral_commission($pdo, (int)$dep['user_id'], (float)$dep['amount']);
+    $comm = credit_deposit_referral_commission($pdo, (int)$dep['user_id'], (float)$dep['amount']);
 
     // 4. Update the payment gateway log to matched and link the deposit
     $pdo->prepare("UPDATE payment_gateway_logs SET deposit_id = ?, status = 'matched' WHERE id = ?")
@@ -108,6 +108,9 @@ try {
     $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
     $msg .= "👤 <b>User:</b> <code>" . htmlspecialchars($username) . "</code>\n";
     $msg .= "💵 <b>Amount:</b> <code>" . format_rp((float)$dep['amount']) . "</code>\n";
+    if ($comm > 0) {
+        $msg .= "🎁 <b>Komisi Referral:</b> <code>" . format_rp($comm) . "</code> (dikirim ke upline)\n";
+    }
     $msg .= "🕒 <b>Time:</b> <code>" . date('d-m-Y H:i:s') . " WIB</code>\n";
     $msg .= "💳 <b>Method:</b> <code>QRIS Otomatis</code>\n";
     $msg .= "✅ <b>Status:</b> <code>Sukses via Callback</code>\n";
