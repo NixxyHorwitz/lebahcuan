@@ -19,19 +19,23 @@ $chk->execute([$user['id'], $vid_id]);
 $already_watched = (bool)$chk->fetch();
 $canWatch = !$already_watched && $watch_today < $watch_limit;
 
+// Check initial like status
+$chk_like = $pdo->prepare("SELECT id FROM video_likes WHERE user_id=? AND video_id=?");
+$chk_like->execute([$user['id'], $vid_id]);
+$user_has_liked = (bool)$chk_like->fetch();
+
 // ─────────────────────────────────────────────────────────────
 // AJAX: start_watch — server issues a signed token with timestamp
-// Client harus call ini dulu sebelum bisa claim.
 // ─────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'start_watch') {
     header('Content-Type: application/json');
-    if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF']); exit; }
-    if (!$canWatch)     { echo json_encode(['ok'=>false,'msg'=>'Tidak bisa menonton.']); exit; }
+    if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF token.']); exit; }
+    if (!$canWatch)     { echo json_encode(['ok'=>false,'msg'=>'Tidak dapat menonton video ini.']); exit; }
 
-    $ts    = time();
+    $ts     = time();
     $secret = $_ENV['APP_SECRET'] ?? 'tonton_secret_2024';
-    $sig   = hash_hmac('sha256', $user['id'] . '|' . $vid_id . '|' . $ts, $secret);
-    $token = base64_encode($user['id'] . '|' . $vid_id . '|' . $ts . '|' . $sig);
+    $sig    = hash_hmac('sha256', $user['id'] . '|' . $vid_id . '|' . $ts, $secret);
+    $token  = base64_encode($user['id'] . '|' . $vid_id . '|' . $ts . '|' . $sig);
 
     echo json_encode(['ok'=>true,'watch_token'=>$token]);
     exit;
@@ -39,16 +43,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'start
 
 // ─────────────────────────────────────────────────────────────
 // AJAX: claim reward — wajib sertakan watch_token
-// Server validasi: signature benar + waktu sudah cukup
 // ─────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim') {
     header('Content-Type: application/json');
-    if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF']); exit; }
+    if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF token.']); exit; }
 
-    // Verifikasi watch_token
     $raw_token = $_POST['watch_token'] ?? '';
     if (empty($raw_token)) {
-        echo json_encode(['ok'=>false,'msg'=>'Token tidak valid. Tonton video dari awal.']); exit;
+        echo json_encode(['ok'=>false,'msg'=>'Sesi tonton tidak valid. Putar video dari awal.']); exit;
     }
 
     $decoded = base64_decode($raw_token, true);
@@ -57,49 +59,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
     }
 
     [$tok_uid, $tok_vid, $tok_ts, $tok_sig] = explode('|', $decoded, 4);
-    $secret  = $_ENV['APP_SECRET'] ?? 'tonton_secret_2024';
-    $expected= hash_hmac('sha256', $tok_uid . '|' . $tok_vid . '|' . $tok_ts, $secret);
+    $secret   = $_ENV['APP_SECRET'] ?? 'tonton_secret_2024';
+    $expected = hash_hmac('sha256', $tok_uid . '|' . $tok_vid . '|' . $tok_ts, $secret);
 
-    // Validasi identitas
     if ((int)$tok_uid !== (int)$user['id'] || (int)$tok_vid !== $vid_id) {
-        echo json_encode(['ok'=>false,'msg'=>'Token tidak cocok.']); exit;
+        echo json_encode(['ok'=>false,'msg'=>'Token tidak cocok dengan akun ini.']); exit;
     }
-    // Validasi signature
     if (!hash_equals($expected, $tok_sig)) {
-        echo json_encode(['ok'=>false,'msg'=>'Signature tidak valid.']); exit;
+        echo json_encode(['ok'=>false,'msg'=>'Signature token tidak valid.']); exit;
     }
-    // Validasi waktu — harus sudah tonton minimal watch_duration detik
-    $elapsed = time() - (int)$tok_ts;
+
+    $elapsed  = time() - (int)$tok_ts;
     $required = (int)$video['watch_duration'];
     if ($elapsed < $required) {
         $kurang = $required - $elapsed;
-        echo json_encode(['ok'=>false,'msg'=>"Belum cukup waktu. Tunggu {$kurang} detik lagi."]); exit;
+        echo json_encode(['ok'=>false,'msg'=>"Waktu belum cukup. Tunggu {$kurang} detik lagi."]); exit;
     }
-    // Token tidak boleh terlalu lama (maks 3× durasi, untuk toleransi pause)
     if ($elapsed > $required * 4 + 300) {
-        echo json_encode(['ok'=>false,'msg'=>'Token sudah kedaluwarsa. Refresh dan coba lagi.']); exit;
+        echo json_encode(['ok'=>false,'msg'=>'Sesi telah kedaluwarsa. Refresh dan putar kembali.']); exit;
     }
 
     $reward = (float)$video['reward_amount'];
     try {
         $pdo->beginTransaction();
         
-        // Lock baris user untuk mencegah race condition (concurrent claims)
         $pdo->prepare("SELECT id FROM users WHERE id=? FOR UPDATE")->execute([$user['id']]);
         
-        // Cek lagi setelah dilock (atomic)
         $chk2 = $pdo->prepare("SELECT id FROM watch_history WHERE user_id=? AND video_id=? AND DATE(watched_at)=CURDATE()");
         $chk2->execute([$user['id'], $vid_id]);
         if ($chk2->fetch()) { 
             $pdo->rollBack();
-            echo json_encode(['ok'=>false,'msg'=>'Sudah ditonton hari ini.']); exit; 
+            echo json_encode(['ok'=>false,'msg'=>'Video ini sudah ditonton hari ini.']); exit; 
         }
 
         $wt = $pdo->prepare("SELECT COUNT(*) FROM watch_history WHERE user_id=? AND DATE(watched_at)=CURDATE()");
         $wt->execute([$user['id']]);
         if ((int)$wt->fetchColumn() >= $watch_limit) {
             $pdo->rollBack();
-            echo json_encode(['ok'=>false,'msg'=>'Limit tonton habis!']); exit;
+            echo json_encode(['ok'=>false,'msg'=>'Batas tonton harian telah tercapai!']); exit;
         }
 
         $pdo->prepare("INSERT INTO watch_history (user_id,video_id,reward_given) VALUES (?,?,?)")
@@ -109,277 +106,688 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
         $pdo->prepare("UPDATE videos SET total_watches=total_watches+1 WHERE id=?")
             ->execute([$vid_id]);
         $pdo->commit();
-        $_SESSION['flash_videos_msg'] = '🎉 Reward ' . format_rp($reward) . ' berhasil diklaim!';
+
+        $_SESSION['flash_videos_msg'] = 'Reward ' . format_rp($reward) . ' berhasil diklaim!';
         $_SESSION['flash_videos_type'] = 'success';
-        echo json_encode(['ok'=>true,'reward'=>format_rp($reward),'msg'=>'+'.format_rp($reward).' berhasil!']);
+        echo json_encode(['ok'=>true,'reward'=>format_rp($reward),'msg'=>'+' . format_rp($reward) . ' berhasil ditambahkan!']);
     } catch (\Throwable) {
         $pdo->rollBack();
-        echo json_encode(['ok'=>false,'msg'=>'Terjadi kesalahan server.']);
+        echo json_encode(['ok'=>false,'msg'=>'Terjadi kendala pada server. Silakan coba lagi.']);
     }
     exit;
 }
-?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title><?= htmlspecialchars($video['title']) ?>  </title>
-<link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'].'/assets/css/app.css') ?: time() ?>">
-<style>
-/* ── Watch page overrides — Amber Honey Theme ── */
-body {
-  background-color: #fef8ee !important;
-  background-image: radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px) !important;
-  background-size: 16px 16px !important;
-}
-.watch-topbar {
-  position:sticky; top:0; z-index:100;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  border-bottom: 3px solid #78350f;
-  padding: 0 16px; height: 54px;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  box-shadow: 0 3px 0 #78350f;
-}
-.back-btn {
-  display: flex; align-items: center; gap: 6px;
-  color: #78350f; background: #fde68a; border: 2px solid #78350f;
-  border-radius: 12px; padding: 5px 12px;
-  text-decoration: none; font-weight: 900; font-size: 13px;
-  box-shadow: 0 2px 0 #78350f;
-  transition: transform 0.1s;
-}
-.back-btn:active { transform: translateY(2px); box-shadow: none; }
 
-.watch-topbar__bal {
-  background: #78350f; color: #fde68a; border: 2px solid #fff;
-  border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 900;
-  display: inline-flex; align-items: center; gap: 5px;
-  box-shadow: 0 2px 0 rgba(0,0,0,0.2);
-}
+// ─────────────────────────────────────────────────────────────
+// AJAX: toggle_like — suka atau batal suka video
+// ─────────────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggle_like') {
+    header('Content-Type: application/json');
+    if (!csrf_verify()) { 
+        echo json_encode(['ok' => false, 'msg' => 'Sesi kedaluwarsa, silakan refresh.']); 
+        exit; 
+    }
 
-/* Clean video wrapper */
-.yt-wrapper {
-  position: relative;
-  background: #000;
-  aspect-ratio: 16/9;
-  width: 100%;
-}
-.yt-wrapper iframe {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
-  border: none;
+    $chk_l = $pdo->prepare("SELECT id FROM video_likes WHERE user_id=? AND video_id=?");
+    $chk_l->execute([$user['id'], $vid_id]);
+    $already_liked = (bool)$chk_l->fetch();
+
+    if ($already_liked) {
+        $pdo->prepare("DELETE FROM video_likes WHERE user_id=? AND video_id=?")->execute([$user['id'], $vid_id]);
+        $pdo->prepare("UPDATE videos SET total_likes = GREATEST(0, CAST(total_likes AS SIGNED) - 1) WHERE id=?")->execute([$vid_id]);
+        $is_liked = false;
+    } else {
+        $pdo->prepare("INSERT IGNORE INTO video_likes (user_id, video_id) VALUES (?, ?)")->execute([$user['id'], $vid_id]);
+        $pdo->prepare("UPDATE videos SET total_likes = total_likes + 1 WHERE id=?")->execute([$vid_id]);
+        $is_liked = true;
+    }
+
+    $cnt = $pdo->prepare("SELECT total_likes FROM videos WHERE id=?");
+    $cnt->execute([$vid_id]);
+    $total_likes = (int)$cnt->fetchColumn();
+
+    echo json_encode([
+        'ok' => true,
+        'liked' => $is_liked,
+        'total_likes' => $total_likes,
+        'msg' => $is_liked ? 'Anda menyukai video ini.' : 'Batal menyukai video.'
+    ]);
+    exit;
 }
 
-/* Timer bar */
-.watch-progress-bar {
-  height: 8px;
-  background: #fde68a;
-  border-bottom: 2.5px solid #78350f;
-  overflow: hidden;
-}
-.watch-progress-fill {
-  height: 100%; width: 0%;
-  background: linear-gradient(90deg, #f59e0b, #d97706);
-  transition: width 1s linear;
-}
-.watch-progress-fill.done { background: #10b981; }
-
-.watch-status {
-  background: #fffbeb;
-  border-bottom: 2.5px solid #78350f;
-  padding: 12px 16px;
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  font-size: 13px; font-weight: 800;
-}
-.watch-status__timer {
-  display: flex; align-items: center; gap: 10px;
-}
-.timer-badge {
-  width: 42px; height: 42px;
-  border-radius: 50%;
-  border: 2.5px solid #78350f;
-  box-shadow: 0 3px 0 #78350f;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 900;
-  background: #fde68a;
-  color: #78350f;
-  flex-shrink: 0;
-}
-.watch-status__hint { color: #92400e; font-size: 11.5px; font-weight: 700; margin-top: 1px; }
-
-/* ── Page loader ── */
-#page-loader{
-  position: fixed; inset: 0; z-index: 9999;
-  background: #fef8ee;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-  transition: opacity .35s;
-}
-#page-loader.hidden{ opacity: 0; pointer-events: none; }
-.loader-spinner{
-  width: 52px; height: 52px;
-  border: 5px solid #fde68a;
-  border-top-color: #d97706;
-  border-radius: 50%;
-  animation: spin .7s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loader-label{ font-size: 13px; font-weight: 900; color: #78350f; }
-</style>
-</head>
-<body>
-<!-- Page loader -->
-<div id="page-loader">
-  <div style="width:64px;height:64px;background:#fde68a;border:3px solid #78350f;border-radius:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 #78350f;margin-bottom:8px;">
-    <img src="/assets/game/bee_worker.png" alt="Buzzy" style="width:48px;height:48px;object-fit:contain;">
-  </div>
-  <div class="loader-spinner"></div>
-  <div class="loader-label"><i class="ph-bold ph-hourglass-high" style="color:#d97706;font-size:16px;vertical-align:middle"></i> Memuat video misi...</div>
-</div>
-<div class="app-shell">
-
-  <!-- Topbar -->
-  <div class="watch-topbar">
-    <a href="/videos" class="back-btn">
-      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><polyline points="15 18 9 12 15 6"/></svg>
-      Misi Video
-    </a>
-    <div class="watch-topbar__bal" title="Saldo Siap Tarik">
-      <i class="ph-fill ph-wallet"></i> <?= format_rp((float)$user['balance_wd']) ?>
-    </div>
-  </div>
-
-  <!-- Player -->
-  <div class="yt-wrapper">
-    <div id="yt-player"></div>
-  </div>
-
-  <!-- Progress bar di bawah video -->
-  <div class="watch-progress-bar">
-    <div class="watch-progress-fill" id="prog-fill"></div>
-  </div>
-
-  <!-- Status bar -->
-  <div class="watch-status" id="status-bar">
-    <div class="watch-status__timer">
-      <div class="timer-badge" id="timer-badge">
-        <?php if ($canWatch): ?>
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        <?php else: ?>–<?php endif; ?>
-      </div>
-      <div>
-        <div id="status-text" style="color: #78350f; font-weight: 900;">
-          <?php if ($already_watched): ?><i class="ph-bold ph-check-circle" style="color:#10b981"></i> Sudah ditonton hari ini
-          <?php elseif ($watch_today >= $watch_limit): ?><i class="ph-bold ph-warning-circle" style="color:#dc2626"></i> Limit tonton habis
-          <?php else: ?><i class="ph-bold ph-play-circle" style="color:#d97706"></i> Putar video untuk mulai hitung waktu<?php endif; ?>
-        </div>
-        <div class="watch-status__hint" id="status-hint">
-          <?php if ($canWatch): ?>Reward: <?= format_rp((float)$video['reward_amount']) ?> setelah <?= $video['watch_duration'] ?>s<?php endif; ?>
-        </div>
-      </div>
-    </div>
-    <?php if (!$already_watched && $watch_today < $watch_limit): ?>
-    <div id="claim-wrap" style="display:none">
-      <button id="claim-btn" onclick="claimReward()" style="display:flex;align-items:center;gap:6px;background:#10b981;color:#fff;border:2.5px solid #065f46;box-shadow:0 3px 0 #065f46;font-size:13px;font-weight:900;padding:8px 14px;border-radius:12px;cursor:pointer;">
-        <i class="ph-bold ph-gift" style="color:#fde047;font-size:16px"></i> Klaim Cuan
-      </button>
-    </div>
-    <?php elseif ($watch_today >= $watch_limit): ?>
-    <a href="/upgrade" style="display:flex;align-items:center;gap:5px;background:#f59e0b;color:#78350f;border:2px solid #78350f;box-shadow:0 3px 0 #78350f;font-weight:900;font-size:12px;padding:6px 12px;border-radius:10px;text-decoration:none;">
-      <i class="ph-bold ph-crown" style="font-size:15px"></i> Upgrade VIP
-    </a>
-    <?php endif; ?>
-  </div>
-
-  <!-- Video info & Mascot Tips -->
-  <div style="padding:16px">
-    <h1 style="font-size:16px;font-weight:900;line-height:1.4;margin-bottom:10px;color:#78350f;"><?= htmlspecialchars($video['title']) ?></h1>
-    <div style="display:flex;flex-wrap:wrap;gap:8px">
-      <span style="display:inline-flex;align-items:center;gap:4px;background:#fef3c7;border:1.5px solid #78350f;color:#78350f;font-weight:900;font-size:11px;padding:4px 10px;border-radius:12px;box-shadow:0 2px 0 #78350f;"><i class="ph-bold ph-coins" style="color:#d97706"></i> +<?= format_rp((float)$video['reward_amount']) ?></span>
-      <span style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #78350f;color:#78350f;font-weight:900;font-size:11px;padding:4px 10px;border-radius:12px;box-shadow:0 2px 0 #78350f;"><i class="ph-bold ph-clock" style="color:#d97706"></i> <?= $video['watch_duration'] ?>s minimum</span>
-      <span style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #78350f;color:#78350f;font-weight:900;font-size:11px;padding:4px 10px;border-radius:12px;box-shadow:0 2px 0 #78350f;"><i class="ph-bold ph-eye" style="color:#d97706"></i> <?= number_format((int)$video['total_watches']) ?>× ditonton</span>
-    </div>
-
-    <!-- Mascot Buzzy Encouragement Card -->
-    <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 2.5px solid #78350f; border-radius: 16px; box-shadow: 0 4px 0 #78350f; padding: 12px 14px; margin-top: 14px; display: flex; align-items: center; gap: 12px;">
-      <div style="width: 44px; height: 44px; background: #fde68a; border: 2px solid #78350f; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 0 #78350f;">
-        <img src="/assets/game/bee_worker.png" alt="Buzzy" style="width: 36px; height: 36px; object-fit: contain;">
-      </div>
-      <div style="font-size: 11.5px; font-weight: 800; color: #78350f; line-height: 1.4;">
-        <b>Buzzy si Lebah Cuan:</b> Tonton video sampai timer 0 detik ya! Setelah selesai, tekan tombol hijau <b>Klaim Cuan</b> agar saldo langsung masuk.
-      </div>
-    </div>
-
-    <?php if ($already_watched): ?>
-    <div class="alert alert--success" style="margin-top:12px;display:flex;align-items:center;gap:6px;background:#ecfdf5;border:2.5px solid #065f46;color:#065f46;font-weight:900;border-radius:14px;box-shadow:0 3px 0 #065f46;padding:12px;">
-      <i class="ph-bold ph-check-circle" style="font-size:20px"></i> Kamu sudah menonton dan menerima reward video ini hari ini!
-    </div>
-    <a href="/videos" style="display:block;text-align:center;background:#fff;border:2.5px solid #78350f;border-radius:14px;padding:10px;color:#78350f;font-weight:900;text-decoration:none;box-shadow:0 3px 0 #78350f;margin-top:10px;">
-      ← Pilih Video Lainnya
-    </a>
-    <?php endif; ?>
-  </div>
-
-  <?php
-  // Load other videos the user hasn't watched today
-  $others = $pdo->prepare(
+// Load recommended videos
+$others = $pdo->prepare(
     "SELECT v.*,
        (SELECT COUNT(*) FROM watch_history wh WHERE wh.user_id=? AND wh.video_id=v.id AND DATE(wh.watched_at)=CURDATE()) AS watched_today
      FROM videos v
      WHERE v.is_active=1 AND v.id != ?
      ORDER BY RAND() LIMIT 4"
-  );
-  $others->execute([$user['id'], $vid_id]);
-  $other_videos = $others->fetchAll();
-  ?>
-  <?php if (!empty($other_videos)): ?>
-  <div style="padding:0 16px 24px">
-    <div style="font-size:14px;font-weight:900;margin-bottom:12px;padding-top:10px;border-top:2.5px dashed #fde68a;color:#78350f;display:flex;align-items:center;gap:6px;">
-      <i class="ph-fill ph-film-strip" style="color:#d97706;font-size:18px;"></i> Rekomendasi Video Lainnya
-    </div>
-    <?php foreach ($other_videos as $ov):
-      $ov_done    = (bool)$ov['watched_today'];
-      $ov_blocked = !$ov_done && ($watch_today >= $watch_limit);
-      $ov_href    = ($ov_done || $ov_blocked) ? '#' : '/watch?id=' . $ov['id'];
-    ?>
-    <a href="<?= $ov_href ?>" style="display:flex;align-items:center;gap:12px;padding:10px;margin-bottom:8px;background:#fff;border:2px solid #78350f;border-radius:14px;box-shadow:0 3px 0 #78350f;text-decoration:none;color:inherit;<?= ($ov_done || $ov_blocked) ? 'opacity:.65;pointer-events:none' : '' ?>">
-      <div style="position:relative;flex-shrink:0;width:96px;height:54px;border-radius:8px;overflow:hidden;border:2px solid #78350f;background:#000;">
-        <img src="<?= yt_thumb($ov['youtube_id']) ?>" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.src='https://img.youtube.com/vi/<?= $ov['youtube_id'] ?>/hqdefault.jpg'">
-        <?php if ($ov_done): ?>
-        <div style="position:absolute;inset:0;background:rgba(16,185,129,.75);display:flex;align-items:center;justify-content:center">
-          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <?php else: ?>
-        <div style="position:absolute;inset:0;background:rgba(120,53,15,.25);display:flex;align-items:center;justify-content:center">
-          <svg width="18" height="18" fill="#fff" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        </div>
-        <?php endif; ?>
-      </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:900;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;color:#78350f;"><?= htmlspecialchars($ov['title']) ?></div>
-        <div style="font-size:11px;color:#92400e;margin-top:4px;font-weight:800;display:flex;align-items:center;gap:6px;">
-          <?= $ov_done ? '<span style="color:#10b981;font-weight:900;"><i class="ph-bold ph-check-circle"></i> Selesai</span>' : '<span style="color:#d97706;font-weight:900;"><i class="ph-bold ph-coins"></i> +' . format_rp((float)$ov['reward_amount']) . '</span>' ?>
-          <span style="color:#b45309;font-size:10px;">• <?= $ov['watch_duration'] ?>s</span>
-        </div>
-      </div>
-    </a>
-    <?php endforeach; ?>
-    <a href="/videos" style="display:block;text-align:center;background:#f59e0b;color:#78350f;border:2.5px solid #78350f;border-radius:14px;padding:10px;font-size:12.5px;font-weight:900;text-decoration:none;box-shadow:0 3px 0 #78350f;margin-top:12px;">Lihat Semua Video Misi →</a>
+);
+$others->execute([$user['id'], $vid_id]);
+$other_videos = $others->fetchAll();
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title><?= htmlspecialchars($video['title']) ?> — Nonton &amp; Dapatkan Saldo</title>
+
+<!-- Fonts & Phosphor Icons -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'] . '/assets/css/app.css') ?: time() ?>">
+
+<style>
+/* ══════════════════════════════════════════════════════════
+   WATCH STUDIO — MODERN CLEAN STREAMING PLAYER
+   Zero Farm References • Real-time Likes & Rewards
+   ══════════════════════════════════════════════════════════ */
+* { box-sizing: border-box; }
+body {
+  font-family: 'Nunito', sans-serif !important;
+  background-color: #fef8ee !important;
+  background-image: radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px) !important;
+  background-size: 16px 16px !important;
+  margin: 0; padding: 0;
+  color: #1e293b;
+}
+
+.watch-container {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── STICKY TOPBAR ── */
+.watch-topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-bottom: 2.5px solid #78350f;
+  padding: 0 14px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+}
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 6px 12px;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.back-btn:active {
+  transform: translateY(2px);
+  background: rgba(255, 255, 255, 0.2);
+}
+.watch-topbar__bal {
+  background: #f59e0b;
+  color: #78350f;
+  border: 1.5px solid #78350f;
+  border-radius: 14px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 0 #78350f;
+}
+
+/* ── CINEMA PLAYER WRAPPER ── */
+.player-frame {
+  position: relative;
+  background: #000;
+  aspect-ratio: 16/9;
+  width: 100%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+.player-frame iframe,
+.player-frame #yt-player {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  border: none;
+}
+
+/* ── PROGRESS BAR UNDER PLAYER ── */
+.watch-track {
+  height: 6px;
+  background: #e2e8f0;
+  position: relative;
+  overflow: hidden;
+}
+.watch-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, #f59e0b, #10b981);
+  transition: width 1s linear;
+}
+.watch-fill.done { background: #10b981; }
+
+/* ── STATUS & CLAIM BAR ── */
+.watch-status-box {
+  background: #ffffff;
+  border-bottom: 2px solid #e2e8f0;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.watch-timer-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.timer-pill {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: #fef3c7;
+  border: 2px solid #78350f;
+  box-shadow: 0 2.5px 0 #78350f;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13.5px; font-weight: 900;
+  color: #78350f;
+  flex-shrink: 0;
+}
+.timer-pill.done {
+  background: #10b981;
+  color: #fff;
+  border-color: #065f46;
+  box-shadow: 0 2.5px 0 #065f46;
+}
+.watch-status-text {
+  font-size: 12px;
+  font-weight: 900;
+  color: #1e293b;
+  line-height: 1.25;
+}
+.watch-status-hint {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+/* Claim Button */
+.btn-claim {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 2px solid #065f46;
+  border-radius: 12px;
+  padding: 7px 14px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #065f46;
+  animation: pulseClaim 1.5s infinite;
+  white-space: nowrap;
+}
+.btn-claim:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #065f46;
+}
+@keyframes pulseClaim {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+/* ── VIDEO CONTENT DETAILS ── */
+.watch-content {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.video-title {
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.35;
+  color: #0f172a;
+  margin: 0;
+}
+
+/* Actions Strip (Like, Views, Reward, Share) */
+.action-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.btn-action {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #334155;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1.5px 3px rgba(0,0,0,0.04);
+}
+.btn-action:active {
+  transform: scale(0.96);
+}
+.btn-action--liked {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #dc2626;
+}
+.btn-action--liked i {
+  color: #dc2626;
+  transform: scale(1.1);
+}
+.action-pill {
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 900;
+  color: #475569;
+}
+.btn-action--liked .action-pill {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.action-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #475569;
+}
+.action-stat--reward {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+  font-weight: 900;
+}
+
+/* Information Guideline Card */
+.guide-card {
+  background: #ffffff;
+  border: 2px solid #78350f;
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 0 #78350f;
+}
+.guide-card__header {
+  font-size: 12px;
+  font-weight: 900;
+  color: #78350f;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.guide-card__list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  line-height: 1.5;
+}
+.guide-card__list li {
+  margin-bottom: 3px;
+}
+
+/* Already Watched Banner */
+.banner-watched {
+  background: #ecfdf5;
+  border: 2px solid #059669;
+  border-radius: 14px;
+  padding: 10px 14px;
+  color: #065f46;
+  font-size: 11.5px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 3px 0 #059669;
+}
+.btn-more-vids {
+  display: block;
+  text-align: center;
+  background: #ffffff;
+  border: 2px solid #78350f;
+  border-radius: 12px;
+  padding: 9px;
+  color: #78350f;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 3px 0 #78350f;
+}
+
+/* Recommended Videos */
+.recom-section {
+  margin-top: 6px;
+  border-top: 2px dashed #cbd5e1;
+  padding-top: 14px;
+}
+.recom-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.recom-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  margin-bottom: 8px;
+  background: #ffffff;
+  border: 2px solid #78350f;
+  border-radius: 14px;
+  box-shadow: 0 3px 0 #78350f;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.1s;
+}
+.recom-card:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #78350f;
+}
+.recom-thumb {
+  position: relative;
+  width: 90px;
+  aspect-ratio: 16/9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  border: 1.5px solid #78350f;
+  flex-shrink: 0;
+}
+.recom-thumb img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.recom-info {
+  flex: 1;
+  min-width: 0;
+}
+.recom-name {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #0f172a;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.recom-meta {
+  font-size: 10px;
+  font-weight: 800;
+  color: #d97706;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Page Loader */
+#page-loader {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #fef8ee;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  transition: opacity .35s;
+}
+#page-loader.hidden { opacity: 0; pointer-events: none; }
+.loader-spinner {
+  width: 44px; height: 44px;
+  border: 4px solid #fde68a;
+  border-top-color: #d97706;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-label { font-size: 12px; font-weight: 900; color: #78350f; }
+
+/* Reward Floating Popup */
+.reward-popup {
+  position: fixed;
+  bottom: 30px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #10b981;
+  color: #fff;
+  border: 2px solid #065f46;
+  border-radius: 14px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 99999;
+}
+.reward-popup.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+</style>
+</head>
+<body>
+
+<!-- Page Loader -->
+<div id="page-loader">
+  <div class="loader-spinner"></div>
+  <div class="loader-label">
+    <i class="ph-bold ph-play-circle" style="color:#d97706;font-size:16px;vertical-align:middle"></i> Memuat Tayangan Video...
   </div>
-  <?php endif; ?>
 </div>
 
-<!-- Reward popup -->
+<div class="watch-container">
+
+  <!-- ── 1. STICKY TOPBAR ── -->
+  <div class="watch-topbar">
+    <a href="/videos" class="back-btn">
+      <i class="ph-bold ph-arrow-left"></i>
+      <span>Kembali ke Video</span>
+    </a>
+    <div class="watch-topbar__bal" title="Saldo Siap Tarik">
+      <i class="ph-fill ph-wallet"></i>
+      <span><?= format_rp((float)$user['balance_wd']) ?></span>
+    </div>
+  </div>
+
+  <!-- ── 2. YOUTUBE PLAYER ── -->
+  <div class="player-frame">
+    <div id="yt-player"></div>
+  </div>
+
+  <!-- Progress Track -->
+  <div class="watch-track">
+    <div class="watch-fill" id="prog-fill"></div>
+  </div>
+
+  <!-- ── 3. STATUS & COUNTDOWN BAR ── -->
+  <div class="watch-status-box" id="status-bar">
+    <div class="watch-timer-wrap">
+      <div class="timer-pill <?= $already_watched ? 'done' : '' ?>" id="timer-badge">
+        <?php if ($already_watched): ?>
+          <i class="ph-bold ph-check"></i>
+        <?php elseif ($canWatch): ?>
+          <?= (int)$video['watch_duration'] ?>
+        <?php else: ?>
+          –
+        <?php endif; ?>
+      </div>
+      <div>
+        <div class="watch-status-text" id="status-text">
+          <?php if ($already_watched): ?>
+            <span style="color:#059669;"><i class="ph-bold ph-check-circle"></i> Selesai ditonton hari ini</span>
+          <?php elseif ($watch_today >= $watch_limit): ?>
+            <span style="color:#dc2626;"><i class="ph-bold ph-warning-circle"></i> Kuota harian habis</span>
+          <?php else: ?>
+            <span>Putar video untuk mulai misi</span>
+          <?php endif; ?>
+        </div>
+        <div class="watch-status-hint" id="status-hint">
+          <?php if ($canWatch): ?>
+            Reward: +<?= format_rp((float)$video['reward_amount']) ?> setelah <?= (int)$video['watch_duration'] ?> detik
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
+    <!-- Claim Button -->
+    <?php if ($canWatch): ?>
+      <div id="claim-wrap" style="display:none;">
+        <button type="button" class="btn-claim" id="claim-btn" onclick="claimReward()">
+          <i class="ph-bold ph-coins"></i>
+          <span>Klaim Cuan</span>
+        </button>
+      </div>
+    <?php elseif ($watch_today >= $watch_limit): ?>
+      <a href="/upgrade" class="btn-claim" style="background:#f59e0b;border-color:#78350f;color:#78350f;animation:none;">
+        <i class="ph-bold ph-crown"></i>
+        <span>Upgrade VIP</span>
+      </a>
+    <?php endif; ?>
+  </div>
+
+  <!-- ── 4. CONTENT & ACTIONS ── -->
+  <div class="watch-content">
+    
+    <!-- Title -->
+    <h1 class="video-title"><?= htmlspecialchars($video['title']) ?></h1>
+
+    <!-- Action Strip: Like Button, Views, Reward, Share -->
+    <div class="action-strip">
+      <!-- Interactive Like Button -->
+      <button type="button" id="btnLike" onclick="toggleLike()" class="btn-action <?= $user_has_liked ? 'btn-action--liked' : '' ?>" title="Suka Video Ini">
+        <i class="ph-<?= $user_has_liked ? 'fill' : 'bold' ?> ph-thumbs-up" id="likeIco"></i>
+        <span id="likeTxt"><?= $user_has_liked ? 'Disukai' : 'Suka' ?></span>
+        <span class="action-pill" id="likeCnt"><?= number_format((int)($video['total_likes'] ?? 0)) ?></span>
+      </button>
+
+      <!-- Views -->
+      <div class="action-stat" title="Total Tayangan">
+        <i class="ph-bold ph-eye"></i>
+        <span><?= number_format((int)$video['total_watches']) ?> tayangan</span>
+      </div>
+
+      <!-- Reward -->
+      <div class="action-stat action-stat--reward" title="Komisi Reward">
+        <i class="ph-bold ph-coins"></i>
+        <span>+<?= format_rp((float)$video['reward_amount']) ?></span>
+      </div>
+
+      <!-- Share -->
+      <button type="button" class="btn-action" onclick="shareVideo()" title="Bagikan Video">
+        <i class="ph-bold ph-share-network"></i>
+        <span>Bagikan</span>
+      </button>
+    </div>
+
+    <!-- Official Viewing Instructions -->
+    <div class="guide-card">
+      <div class="guide-card__header">
+        <i class="ph-bold ph-shield-check" style="font-size:16px;"></i>
+        <span>Petunjuk Menonton Misi Resmi</span>
+      </div>
+      <ol class="guide-card__list">
+        <li>Tekan tombol putar pada video untuk mengaktifkan penghitung waktu mundur.</li>
+        <li>Tonton hingga waktu hitung mundur selesai tanpa menjeda (*pause*) tayangan.</li>
+        <li>Klik tombol hijau <b>Klaim Cuan</b> yang muncul untuk langsung mencairkan saldo ke dompet Anda.</li>
+      </ol>
+    </div>
+
+    <?php if ($already_watched): ?>
+      <div class="banner-watched">
+        <i class="ph-bold ph-check-circle" style="font-size:18px;"></i>
+        <span>Misi video ini sudah berhasil Anda selesaikan hari ini!</span>
+      </div>
+      <a href="/videos" class="btn-more-vids">← Pilih Video Misi Lainnya</a>
+    <?php endif; ?>
+
+    <!-- ── 5. RECOMMENDED VIDEOS ── -->
+    <?php if (!empty($other_videos)): ?>
+    <div class="recom-section">
+      <div class="recom-title">
+        <i class="ph-bold ph-film-strip" style="color:#d97706;font-size:16px;"></i>
+        <span>Rekomendasi Video Berikutnya</span>
+      </div>
+      <?php foreach ($other_videos as $ov):
+        $ov_done    = (bool)$ov['watched_today'];
+        $ov_blocked = !$ov_done && ($watch_today >= $watch_limit);
+        $ov_href    = ($ov_done || $ov_blocked) ? '#' : '/watch?id=' . $ov['id'];
+      ?>
+      <a href="<?= $ov_href ?>" class="recom-card" style="<?= ($ov_done || $ov_blocked) ? 'opacity:.65;pointer-events:none' : '' ?>">
+        <div class="recom-thumb">
+          <img src="<?= yt_thumb($ov['youtube_id']) ?>" alt="" onerror="this.src='https://img.youtube.com/vi/<?= $ov['youtube_id'] ?>/hqdefault.jpg'">
+          <?php if ($ov_done): ?>
+            <div style="position:absolute;inset:0;background:rgba(16,185,129,.75);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">
+              <i class="ph-bold ph-check"></i>
+            </div>
+          <?php endif; ?>
+        </div>
+        <div class="recom-info">
+          <div class="recom-name"><?= htmlspecialchars($ov['title']) ?></div>
+          <div class="recom-meta">
+            <?php if ($ov_done): ?>
+              <span style="color:#10b981;"><i class="ph-bold ph-check-circle"></i> Selesai</span>
+            <?php else: ?>
+              <span style="color:#d97706;"><i class="ph-bold ph-coins"></i> +<?= format_rp((float)$ov['reward_amount']) ?></span>
+            <?php endif; ?>
+            <span style="color:#64748b;">• <?= (int)$ov['watch_duration'] ?>s</span>
+          </div>
+        </div>
+      </a>
+      <?php endforeach; ?>
+      <a href="/videos" class="btn-more-vids" style="margin-top:8px;">Lihat Semua Video Misi →</a>
+    </div>
+    <?php endif; ?>
+
+  </div>
+
+</div>
+
+<!-- Reward Toast Notification -->
 <div class="reward-popup" id="reward-popup"></div>
 
 <script>
-// ── Konstanta dari server ────────────────────────────
+// ── Server Constants ─────────────────────────────────
 const DURATION  = <?= (int)$video['watch_duration'] ?>;
 const CAN_WATCH = <?= $canWatch ? 'true' : 'false' ?>;
 const CSRF      = '<?= csrf_token() ?>';
-const WATCH_URL = '';   // POST ke halaman ini sendiri
+const WATCH_URL = '';
 
 // ── State ────────────────────────────────────────────
-let watchToken  = null;   // diisi saat server OK start_watch
+let watchToken  = null;
 let timerLeft   = DURATION;
 let timerHandle = null;
 let watchStarted= false;
@@ -389,7 +797,6 @@ let ytPlayer    = null;
 
 // ── YouTube IFrame API ───────────────────────────────
 window.onYouTubeIframeAPIReady = function() {
-  console.log('[DEBUG] onYouTubeIframeAPIReady fired. Init player with videoId: <?= htmlspecialchars($video['youtube_id']) ?>');
   ytPlayer = new YT.Player('yt-player', {
     videoId: '<?= htmlspecialchars($video['youtube_id']) ?>',
     playerVars: {
@@ -400,79 +807,61 @@ window.onYouTubeIframeAPIReady = function() {
       origin: window.location.origin
     },
     events: {
-      onReady: function(e) {
-          console.log('[DEBUG] Player onReady');
-          onPlayerReady(e);
-      },
-      onStateChange: function(e) {
-          console.log('[DEBUG] Player onStateChange, state:', e.data);
-          onPlayerStateChange(e);
-      },
+      onReady: onPlayerReady,
+      onStateChange: onPlayerStateChange,
       onError: function(e) {
-          console.log('[DEBUG] Player onError, error code:', e.data);
-          setStatus('⚠️ YouTube Error: ' + e.data, 'Video tidak dapat diputar. ID: <?= htmlspecialchars($video['youtube_id']) ?>');
+        setStatus('Kendala pemutaran video', 'ID: <?= htmlspecialchars($video['youtube_id']) ?>');
       }
     }
   });
 };
 
-// Load API script
-console.log('[DEBUG] Injecting YouTube iframe_api script');
 const tag = document.createElement('script');
 tag.src = 'https://www.youtube.com/iframe_api';
 document.head.appendChild(tag);
 
 function onPlayerReady(e) {
   playerReady = true;
-  // Hide the page loader once the player is ready
   const loader = document.getElementById('page-loader');
   if (loader) {
     loader.classList.add('hidden');
     setTimeout(() => loader.remove(), 400);
   }
-  console.log('[DEBUG] Player is actually ready now.');
 }
 
 function onPlayerStateChange(e) {
-  console.log('[DEBUG] onPlayerStateChange logic triggered. State=', e.data, 'CAN_WATCH=', CAN_WATCH);
-  if (!CAN_WATCH) {
-      console.log('[DEBUG] CAN_WATCH is false, ignoring state change.');
-      return;
-  }
+  if (!CAN_WATCH) return;
 
   if (e.data === YT.PlayerState.PLAYING) {
-    console.log('[DEBUG] Video is PLAYING.');
     if (!watchStarted) {
-      console.log('[DEBUG] First time playing, calling startWatchSession().');
       startWatchSession();
     } else if (timerHandle === null && !claimReady) {
-      console.log('[DEBUG] Resuming countdown.');
       resumeCountdown();
     }
-  } else if (e.data === YT.PlayerState.PAUSED ||
-             e.data === YT.PlayerState.BUFFERING) {
-    console.log('[DEBUG] Video paused or buffering. Calling pauseCountdown().');
+  } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.BUFFERING) {
     pauseCountdown();
-  } else if (e.data === YT.PlayerState.ENDED) {
-    console.log('[DEBUG] Video ended.');
   }
 }
 
-// ── Server: minta watch token ────────────────────────
+// ── Request Watch Token ──────────────────────────────
 async function startWatchSession() {
   const fd = new FormData();
   fd.append('action', 'start_watch');
   fd.append('_csrf', CSRF);
-  const res  = await fetch(WATCH_URL, {method:'POST', body:fd});
-  const data = await res.json();
-  if (!data.ok) {
-    setStatus('⚠️ ' + data.msg, '');
-    return;
+  try {
+    const res  = await fetch(WATCH_URL, {method:'POST', body:fd});
+    const data = await res.json();
+    if (!data.ok) {
+      setStatus(data.msg || 'Gagal memulai sesi', '');
+      return;
+    }
+    watchToken   = data.watch_token;
+    watchStarted = true;
+    timerLeft    = DURATION;
+    startCountdown();
+  } catch(e) {
+    setStatus('Error jaringan saat memulai sesi.', '');
   }
-  watchToken   = data.watch_token;
-  watchStarted = true;
-  timerLeft    = DURATION;
-  startCountdown();
 }
 
 // ── Countdown ────────────────────────────────────────
@@ -492,7 +881,7 @@ function startCountdown() {
 
 function pauseCountdown() {
   if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
-  if (!claimReady) setStatus('⏸ Video dijeda — lanjutkan untuk hitung waktu', '');
+  if (!claimReady) setStatus('Video dijeda — lanjutkan pemutaran untuk lanjut', '');
 }
 
 function resumeCountdown() {
@@ -504,21 +893,26 @@ function updateTimerUI() {
   const fill  = document.getElementById('prog-fill');
   const pct   = Math.min(100, ((DURATION - timerLeft) / DURATION) * 100);
 
-  badge.textContent   = timerLeft > 0 ? timerLeft : '✓';
-  fill.style.width    = pct + '%';
-  fill.style.transition = 'width 1s linear';
-  if (timerLeft <= 0) fill.classList.add('done');
+  if (badge) {
+    badge.textContent = timerLeft > 0 ? timerLeft : '✓';
+    if (timerLeft <= 0) badge.classList.add('done');
+  }
+  if (fill) {
+    fill.style.width = pct + '%';
+    if (timerLeft <= 0) fill.classList.add('done');
+  }
 
   setStatus(
-    timerLeft > 0 ? `⏱ ${timerLeft}s lagi untuk klaim reward` : '🎉 Reward siap diklaim!',
-    timerLeft > 0 ? `Jangan pause video` : ''
+    timerLeft > 0 ? `Menonton: ${timerLeft} detik lagi...` : 'Misi selesai! Klaim saldo Anda sekarang',
+    timerLeft > 0 ? 'Jangan jeda atau tutup halaman' : ''
   );
 }
 
 function showClaimButton() {
   const w = document.getElementById('claim-wrap');
-  if (w) { w.style.display = 'block'; }
-  document.getElementById('prog-fill').classList.add('done');
+  if (w) w.style.display = 'block';
+  const fill = document.getElementById('prog-fill');
+  if (fill) fill.classList.add('done');
 }
 
 function setStatus(text, hint) {
@@ -528,43 +922,112 @@ function setStatus(text, hint) {
   if (eh) eh.textContent = hint;
 }
 
-// ── Claim reward ─────────────────────────────────────
+// ── Claim Reward ─────────────────────────────────────
 async function claimReward() {
   if (!watchToken) {
-    nToast('Token tidak ditemukan. Putar video dari awal.', 'error');
+    if (typeof nToast === 'function') nToast('Sesi tidak ditemukan. Putar video dari awal.', 'error');
     return;
   }
   const btn = document.getElementById('claim-btn');
-  btn.disabled = true;
-  btn.textContent = '⏳...';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Memproses...';
+  }
 
   const fd = new FormData();
   fd.append('action', 'claim');
   fd.append('_csrf', CSRF);
   fd.append('watch_token', watchToken);
 
-  const res  = await fetch(WATCH_URL, {method:'POST', body:fd});
-  const data = await res.json();
+  try {
+    const res  = await fetch(WATCH_URL, {method:'POST', body:fd});
+    const data = await res.json();
 
-  if (data.ok) {
-    showPop('🎉 ' + data.msg);
-    btn.textContent = '✅ Reward Diterima!';
-    document.getElementById('prog-fill').classList.add('done');
-    setStatus('✅ Reward berhasil! Mengalihkan...', '');
-    setTimeout(() => location.href = '/videos', 2500);
-  } else {
-    nToast(data.msg, 'error');
-    btn.disabled    = false;
-    btn.textContent = '🎁 Klaim';
+    if (data.ok) {
+      showPop(data.msg || 'Reward berhasil diklaim!');
+      if (btn) btn.innerHTML = '<i class="ph-bold ph-check"></i> Berhasil!';
+      setStatus('Reward berhasil diklaim! Mengalihkan...', '');
+      setTimeout(() => location.href = '/videos', 2000);
+    } else {
+      if (typeof nToast === 'function') nToast(data.msg || 'Gagal klaim', 'error');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ph-bold ph-coins"></i> Klaim Cuan';
+      }
+    }
+  } catch(e) {
+    if (typeof nToast === 'function') nToast('Error jaringan saat mengklaim saldo.', 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ph-bold ph-coins"></i> Klaim Cuan';
+    }
   }
 }
 
-// ── Popup ────────────────────────────────────────────
+// ── Toggle Like Feature ──────────────────────────────
+async function toggleLike() {
+  const btn = document.getElementById('btnLike');
+  const ico = document.getElementById('likeIco');
+  const txt = document.getElementById('likeTxt');
+  const cnt = document.getElementById('likeCnt');
+  if (!btn) return;
+
+  btn.style.transform = 'scale(1.15)';
+  setTimeout(() => btn.style.transform = '', 200);
+
+  const fd = new FormData();
+  fd.append('action', 'toggle_like');
+  fd.append('_csrf', CSRF);
+
+  try {
+    const res  = await fetch(WATCH_URL, {method:'POST', body:fd});
+    const data = await res.json();
+    if (data.ok) {
+      if (data.liked) {
+        btn.classList.add('btn-action--liked');
+        if (ico) ico.className = 'ph-fill ph-thumbs-up';
+        if (txt) txt.textContent = 'Disukai';
+      } else {
+        btn.classList.remove('btn-action--liked');
+        if (ico) ico.className = 'ph-bold ph-thumbs-up';
+        if (txt) txt.textContent = 'Suka';
+      }
+      if (cnt && data.total_likes !== undefined) {
+        cnt.textContent = Number(data.total_likes).toLocaleString('id-ID');
+      }
+      if (typeof nToast === 'function') {
+        nToast(data.msg, 'success');
+      }
+    } else {
+      if (typeof nToast === 'function') nToast(data.msg || 'Gagal menyukai video', 'error');
+    }
+  } catch(e) {
+    if (typeof nToast === 'function') nToast('Kendala jaringan saat like video.', 'error');
+  }
+}
+
+// ── Share Video ──────────────────────────────────────
+function shareVideo() {
+  const url = window.location.href;
+  const title = <?= json_encode($video['title']) ?>;
+  if (navigator.share) {
+    navigator.share({ title: title, url: url }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(url).then(() => {
+      if (typeof nToast === 'function') nToast('Tautan video berhasil disalin ke clipboard!', 'success');
+    }).catch(() => {
+      prompt('Salin tautan video berikut:', url);
+    });
+  }
+}
+
+// ── Reward Popup ─────────────────────────────────────
 function showPop(msg) {
   const el = document.getElementById('reward-popup');
+  if (!el) return;
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 3500);
+  setTimeout(() => el.classList.remove('show'), 3000);
 }
 </script>
 <script src="/assets/js/toast.js"></script>

@@ -26,19 +26,22 @@ $page = max(1, (int)($_GET['page'] ?? 1));
 $limit = 10;
 $offset = ($page - 1) * $limit;
 
-// All active videos with watch status for today
+// All active videos with watch status and user liked status
 $videos = $pdo->prepare(
     "SELECT v.*,
        (SELECT COUNT(*) FROM watch_history wh
-        WHERE wh.user_id=? AND wh.video_id=v.id AND DATE(wh.watched_at)=CURDATE()) AS watched_today
+        WHERE wh.user_id=? AND wh.video_id=v.id AND DATE(wh.watched_at)=CURDATE()) AS watched_today,
+       (SELECT COUNT(*) FROM video_likes vl
+        WHERE vl.user_id=? AND vl.video_id=v.id) AS user_liked
      FROM videos v
      WHERE v.is_active=1
      ORDER BY {$order_by}
      LIMIT {$limit} OFFSET {$offset}"
 );
-$videos->execute([$user['id']]);
+$videos->execute([$user['id'], $user['id']]);
 $videos = $videos->fetchAll();
 
+// AJAX Infinite Scroll Response
 if (isset($_GET['ajax'])) {
     if (empty($videos)) {
         echo '';
@@ -47,33 +50,36 @@ if (isset($_GET['ajax'])) {
     foreach ($videos as $v) {
         $done    = (bool)$v['watched_today'];
         $blocked = !$done && ($watch_today >= $watch_limit);
-        $href    = ($done || $blocked) ? 'javascript:void(0)' : '/watch?id='.$v['id'];
+        $href    = ($done || $blocked) ? 'javascript:void(0)' : '/watch?id=' . $v['id'];
+        $status_class = $done ? 'done' : ($blocked ? 'blocked' : 'ready');
         ?>
-        <a href="<?= $href ?>" class="vcard <?= $done ? 'vcard--done' : '' ?>" <?= ($done||$blocked) ? 'style="pointer-events:none"' : '' ?>>
-          <div class="vcard__thumb-wrapper">
+        <a href="<?= $href ?>" class="vcard vcard--<?= $status_class ?>" data-status="<?= $done ? 'done' : 'ready' ?>" <?= ($done || $blocked) ? 'style="pointer-events:none"' : '' ?>>
+          <div class="vcard__thumb-wrap">
             <img src="<?= yt_thumb($v['youtube_id']) ?>" alt="<?= htmlspecialchars($v['title']) ?>" loading="lazy" onerror="this.src='https://img.youtube.com/vi/<?= $v['youtube_id'] ?>/hqdefault.jpg'">
-            <div class="vcard__play">
+            <div class="vcard__play-overlay">
               <?php if ($done): ?>
-                <i class="ph-fill ph-check-circle" style="color:#10b981; filter: drop-shadow(0 4px 0 #047857); font-size:42px;"></i>
+                <div class="vcard__play-ico done"><i class="ph-fill ph-check-circle"></i></div>
               <?php else: ?>
-                <div class="vcard__play-btn"><i class="ph-fill ph-play"></i></div>
+                <div class="vcard__play-ico"><i class="ph-fill ph-play"></i></div>
               <?php endif; ?>
             </div>
             <div class="vcard__badge <?= $done ? 'vcard__badge--done' : '' ?>">
-              <?= $done ? '✓ Selesai' : '+'.format_rp((float)$v['reward_amount']) ?>
+              <?= $done ? 'Selesai' : '+' . format_rp((float)$v['reward_amount']) ?>
+            </div>
+            <div class="vcard__duration-pill">
+              <i class="ph-bold ph-clock"></i> <?= (int)$v['watch_duration'] ?>s
             </div>
           </div>
-          <div class="vcard__info">
+          <div class="vcard__body">
             <div class="vcard__title"><?= htmlspecialchars($v['title']) ?></div>
-            <div class="vcard__meta">
-              <span class="vcard__reward <?= $done ? 'vcard__reward--done' : '' ?>">
-                <?php if ($done): ?>
-                  <i class="ph-bold ph-check"></i> Selesai
-                <?php else: ?>
-                  <i class="ph-bold ph-coins" style="color:#eab308; font-size:14px"></i> <?= format_rp((float)$v['reward_amount']) ?>
-                <?php endif; ?>
-              </span>
-              <span class="vcard__duration"><i class="ph-bold ph-clock"></i> <?= $v['watch_duration'] ?>s</span>
+            <div class="vcard__footer">
+              <div class="vcard__stats">
+                <span title="Total Ditonton"><i class="ph-bold ph-eye"></i> <?= number_format((int)$v['total_watches']) ?></span>
+                <span title="Disukai"><i class="ph-bold ph-thumbs-up"></i> <?= number_format((int)($v['total_likes'] ?? 0)) ?></span>
+              </div>
+              <div class="vcard__cta <?= $done ? 'vcard__cta--done' : '' ?>">
+                <?= $done ? '<i class="ph-bold ph-check"></i> Sudah Diklaim' : 'Tonton →' ?>
+              </div>
             </div>
           </div>
         </a>
@@ -82,234 +88,527 @@ if (isset($_GET['ajax'])) {
     exit;
 }
 
-$pageTitle  = 'Tonton Video  ';
+$pageTitle  = 'Pusat Nonton Video';
 $activePage = 'videos';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
 
 <style>
-  body { 
-    background-color: #fef8ee !important; 
-    background-image: radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px) !important;
-    background-size: 16px 16px !important;
+/* ══════════════════════════════════════════════════════════
+   VIDEOS HUB — CLEAN CINEMA & WATCH REWARD INTERFACE
+   Zero Farm References • Modern Streaming Aesthetics
+   ══════════════════════════════════════════════════════════ */
+.video-hub-page {
+  padding: 14px 14px 110px;
+}
+
+/* ── HERO BANNER ── */
+.vhub-hero {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 2.5px solid #78350f;
+  border-radius: 20px;
+  box-shadow: 0 6px 0 #78350f, 0 12px 24px rgba(15, 23, 42, 0.2);
+  padding: 16px;
+  margin-bottom: 14px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.vhub-hero::after {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 140px; height: 140px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.vhub-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1.5px solid #f59e0b;
+  color: #fbbf24;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 3px 9px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.vhub-title {
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.25;
+  color: #f8fafc;
+  margin-bottom: 4px;
+}
+.vhub-desc {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ── PROGRESS STRIP ── */
+.vhub-progress-card {
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  border-radius: 18px;
+  box-shadow: 0 5px 0 #78350f;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.vhub-prog-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.vhub-prog-lbl {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #78350f;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.vhub-prog-badge {
+  font-size: 11px;
+  font-weight: 900;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1.5px solid #f59e0b;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+.vhub-bar-track {
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 14px;
+  height: 12px;
+  overflow: hidden;
+  padding: 1.5px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+.vhub-bar-fill {
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f59e0b, #10b981);
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.vhub-bar-fill.full {
+  background: #10b981;
+}
+.vhub-prog-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+/* Alert Limit */
+.vhub-limit-alert {
+  margin-top: 10px;
+  padding: 9px 12px;
+  background: #fef2f2;
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+  color: #991b1b;
+  font-size: 11px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.vhub-limit-link {
+  background: #ef4444;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 10.5px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+/* ── FILTER CHIPS ── */
+.vhub-filter-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.vhub-filter-strip::-webkit-scrollbar { display: none; }
+.vhub-chip {
+  background: #fff;
+  border: 2px solid #78350f;
+  border-radius: 12px;
+  padding: 6px 14px;
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #78350f;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2.5px 0 #78350f;
+  transition: all 0.15s ease;
+}
+.vhub-chip:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #78350f;
+}
+.vhub-chip.active {
+  background: #f59e0b;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.25);
+  transform: translateY(-1px);
+}
+
+/* ── VIDEO CARDS GRID ── */
+.vgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+@media (min-width: 480px) {
+  .vgrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
   }
+}
+.vcard {
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  border-radius: 18px;
+  box-shadow: 0 4.5px 0 #78350f;
+  padding: 7px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.vcard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6.5px 0 #78350f;
+}
+.vcard:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #78350f;
+}
+.vcard--done {
+  opacity: 0.68;
+  filter: grayscale(20%);
+  background: #f8fafc;
+  border-color: #64748b;
+  box-shadow: 0 3.5px 0 #64748b;
+}
+
+/* Thumb */
+.vcard__thumb-wrap {
+  position: relative;
+  aspect-ratio: 16/9;
+  background: #0f172a;
+  border-radius: 12px;
+  border: 1.5px solid #78350f;
+  overflow: hidden;
+}
+.vcard__thumb-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+.vcard:hover .vcard__thumb-wrap img {
+  transform: scale(1.05);
+}
+
+/* Overlay play icon */
+.vcard__play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.3);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.vcard:hover .vcard__play-overlay {
+  opacity: 1;
+}
+.vcard__play-ico {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #f59e0b;
+  border: 2px solid #fff;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  padding-left: 2px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+.vcard__play-ico.done {
+  background: #10b981;
+  font-size: 20px;
+  padding-left: 0;
+}
+
+/* Badges on Thumbnail */
+.vcard__badge {
+  position: absolute;
+  top: 5px; right: 5px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1.5px solid #78350f;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 10px;
+  box-shadow: 0 2px 0 #78350f;
+  letter-spacing: 0.3px;
+}
+.vcard__badge--done {
+  background: #10b981;
+  border-color: #065f46;
+  box-shadow: 0 2px 0 #065f46;
+}
+.vcard__duration-pill {
+  position: absolute;
+  bottom: 5px; right: 5px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #f8fafc;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Card Body */
+.vcard__body {
+  padding: 6px 3px 2px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+.vcard__title {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  height: 31px;
+  margin-bottom: 6px;
+}
+.vcard__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1.5px dashed #e2e8f0;
+  padding-top: 6px;
+  margin-top: auto;
+}
+.vcard__stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+}
+.vcard__stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5px;
+}
+.vcard__cta {
+  font-size: 10px;
+  font-weight: 900;
+  color: #d97706;
+}
+.vcard__cta--done {
+  color: #10b981;
+}
+
+/* Empty State */
+.vhub-empty {
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  border-radius: 18px;
+  box-shadow: 0 5px 0 #78350f;
+  padding: 32px 18px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.vhub-empty__ico {
+  width: 60px; height: 60px;
+  border-radius: 18px;
+  background: #fef3c7;
+  border: 2px solid #78350f;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; color: #d97706;
+  margin: 0 auto 12px;
+  box-shadow: 0 3px 0 #78350f;
+}
+.vhub-empty__title {
+  font-size: 15px; font-weight: 900; color: #78350f; margin-bottom: 4px;
+}
+.vhub-empty__sub {
+  font-size: 11.5px; font-weight: 700; color: #64748b; margin: 0;
+}
 </style>
 
-<div style="padding: 16px 14px 100px;">
+<div class="video-hub-page">
 
-<!-- Header Mascot Banner -->
-<div class="cg-card" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 3px solid #78350f; border-radius: 20px; box-shadow: 0 6px 0 #78350f; padding: 16px; margin-bottom: 14px; margin-top: 4px; display: flex; align-items: center; gap: 14px; position: relative; overflow: hidden;">
-  <!-- Decorative Honeycomb Pattern -->
-  <div style="position: absolute; right: -15px; top: -15px; opacity: 0.08; font-size: 100px; pointer-events: none; line-height: 1;">🍯</div>
-  
-  <div style="width: 58px; height: 58px; background: #fde68a; border: 3px solid #78350f; border-radius: 18px; box-shadow: 0 4px 0 #78350f; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative;">
-    <img src="/assets/game/bee_worker.png" alt="Buzzy" style="width: 48px; height: 48px; object-fit: contain; animation: buzzyFloat 2.5s ease-in-out infinite;">
-  </div>
-  <div style="flex: 1; z-index: 1;">
-    <div style="display: inline-flex; align-items: center; gap: 5px; background: #f59e0b; color: #78350f; font-size: 10px; font-weight: 900; padding: 2px 8px; border-radius: 20px; border: 1.5px solid #78350f; margin-bottom: 4px; box-shadow: 0 2px 0 #78350f;">
-      <i class="ph-bold ph-sparkle"></i> MISI UTAMA
+  <!-- ── 1. CINEMA HERO BANNER ── -->
+  <div class="vhub-hero">
+    <div class="vhub-tag">
+      <i class="ph-bold ph-film-strip"></i> Video Mission Hub
     </div>
-    <h1 style="font-size: 18px; font-weight: 900; color: #78350f; margin: 0; line-height: 1.2;">Tonton & Panen Cuan</h1>
-    <p style="font-size: 11px; font-weight: 800; color: #92400e; margin: 2px 0 0;">Tonton video pilihan hingga timer selesai untuk klaim saldo rupiahmu!</p>
-  </div>
-</div>
-
-<!-- Progress Bar Harian -->
-<div class="cg-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: 3px solid #78350f; border-radius: 20px; box-shadow: 0 6px 0 #78350f; padding: 16px; margin-bottom: 18px; color: #fff; position: relative;">
-  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
-    <span style="font-size:13px; font-weight:900; display:flex; align-items:center; gap:6px; color:#fff; text-shadow:0 1px 2px rgba(120,53,15,0.4);">
-      <i class="ph-fill ph-chart-pie-slice" style="color:#fef08a; font-size:20px;"></i> Progres Tonton Hari Ini
-    </span>
-    <span style="font-size:12px; font-weight:900; background:#78350f; color:#fde68a; border:2px solid #fff; padding:3px 10px; border-radius:12px; box-shadow: 0 3px 0 rgba(0,0,0,0.2);">
-      <?= $watch_today ?> / <?= $watch_limit ?> Video
-    </span>
-  </div>
-  
-  <div style="background:#78350f; border-radius:20px; height:15px; overflow:hidden; border:2px solid #78350f; box-shadow:inset 0 2px 4px rgba(0,0,0,0.4); padding: 1.5px;">
-    <?php $pct = $watch_limit > 0 ? min(100, round(($watch_today / $watch_limit) * 100)) : 0; ?>
-    <div style="background: <?= $pct >= 100 ? '#10b981' : 'linear-gradient(90deg, #fde68a, #f59e0b)' ?>; height: 100%; width: <?= $pct ?>%; border-radius: 20px; transition: width .5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);"></div>
+    <div class="vhub-title">Streaming &amp; Dapatkan Saldo</div>
+    <p class="vhub-desc">Tonton tayangan video kreator pilihan hingga durasi tuntas untuk langsung mengklaim komisi rupiah ke akun Anda.</p>
   </div>
 
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:10.5px; font-weight:800; color:#fef3c7;">
-    <span>⚡ Reset tiap pukul 00:00 WIB</span>
-    <span><?= $pct ?>% Tercapai</span>
+  <!-- ── 2. DAILY WATCH PROGRESS ── -->
+  <div class="vhub-progress-card">
+    <div class="vhub-prog-row">
+      <div class="vhub-prog-lbl">
+        <i class="ph-fill ph-chart-pie-slice" style="color:#d97706;font-size:18px;"></i>
+        <span>Kuota Tonton Hari Ini</span>
+      </div>
+      <div class="vhub-prog-badge">
+        <?= (int)$watch_today ?> / <?= (int)$watch_limit ?> Video
+      </div>
+    </div>
+
+    <?php $pct = $watch_limit > 0 ? min(100, (int)round(($watch_today / $watch_limit) * 100)) : 0; ?>
+    <div class="vhub-bar-track">
+      <div class="vhub-bar-fill <?= $pct >= 100 ? 'full' : '' ?>" style="width: <?= $pct ?>%;"></div>
+    </div>
+
+    <div class="vhub-prog-meta">
+      <span><i class="ph-bold ph-arrows-clockwise"></i> Reset tiap 00:00 WIB</span>
+      <span><?= $pct ?>% Selesai</span>
+    </div>
+
+    <?php if ($watch_today >= $watch_limit): ?>
+    <div class="vhub-limit-alert">
+      <span><i class="ph-bold ph-warning-circle"></i> Kuota harian Anda telah tercapai!</span>
+      <a href="/upgrade" class="vhub-limit-link">Upgrade VIP →</a>
+    </div>
+    <?php endif; ?>
   </div>
 
-  <?php if ($watch_today >= $watch_limit): ?>
-  <div style="font-size:11.5px; color:#fff; margin-top:12px; font-weight:900; background:#dc2626; padding:10px 12px; border-radius:14px; border:2.5px solid #78350f; box-shadow: 0 4px 0 #78350f; display:flex; align-items:center; justify-content:space-between;">
-    <div style="display:flex; align-items:center; gap:6px;"><i class="ph-bold ph-warning-circle" style="font-size:18px;"></i> Kuota harian habis!</div>
-    <a href="/upgrade" style="color:#78350f; font-weight:900; text-decoration:none; background:#fde68a; padding:4px 10px; border-radius:10px; border:1.5px solid #78350f; box-shadow:0 2px 0 #78350f;">Upgrade VIP →</a>
+  <!-- ── 3. FILTER TABS ── -->
+  <div class="vhub-filter-strip">
+    <button type="button" class="vhub-chip active" onclick="filterVideos('all', this)">Semua Video</button>
+    <button type="button" class="vhub-chip" onclick="filterVideos('ready', this)">Belum Ditonton</button>
+    <button type="button" class="vhub-chip" onclick="filterVideos('done', this)">Sudah Selesai</button>
   </div>
+
+  <!-- ── 4. VIDEOS GRID ── -->
+  <?php if (empty($videos)): ?>
+    <div class="vhub-empty">
+      <div class="vhub-empty__ico">
+        <i class="ph-fill ph-video-camera-slash"></i>
+      </div>
+      <div class="vhub-empty__title">Belum Ada Video Baru</div>
+      <p class="vhub-empty__sub">Video misi baru akan segera diunggah oleh pengiklan. Silakan periksa kembali nanti.</p>
+    </div>
+  <?php else: ?>
+    <div class="vgrid" id="vgrid">
+      <?php foreach ($videos as $v):
+        $done    = (bool)$v['watched_today'];
+        $blocked = !$done && ($watch_today >= $watch_limit);
+        $href    = ($done || $blocked) ? 'javascript:void(0)' : '/watch?id=' . $v['id'];
+        $status_class = $done ? 'done' : ($blocked ? 'blocked' : 'ready');
+      ?>
+      <a href="<?= $href ?>" class="vcard vcard--<?= $status_class ?>" data-status="<?= $done ? 'done' : 'ready' ?>" <?= ($done || $blocked) ? 'style="pointer-events:none"' : '' ?>>
+        <div class="vcard__thumb-wrap">
+          <img src="<?= yt_thumb($v['youtube_id']) ?>" alt="<?= htmlspecialchars($v['title']) ?>" loading="lazy" onerror="this.src='https://img.youtube.com/vi/<?= $v['youtube_id'] ?>/hqdefault.jpg'">
+          <div class="vcard__play-overlay">
+            <?php if ($done): ?>
+              <div class="vcard__play-ico done"><i class="ph-fill ph-check-circle"></i></div>
+            <?php else: ?>
+              <div class="vcard__play-ico"><i class="ph-fill ph-play"></i></div>
+            <?php endif; ?>
+          </div>
+          <div class="vcard__badge <?= $done ? 'vcard__badge--done' : '' ?>">
+            <?= $done ? 'Selesai' : '+' . format_rp((float)$v['reward_amount']) ?>
+          </div>
+          <div class="vcard__duration-pill">
+            <i class="ph-bold ph-clock"></i> <?= (int)$v['watch_duration'] ?>s
+          </div>
+        </div>
+        <div class="vcard__body">
+          <div class="vcard__title"><?= htmlspecialchars($v['title']) ?></div>
+          <div class="vcard__footer">
+            <div class="vcard__stats">
+              <span title="Total Ditonton"><i class="ph-bold ph-eye"></i> <?= number_format((int)$v['total_watches']) ?></span>
+              <span title="Disukai"><i class="ph-bold ph-thumbs-up"></i> <?= number_format((int)($v['total_likes'] ?? 0)) ?></span>
+            </div>
+            <div class="vcard__cta <?= $done ? 'vcard__cta--done' : '' ?>">
+              <?= $done ? '<i class="ph-bold ph-check"></i> Selesai' : 'Tonton →' ?>
+            </div>
+          </div>
+        </div>
+      </a>
+      <?php endforeach; ?>
+    </div>
+
+    <!-- Infinite Scroll Loader -->
+    <div id="loader" style="text-align:center;padding:16px;display:none;">
+      <div style="background:#fff;width:40px;height:40px;border-radius:50%;border:2px solid #78350f;box-shadow:0 3px 0 #78350f;display:inline-flex;align-items:center;justify-content:center;">
+        <i class="ph-bold ph-spinner ph-spin" style="font-size:20px;color:#d97706;"></i>
+      </div>
+    </div>
   <?php endif; ?>
-</div>
 
-<!-- Sidejob Banner Cue -->
-<div style="background: #fff; border: 2.5px solid #78350f; border-radius: 16px; box-shadow: 0 4px 0 #78350f; padding: 10px 14px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-  <div style="display: flex; align-items: center; gap: 10px;">
-    <img src="/assets/game/honey_jar.png" alt="Honey" style="width: 32px; height: 32px; object-fit: contain;">
-    <div>
-      <div style="font-size: 11.5px; font-weight: 900; color: #78350f;">Pekerjaan Sampingan (Sidejob)</div>
-      <div style="font-size: 10px; font-weight: 700; color: #92400e;">Lebahmu terus panen madu di kandang!</div>
-    </div>
-  </div>
-  <a href="/farm" style="background: #f59e0b; color: #78350f; border: 2px solid #78350f; border-radius: 10px; font-size: 10.5px; font-weight: 900; padding: 6px 12px; text-decoration: none; box-shadow: 0 3px 0 #78350f; white-space: nowrap;">
-    Buka Kebun Lebah 🐝
-  </a>
-</div>
-
-<?php if (empty($videos)): ?>
-<div style="background:#fff; border:3px solid #78350f; border-radius:20px; padding:32px 16px; text-align:center; box-shadow:0 6px 0 #78350f; margin-bottom:16px">
-  <div style="width:68px; height:68px; background:#fef3c7; border:3px solid #78350f; box-shadow:0 4px 0 #78350f; border-radius:20px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; color:#d97706; font-size:34px;">
-    <i class="ph-fill ph-video-camera-slash"></i>
-  </div>
-  <h3 style="font-size:16px; font-weight:900; color:#78350f; margin:0 0 6px;">Belum Ada Video Baru</h3>
-  <p style="font-size:12px; font-weight:700; color:#92400e; margin:0">Video misi baru akan segera di-upload oleh pengiklan. Pantau terus ya!</p>
-</div>
-<?php else: ?>
-
-<style>
-/* Casual Game Grid & Cards — Amber Honey Theme */
-@keyframes buzzyFloat {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-4px) rotate(3deg); }
-}
-
-.vgrid { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
-    gap: 14px; 
-    margin-bottom: 24px; 
-}
-.vcard { 
-    text-decoration: none; 
-    display: block; 
-    background: #fff; 
-    border: 3px solid #78350f; 
-    border-radius: 20px; 
-    box-shadow: 0 5px 0 #78350f; 
-    transition: transform 0.12s, box-shadow 0.12s; 
-    position: relative;
-    padding: 8px;
-}
-.vcard:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #78350f; }
-.vcard:active { transform: translateY(3px); box-shadow: 0 2px 0 #78350f; }
-.vcard--done { opacity: 0.65; filter: grayscale(30%); box-shadow: 0 4px 0 #92400e; border-color: #92400e; background: #fafaf9; }
-.vcard--done:active { box-shadow: 0 4px 0 #92400e; transform: none; }
-
-.vcard__thumb-wrapper {
-    position: relative; 
-    aspect-ratio: 16/9; 
-    background: #1c1917; 
-    border-radius: 12px; 
-    border: 2px solid #78350f;
-    overflow: hidden;
-    margin-bottom: 8px;
-}
-.vcard__thumb-wrapper img { 
-    width: 100%; height: 100%; object-fit: cover; opacity: 0.92; transition: transform 0.3s ease;
-}
-.vcard:hover .vcard__thumb-wrapper img { transform: scale(1.06); }
-
-.vcard__badge { 
-    position: absolute; 
-    top: 6px; right: 6px; 
-    background: linear-gradient(135deg, #f59e0b, #d97706); 
-    color: #fff; font-size: 10px; font-weight: 900; 
-    padding: 3px 8px; border-radius: 12px; 
-    border: 2px solid #78350f; 
-    box-shadow: 0 3px 0 #78350f; 
-    z-index: 2;
-    text-shadow: 0 1px 1px rgba(0,0,0,0.3);
-}
-.vcard__badge--done { 
-    background: #10b981; 
-    border-color: #065f46; 
-    box-shadow: 0 3px 0 #065f46; 
-}
-
-.vcard__play { 
-    position: absolute; inset: 0; 
-    display: flex; align-items: center; justify-content: center; 
-    background: rgba(120, 53, 15, 0.25); 
-    opacity: 0; transition: opacity 0.2s; z-index: 1;
-}
-.vcard:hover .vcard__play { opacity: 1; }
-.vcard--done:hover .vcard__play { opacity: 1; background: transparent; }
-
-.vcard__play-btn {
-    width: 42px; height: 42px;
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    border: 3px solid #78350f;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 18px;
-    box-shadow: 0 4px 0 #78350f;
-    transform: scale(0.85); transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    padding-left: 3px;
-}
-.vcard:hover .vcard__play-btn { transform: scale(1.05); }
-
-.vcard__info { padding: 0 4px; }
-.vcard__title { 
-    font-size: 12px; font-weight: 900; color: #78350f; 
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; 
-    overflow: hidden; line-height: 1.35; height: 32px; 
-}
-.vcard__meta { 
-    display: flex; align-items: center; justify-content: space-between; 
-    font-size: 11px; font-weight: 900; color: #92400e; 
-    margin-top: 6px; padding-top: 6px; border-top: 2px dashed #fde68a;
-}
-.vcard__reward { color: #d97706; display: flex; align-items: center; gap: 4px; font-weight: 900; }
-.vcard__reward--done { color: #10b981; }
-.vcard__duration { display: flex; align-items: center; gap: 3px; background: #fef3c7; border: 1px solid #fde68a; padding: 2px 6px; border-radius: 8px; color: #78350f; font-size: 10px; }
-</style>
-
-<div class="vgrid" id="vgrid">
-<?php foreach ($videos as $v):
-  $done    = (bool)$v['watched_today'];
-  $blocked = !$done && ($watch_today >= $watch_limit);
-  $href    = ($done || $blocked) ? 'javascript:void(0)' : '/watch?id='.$v['id'];
-?>
-<a href="<?= $href ?>" class="vcard <?= $done ? 'vcard--done' : '' ?>" <?= ($done||$blocked) ? 'style="pointer-events:none"' : '' ?>>
-  <div class="vcard__thumb-wrapper">
-    <img src="<?= yt_thumb($v['youtube_id']) ?>" alt="<?= htmlspecialchars($v['title']) ?>" loading="lazy" onerror="this.src='https://img.youtube.com/vi/<?= $v['youtube_id'] ?>/hqdefault.jpg'">
-    <div class="vcard__play">
-      <?php if ($done): ?>
-        <i class="ph-fill ph-check-circle" style="color:#10b981; filter: drop-shadow(0 4px 0 #047857); font-size:42px;"></i>
-      <?php else: ?>
-        <div class="vcard__play-btn"><i class="ph-fill ph-play"></i></div>
-      <?php endif; ?>
-    </div>
-    <div class="vcard__badge <?= $done ? 'vcard__badge--done' : '' ?>">
-      <?= $done ? '✓ Selesai' : '+'.format_rp((float)$v['reward_amount']) ?>
-    </div>
-  </div>
-  <div class="vcard__info">
-    <div class="vcard__title"><?= htmlspecialchars($v['title']) ?></div>
-    <div class="vcard__meta">
-      <span class="vcard__reward <?= $done ? 'vcard__reward--done' : '' ?>">
-        <?php if ($done): ?>
-          <i class="ph-bold ph-check"></i> Selesai
-        <?php else: ?>
-          <i class="ph-bold ph-coins" style="color:#eab308; font-size:14px"></i> <?= format_rp((float)$v['reward_amount']) ?>
-        <?php endif; ?>
-      </span>
-      <span class="vcard__duration"><i class="ph-bold ph-clock"></i> <?= $v['watch_duration'] ?>s</span>
-    </div>
-  </div>
-</a>
-<?php endforeach; ?>
-</div>
-
-<div id="loader" style="text-align:center;padding:20px;display:none">
-  <div style="background:#fde68a; width:48px; height:48px; border-radius:50%; border:2.5px solid #78350f; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 4px 0 #78350f;">
-    <i class="ph-bold ph-spinner ph-spin" style="font-size:24px;color:#78350f"></i>
-  </div>
-  <div style="font-size:12px;font-weight:800;color:#78350f;margin-top:12px">Memuat video...</div>
 </div>
 
 <script>
+// Filter Videos
+function filterVideos(type, btn) {
+  document.querySelectorAll('.vhub-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  const cards = document.querySelectorAll('#vgrid .vcard');
+  cards.forEach(card => {
+    const st = card.getAttribute('data-status');
+    if (type === 'all') {
+      card.style.display = '';
+    } else if (type === st) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+// Infinite Scroll
 document.addEventListener('DOMContentLoaded', function() {
   let page = 1;
   let isLoading = false;
@@ -317,7 +616,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const grid = document.getElementById('vgrid');
   const loader = document.getElementById('loader');
 
-  if (!hasMore) return; // No more pages to load initially
+  if (!grid || !hasMore) return;
 
   const observer = new IntersectionObserver((entries) => {
     if (entries[0].isIntersecting && !isLoading && hasMore) {
@@ -325,7 +624,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }, { rootMargin: '100px' });
 
-  // Create a sentinel element to observe
   const sentinel = document.createElement('div');
   sentinel.style.height = '1px';
   grid.parentNode.insertBefore(sentinel, grid.nextSibling);
@@ -333,7 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function loadMore() {
     isLoading = true;
-    loader.style.display = 'block';
+    if (loader) loader.style.display = 'block';
     page++;
 
     try {
@@ -348,15 +646,14 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     } catch (e) {
       console.error('Error loading more videos:', e);
-      page--; // revert page count on error
+      page--;
     } finally {
       isLoading = false;
-      loader.style.display = 'none';
+      if (loader) loader.style.display = 'none';
     }
   }
 });
 </script>
-<?php endif; ?>
 
 <?php if (!empty($flash)): ?>
 <script>
@@ -367,7 +664,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <?php endif; ?>
-
-</div>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
