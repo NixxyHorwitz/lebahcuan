@@ -25,26 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // 2. Mark deposit as confirmed
                 $pdo->prepare("UPDATE deposits SET status='confirmed',admin_note=?,confirmed_at=NOW() WHERE id=?")
                     ->execute([$note, $id]);
-                // 3. Check referral commission (bypass if upline is a promotor)
-                $referer = $pdo->prepare(
-                    "SELECT u2.id, u2.referred_by, u2.is_promotor FROM users u JOIN users u2 ON u2.referral_code=u.referred_by WHERE u.id=?"
-                );
-                $referer->execute([$dep['user_id']]);
-                $ref = $referer->fetch();
-                if ($ref && $ref['id'] && (int)$ref['is_promotor'] !== 1) {
-                    $pct = (float) setting($pdo, 'referral_commission_percent', '5');
-                    $commission = round(($dep['amount'] * $pct) / 100, 2);
-                    if ($commission > 0) {
-                        // Credit commission to referrer's balance_wd
-                        $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")
-                            ->execute([$commission, $ref['id']]);
-                        // Log it
-                        $pdo->prepare("INSERT INTO referral_commissions (user_id,from_user_id,amount) VALUES (?,?,?)")
-                            ->execute([$ref['id'], $dep['user_id'], $commission]);
-                    }
-                }
+                // 3. Process referral commission
+                $comm = credit_deposit_referral_commission($pdo, (int)$dep['user_id'], (float)$dep['amount']);
                 $pdo->commit();
-                $flash = "Deposit #{$id} dikonfirmasi. balance_dep user ditambahkan." . ($ref && $ref['id'] && (int)$ref['is_promotor'] !== 1 ? " Komisi referral dikirim ke upline." : "");
+                $flash = "Deposit #{$id} dikonfirmasi. balance_dep user ditambahkan." . ($comm > 0 ? " Komisi referral dikirim ke upline (" . format_rp($comm) . ")." : "");
             } catch (\Throwable $e) {
                 $pdo->rollBack();
                 $flash = "Terjadi error: " . $e->getMessage(); $flashType = 'error';

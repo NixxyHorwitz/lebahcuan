@@ -2,308 +2,931 @@
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
+$ref_bonus = (float) setting($pdo, 'referral_bonus', '1000');
+$ref_pct   = (float) setting($pdo, 'referral_commission_percent', '5');
+
 // Referral stats
-$s = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by=?");
+$s = $pdo->prepare("SELECT COUNT(*) FROM users WHERE TRIM(UPPER(referred_by)) = TRIM(UPPER(?))");
 $s->execute([$user['referral_code']]);
 $ref_count = (int)$s->fetchColumn();
 
-$e = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM referral_commissions WHERE user_id=?");
+$e = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM referral_commissions WHERE user_id = ?");
 $e->execute([$user['id']]);
 $ref_earned = (float)$e->fetchColumn();
 
-// Referral history
+// Referral history (recent commissions)
 $hist = $pdo->prepare(
   "SELECT rc.amount, rc.created_at, u.username
    FROM referral_commissions rc
    JOIN users u ON u.id = rc.from_user_id
    WHERE rc.user_id = ?
-   ORDER BY rc.created_at DESC LIMIT 20"
+   ORDER BY rc.created_at DESC LIMIT 30"
 );
 $hist->execute([$user['id']]);
 $history = $hist->fetchAll();
 
 // Referred users list
 $refs = $pdo->prepare(
-  "SELECT u.username, u.created_at, 
+  "SELECT u.id, u.username, u.created_at, 
           COALESCE(m.name, 'Free') as membership_name,
           COALESCE((SELECT SUM(amount) FROM deposits WHERE user_id = u.id AND status = 'confirmed'), 0) as total_deposit,
           COALESCE((SELECT SUM(amount) FROM referral_commissions WHERE user_id = ? AND from_user_id = u.id), 0) as commission_earned
    FROM users u
    LEFT JOIN memberships m ON m.id = u.membership_id
-   WHERE u.referred_by = ?
+   WHERE TRIM(UPPER(u.referred_by)) = TRIM(UPPER(?))
    ORDER BY u.created_at DESC"
 );
 $refs->execute([$user['id'], $user['referral_code']]);
 $referreds = $refs->fetchAll();
 
 $ref_url = base_url('register/' . $user['referral_code']);
+$share_text = 'Gabung dan hasilkan cuan bersama! Daftar menggunakan tautan referralku: ' . $ref_url;
 
-$pageTitle  = 'Referral  ';
+$pageTitle  = 'Misi Referral';
 $activePage = 'referral';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
 
 <style>
 /* ══════════════════════════════════════════════
-   REFERRAL PAGE — CASUAL GAME STYLE (ULTRA COMPACT)
+   REFERRAL PAGE — COMPACT AMBER HONEY THEME
    ══════════════════════════════════════════════ */
-body { background: #f97316 !important; color: #0f172a; }
+:root {
+  --honey-50:  #fffbeb;
+  --honey-100: #fef3c7;
+  --honey-200: #fde68a;
+  --honey-300: #fcd34d;
+  --honey-400: #fbbf24;
+  --honey-500: #f59e0b;
+  --honey-600: #d97706;
+  --honey-700: #b45309;
+  --honey-800: #92400e;
+  --honey-900: #78350f;
+  --honey-ink: #451a03;
+}
 
-/* ── TOP BANNER ── */
-.wd-top { position: relative; background: linear-gradient(180deg, #3b82f6, #1d4ed8); padding: 16px 14px 20px; border-bottom: 3px solid #1e3a8a; z-index: 10; text-align: center; }
-.wd-top::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(255, 255, 255, 0.1) 2px, transparent 2px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 2px, transparent 2px); background-size: 20px 20px; pointer-events: none; }
-.wd-top-title { position: relative; font-size: 20px; font-weight: 900; color: #fff; text-shadow: 0 3px 0 #1e3a8a; z-index: 2; margin-bottom: 2px; letter-spacing: -0.5px; }
-.wd-top-sub { position: relative; font-size: 11px; font-weight: 800; color: #bae6fd; z-index: 2; }
+body {
+  background-color: #fef8ee !important;
+  background-image: radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, transparent 1.5px) !important;
+  background-size: 16px 16px !important;
+  color: var(--honey-ink);
+  font-family: 'Nunito', sans-serif;
+}
 
-/* ── BODY ── */
-.wd-body { flex: 1; background: #f97316; padding: 14px 14px 100px; position: relative; z-index: 2; margin-top: 0; }
-.wd-body::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle, rgba(255,255,255,0.08) 10%, transparent 10%), radial-gradient(circle, rgba(255,255,255,0.08) 10%, transparent 10%); background-size: 40px 40px; background-position: 0 0, 20px 20px; pointer-events: none; z-index: -1; }
+.ref-page-wrap {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 10px 12px 100px;
+}
 
-/* ── STATS ROW ── */
-.stat-row { display: flex; gap: 6px; margin-bottom: 14px; position: relative; z-index: 5; }
-.stat-box { flex: 1; background: #ffffff; border: 2.5px solid #1e3a8a; border-radius: 12px; padding: 10px 4px; text-align: center; box-shadow: 0 3px 0 #1e3a8a; }
-.stat-val { font-size: 13px; font-weight: 900; line-height: 1.2; }
-.stat-val.blue { color: #0284c7; }
-.stat-val.green { color: #16a34a; }
-.stat-val.orange { color: #ea580c; }
-.stat-lbl { font-size: 9px; font-weight: 900; color: #64748b; margin-top: 2px; text-transform: uppercase; }
+/* ── HERO BANNER ── */
+.ref-hero-card {
+  position: relative;
+  background: linear-gradient(135deg, #78350f 0%, #92400e 45%, #b45309 100%);
+  border: 2px solid #5a2608;
+  border-radius: 18px;
+  padding: 16px 14px;
+  box-shadow: 0 4px 0 #5a2608, 0 10px 20px -6px rgba(120, 53, 15, 0.35);
+  overflow: hidden;
+  margin-bottom: 12px;
+  color: #fff;
+}
+.ref-hero-card::after {
+  content: '';
+  position: absolute;
+  top: -24px;
+  right: -24px;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(253, 230, 138, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+.ref-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.ref-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(254, 243, 199, 0.16);
+  border: 1px solid rgba(254, 243, 199, 0.3);
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--honey-200);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.ref-hero-title {
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.2;
+  color: #ffffff;
+  text-shadow: 0 1.5px 2px rgba(69, 26, 3, 0.4);
+}
+.ref-hero-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--honey-100);
+  margin-top: 2px;
+  opacity: 0.95;
+}
 
-/* ── PROMOTOR ALERT ── */
-.promo-alert { background: linear-gradient(135deg, #10b981, #34d399); border: 2.5px solid #059669; border-radius: 12px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 3px 0 #047857; margin-bottom: 14px; position: relative; z-index: 5; }
-.promo-alert div { font-size: 11px; font-weight: 900; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
-.promo-btn { background: #fde047; border: 2px solid #ca8a04; border-radius: 8px; font-size: 10px; font-weight: 900; color: #9a3412; padding: 6px 10px; box-shadow: 0 2px 0 #ca8a04; text-decoration: none; }
-.promo-btn:active { transform: translateY(2px); box-shadow: 0 0 0 #ca8a04; }
+/* ── PROMOTOR LINK ── */
+.ref-promo-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #065f46, #047857);
+  border: 2px solid #064e3b;
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 3px 0 #064e3b;
+  color: #ffffff;
+}
+.ref-promo-strip-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.ref-promo-btn {
+  background: var(--honey-300);
+  border: 1.5px solid var(--honey-700);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--honey-900);
+  text-decoration: none;
+  box-shadow: 0 2px 0 var(--honey-800);
+  transition: transform 0.1s;
+}
+.ref-promo-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
 
-/* ── SECTION TITLE ── */
-.sec-title { font-size: 12px; font-weight: 900; color: #fff; text-transform: uppercase; margin-bottom: 10px; margin-top: 18px; display: flex; align-items: center; gap: 6px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-.sec-title i { color: #fde047; font-size: 16px; }
+/* ── 3-PILLAR KPI STATS ── */
+.ref-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ref-stat-card {
+  background: #ffffff;
+  border: 2px solid var(--honey-900);
+  border-radius: 14px;
+  padding: 10px 6px;
+  text-align: center;
+  box-shadow: 0 3.5px 0 var(--honey-900);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.ref-stat-icon {
+  font-size: 16px;
+  margin-bottom: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ref-stat-card.blue .ref-stat-icon { color: #0284c7; }
+.ref-stat-card.green .ref-stat-icon { color: #16a34a; }
+.ref-stat-card.amber .ref-stat-icon { color: var(--honey-600); }
 
-/* ── SHARE STRIP (DIRECT ON BODY) ── */
-.share-strip { display: flex; align-items: center; justify-content: space-between; background: #fffbeb; border: 2.5px solid #c2410c; border-radius: 12px; padding: 8px 10px; box-shadow: 0 3px 0 #9a3412; margin-bottom: 10px; }
-.share-lbl { font-size: 9px; font-weight: 900; color: #ea580c; text-transform: uppercase; margin-bottom: 2px; }
-.share-val { font-size: 13px; font-weight: 900; color: #7c2d12; letter-spacing: 0.5px; }
-.share-btn-copy { background: linear-gradient(180deg, #fde047, #eab308); border: 2px solid #ca8a04; border-radius: 8px; font-size: 11px; font-weight: 900; color: #713f12; padding: 8px 12px; box-shadow: 0 3px 0 #a16207; cursor: pointer; flex-shrink: 0; text-shadow: 0 1px 0 rgba(255,255,255,0.5); }
-.share-btn-copy:active { transform: translateY(3px); box-shadow: 0 0 0 #a16207; }
+.ref-stat-val {
+  font-size: 12.5px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ref-stat-card.blue .ref-stat-val { color: #0369a1; }
+.ref-stat-card.green .ref-stat-val { color: #15803d; }
+.ref-stat-card.amber .ref-stat-val { color: var(--honey-800); }
 
-.share-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
-.s-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border-radius: 12px; font-size: 11px; font-weight: 900; color: #fff; text-decoration: none; border: 2.5px solid rgba(0,0,0,0.2); box-shadow: 0 3px 0 rgba(0,0,0,0.3); transition: transform 0.1s; text-shadow: 0 1px 1px rgba(0,0,0,0.3); }
-.s-btn:active { transform: translateY(3px); box-shadow: none; }
-.s-btn.wa { background: linear-gradient(135deg, #4ade80, #16a34a); border-color: #15803d; box-shadow: 0 3px 0 #14532d; }
-.s-btn.wa:active { box-shadow: 0 0 0 #14532d; }
-.s-btn.tg { background: linear-gradient(135deg, #60a5fa, #2563eb); border-color: #1d4ed8; box-shadow: 0 3px 0 #1e3a8a; }
-.s-btn.tg:active { box-shadow: 0 0 0 #1e3a8a; }
+.ref-stat-lbl {
+  font-size: 9px;
+  font-weight: 800;
+  color: #78716c;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
 
-/* ── CARA KERJA (GLASSMORPHISM LIST) ── */
-.step-list { background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 12px; backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
-.step-item { display: flex; align-items: flex-start; gap: 10px; }
-.step-num { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(180deg, #fde047, #eab308); border: 2px solid #ca8a04; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: #713f12; flex-shrink: 0; box-shadow: 0 2px 0 #a16207; }
-.step-txt { font-size: 11px; font-weight: 800; color: #fff; line-height: 1.3; padding-top: 5px; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
+/* ── REFERRAL CODE & LINK CARD ── */
+.ref-box-card {
+  background: #ffffff;
+  border: 2px solid var(--honey-900);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 3.5px 0 var(--honey-900);
+  margin-bottom: 12px;
+}
+.ref-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.ref-box-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--honey-800);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.ref-code-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--honey-50);
+  border: 1.5px dashed var(--honey-600);
+  border-radius: 12px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.ref-code-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--honey-900);
+  letter-spacing: 1.5px;
+}
+.ref-copy-btn {
+  background: linear-gradient(180deg, var(--honey-400), var(--honey-500));
+  border: 1.5px solid var(--honey-800);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--honey-900);
+  cursor: pointer;
+  box-shadow: 0 2.5px 0 var(--honey-800);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: transform 0.1s;
+}
+.ref-copy-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
 
-/* ── COMPACT LISTS (DIRECT ON BODY) ── */
-.c-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-.c-item { display: flex; align-items: center; gap: 10px; background: #ffffff; border: 2.5px solid #c2410c; border-radius: 12px; padding: 10px 12px; box-shadow: 0 3px 0 #9a3412; }
-.c-ico { width: 36px; height: 36px; border-radius: 10px; border: 2px solid #c2410c; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; box-shadow: 0 2px 0 #9a3412; }
-.c-ico.blue { background: #e0f2fe; color: #0284c7; border-color: #0369a1; box-shadow: 0 2px 0 #075985; }
-.c-ico.yellow { background: linear-gradient(180deg, #fef08a, #facc15); color: #b45309; border-color: #a16207; box-shadow: 0 2px 0 #713f12; }
-.c-body { flex: 1; min-width: 0; }
-.c-title { font-size: 12px; font-weight: 900; color: #9a3412; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
-.c-sub { font-size: 10px; font-weight: 800; color: #ea580c; display: flex; align-items: center; gap: 4px; }
-.c-right { text-align: right; }
-.c-badge { font-size: 8px; font-weight: 900; padding: 2px 4px; border-radius: 5px; border: 1px solid; text-transform: uppercase; display: inline-block; margin-bottom: 4px; }
-.c-badge.free { background: #e0f2fe; color: #0284c7; border-color: #0ea5e9; }
-.c-badge.prem { background: #fdf4ff; color: #c026d3; border-color: #d946ef; }
-.c-amt { font-size: 12px; font-weight: 900; color: #16a34a; letter-spacing: -0.5px; }
-.c-amt.gray { color: #94a3b8; font-size: 10px; margin-top: 2px; }
+/* ── QUICK SHARE ROW ── */
+.ref-share-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+.ref-share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  text-decoration: none;
+  border: 1.5px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2.5px 0 rgba(0, 0, 0, 0.25);
+  transition: transform 0.1s;
+  cursor: pointer;
+}
+.ref-share-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+.ref-share-btn.wa {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border-color: #15803d;
+  box-shadow: 0 2.5px 0 #166534;
+}
+.ref-share-btn.tg {
+  background: linear-gradient(135deg, #38bdf8, #0284c7);
+  border-color: #0369a1;
+  box-shadow: 0 2.5px 0 #075985;
+}
+.ref-share-btn.link {
+  background: linear-gradient(135deg, var(--honey-500), var(--honey-600));
+  border-color: var(--honey-800);
+  box-shadow: 0 2.5px 0 var(--honey-900);
+}
 
-/* Empty & Pagination */
-.ref-empty { text-align: center; padding: 20px; border: 2.5px dashed rgba(255,255,255,0.4); border-radius: 12px; background: rgba(0,0,0,0.05); }
-.ref-empty-ico { font-size: 32px; margin-bottom: 6px; opacity: 0.8; }
-.ref-empty-txt { font-size: 11px; font-weight: 800; color: #fff; }
-.ref-pg { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
-.ref-pg-btn { padding: 6px 12px; background: #ffffff; border: 2px solid #c2410c; border-radius: 10px; font-size: 11px; font-weight: 900; color: #9a3412; box-shadow: 0 3px 0 #9a3412; cursor: pointer; transition: transform 0.1s; }
-.ref-pg-btn:active { transform: translateY(3px); box-shadow: none; }
-.ref-pg-info { font-size: 11px; font-weight: 900; color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.3); }
-</style><!-- TOP BANNER -->
-<div class="wd-top">
-  <div class="wd-top-title">Misi Referral</div>
-  <div class="wd-top-sub">Ajak Teman & Panen Komisi Tiap Hari!</div>
-</div>
+/* ── BENEFITS STRIP ── */
+.ref-benefits-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ref-benefit-card {
+  background: #ffffff;
+  border: 1.5px solid var(--honey-200);
+  border-radius: 12px;
+  padding: 9px 10px;
+  box-shadow: 0 2px 6px rgba(120, 53, 15, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ref-benefit-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  border: 1.5px solid;
+}
+.ref-benefit-icon.gift {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fde68a;
+}
+.ref-benefit-icon.percent {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+.ref-benefit-title {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--honey-900);
+  line-height: 1.2;
+}
+.ref-benefit-desc {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #78716c;
+  margin-top: 1px;
+}
 
-<div class="wd-body">
-  <?php if ((int)$user['is_promotor'] === 1): ?>
-  <!-- PROMOTOR -->
-  <div class="promo-alert">
-    <div>🚀 Promotor Aktif</div>
-    <a href="/user/promotor.php" class="promo-btn">Dashboard</a>
+/* ── TAB NAVIGATION ── */
+.ref-tabs-wrap {
+  display: flex;
+  background: var(--honey-100);
+  border: 1.5px solid var(--honey-900);
+  border-radius: 12px;
+  padding: 3px;
+  margin-bottom: 10px;
+  gap: 4px;
+}
+.ref-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 8px 6px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--honey-800);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+.ref-tab-btn.active {
+  background: #ffffff;
+  color: var(--honey-900);
+  font-weight: 900;
+  border: 1px solid var(--honey-900);
+  box-shadow: 0 2px 0 var(--honey-900);
+}
+.ref-tab-pill {
+  font-size: 9px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--honey-200);
+  color: var(--honey-900);
+}
+.ref-tab-btn.active .ref-tab-pill {
+  background: var(--honey-500);
+  color: #ffffff;
+}
+
+/* ── TAB PANELS & LIST ITEMS ── */
+.ref-tab-panel {
+  display: none;
+}
+.ref-tab-panel.active {
+  display: block;
+}
+
+.ref-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ref-member-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1.5px solid var(--honey-900);
+  border-radius: 12px;
+  padding: 9px 12px;
+  box-shadow: 0 2.5px 0 var(--honey-900);
+}
+.ref-member-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--honey-100), var(--honey-200));
+  border: 1.5px solid var(--honey-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--honey-800);
+  flex-shrink: 0;
+}
+.ref-member-info {
+  flex: 1;
+  min-width: 0;
+}
+.ref-member-name {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--honey-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ref-member-meta {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #78716c;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 1px;
+}
+.ref-member-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+.ref-membership-tag {
+  display: inline-block;
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 1.5px 5px;
+  border-radius: 5px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  border: 1px solid;
+}
+.ref-membership-tag.free {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+.ref-membership-tag.vip {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #f59e0b;
+}
+.ref-member-amt {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #16a34a;
+}
+
+/* ── HISTORY ROW ── */
+.ref-hist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1.5px solid var(--honey-900);
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 2.5px 0 var(--honey-900);
+}
+.ref-hist-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #ecfdf5;
+  border: 1.5px solid #059669;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.ref-hist-body {
+  flex: 1;
+  min-width: 0;
+}
+.ref-hist-title {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: var(--honey-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ref-hist-date {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #78716c;
+  margin-top: 1px;
+}
+.ref-hist-amt {
+  font-size: 12px;
+  font-weight: 900;
+  color: #16a34a;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── EMPTY STATE ── */
+.ref-empty-box {
+  text-align: center;
+  padding: 24px 16px;
+  background: #ffffff;
+  border: 1.5px dashed var(--honey-300);
+  border-radius: 14px;
+}
+.ref-empty-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--honey-100);
+  color: var(--honey-600);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+.ref-empty-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--honey-900);
+}
+.ref-empty-desc {
+  font-size: 10px;
+  font-weight: 700;
+  color: #78716c;
+  margin-top: 2px;
+}
+
+/* ── PAGINATION ── */
+.ref-pg-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.ref-pg-btn {
+  padding: 5px 12px;
+  background: #ffffff;
+  border: 1.5px solid var(--honey-900);
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 900;
+  color: var(--honey-900);
+  box-shadow: 0 2px 0 var(--honey-900);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.ref-pg-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+.ref-pg-counter {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--honey-800);
+}
+</style>
+
+<div class="ref-page-wrap">
+
+  <!-- HERO BANNER -->
+  <div class="ref-hero-card">
+    <div class="ref-hero-top">
+      <div class="ref-hero-badge">
+        <i class="ph-fill ph-trophy"></i>
+        <span>Misi Kemitraan</span>
+      </div>
+      <div style="font-size: 11px; font-weight: 800; color: var(--honey-200);">
+        Kode: <strong style="font-family: monospace; letter-spacing: 0.5px;"><?= htmlspecialchars($user['referral_code']) ?></strong>
+      </div>
+    </div>
+    <div class="ref-hero-title">Panen Cuan Bersama Kawan</div>
+    <div class="ref-hero-sub">Dapatkan bonus pendaftaran dan komisi deposit seumur hidup.</div>
   </div>
-  <?php endif; ?>
 
-  <!-- STATS -->
-  <div class="stat-row">
-    <div class="stat-box">
-      <div class="stat-val blue"><?= $ref_count ?></div>
-      <div class="stat-lbl">Teman</div>
+  <?php if ((int)($user['is_promotor'] ?? 0) === 1): ?>
+  <!-- PROMOTOR STRIP -->
+  <div class="ref-promo-strip">
+    <div class="ref-promo-strip-left">
+      <i class="ph-fill ph-shield-star" style="font-size: 18px; color: #fde68a;"></i>
+      <span>Status Promotor Aktif</span>
     </div>
-    <div class="stat-box">
-      <div class="stat-val green"><?= format_rp($ref_earned) ?></div>
-      <div class="stat-lbl">Komisi</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val orange" style="font-family:monospace;letter-spacing:0px"><?= $user['referral_code'] ?></div>
-      <div class="stat-lbl">Kode Unik</div>
-    </div>
-  </div>
-
-  <!-- SHARE STRIP -->
-  <div class="sec-title"><i class="ph-bold ph-share-network"></i> Bagikan Link</div>
-  <div class="share-strip">
-    <div>
-      <div class="share-lbl">Kode Referral</div>
-      <div class="share-val" id="ref-code"><?= htmlspecialchars($user['referral_code']) ?></div>
-    </div>
-    <button onclick="copyRef()" class="share-btn-copy" id="copy-btn">📋 Salin</button>
-  </div>
-  
-  <div class="share-grid">
-    <a href="https://wa.me/?text=<?= urlencode('Yuk gabung TontonCuan! Daftar pakai link ku: ' . $ref_url) ?>" target="_blank" class="s-btn wa">
-      <i class="ph-bold ph-whatsapp-logo"></i> WhatsApp
+    <a href="/user/promotor.php" class="ref-promo-btn">
+      <i class="ph-bold ph-chart-line-up"></i>
+      <span>Dashboard</span>
     </a>
-    <a href="https://t.me/share/url?url=<?= urlencode($ref_url) ?>&text=<?= urlencode('Gabung TontonCuan, dapat reward tiap nonton video!') ?>" target="_blank" class="s-btn tg">
-      <i class="ph-bold ph-telegram-logo"></i> Telegram
-    </a>
-  </div>
-
-  <!-- CARA KERJA -->
-  <div class="sec-title"><i class="ph-bold ph-lightbulb"></i> Cara Kerja</div>
-  <div class="step-list">
-    <div class="step-item">
-      <div class="step-num">1</div>
-      <div class="step-txt">Bagikan link referral ke teman-temanmu.</div>
-    </div>
-    <div class="step-item">
-      <div class="step-num">2</div>
-      <div class="step-txt">Teman mendaftar melalui link tersebut.</div>
-    </div>
-    <div class="step-item">
-      <div class="step-num">3</div>
-      <div class="step-txt">Dapatkan komisi dari setiap transaksi mereka!</div>
-    </div>
-  </div>
-
-  <!-- TEMAN BERGABUNG -->
-  <div class="sec-title"><i class="ph-bold ph-users"></i> Teman Bergabung</div>
-  <?php if (empty($referreds)): ?>
-  <div class="ref-empty">
-    <div class="ref-empty-ico">👥</div>
-    <div class="ref-empty-txt">Belum ada teman yang bergabung.<br>Ayo bagikan link referral kamu!</div>
-  </div>
-  <?php else: ?>
-  <div class="c-list">
-    <?php foreach ($referreds as $idx => $r): 
-      $isFree = (stripos((string)$r['membership_name'], 'Free') !== false || (string)$r['membership_name'] === '');
-      $badgeCls = $isFree ? 'free' : 'prem';
-    ?>
-    <div class="c-item ref-item-row" data-index="<?= $idx ?>" style="<?= $idx >= 5 ? 'display:none' : '' ?>">
-      <div class="c-ico blue"><i class="ph-fill ph-user-circle"></i></div>
-      <div class="c-body">
-        <div class="c-title"><?= htmlspecialchars($r['username']) ?></div>
-        <div class="c-sub"><i class="ph-bold ph-calendar-blank"></i> <?= date('d M y', strtotime($r['created_at'])) ?></div>
-      </div>
-      <div class="c-right">
-        <div class="c-badge <?= $badgeCls ?>"><?= htmlspecialchars($r['membership_name'] ?: 'Free') ?></div>
-        <div class="c-amt">+<?= format_rp((float)$r['commission_earned']) ?></div>
-      </div>
-    </div>
-    <?php endforeach; ?>
-  </div>
-  <?php if (count($referreds) > 5): ?>
-  <div class="ref-pg">
-    <button onclick="refPrev()" id="ref-btn-prev" class="ref-pg-btn" style="pointer-events:none;opacity:.5">← Prev</button>
-    <span id="ref-page-info" class="ref-pg-info">1/<?= ceil(count($referreds) / 5) ?></span>
-    <button onclick="refNext()" id="ref-btn-next" class="ref-pg-btn">Next →</button>
   </div>
   <?php endif; ?>
-  <?php endif; ?>
 
-  <!-- RIWAYAT KOMISI -->
-  <?php if (!empty($history)): ?>
-  <div class="sec-title"><i class="ph-bold ph-coins"></i> Riwayat Komisi</div>
-  <div class="c-list">
-    <?php foreach ($history as $h): ?>
-    <div class="c-item">
-      <div class="c-ico yellow"><i class="ph-fill ph-gift"></i></div>
-      <div class="c-body">
-        <div class="c-title">Dari <?= htmlspecialchars($h['username']) ?></div>
-        <div class="c-sub"><i class="ph-bold ph-clock"></i> <?= date('d M y H:i', strtotime($h['created_at'])) ?></div>
+  <!-- 3-PILLAR KPI STATS -->
+  <div class="ref-stats-grid">
+    <div class="ref-stat-card blue">
+      <div class="ref-stat-icon"><i class="ph-bold ph-users"></i></div>
+      <div class="ref-stat-val"><?= number_format($ref_count, 0, ',', '.') ?></div>
+      <div class="ref-stat-lbl">Kawan</div>
+    </div>
+    <div class="ref-stat-card green">
+      <div class="ref-stat-icon"><i class="ph-bold ph-coins"></i></div>
+      <div class="ref-stat-val"><?= format_rp($ref_earned) ?></div>
+      <div class="ref-stat-lbl">Komisi</div>
+    </div>
+    <div class="ref-stat-card amber">
+      <div class="ref-stat-icon"><i class="ph-bold ph-wallet"></i></div>
+      <div class="ref-stat-val"><?= format_rp((float)$user['balance_wd']) ?></div>
+      <div class="ref-stat-lbl">Saldo Tarik</div>
+    </div>
+  </div>
+
+  <!-- REFERRAL CODE & QUICK SHARE -->
+  <div class="ref-box-card">
+    <div class="ref-box-header">
+      <span class="ref-box-label"><i class="ph-bold ph-link-simple"></i> Tautan Undangan Anda</span>
+      <span style="font-size: 10px; font-weight: 800; color: #16a34a;">Siap Dibagikan</span>
+    </div>
+
+    <div class="ref-code-strip">
+      <div>
+        <div style="font-size: 8.5px; font-weight: 800; color: #78716c; text-transform: uppercase;">Kode Referral</div>
+        <div class="ref-code-text" id="ref-code-val"><?= htmlspecialchars($user['referral_code']) ?></div>
       </div>
-      <div class="c-right">
-        <div class="c-amt">+<?= format_rp((float)$h['amount']) ?></div>
+      <button onclick="copyRefLink()" class="ref-copy-btn" id="btn-copy-code">
+        <i class="ph-bold ph-copy" id="copy-ico"></i>
+        <span id="copy-txt">Salin Link</span>
+      </button>
+    </div>
+
+    <!-- QUICK SHARE BUTTONS -->
+    <div class="ref-share-row">
+      <a href="https://wa.me/?text=<?= urlencode($share_text) ?>" target="_blank" rel="noopener noreferrer" class="ref-share-btn wa">
+        <i class="ph-bold ph-whatsapp-logo"></i>
+        <span>WhatsApp</span>
+      </a>
+      <a href="https://t.me/share/url?url=<?= urlencode($ref_url) ?>&text=<?= urlencode('Yuk gabung dan dapatkan saldo gratis!') ?>" target="_blank" rel="noopener noreferrer" class="ref-share-btn tg">
+        <i class="ph-bold ph-telegram-logo"></i>
+        <span>Telegram</span>
+      </a>
+      <button type="button" onclick="shareNative()" class="ref-share-btn link">
+        <i class="ph-bold ph-share-network"></i>
+        <span>Bagikan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- BENEFITS / SKEMA KOMISI STRIP -->
+  <div class="ref-benefits-strip">
+    <div class="ref-benefit-card">
+      <div class="ref-benefit-icon gift">
+        <i class="ph-fill ph-gift"></i>
+      </div>
+      <div>
+        <div class="ref-benefit-title">+<?= format_rp($ref_bonus) ?></div>
+        <div class="ref-benefit-desc">Bonus tiap pendaftaran teman baru</div>
       </div>
     </div>
-    <?php endforeach; ?>
+    <div class="ref-benefit-card">
+      <div class="ref-benefit-icon percent">
+        <i class="ph-fill ph-percent"></i>
+      </div>
+      <div>
+        <div class="ref-benefit-title">+<?= (float)$ref_pct ?>% Komisi</div>
+        <div class="ref-benefit-desc">Dari setiap isi saldo teman seumur hidup</div>
+      </div>
+    </div>
   </div>
-  <?php endif; ?>
+
+  <!-- TAB SWITCHER -->
+  <div class="ref-tabs-wrap">
+    <button type="button" class="ref-tab-btn active" onclick="switchRefTab('members', this)">
+      <i class="ph-bold ph-users-three"></i>
+      <span>Kawan Terdaftar</span>
+      <span class="ref-tab-pill"><?= count($referreds) ?></span>
+    </button>
+    <button type="button" class="ref-tab-btn" onclick="switchRefTab('history', this)">
+      <i class="ph-bold ph-clock-counter-clockwise"></i>
+      <span>Riwayat Komisi</span>
+      <span class="ref-tab-pill"><?= count($history) ?></span>
+    </button>
+  </div>
+
+  <!-- TAB PANEL 1: REFERRED MEMBERS -->
+  <div id="panel-members" class="ref-tab-panel active">
+    <?php if (empty($referreds)): ?>
+      <div class="ref-empty-box">
+        <div class="ref-empty-icon"><i class="ph-bold ph-user-plus"></i></div>
+        <div class="ref-empty-title">Belum Ada Kawan Bergabung</div>
+        <div class="ref-empty-desc">Bagikan link atau kode referral kamu untuk mulai mendapatkan komisi!</div>
+      </div>
+    <?php else: ?>
+      <div class="ref-list-container">
+        <?php foreach ($referreds as $idx => $r): 
+          $isFree = (stripos((string)$r['membership_name'], 'Free') !== false || (string)$r['membership_name'] === '');
+          $badgeCls = $isFree ? 'free' : 'vip';
+        ?>
+          <div class="ref-member-row ref-member-item" data-index="<?= $idx ?>" style="<?= $idx >= 5 ? 'display:none;' : '' ?>">
+            <div class="ref-member-avatar">
+              <i class="ph-fill ph-user"></i>
+            </div>
+            <div class="ref-member-info">
+              <div class="ref-member-name"><?= htmlspecialchars($r['username']) ?></div>
+              <div class="ref-member-meta">
+                <i class="ph-bold ph-calendar-blank"></i>
+                <span><?= date('d M Y', strtotime($r['created_at'])) ?></span>
+              </div>
+            </div>
+            <div class="ref-member-right">
+              <span class="ref-membership-tag <?= $badgeCls ?>"><?= htmlspecialchars($r['membership_name'] ?: 'Free') ?></span>
+              <div class="ref-member-amt">+<?= format_rp((float)$r['commission_earned']) ?></div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+
+      <?php if (count($referreds) > 5): ?>
+        <div class="ref-pg-row">
+          <button type="button" onclick="changeMemberPage(-1)" id="btn-mem-prev" class="ref-pg-btn" style="opacity: 0.5; pointer-events: none;">
+            <i class="ph-bold ph-caret-left"></i> Prev
+          </button>
+          <span id="mem-page-info" class="ref-pg-counter">1 / <?= ceil(count($referreds) / 5) ?></span>
+          <button type="button" onclick="changeMemberPage(1)" id="btn-mem-next" class="ref-pg-btn">
+            Next <i class="ph-bold ph-caret-right"></i>
+          </button>
+        </div>
+      <?php endif; ?>
+    <?php endif; ?>
+  </div>
+
+  <!-- TAB PANEL 2: RECENT COMMISSION FEED -->
+  <div id="panel-history" class="ref-tab-panel">
+    <?php if (empty($history)): ?>
+      <div class="ref-empty-box">
+        <div class="ref-empty-icon"><i class="ph-bold ph-receipt"></i></div>
+        <div class="ref-empty-title">Belum Ada Riwayat Komisi</div>
+        <div class="ref-empty-desc">Komisi pendaftaran atau deposit teman kamu akan tercatat secara otomatis di sini.</div>
+      </div>
+    <?php else: ?>
+      <div class="ref-list-container">
+        <?php foreach ($history as $h): ?>
+          <div class="ref-hist-row">
+            <div class="ref-hist-icon">
+              <i class="ph-fill ph-coins"></i>
+            </div>
+            <div class="ref-hist-body">
+              <div class="ref-hist-title">Komisi dari <?= htmlspecialchars($h['username']) ?></div>
+              <div class="ref-hist-date"><?= date('d M Y, H:i', strtotime($h['created_at'])) ?> WIB</div>
+            </div>
+            <div class="ref-hist-amt">
+              +<?= format_rp((float)$h['amount']) ?>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </div>
 
 </div>
 
 <script>
-function copyRef() {
-  const input = document.createElement('input');
-  input.value = "<?= htmlspecialchars($ref_url) ?>";
-  document.body.appendChild(input);
-  input.select();
-  document.execCommand('copy');
-  document.body.removeChild(input);
-  
-  const btn = document.getElementById('copy-btn');
-  btn.textContent = '✅ Salin';
-  setTimeout(() => btn.textContent = '📋 Salin', 2000);
+const refUrl = "<?= htmlspecialchars($ref_url, ENT_QUOTES) ?>";
+const shareText = "<?= htmlspecialchars($share_text, ENT_QUOTES) ?>";
+
+function copyRefLink() {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(refUrl).then(setCopySuccess).catch(() => fallbackCopy(refUrl));
+  } else {
+    fallbackCopy(refUrl);
+  }
 }
 
-let refCurrentPage = 1;
-const refLimit = 5;
-const refTotal = <?= count($referreds) ?>;
-const refTotalPages = Math.max(1, Math.ceil(refTotal / refLimit));
+function fallbackCopy(text) {
+  const el = document.createElement('textarea');
+  el.value = text;
+  el.style.position = 'fixed';
+  el.style.opacity = '0';
+  document.body.appendChild(el);
+  el.focus();
+  el.select();
+  try {
+    document.execCommand('copy');
+    setCopySuccess();
+  } catch (err) {}
+  document.body.removeChild(el);
+}
 
-function updateRefPagination() {
-  const items = document.querySelectorAll('.ref-item-row');
-  items.forEach((item, idx) => {
-    if (idx >= (refCurrentPage - 1) * refLimit && idx < refCurrentPage * refLimit) {
-      item.style.display = 'flex';
+function setCopySuccess() {
+  const btn = document.getElementById('btn-copy-code');
+  const txt = document.getElementById('copy-txt');
+  const ico = document.getElementById('copy-ico');
+  if (!btn || !txt || !ico) return;
+
+  txt.textContent = 'Tersalin!';
+  ico.className = 'ph-bold ph-check';
+  btn.style.background = '#22c55e';
+  btn.style.color = '#ffffff';
+  btn.style.borderColor = '#15803d';
+
+  setTimeout(() => {
+    txt.textContent = 'Salin Link';
+    ico.className = 'ph-bold ph-copy';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }, 2200);
+}
+
+function shareNative() {
+  if (navigator.share) {
+    navigator.share({
+      title: 'LebahCuan',
+      text: shareText,
+      url: refUrl
+    }).catch(() => {});
+  } else {
+    copyRefLink();
+  }
+}
+
+function switchRefTab(tab, btn) {
+  document.querySelectorAll('.ref-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.ref-tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const panel = document.getElementById('panel-' + tab);
+  if (panel) panel.classList.add('active');
+}
+
+// Client-side pagination for referred members
+let memPage = 1;
+const memPageSize = 5;
+const memTotal = <?= count($referreds) ?>;
+const memTotalPages = Math.max(1, Math.ceil(memTotal / memPageSize));
+
+function changeMemberPage(delta) {
+  const next = memPage + delta;
+  if (next < 1 || next > memTotalPages) return;
+  memPage = next;
+
+  const rows = document.querySelectorAll('.ref-member-item');
+  rows.forEach((row, idx) => {
+    if (idx >= (memPage - 1) * memPageSize && idx < memPage * memPageSize) {
+      row.style.display = 'flex';
     } else {
-      item.style.display = 'none';
+      row.style.display = 'none';
     }
   });
-  
-  const info = document.getElementById('ref-page-info');
-  if (info) info.textContent = refCurrentPage + '/' + refTotalPages;
-  
-  const prevBtn = document.getElementById('ref-btn-prev');
-  if (prevBtn) {
-    prevBtn.style.opacity = refCurrentPage <= 1 ? '0.5' : '1';
-    prevBtn.style.pointerEvents = refCurrentPage <= 1 ? 'none' : 'auto';
-  }
-  const nextBtn = document.getElementById('ref-btn-next');
-  if (nextBtn) {
-    nextBtn.style.opacity = refCurrentPage >= refTotalPages ? '0.5' : '1';
-    nextBtn.style.pointerEvents = refCurrentPage >= refTotalPages ? 'none' : 'auto';
-  }
-}
 
-function refPrev() {
-  if (refCurrentPage > 1) {
-    refCurrentPage--;
-    updateRefPagination();
-  }
-}
+  const info = document.getElementById('mem-page-info');
+  if (info) info.textContent = memPage + ' / ' + memTotalPages;
 
-function refNext() {
-  if (refCurrentPage < refTotalPages) {
-    refCurrentPage++;
-    updateRefPagination();
+  const btnPrev = document.getElementById('btn-mem-prev');
+  if (btnPrev) {
+    btnPrev.style.opacity = memPage <= 1 ? '0.5' : '1';
+    btnPrev.style.pointerEvents = memPage <= 1 ? 'none' : 'auto';
+  }
+
+  const btnNext = document.getElementById('btn-mem-next');
+  if (btnNext) {
+    btnNext.style.opacity = memPage >= memTotalPages ? '0.5' : '1';
+    btnNext.style.pointerEvents = memPage >= memTotalPages ? 'none' : 'auto';
   }
 }
 </script>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
-

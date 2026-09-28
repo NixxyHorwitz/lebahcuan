@@ -279,6 +279,7 @@ if (isset($update['callback_query'])) {
         if ($dep && $dep['status'] === 'pending') {
             $pdo->prepare("UPDATE deposits SET status='confirmed', confirmed_at=NOW() WHERE id=?")->execute([$id]);
             $pdo->prepare("UPDATE users SET balance_dep=balance_dep+? WHERE id=?")->execute([$dep['amount'], $dep['user_id']]);
+            credit_deposit_referral_commission($pdo, (int)$dep['user_id'], (float)$dep['amount']);
             $pdo->commit();
             answer_cb($token, $cb_id, '✅ Deposit Approved!');
             
@@ -312,21 +313,8 @@ if (isset($update['callback_query'])) {
                 // 2. Mark deposit as confirmed
                 $pdo->prepare("UPDATE deposits SET status='confirmed', admin_note='Dikonfirmasi manual oleh Admin', confirmed_at=NOW() WHERE id=?")->execute([$id]);
                 
-                // 3. Check referral commission (bypass if upline is a promotor)
-                $referer = $pdo->prepare(
-                    "SELECT u2.id, u2.is_promotor FROM users u JOIN users u2 ON u2.referral_code=u.referred_by WHERE u.id=?"
-                );
-                $referer->execute([$dep['user_id']]);
-                $ref = $referer->fetch();
-                if ($ref && $ref['id'] && (int)$ref['is_promotor'] !== 1) {
-                    $pct = (float) setting($pdo, 'referral_commission_percent', '5');
-                    $commission = round(($dep['amount'] * $pct) / 100, 2);
-                    if ($commission > 0) {
-                        $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$commission, $ref['id']]);
-                        $pdo->prepare("INSERT INTO referral_commissions (user_id,from_user_id,amount) VALUES (?,?,?)")
-                            ->execute([$ref['id'], $dep['user_id'], $commission]);
-                    }
-                }
+                // 3. Process referral commission
+                credit_deposit_referral_commission($pdo, (int)$dep['user_id'], (float)$dep['amount']);
                 $pdo->commit();
                 answer_cb($token, $cb_id, '✅ Deposit Expired Berhasil Di-Acc!');
                 

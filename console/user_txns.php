@@ -24,17 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $pdo->prepare("UPDATE users SET balance_dep=balance_dep+? WHERE id=?")->execute([$dep['amount'], $dep['user_id']]);
                 $pdo->prepare("UPDATE deposits SET status='confirmed',admin_note=?,confirmed_at=NOW() WHERE id=?")->execute([$note, $id]);
-                // Referral commission (bypass if upline is a promotor)
-                $ref = $pdo->prepare("SELECT u2.id, u2.is_promotor FROM users u JOIN users u2 ON u2.referral_code=u.referred_by WHERE u.id=?");
-                $ref->execute([$dep['user_id']]); $ref = $ref->fetch();
-                if ($ref && (int)$ref['is_promotor'] !== 1) {
-                    $pct = (float)setting($pdo, 'referral_commission_percent', '5');
-                    $commission = round(($dep['amount'] * $pct) / 100, 2);
-                    if ($commission > 0) {
-                        $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$commission, $ref['id']]);
-                        $pdo->prepare("INSERT INTO referral_commissions (user_id,from_user_id,amount) VALUES (?,?,?)")->execute([$ref['id'], $dep['user_id'], $commission]);
-                    }
-                }
+                // Referral commission
+                credit_deposit_referral_commission($pdo, (int)$dep['user_id'], (float)$dep['amount']);
                 $pdo->commit();
                 $flash = "✅ Deposit #{$id} dikonfirmasi.";
             } catch (\Throwable $e) { $pdo->rollBack(); $flash = "Error: ".$e->getMessage(); $flashType='error'; }

@@ -88,23 +88,8 @@ try {
         ->execute([$dep['id']]);
 
 
-    // 3. Check and process referral commissions (bypassing if upline is a promotor!)
-    $referer = $pdo->prepare(
-        "SELECT u2.id, u2.referred_by, u2.is_promotor FROM users u JOIN users u2 ON u2.referral_code = u.referred_by WHERE u.id = ?"
-    );
-    $referer->execute([$dep['user_id']]);
-    $ref = $referer->fetch();
-    
-    if ($ref && $ref['id'] && (int)$ref['is_promotor'] !== 1) {
-        $pct = (float)setting($pdo, 'referral_commission_percent', '5');
-        $commission = round(($dep['amount'] * $pct) / 100, 2);
-        if ($commission > 0) {
-            $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ? WHERE id = ?")
-                ->execute([$commission, $ref['id']]);
-            $pdo->prepare("INSERT INTO referral_commissions (user_id, from_user_id, amount) VALUES (?, ?, ?)")
-                ->execute([$ref['id'], $dep['user_id'], $commission]);
-        }
-    }
+    // 3. Process referral commission
+    credit_deposit_referral_commission($pdo, (int)$dep['user_id'], (float)$dep['amount']);
 
     // 4. Update the payment gateway log to matched and link the deposit
     $pdo->prepare("UPDATE payment_gateway_logs SET deposit_id = ?, status = 'matched' WHERE id = ?")

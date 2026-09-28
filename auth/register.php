@@ -141,6 +141,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $whatsapp  = preg_replace('/\D/', '', $_POST['whatsapp'] ?? '');
     $password  = $_POST['password']  ?? '';
     $ref_input = strtoupper(trim($_POST['referral'] ?? ''));
+    if (empty($ref_input)) {
+        $ref_input = strtoupper(trim($_COOKIE['tonton_ref'] ?? $_COOKIE['ref_code'] ?? ''));
+    }
     
     $bank_name           = trim($_POST['bank_name'] ?? '');
     $account_number      = trim($_POST['account_number'] ?? '');
@@ -333,20 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $kb_abuse = $site_url ? [[['text' => '🔍 Cek Akun Baru', 'url' => "{$site_url}/console/user_detail.php?id={$new_id}"]]] : [];
                 send_telegram_notif($pdo, $msg_abuse, $kb_abuse, 'abuse');
             } else {
-                $chk_prom = $pdo->prepare("SELECT is_promotor FROM users WHERE referral_code = ? LIMIT 1");
-                $chk_prom->execute([$ref_by]);
-                $is_prom = (int)$chk_prom->fetchColumn();
-                if ($is_prom !== 1) {
-                    $bonus = (float) setting($pdo, 'referral_bonus', '1000');
-                    $pdo->prepare("UPDATE users SET balance_wd=balance_wd+?,total_earned=total_earned+? WHERE referral_code=?")
-                        ->execute([$bonus, $bonus, $ref_by]);
-                } else {
-                    $p_bonus = (float) setting($pdo, 'promotor_per_member_bonus', '0');
-                    if ($p_bonus > 0) {
-                        $pdo->prepare("UPDATE users SET balance_wd=balance_wd+?,total_earned=total_earned+? WHERE referral_code=?")
-                            ->execute([$p_bonus, $p_bonus, $ref_by]);
-                    }
-                }
+                credit_registration_referral_bonus($pdo, $new_id, $ref_by);
             }
         }
 
@@ -376,7 +366,7 @@ end_reg:
 // Generate initial captcha challenge for page display
 $captcha = generate_captcha_challenge();
 
-$ref_from_url = strtoupper(trim($_GET['ref'] ?? $_COOKIE['tonton_ref'] ?? ''));
+$ref_from_url = strtoupper(trim($_GET['ref'] ?? $_COOKIE['tonton_ref'] ?? $_COOKIE['ref_code'] ?? ''));
 
 $_pay_channels = $pdo->query("SELECT name, type FROM payment_channels WHERE is_active=1 ORDER BY type ASC, sort_order ASC, name ASC")->fetchAll();
 $_banks    = array_filter($_pay_channels, fn($c) => $c['type'] === 'bank');

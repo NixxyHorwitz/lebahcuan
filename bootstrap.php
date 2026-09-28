@@ -41,6 +41,8 @@ if (!empty($_GET['ref'])) {
     $ref_code = strtoupper(trim($_GET['ref']));
     setcookie('tonton_ref', $ref_code, time() + (86400 * 30), '/');
     $_COOKIE['tonton_ref'] = $ref_code;
+    setcookie('ref_code', $ref_code, time() + (86400 * 30), '/');
+    $_COOKIE['ref_code'] = $ref_code;
 }
 
 // PDO connection
@@ -194,28 +196,74 @@ if (setting($pdo, 'maintenance_mode', '0') === '1') {
 }
 
 
-// Process referral commission recursively
-function process_referral_commission(PDO $pdo, int $user_id, float $amount, int $depth = 1): void {
-    if ($depth > 3) return;
-    $s = $pdo->prepare("SELECT referred_by FROM users WHERE id=?");
-    $s->execute([$user_id]);
-    $refCode = $s->fetchColumn();
-    if (!$refCode) return;
+/**
+ * Processes deposit referral commission for the upline user.
+ * Credits balance_wd and total_earned, and creates a record in referral_commissions.
+ * Returns the commission amount credited (0.0 if none).
+ */
+function credit_deposit_referral_commission(PDO $pdo, int $depositor_user_id, float $deposit_amount): float {
+    if ($deposit_amount <= 0) return 0.0;
     
-    $su = $pdo->prepare("SELECT id FROM users WHERE referral_code=?");
-    $su->execute([$refCode]);
-    $upline_id = $su->fetchColumn();
-    if (!$upline_id) return;
+    // Find upline of depositor
+    $stmt = $pdo->prepare(
+        "SELECT u2.id, u2.username, u2.is_promotor 
+         FROM users u 
+         JOIN users u2 ON TRIM(UPPER(u2.referral_code)) = TRIM(UPPER(u.referred_by)) 
+         WHERE u.id = ? LIMIT 1"
+    );
+    $stmt->execute([$depositor_user_id]);
+    $ref = $stmt->fetch();
     
-    $rates = [1 => 0.05, 2 => 0.03, 3 => 0.01]; // 5%, 3%, 1%
-    $comm  = $amount * ($rates[$depth] ?? 0);
-    if ($comm > 0) {
-        $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id=?")
-            ->execute([$comm, $comm, $upline_id]);
-        $pdo->prepare("INSERT INTO referral_commissions (user_id, from_user_id, amount) VALUES (?,?,?)")
-            ->execute([$upline_id, $user_id, $comm]);
+    if ($ref && !empty($ref['id']) && (int)$ref['is_promotor'] !== 1) {
+        $pct = (float) setting($pdo, 'referral_commission_percent', '5');
+        if ($pct <= 0) return 0.0;
+        
+        $commission = round(($deposit_amount * $pct) / 100, 2);
+        if ($commission > 0) {
+            $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id = ?")
+                ->execute([$commission, $commission, $ref['id']]);
+            $pdo->prepare("INSERT INTO referral_commissions (user_id, from_user_id, amount) VALUES (?, ?, ?)")
+                ->execute([$ref['id'], $depositor_user_id, $commission]);
+            return $commission;
+        }
     }
-    process_referral_commission($pdo, $upline_id, $amount, $depth + 1);
+    return 0.0;
+}
+
+/**
+ * Processes registration referral bonus for the upline user.
+ * Credits balance_wd and total_earned, and creates a record in referral_commissions.
+ * Returns the bonus amount credited (0.0 if none).
+ */
+function credit_registration_referral_bonus(PDO $pdo, int $new_user_id, string $ref_code): float {
+    $ref_code = strtoupper(trim($ref_code));
+    if (!$ref_code) return 0.0;
+    
+    $stmt = $pdo->prepare("SELECT id, username, is_promotor FROM users WHERE TRIM(UPPER(referral_code)) = ? LIMIT 1");
+    $stmt->execute([$ref_code]);
+    $upline = $stmt->fetch();
+    if (!$upline || empty($upline['id'])) return 0.0;
+    
+    $bonus = 0.0;
+    if ((int)$upline['is_promotor'] !== 1) {
+        $bonus = (float) setting($pdo, 'referral_bonus', '1000');
+    } else {
+        $bonus = (float) setting($pdo, 'promotor_per_member_bonus', '0');
+    }
+    
+    if ($bonus > 0) {
+        $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id = ?")
+            ->execute([$bonus, $bonus, $upline['id']]);
+        $pdo->prepare("INSERT INTO referral_commissions (user_id, from_user_id, amount) VALUES (?, ?, ?)")
+            ->execute([$upline['id'], $new_user_id, $bonus]);
+        return $bonus;
+    }
+    return 0.0;
+}
+
+// Backward-compatible alias
+function process_referral_commission(PDO $pdo, int $user_id, float $amount, int $depth = 1): void {
+    credit_deposit_referral_commission($pdo, $user_id, $amount);
 }
 
 
