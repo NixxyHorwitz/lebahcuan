@@ -11,8 +11,8 @@ if (!$campaign_enabled) {
 $reward_amount = (float)setting($pdo, 'threads_campaign_reward', '25000');
 $reward_amount2 = (float)setting($pdo, 'threads_campaign_reward_step2', '50000');
 
-$instructions = setting($pdo, 'threads_campaign_instructions', "Promosikan TontonCuan di Threads dan dapatkan cuan tambahan Rp 25.000! \n\nKriteria Postingan Langkah 1:\n1. Postingan harus menyertakan gambar (screenshot/bukti bayar/foto aplikasi).\n2. Di dalam gambar screenshot, HARUS tertera jelas Nama/Username Threads kalian.\n3. Teks postingan berupa kalimat ajakan atau cerita pengalaman positif kamu mendapatkan cuan di TontonCuan.\n4. Berikan komentar atau caption positif tentang TontonCuan.\n\nCara Klaim:\n1. Buat postingan sesuai kriteria di atas pada akun Threads kamu.\n2. Ambil screenshot postingan tersebut (harus terlihat username kalian).\n3. Upload screenshot di form bawah ini.");
-$instructions2 = setting($pdo, 'threads_campaign_instructions_step2', "Promosikan TontonCuan di Threads - Langkah 2 (Dapatkan Rp 50.000 Tambahan!)\n\nKriteria Postingan Langkah 2:\n1. Kamu telah mengundang minimal 10 referral bergabung di TontonCuan.\n2. Berikan screenshot (bukti SS) bahwa postingan Threads kamu ramai (memiliki banyak interaksi like/komen/share/tayangan).");
+$instructions = setting($pdo, 'threads_campaign_instructions', "Promosikan LebahCuan di Threads dan dapatkan cuan tambahan Rp 25.000! \n\nKriteria Postingan Langkah 1:\n1. Postingan harus menyertakan gambar (screenshot/bukti bayar/foto aplikasi).\n2. Di dalam gambar screenshot, HARUS tertera jelas Nama/Username Threads kalian.\n3. Teks postingan berupa kalimat ajakan atau cerita pengalaman positif kamu mendapatkan cuan di LebahCuan.\n4. Berikan komentar atau caption positif tentang LebahCuan.\n\nCara Klaim:\n1. Buat postingan sesuai kriteria di atas pada akun Threads kamu.\n2. Ambil screenshot postingan tersebut (harus terlihat username kalian).\n3. Upload screenshot di form bawah ini.");
+$instructions2 = setting($pdo, 'threads_campaign_instructions_step2', "Promosikan LebahCuan di Threads - Langkah 2 (Dapatkan Rp 50.000 Tambahan!)\n\nKriteria Postingan Langkah 2:\n1. Kamu telah mengundang minimal 10 referral bergabung di LebahCuan.\n2. Berikan screenshot (bukti SS) bahwa postingan Threads kamu ramai (memiliki banyak interaksi like/komen/share/tayangan).");
 
 // Referral stats
 $stmtRefCount = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by=?");
@@ -428,7 +428,7 @@ html body { background: #f97316 !important; background-image: none !important; c
         <div class="threads-status-box" style="border-color: #22c55e; background: #f0fdf4;">
           <div class="threads-status-icon">🎉</div>
           <div class="threads-status-title" style="color: #22c55e;">Klaim Langkah 1 Disetujui!</div>
-          <div class="threads-status-desc">Terima kasih telah mempromosikan TontonCuan di Threads! Reward <?= format_rp($reward_amount) ?> sudah masuk ke saldo tarik kamu.</div>
+          <div class="threads-status-desc">Terima kasih telah mempromosikan LebahCuan di Threads! Reward <?= format_rp($reward_amount) ?> sudah masuk ke saldo tarik kamu.</div>
         </div>
       <?php else: ?>
         <?php if (!empty($rejectedRequest)): ?>
@@ -481,7 +481,7 @@ html body { background: #f97316 !important; background-image: none !important; c
         <div class="threads-status-box" style="border-color: #ef4444; background: #fef2f2; border-style: dashed;">
           <div class="threads-status-icon">🔒</div>
           <div class="threads-status-title" style="color: #b91c1c;">Langkah 2 Terkunci</div>
-          <div class="threads-status-desc" style="color: #ef4444;">Undang minimal 10 orang bergabung ke TontonCuan untuk membuka Langkah 2. Sisa mengundang: <strong><?= 10 - $user_referral_count ?></strong> orang lagi.</div>
+          <div class="threads-status-desc" style="color: #ef4444;">Undang minimal 10 orang bergabung ke LebahCuan untuk membuka Langkah 2. Sisa mengundang: <strong><?= 10 - $user_referral_count ?></strong> orang lagi.</div>
         </div>
       <?php elseif ($pendingRequest2): ?>
         <?php $pData2 = json_decode($pendingRequest2['payload'], true) ?: []; ?>

@@ -678,7 +678,7 @@ require dirname(__DIR__) . '/partials/header.php';
     </div>
     <div class="guide-modal__body">
       <div style="font-size:12px; font-weight:700; color:#444; line-height:1.5; text-align:center; margin-bottom:4px;">
-        Selamat datang di **Portal Investasi TontonCuan**! Pelajari 4 langkah mudah untuk mulai melipatgandakan saldo Anda:
+        Selamat datang di **Portal Investasi LebahCuan**! Pelajari 4 langkah mudah untuk mulai melipatgandakan saldo Anda:
       </div>
       
       <!-- Step 1 -->

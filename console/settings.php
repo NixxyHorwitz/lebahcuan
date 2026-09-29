@@ -342,13 +342,13 @@ $tabs = [
 
               <div class="c-form-group mb-3">
                 <label class="c-label">Petunjuk & Syarat Langkah 1</label>
-                <textarea name="threads_campaign_instructions" class="c-form-control" rows="6" required><?= htmlspecialchars($s('threads_campaign_instructions', "Promosikan TontonCuan di Threads dan dapatkan cuan tambahan Rp 25.000! \n\nKriteria Postingan:\n1. Postingan harus menyertakan gambar (screenshot/bukti bayar/foto aplikasi).\n2. Teks postingan berupa kalimat ajakan atau cerita pengalaman positif kamu mendapatkan cuan di TontonCuan.\n3. Berikan komentar atau caption positif tentang TontonCuan.\n\nCara Klaim:\n1. Buat postingan sesuai kriteria di atas pada akun Threads kamu.\n2. Ambil screenshot (bukti SS) postingan tersebut.\n3. Upload screenshot di form bawah ini untuk diverifikasi oleh admin.")) ?></textarea>
+                <textarea name="threads_campaign_instructions" class="c-form-control" rows="6" required><?= htmlspecialchars($s('threads_campaign_instructions', "Promosikan LebahCuan di Threads dan dapatkan cuan tambahan Rp 25.000! \n\nKriteria Postingan:\n1. Postingan harus menyertakan gambar (screenshot/bukti bayar/foto aplikasi).\n2. Teks postingan berupa kalimat ajakan atau cerita pengalaman positif kamu mendapatkan cuan di LebahCuan.\n3. Berikan komentar atau caption positif tentang LebahCuan.\n\nCara Klaim:\n1. Buat postingan sesuai kriteria di atas pada akun Threads kamu.\n2. Ambil screenshot (bukti SS) postingan tersebut.\n3. Upload screenshot di form bawah ini untuk diverifikasi oleh admin.")) ?></textarea>
                 <small class="text-muted" style="font-size:11px">Ditampilkan kepada pengguna di halaman klaim Langkah 1.</small>
               </div>
 
               <div class="c-form-group mb-3">
                 <label class="c-label">Petunjuk & Syarat Langkah 2</label>
-                <textarea name="threads_campaign_instructions_step2" class="c-form-control" rows="6" required><?= htmlspecialchars($s('threads_campaign_instructions_step2', "Promosikan TontonCuan di Threads - Langkah 2 (Dapatkan Rp 50.000 Tambahan!)\n\nKriteria Postingan Langkah 2:\n1. Kamu telah mengundang minimal 10 referral bergabung di TontonCuan.\n2. Berikan screenshot (bukti SS) bahwa postingan Threads kamu ramai (memiliki banyak interaksi like/komen/share/tayangan).")) ?></textarea>
+                <textarea name="threads_campaign_instructions_step2" class="c-form-control" rows="6" required><?= htmlspecialchars($s('threads_campaign_instructions_step2', "Promosikan LebahCuan di Threads - Langkah 2 (Dapatkan Rp 50.000 Tambahan!)\n\nKriteria Postingan Langkah 2:\n1. Kamu telah mengundang minimal 10 referral bergabung di LebahCuan.\n2. Berikan screenshot (bukti SS) bahwa postingan Threads kamu ramai (memiliki banyak interaksi like/komen/share/tayangan).")) ?></textarea>
                 <small class="text-muted" style="font-size:11px">Ditampilkan kepada pengguna di halaman klaim Langkah 2.</small>
               </div>
 

@@ -1268,7 +1268,7 @@ body {
             <div class="v-info-mini">
               <div class="v-title-mini"><?= htmlspecialchars($fv['title']) ?></div>
               <div class="v-status-mini <?= $done ? 'v-status--done' : 'v-status--ready' ?>">
-                <?= $done ? '<i class="ph-bold ph-check"></i> Selesai' : '<i class="ph-fill ph-drop" style="color:#f59e0b;"></i> Tonton Cuan' ?>
+                <?= $done ? '<i class="ph-bold ph-check"></i> Selesai' : '<i class="ph-fill ph-play" style="color:#f59e0b;"></i> Tonton Sekarang' ?>
               </div>
             </div>
           </a>
