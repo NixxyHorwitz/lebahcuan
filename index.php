@@ -1,3 +1,5 @@
 <?php
+declare(strict_types=1);
+
 require_once __DIR__ . '/bootstrap.php';
-redirect('/home');
+require_once __DIR__ . '/user/home.php';
