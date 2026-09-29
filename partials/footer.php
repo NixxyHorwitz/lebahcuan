@@ -986,15 +986,30 @@ if ($show_wd_notif) {
   };
 
   window.finishGlobalTour = function() {
+    const finishedTrack = currentTrack;
     window.closeGlobalTour();
     try {
-      localStorage.setItem('lebahcuan_tour_done', '1');
-      const b = document.getElementById('tour-invite-card');
-      if (b) b.style.display = 'none';
+      localStorage.setItem('lebahcuan_tour_done_' + finishedTrack, '1');
+      const doneBee = localStorage.getItem('lebahcuan_tour_done_lebah') === '1';
+      const doneWatch = localStorage.getItem('lebahcuan_tour_done_watch') === '1';
+      if (doneBee && doneWatch) {
+        localStorage.setItem('lebahcuan_tour_done', '1');
+        const b = document.getElementById('tour-invite-card');
+        if (b) b.style.display = 'none';
+      }
     } catch(e) {}
 
+    const doneBee = localStorage.getItem('lebahcuan_tour_done_lebah') === '1';
+    const doneWatch = localStorage.getItem('lebahcuan_tour_done_watch') === '1';
+
     if (typeof window.nToast === 'function') {
-      window.nToast('🎉 Selamat! Kamu telah menguasai panduan LebahCuan dan siap mendulang rupiah!', 'success', 5000);
+      if (doneBee && doneWatch) {
+        window.nToast('🎉 Luar biasa! Kamu telah menuntaskan kedua tour dan siap menjadi juragan LebahCuan! 🐝🍯', 'success', 5000);
+      } else if (finishedTrack === 'lebah') {
+        window.nToast('🎉 Hebat! Tour Peternakan Lebah selesai! Lanjutkan ke Tour Cuan Nonton Video yuk! 🎬', 'success', 5000);
+      } else {
+        window.nToast('🎉 Hebat! Tour Cuan Nonton selesai! Jangan lupa coba Tour Peternakan Lebah juga! 🐝', 'success', 5000);
+      }
     }
   };
 

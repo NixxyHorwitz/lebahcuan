@@ -1538,6 +1538,9 @@ function closeTourSelectModal() {
     if (b) { b.style.transform = 'scale(0.85)'; b.style.opacity = '0'; }
     setTimeout(() => { m.style.display = 'none'; }, 250);
   }
+  try {
+    sessionStorage.setItem('tour_modal_dismissed_session', '1');
+  } catch(e) {}
 }
 
 function dismissTourBanner() {
@@ -1629,13 +1632,44 @@ function closeCheckinModal() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Cek apakah banner ajakan sudah pernah ditutup atau tour sudah selesai
+  const doneBee = localStorage.getItem('lebahcuan_tour_done_lebah') === '1';
+  const doneWatch = localStorage.getItem('lebahcuan_tour_done_watch') === '1';
+  const allTourDone = doneBee && doneWatch;
+
+  // Cek apakah banner ajakan sudah pernah ditutup atau kedua tour sudah selesai
   try {
-    if (localStorage.getItem('lebahcuan_tour_banner_dismissed') === '1' || localStorage.getItem('lebahcuan_tour_done') === '1') {
-      const b = document.getElementById('tour-invite-card');
-      if (b) b.style.display = 'none';
+    const b = document.getElementById('tour-invite-card');
+    if (b) {
+      if (allTourDone) {
+        b.style.display = 'none';
+      } else {
+        // Jika baru selesai 1 tour atau belum sama sekali, banner tetap muncul
+        b.style.display = 'block';
+      }
     }
   } catch (e) {}
+
+  // Update badge indikator pada pilihan tour jika salah satu sudah diselesaikan
+  try {
+    if (doneBee) {
+      document.querySelectorAll('.btn-tour-choice--bee').forEach(el => {
+        const sub = el.querySelector('.btn-tour-choice-sub');
+        if (sub) sub.innerHTML = '<span style="color:#059669;font-weight:900;">✓ Selesai</span> • Klik ulangi';
+      });
+      document.querySelectorAll('.tour-select-option--bee .tour-select-desc').forEach(el => {
+        el.innerHTML = '<strong style="color:#059669;">✓ Sudah kamu pelajari!</strong> Klik untuk memutar ulang panduan peternakan lebah.';
+      });
+    }
+    if (doneWatch) {
+      document.querySelectorAll('.btn-tour-choice--watch').forEach(el => {
+        const sub = el.querySelector('.btn-tour-choice-sub');
+        if (sub) sub.innerHTML = '<span style="color:#059669;font-weight:900;">✓ Selesai</span> • Klik ulangi';
+      });
+      document.querySelectorAll('.tour-select-option--watch .tour-select-desc').forEach(el => {
+        el.innerHTML = '<strong style="color:#059669;">✓ Sudah kamu pelajari!</strong> Klik untuk memutar ulang panduan cuan nonton video.';
+      });
+    }
+  } catch(e) {}
 
   let isTourRunningNow = false;
   try {
@@ -1669,15 +1703,15 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(triggerCheckinPopupIfEligible, 600);
     }
 
-    // Auto-prompt modal tour untuk pengguna baru yang belum pernah tour
+    // Auto-prompt modal tour jika belum selesai kedua tour-nya (atau baru selesai 1)
     try {
-      const tourDone = localStorage.getItem('lebahcuan_tour_done');
-      const tourSeen = localStorage.getItem('lebahcuan_tour_seen');
-      if (!tourDone && !tourSeen) {
-        setTimeout(() => {
-          openTourSelectModal();
-          localStorage.setItem('lebahcuan_tour_seen', '1');
-        }, showCustom ? 3200 : 1500);
+      if (!allTourDone) {
+        const modalDismissedSession = sessionStorage.getItem('tour_modal_dismissed_session') === '1';
+        if (!modalDismissedSession) {
+          setTimeout(() => {
+            openTourSelectModal();
+          }, showCustom ? 3200 : 1500);
+        }
       }
     } catch (e) {}
   }

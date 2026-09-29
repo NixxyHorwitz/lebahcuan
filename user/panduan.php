@@ -2,233 +2,1033 @@
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
-$pageTitle  = 'Panduan';
+$pageTitle  = 'Panduan Resmi — LebahCuan';
 $activePage = 'panduan';
 
 $free_limit  = (int)   setting($pdo, 'free_watch_limit', '7');
 $min_wd      = (float) setting($pdo, 'min_withdraw', '50000');
 $ref_bonus   = (float) setting($pdo, 'referral_bonus', '1000');
 
-$panduan_intro    = setting($pdo, 'panduan_intro',      'Cara kerja platform peternakan lebah madu & reward LebahCuan');
-$panduan_step1    = setting($pdo, 'panduan_step1',      'Buat akun gratis, tidak perlu verifikasi ribet. Langsung bisa mulai tonton.');
-$panduan_step2    = setting($pdo, 'panduan_step2',      'Setiap video yang ditonton hingga selesai akan otomatis memberikan reward ke Saldo Penarikan kamu.');
-$panduan_step3    = setting($pdo, 'panduan_step3',      'Reward terkumpul di Saldo Penarikan. Cek progresmu di halaman Beranda kapan saja.');
-$panduan_step4    = setting($pdo, 'panduan_step4',      'Minimal withdraw ' . format_rp($min_wd) . '. Proses cepat ke rekening/e-wallet pilihanmu.');
+$panduan_intro    = setting($pdo, 'panduan_intro', 'Panduan lengkap mendulang uang rupiah dari peternakan lebah madu 3D, misi video harian, dan bonus referral di LebahCuan.');
 $panduan_faq      = setting($pdo, 'panduan_faq_custom', '');
-$panduan_cta_text = setting($pdo, 'panduan_cta_text',   'Mulai Tonton Sekarang');
-$panduan_cta_url  = setting($pdo, 'panduan_cta_url',    '/videos');
+$panduan_cta_text = setting($pdo, 'panduan_cta_text', 'Mulai Nonton Video Cuan');
+$panduan_cta_url  = setting($pdo, 'panduan_cta_url', '/videos');
 
 try {
     $memberships = $pdo->query("SELECT name, price, watch_limit, duration_days, description FROM memberships WHERE is_active=1 ORDER BY sort_order ASC")->fetchAll();
 } catch (\Throwable) { $memberships = []; }
 
-$mem_colors = ['#e0f2fe','#d1fae5','#fef08a','#fce7f3','#ede9fe'];
-$mem_borders = ['#3b82f6','#059669','#d97706','#db2777','#7c3aed'];
-$mem_icons  = ['🆓','🌱','⚡','🗡️','💎'];
-
 require dirname(__DIR__) . '/partials/header.php';
 ?>
 
 <style>
-/* PANDUAN PAGE - CASUAL GAME UI (ORANGE) matching withdraw.php */
-html body { background: #f97316 !important; background-image: none !important; }
-
-/* BLUE TOP BANNER */
-.pan-top {
-  background: #38bdf8;
-  background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
-  background-size: 40px 20px;
-  background-position: 0 0, 20px 10px;
-  position: relative;
-  padding: 16px 14px 40px;
-  border-bottom: 3px solid #0284c7;
-  text-align: center;
+/* ══════════════════════════════════════════════════════════
+   PANDUAN RESMI LEBAHCUAN — MODERN AMBER HONEY THEME
+   ══════════════════════════════════════════════════════════ */
+body {
+  background: #fef8ee !important;
+  color: #1e293b;
+  font-family: 'Nunito', sans-serif;
+  padding-bottom: 120px !important;
 }
-.pan-title { font-size: 20px; font-weight: 900; color: #fff; text-shadow: 0 3px 0 #0284c7; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; }
-.pan-desc { font-size: 11px; font-weight: 800; color: #e0f2fe; max-width: 300px; margin: 0 auto; line-height: 1.3; }
 
-/* BODY */
-.pan-body { flex: 1; background: #f97316; padding: 20px 14px calc(var(--nav-h) + 24px); position: relative; z-index: 2; margin-top: -20px; }
-.pan-body::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle, rgba(255,255,255,0.08) 10%, transparent 10%), radial-gradient(circle, rgba(255,255,255,0.08) 10%, transparent 10%); background-size: 40px 40px; background-position: 0 0, 20px 20px; pointer-events: none; z-index: -1; }
+.panduan-page {
+  max-width: 480px;
+  margin: 0 auto;
+}
 
-/* C-GROUP (White Box) */
-.c-group { background: #ffffff; border: 2.5px solid #1e3a8a; border-radius: 14px; box-shadow: 0 4px 0 #1e3a8a; overflow: hidden; margin-bottom: 16px; }
-.c-hdr { background: linear-gradient(135deg, #fbbf24, #f59e0b); padding: 10px 12px; font-size: 14px; font-weight: 900; color: #78350f; border-bottom: 2.5px solid #d97706; display: flex; align-items: center; gap: 8px; }
-.c-hdr i { font-size: 18px; color: #b45309; }
-.c-hdr--blue { background: linear-gradient(135deg, #60a5fa, #3b82f6); color: #fff; border-bottom-color: #1d4ed8; text-shadow: 0 2px 0 #1e40af; }
-.c-hdr--blue i { color: #bfdbfe; }
-.c-hdr--green { background: linear-gradient(135deg, #34d399, #10b981); color: #fff; border-bottom-color: #047857; text-shadow: 0 2px 0 #064e3b; }
-.c-hdr--green i { color: #a7f3d0; }
-.c-body { padding: 12px; background: #fff; }
+/* ── HERO BANNER ── */
+.pan-hero {
+  background: linear-gradient(135deg, #78350f 0%, #92400e 35%, #b45309 70%, #d97706 100%);
+  padding: 16px 14px 28px;
+  border-bottom: 4px solid #78350f;
+  box-shadow: 0 6px 20px rgba(120,53,15,0.25);
+  position: relative;
+  overflow: hidden;
+}
+.pan-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.15) 15%, transparent 16%), radial-gradient(rgba(255,255,255,0.15) 15%, transparent 16%);
+  background-size: 22px 22px;
+  background-position: 0 0, 11px 11px;
+  opacity: 0.18;
+  pointer-events: none;
+}
+.pan-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 2;
+}
+.pan-back-btn {
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #78350f;
+  font-size: 18px;
+  text-decoration: none;
+  box-shadow: 0 3px 0 #78350f;
+  transition: transform 0.1s;
+}
+.pan-back-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #78350f;
+}
+.pan-title-badge {
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  border-radius: 14px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #78350f;
+  box-shadow: 0 3px 0 #78350f;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
-/* STEPS */
-.p-step { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
-.p-step:last-child { margin-bottom: 0; }
-.p-step-n { width: 22px; height: 22px; border-radius: 8px; background: #3b82f6; color: #fff; font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 2px solid #1e3a8a; box-shadow: 0 2px 0 #1e3a8a; }
-.p-step-t { font-size: 11px; font-weight: 800; color: #334155; line-height: 1.4; padding-top: 2px; }
+.pan-hero-body {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 4px 6px;
+}
+.pan-hero-title {
+  font-size: 21px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(120,53,15,0.6);
+  line-height: 1.25;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.pan-hero-sub {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #fef3c7;
+  line-height: 1.45;
+  max-width: 380px;
+  margin: 0 auto;
+}
 
-/* TIPS */
-.p-tip { display: flex; gap: 8px; background: #f8fafc; border: 2px solid #e2e8f0; padding: 8px; border-radius: 10px; margin-bottom: 8px; align-items: center; }
-.p-tip:last-child { margin-bottom: 0; }
-.p-tip i { font-size: 20px; flex-shrink: 0; }
-.p-tip-t { font-size: 11px; font-weight: 800; color: #475569; line-height: 1.3; }
-.p-tip-t strong { color: #0f172a; font-weight: 900; }
+/* ── BODY CONTAINER ── */
+.pan-content {
+  padding: 16px 14px;
+}
 
-/* MEMBERSHIP COMPACT */
-.mem-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.mem-c { background: #fff; border: 2px solid #e2e8f0; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 3px 0 #e2e8f0; }
-.mem-c-head { display: flex; justify-content: space-between; align-items: center; }
-.mem-c-name { font-size: 11px; font-weight: 900; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mem-c-price { font-size: 9px; font-weight: 900; color: #fff; background: #ef4444; padding: 2px 6px; border-radius: 6px; border: 1.5px solid #991b1b; box-shadow: 0 2px 0 #991b1b; }
-.mem-c-price.free { background: #10b981; border-color: #047857; box-shadow: 0 2px 0 #047857; }
-.mem-c-stat { font-size: 9px; font-weight: 800; color: #64748b; display: flex; align-items: center; gap: 4px; }
+/* ── INTERACTIVE TOUR LAUNCH BOX (PROMINENT AT TOP) ── */
+.pan-tour-box {
+  background: linear-gradient(145deg, #ffffff 0%, #fffbeb 50%, #fef3c7 100%);
+  border: 3px solid #78350f;
+  border-radius: 22px;
+  box-shadow: 0 6px 0 #78350f, 0 10px 24px rgba(120,53,15,0.15);
+  padding: 15px 14px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.pan-tour-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.pan-tour-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #78350f;
+  color: #fef08a;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 3px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.pan-tour-tag i {
+  color: #fbbf24;
+  animation: compassSpin 4s ease-in-out infinite;
+}
+@keyframes compassSpin {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(20deg); }
+  75% { transform: rotate(-20deg); }
+}
+.pan-tour-status-pill {
+  font-size: 10px;
+  font-weight: 800;
+  color: #92400e;
+  background: rgba(245,158,11,0.15);
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+.pan-tour-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #78350f;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.pan-tour-desc {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 12px;
+  line-height: 1.45;
+}
 
-/* FAQ COMPACT */
-.faq-i { border: 2px solid #cbd5e1; border-radius: 10px; margin-bottom: 8px; background: #f8fafc; overflow: hidden; }
-.faq-i:last-child { margin-bottom: 0; }
-.faq-q { padding: 10px; font-size: 11px; font-weight: 900; color: #1e293b; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-.faq-q::after { content: '\25BC'; font-size: 9px; color: #94a3b8; transition: transform 0.2s; }
-.faq-a { padding: 0 10px; font-size: 11px; font-weight: 800; color: #475569; line-height: 1.4; max-height: 0; opacity: 0; transition: all 0.2s; }
-.faq-i.open .faq-q::after { transform: rotate(180deg); color: #3b82f6; }
-.faq-i.open .faq-q { border-bottom: 2px dashed #cbd5e1; background: #fff; color: #3b82f6; }
-.faq-i.open .faq-a { padding: 10px; max-height: 500px; opacity: 1; background: #fff; }
+.pan-tour-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (min-width: 440px) {
+  .pan-tour-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.pan-tour-btn {
+  background: #ffffff;
+  border: 2.5px solid #78350f;
+  border-radius: 16px;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #78350f;
+  text-align: left;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.pan-tour-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #78350f;
+}
+.pan-tour-btn--bee {
+  background: linear-gradient(145deg, #ffffff 0%, #fffbeb 100%);
+}
+.pan-tour-btn--watch {
+  background: linear-gradient(145deg, #ffffff 0%, #fff7ed 100%);
+}
+.pan-tour-btn-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.pan-tour-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+.pan-tour-btn--bee .pan-tour-icon {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+.pan-tour-btn--watch .pan-tour-icon {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+}
+.pan-tour-badge {
+  font-size: 9px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+.pan-tour-badge.done {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+.pan-tour-badge.new {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+.pan-tour-btn-title {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #78350f;
+  line-height: 1.25;
+}
+.pan-tour-btn-desc {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1.35;
+}
+.pan-tour-btn-cta {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #d97706;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 2px;
+}
 
-/* CTA */
-.pan-cta { background: linear-gradient(135deg, #10b981, #059669); border: 3px solid #fff; border-radius: 16px; box-shadow: 0 5px 0 #047857; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; font-size: 16px; font-weight: 900; text-decoration: none; transition: transform 0.1s; }
-.pan-cta:active { transform: translateY(4px); box-shadow: 0 1px 0 #047857; }
+/* ── SECTIONS & CARDS ── */
+.pan-card {
+  background: #ffffff;
+  border: 3px solid #78350f;
+  border-radius: 20px;
+  box-shadow: 0 5px 0 #78350f;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.pan-card-head {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 2.5px solid #78350f;
+}
+.pan-card-head--amber {
+  background: linear-gradient(135deg, #fef08a 0%, #fde047 50%, #f59e0b 100%);
+  color: #78350f;
+}
+.pan-card-head--green {
+  background: linear-gradient(135deg, #dcfce7 0%, #a7f3d0 50%, #34d399 100%);
+  color: #064e3b;
+}
+.pan-card-head--blue {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #38bdf8 100%);
+  color: #075985;
+}
+.pan-card-head--purple {
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 50%, #c084fc 100%);
+  color: #581c87;
+}
+.pan-card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 2px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 2px 0 currentColor;
+  flex-shrink: 0;
+}
+.pan-card-title {
+  font-size: 13.5px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+.pan-card-body {
+  padding: 14px;
+}
+
+/* ── STEP ITEMS ── */
+.pan-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pan-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.pan-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 2px solid #78350f;
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 0 #78350f;
+  flex-shrink: 0;
+}
+.pan-step-content {
+  flex: 1;
+}
+.pan-step-title {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #78350f;
+  margin-bottom: 2px;
+}
+.pan-step-desc {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  line-height: 1.45;
+}
+
+/* ── FEATURE HIGHLIGHT PILLS ── */
+.pan-feature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.pan-feature-box {
+  background: #fffbeb;
+  border: 2px solid #78350f;
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 2.5px 0 #78350f;
+}
+.pan-feature-box i {
+  font-size: 22px;
+  color: #d97706;
+  margin-bottom: 4px;
+  display: inline-block;
+}
+.pan-feature-title {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #78350f;
+  margin-bottom: 2px;
+}
+.pan-feature-desc {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+/* ── SALDO EXPLANATION ── */
+.pan-saldo-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 10px 12px;
+  align-items: center;
+}
+.pan-saldo-row.wd {
+  border-color: #059669;
+  background: #f0fdf4;
+}
+.pan-saldo-row.dep {
+  border-color: #0284c7;
+  background: #f0f9ff;
+}
+.pan-saldo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.pan-saldo-row.wd .pan-saldo-icon {
+  background: #059669;
+}
+.pan-saldo-row.dep .pan-saldo-icon {
+  background: #0284c7;
+}
+.pan-saldo-title {
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 2px;
+}
+.pan-saldo-row.wd .pan-saldo-title { color: #065f46; }
+.pan-saldo-row.dep .pan-saldo-title { color: #0369a1; }
+.pan-saldo-desc {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #475569;
+  line-height: 1.35;
+}
+
+/* ── MEMBERSHIP GRID ── */
+.pan-mem-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.pan-mem-card {
+  background: #ffffff;
+  border: 2px solid #78350f;
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 3px 0 #78350f;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pan-mem-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+.pan-mem-name {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #78350f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pan-mem-price {
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 6px;
+  color: #fff;
+  background: #d97706;
+}
+.pan-mem-price.free {
+  background: #059669;
+}
+.pan-mem-stat {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── ACCORDION FAQ ── */
+.pan-faq-item {
+  border: 2px solid #78350f;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 2.5px 0 #78350f;
+  transition: all 0.2s ease;
+}
+.pan-faq-item:last-child {
+  margin-bottom: 0;
+}
+.pan-faq-question {
+  padding: 11px 12px;
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #78350f;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+.pan-faq-question i {
+  font-size: 13px;
+  color: #d97706;
+  transition: transform 0.2s;
+}
+.pan-faq-item.open .pan-faq-question i {
+  transform: rotate(180deg);
+}
+.pan-faq-item.open .pan-faq-question {
+  background: #fffbeb;
+  border-bottom: 2px dashed #fef08a;
+}
+.pan-faq-answer {
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  line-height: 1.45;
+  max-height: 0;
+  opacity: 0;
+  transition: all 0.25s ease;
+}
+.pan-faq-item.open .pan-faq-answer {
+  padding: 11px 12px;
+  max-height: 400px;
+  opacity: 1;
+}
+
+/* ── BOTTOM CALL TO ACTION ── */
+.pan-action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.btn-pan-action {
+  border-radius: 16px;
+  border: 2.5px solid #78350f;
+  padding: 12px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 4px 0 #78350f;
+  transition: transform 0.1s;
+}
+.btn-pan-action:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #78350f;
+}
+.btn-pan-action--farm {
+  background: linear-gradient(135deg, #fde047, #f59e0b);
+  color: #78350f;
+}
+.btn-pan-action--video {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border-color: #064e3b;
+  box-shadow: 0 4px 0 #064e3b;
+}
 </style>
 
-<div class="pan-top">
-  <div class="pan-title"><i class="ph-bold ph-book-open"></i> Panduan LebahCuan</div>
-  <div class="pan-desc"><?= htmlspecialchars($panduan_intro) ?></div>
-</div>
+<div class="panduan-page">
+  <!-- HERO BANNER -->
+  <div class="pan-hero">
+    <div class="pan-nav">
+      <a href="/home" class="pan-back-btn" title="Kembali ke Beranda">
+        <i class="ph-bold ph-arrow-left"></i>
+      </a>
+      <div class="pan-title-badge">
+        <i class="ph-fill ph-book-open" style="color:#d97706;"></i>
+        <span>PANDUAN RESMI</span>
+      </div>
+      <div style="width:38px;"></div>
+    </div>
 
-<div class="pan-body">
-
-  <!-- CARA KERJA -->
-  <div class="c-group">
-    <div class="c-hdr c-hdr--blue"><i class="ph-bold ph-info"></i> Cara Kerja</div>
-    <div class="c-body">
-      <div class="p-step">
-        <div class="p-step-n">1</div>
-        <div class="p-step-t"><?= htmlspecialchars($panduan_step1) ?></div>
+    <div class="pan-hero-body">
+      <div class="pan-hero-title">
+        <span>Pusat Edukasi LebahCuan</span>
+        <img src="/assets/game/bee_worker.png" alt="Buzzy" style="width:26px;height:26px;object-fit:contain;">
       </div>
-      <div class="p-step">
-        <div class="p-step-n">2</div>
-        <div class="p-step-t"><?= htmlspecialchars($panduan_step2) ?></div>
-      </div>
-      <div class="p-step">
-        <div class="p-step-n">3</div>
-        <div class="p-step-t"><?= htmlspecialchars($panduan_step3) ?></div>
-      </div>
-      <div class="p-step">
-        <div class="p-step-n">4</div>
-        <div class="p-step-t"><?= htmlspecialchars($panduan_step4) ?></div>
-      </div>
+      <div class="pan-hero-sub"><?= htmlspecialchars($panduan_intro) ?></div>
     </div>
   </div>
 
-  <!-- TENTANG SALDO -->
-  <div class="c-group">
-    <div class="c-hdr c-hdr--green"><i class="ph-bold ph-wallet"></i> Tentang Saldo</div>
-    <div class="c-body">
-      <div class="p-tip">
-        <i class="ph-fill ph-hand-coins" style="color: #059669;"></i>
-        <div class="p-tip-t"><strong>Saldo Tarik (WD):</strong> Berasal dari reward video & misi. Bisa dicairkan ke rekening/e-wallet.</div>
-      </div>
-      <div class="p-tip">
-        <i class="ph-fill ph-credit-card" style="color: #2563eb;"></i>
-        <div class="p-tip-t"><strong>Saldo Beli:</strong> Diisi via deposit. Hanya untuk upgrade paket membership (tidak bisa ditarik).</div>
-      </div>
-    </div>
-  </div>
+  <div class="pan-content">
 
-  <!-- MEMBERSHIP -->
-  <div class="c-group">
-    <div class="c-hdr"><i class="ph-bold ph-crown"></i> Paket Membership</div>
-    <div class="c-body">
-      <div style="font-size:11px; font-weight:800; color:#64748b; margin-bottom:12px; text-align:center;">Upgrade paket untuk limit tonton lebih tinggi!</div>
-      
-      <?php if (!empty($memberships)): ?>
-      <div class="mem-grid">
-        <?php foreach ($memberships as $i => $mem):
-          $color = $mem_colors[$i % count($mem_colors)];
-          $border = $mem_borders[$i % count($mem_borders)];
-          $icon  = $mem_icons[$i % count($mem_icons)];
-          $isFree = (float)$mem['price'] === 0.0;
-        ?>
-        <div class="mem-c" style="border-color: <?= $border ?>;">
-          <div class="mem-c-head">
-            <div class="mem-c-name" style="color: <?= $border ?>;"><?= $icon ?> <?= htmlspecialchars($mem['name']) ?></div>
-            <div class="mem-c-price <?= $isFree ? 'free' : '' ?>"><?= $isFree ? 'GRATIS' : format_rp((float)$mem['price']) ?></div>
-          </div>
-          <div class="mem-c-stat"><i class="ph-fill ph-video-camera"></i> <?= $mem['watch_limit'] ?> video/hari</div>
-          <?php if (!$isFree): ?>
-          <div class="mem-c-stat"><i class="ph-fill ph-calendar"></i> Aktif <?= $mem['duration_days'] ?> hari</div>
-          <?php endif; ?>
+    <!-- ══════════════════════════════════════════════════════════
+         KOTAK TOUR INTERAKTIF PANDUAN LANGSUNG (SPOTLIGHT LAUNCHER)
+         ══════════════════════════════════════════════════════════ -->
+    <div class="pan-tour-box">
+      <div class="pan-tour-header">
+        <div class="pan-tour-tag">
+          <i class="ph-fill ph-compass"></i>
+          <span>PRAKTIK INTERAKTIF</span>
         </div>
-        <?php endforeach; ?>
+        <div class="pan-tour-status-pill" id="tour-overall-status">2 Pilihan Tour</div>
       </div>
-      <?php endif; ?>
-      <a href="/upgrade" style="display:block; text-align:center; font-size:12px; font-weight:900; color:#ea580c; margin-top:12px; text-decoration:none;">Beli Paket Sekarang <i class="ph-bold ph-arrow-right"></i></a>
+
+      <div class="pan-tour-title">Belajar Lebih Cepat dengan Tour Spotlight! 🚀</div>
+      <div class="pan-tour-desc">
+        Pilih salah satu panduan interaktif di bawah ini untuk melihat demonstrasi langkah demi langkah di aplikasi secara langsung:
+      </div>
+
+      <div class="pan-tour-cards">
+        <!-- Tour Fitur Lebah -->
+        <button type="button" class="pan-tour-btn pan-tour-btn--bee" onclick="startPanduanTour('lebah')">
+          <div class="pan-tour-btn-top">
+            <div class="pan-tour-icon"><i class="ph-fill ph-drop"></i></div>
+            <span class="pan-tour-badge new" id="badge-tour-bee">Mulai Tour</span>
+          </div>
+          <div class="pan-tour-btn-title">Tour Peternakan Lebah</div>
+          <div class="pan-tour-btn-desc">Pelajari kandang sarang 3D, cara panen madu, dan penjualan di lapak.</div>
+          <div class="pan-tour-btn-cta">Mulai Panduan <i class="ph-bold ph-arrow-right"></i></div>
+        </button>
+
+        <!-- Tour Cuan Nonton -->
+        <button type="button" class="pan-tour-btn pan-tour-btn--watch" onclick="startPanduanTour('watch')">
+          <div class="pan-tour-btn-top">
+            <div class="pan-tour-icon"><i class="ph-fill ph-film-strip"></i></div>
+            <span class="pan-tour-badge new" id="badge-tour-watch">Mulai Tour</span>
+          </div>
+          <div class="pan-tour-btn-title">Tour Cuan Nonton Video</div>
+          <div class="pan-tour-btn-desc">Pelajari misi video berbayar, buka hexagon harian, dan tarik saldo.</div>
+          <div class="pan-tour-btn-cta">Mulai Panduan <i class="ph-bold ph-arrow-right"></i></div>
+        </button>
+      </div>
     </div>
-  </div>
 
-  <!-- REFERRAL -->
-  <div class="c-group">
-    <div class="c-hdr"><i class="ph-bold ph-users-three"></i> Program Referral</div>
-    <div class="c-body">
-      <div class="p-tip">
-        <i class="ph-fill ph-gift" style="color: #ea580c;"></i>
-        <div class="p-tip-t">Ajak teman pakai kode referralmu dan dapatkan <strong><?= format_rp($ref_bonus) ?></strong> per teman. Plus nikmati komisi berlapis hingga 3 level!</div>
+    <!-- ══════════════════════════════════════════════════════════
+         1. 6 PILAR UTAMA MENGHASILKAN RUPIAH
+         ══════════════════════════════════════════════════════════ -->
+    <div class="pan-card">
+      <div class="pan-card-head pan-card-head--amber">
+        <div class="pan-card-icon"><i class="ph-fill ph-sparkle"></i></div>
+        <div>
+          <div class="pan-card-title">6 Pilar Menghasilkan Uang di LebahCuan</div>
+          <div style="font-size:10px;font-weight:700;opacity:0.85;">Pahami seluruh cara mendulang rupiah di aplikasi</div>
+        </div>
       </div>
-      <a href="/referral" style="display:block; text-align:center; font-size:12px; font-weight:900; color:#ea580c; margin-top:10px; text-decoration:none;">Bagikan Kodemu <i class="ph-bold ph-arrow-right"></i></a>
+
+      <div class="pan-card-body">
+        <div class="pan-step-list">
+          <div class="pan-step-item">
+            <div class="pan-step-num">1</div>
+            <div class="pan-step-content">
+              <div class="pan-step-title">Misi Nonton Video Berbayar</div>
+              <div class="pan-step-desc">Tonton video berdurasi singkat hingga hitungan mundur selesai. Reward uang Rupiah otomatis masuk seketika ke Saldo Penarikan (WD) tanpa ribet!</div>
+            </div>
+          </div>
+
+          <div class="pan-step-item">
+            <div class="pan-step-num">2</div>
+            <div class="pan-step-content">
+              <div class="pan-step-title">Sidejob Peternakan Lebah 3D (Passive Income)</div>
+              <div class="pan-step-desc">Sewa kotak sarang kayu dan miliki lebah pekerja. Lebah akan mengumpulkan tetesan madu murni secara otomatis setiap jam bahkan saat aplikasi ditutup.</div>
+            </div>
+          </div>
+
+          <div class="pan-step-item">
+            <div class="pan-step-num">3</div>
+            <div class="pan-step-content">
+              <div class="pan-step-title">Lapak Penjualan Madu</div>
+              <div class="pan-step-desc">Madu hasil panenmu langsung dijual di Lapak Madu dengan harga pasar resmi dan seketika dikonversikan menjadi uang tunai siap tarik.</div>
+            </div>
+          </div>
+
+          <div class="pan-step-item">
+            <div class="pan-step-num">4</div>
+            <div class="pan-step-content">
+              <div class="pan-step-title">Buka Hexagon Sarang Madu Harian (Check-in)</div>
+              <div class="pan-step-desc">Klaim bonus uang tunai gratis setiap hari dengan membuka sel hexagon sarang madu. Pertahankan streak berturut-turut untuk hadiah ekstra!</div>
+            </div>
+          </div>
+
+          <div class="pan-step-item">
+            <div class="pan-step-num">5</div>
+            <div class="pan-step-content">
+              <div class="pan-step-title">Misi & Tantangan Harian</div>
+              <div class="pan-step-desc">Selesaikan target misi harian dan mingguan untuk mengklaim tambahan reward bonus saldo hingga jutaan rupiah.</div>
+            </div>
+          </div>
+
+          <div class="pan-step-item">
+            <div class="pan-step-num">6</div>
+            <div class="pan-step-content">
+              <div class="pan-step-title">Komisi Undang Teman (Referral 3 Tingkat)</div>
+              <div class="pan-step-desc">Bagikan kode referralmu. Dapatkan reward langsung sebesar <strong><?= format_rp($ref_bonus) ?></strong> per teman ditambah komisi berjenjang 3 level dari transaksi mereka!</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- FAQ -->
-  <div class="c-group">
-    <div class="c-hdr c-hdr--blue"><i class="ph-bold ph-question"></i> Pertanyaan Umum</div>
-    <div class="c-body">
-      <div class="faq-i">
-        <div class="faq-q">Kapan reward masuk ke saldo?</div>
-        <div class="faq-a">Otomatis masuk setelah video selesai ditonton sesuai durasi minimum.</div>
+    <!-- ══════════════════════════════════════════════════════════
+         2. PANDUAN PETERNAKAN LEBAH 3D & LAPAK MADU
+         ══════════════════════════════════════════════════════════ -->
+    <div class="pan-card">
+      <div class="pan-card-head pan-card-head--green">
+        <div class="pan-card-icon"><i class="ph-fill ph-drop"></i></div>
+        <div>
+          <div class="pan-card-title">Mekanisme Peternakan Lebah & Lapak</div>
+          <div style="font-size:10px;font-weight:700;opacity:0.85;">Cara mengelola sarang & panen madu maksimal</div>
+        </div>
       </div>
-      <div class="faq-i">
-        <div class="faq-q">Apakah bisa skip video?</div>
-        <div class="faq-a">Tidak bisa. Reward hanya diberikan jika ditonton tanpa skip.</div>
+
+      <div class="pan-card-body">
+        <div class="pan-feature-grid">
+          <div class="pan-feature-box">
+            <i class="ph-fill ph-archive"></i>
+            <div class="pan-feature-title">Kotak Sarang Kayu</div>
+            <div class="pan-feature-desc">Tempat lebah bernaung. Memiliki slot maksimal lebah dan kapasitas tampung madu.</div>
+          </div>
+
+          <div class="pan-feature-box">
+            <i class="ph-fill ph-timer"></i>
+            <div class="pan-feature-title">Produksi ml / Jam</div>
+            <div class="pan-feature-desc">Setiap jenis lebah menghasilkan debit madu berbeda setiap jamnya secara otomatis.</div>
+          </div>
+
+          <div class="pan-feature-box">
+            <i class="ph-fill ph-hand-heart"></i>
+            <div class="pan-feature-title">Panen Rutin</div>
+            <div class="pan-feature-desc">Klik 'Panen Semua' begitu sarang terisi agar kapasitas tidak penuh dan lebah terus bekerja.</div>
+          </div>
+
+          <div class="pan-feature-box">
+            <i class="ph-fill ph-storefront"></i>
+            <div class="pan-feature-title">Lapak Jual Madu</div>
+            <div class="pan-feature-desc">Jual madumu di lapak. Upgrade tier lapak di Toko untuk kuota penjualan harian lebih besar.</div>
+          </div>
+        </div>
+
+        <a href="/farm" style="display:flex;align-items:center;justify-content:center;gap:6px;background:#f0fdf4;border:2px solid #059669;border-radius:12px;padding:9px;color:#065f46;font-size:11.5px;font-weight:900;text-decoration:none;margin-top:12px;">
+          <i class="ph-fill ph-binoculars"></i> Buka Kebun Sarang Lebah Sekarang
+        </a>
       </div>
-      <div class="faq-i">
-        <div class="faq-q">Apakah daftar gratis?</div>
-        <div class="faq-a">Ya! Daftar gratis. Deposit hanya diperlukan jika ingin upgrade paket.</div>
-      </div>
-      <div class="faq-i">
-        <div class="faq-q">Withdraw ke mana saja?</div>
-        <div class="faq-a">Ke semua bank & e-wallet Indonesia. Min penarikan <?= format_rp($min_wd) ?>.</div>
-      </div>
-      <?php if ($panduan_faq): ?>
-      <div class="faq-i">
-        <div class="faq-q">Informasi tambahan</div>
-        <div class="faq-a"><?= nl2br(htmlspecialchars($panduan_faq)) ?></div>
-      </div>
-      <?php endif; ?>
     </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         3. MEMAHAMI JENIS SALDO (WD VS BELI)
+         ══════════════════════════════════════════════════════════ -->
+    <div class="pan-card">
+      <div class="pan-card-head pan-card-head--blue">
+        <div class="pan-card-icon"><i class="ph-fill ph-wallet"></i></div>
+        <div>
+          <div class="pan-card-title">Mengenal Jenis Saldo & Penarikan</div>
+          <div style="font-size:10px;font-weight:700;opacity:0.85;">Perbedaan Saldo Tarik (WD) dan Saldo Beli</div>
+        </div>
+      </div>
+
+      <div class="pan-card-body">
+        <div class="pan-saldo-row wd">
+          <div class="pan-saldo-icon"><i class="ph-fill ph-hand-coins"></i></div>
+          <div>
+            <div class="pan-saldo-title">Saldo Tarik (WD Cash)</div>
+            <div class="pan-saldo-desc">Diperoleh dari hasil menonton video, penjualan madu, misi, check-in harian, dan bonus referral. Saldo ini <strong>dapat dicairkan ke rekening Bank atau E-Wallet 24 jam</strong>.</div>
+          </div>
+        </div>
+
+        <div class="pan-saldo-row dep">
+          <div class="pan-saldo-icon"><i class="ph-fill ph-credit-card"></i></div>
+          <div>
+            <div class="pan-saldo-title">Saldo Beli (Deposit Investasi)</div>
+            <div class="pan-saldo-desc">Diisi melalui menu Top Up / Deposit. Khusus digunakan untuk <strong>sewa sarang lebah baru, bibit lebah unggulan di Toko, atau upgrade paket membership</strong>.</div>
+          </div>
+        </div>
+
+        <div style="background:#fffbeb;border:1.5px solid #fef08a;border-radius:12px;padding:8px 10px;font-size:10.5px;font-weight:800;color:#92400e;display:flex;align-items:center;gap:6px;margin-top:10px;">
+          <i class="ph-fill ph-info" style="font-size:16px;color:#d97706;flex-shrink:0;"></i>
+          <span>Minimal penarikan saldo adalah <strong><?= format_rp($min_wd) ?></strong> tanpa biaya admin tersembunyi.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         4. PAKET MEMBERSHIP & KEUNTUNGAN
+         ══════════════════════════════════════════════════════════ -->
+    <div class="pan-card">
+      <div class="pan-card-head pan-card-head--purple">
+        <div class="pan-card-icon"><i class="ph-fill ph-crown"></i></div>
+        <div>
+          <div class="pan-card-title">Tingkatan Paket Membership</div>
+          <div style="font-size:10px;font-weight:700;opacity:0.85;">Tingkatkan kuota video harian untuk cuan lebih besar</div>
+        </div>
+      </div>
+
+      <div class="pan-card-body">
+        <?php if (!empty($memberships)): ?>
+          <div class="pan-mem-grid">
+            <?php foreach ($memberships as $mem):
+              $isFree = ((float)($mem['price'] ?? 0) === 0.0);
+            ?>
+              <div class="pan-mem-card">
+                <div class="pan-mem-head">
+                  <span class="pan-mem-name"><?= htmlspecialchars($mem['name']) ?></span>
+                  <span class="pan-mem-price <?= $isFree ? 'free' : '' ?>">
+                    <?= $isFree ? 'GRATIS' : format_rp((float)$mem['price']) ?>
+                  </span>
+                </div>
+                <div class="pan-mem-stat">
+                  <i class="ph-fill ph-film-strip" style="color:#d97706;"></i>
+                  <span><?= $mem['watch_limit'] ?> video / hari</span>
+                </div>
+                <?php if (!$isFree): ?>
+                  <div class="pan-mem-stat">
+                    <i class="ph-fill ph-clock" style="color:#2563eb;"></i>
+                    <span>Durasi: <?= $mem['duration_days'] ?> hari</span>
+                  </div>
+                <?php endif; ?>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+
+        <a href="/upgrade" style="display:flex;align-items:center;justify-content:center;gap:6px;background:linear-gradient(135deg,#f59e0b,#d97706);border:2px solid #78350f;border-radius:12px;padding:9px;color:#ffffff;font-size:11.5px;font-weight:900;text-decoration:none;box-shadow:0 2.5px 0 #78350f;margin-top:12px;">
+          <i class="ph-bold ph-lightning"></i> Lihat Rincian Paket & Upgrade
+        </a>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         5. PERTANYAAN UMUM (FAQ ACCORDION)
+         ══════════════════════════════════════════════════════════ -->
+    <div class="pan-card">
+      <div class="pan-card-head pan-card-head--amber">
+        <div class="pan-card-icon"><i class="ph-fill ph-question"></i></div>
+        <div>
+          <div class="pan-card-title">Tanya Jawab Seputar LebahCuan</div>
+          <div style="font-size:10px;font-weight:700;opacity:0.85;">Pertanyaan yang sering ditanyakan pengguna</div>
+        </div>
+      </div>
+
+      <div class="pan-card-body">
+        <div class="pan-faq-item open">
+          <div class="pan-faq-question">
+            <span>Bagaimana uang hasil nonton video bertambah?</span>
+            <i class="ph-bold ph-caret-down"></i>
+          </div>
+          <div class="pan-faq-answer">
+            Setiap video memiliki batas durasi tonton. Cukup tonton video sampai hitungan detik selesai dan reward rupiah otomatis masuk seketika ke Saldo Siap Tarik (WD).
+          </div>
+        </div>
+
+        <div class="pan-faq-item">
+          <div class="pan-faq-question">
+            <span>Apakah peternakan lebah tetap jalan saat offline?</span>
+            <i class="ph-bold ph-caret-down"></i>
+          </div>
+          <div class="pan-faq-answer">
+            Ya! Peternakan lebah berjalan 100% secara idle di server. Lebah pekerjamu tetap memproduksi madu ml/jam bahkan saat handphone kamu dimatikan atau sedang tidur.
+          </div>
+        </div>
+
+        <div class="pan-faq-item">
+          <div class="pan-faq-question">
+            <span>Bagaimana cara menjual madu hasil panen?</span>
+            <i class="ph-bold ph-caret-down"></i>
+          </div>
+          <div class="pan-faq-answer">
+            Setelah menekan 'Panen Semua' di kebun, buka menu <strong>Lapak Madu</strong> (/farm/stall). Masukkan jumlah ml madu yang ingin dijual dan tekan tombol Jual. Uang cash rupiah langsung masuk ke Saldo Siap Tarik.
+          </div>
+        </div>
+
+        <div class="pan-faq-item">
+          <div class="pan-faq-question">
+            <span>Penarikan saldo bisa ke rekening apa saja?</span>
+            <i class="ph-bold ph-caret-down"></i>
+          </div>
+          <div class="pan-faq-answer">
+            Bisa ditarik ke semua E-Wallet (DANA, GoPay, OVO, ShopeePay) serta seluruh Rekening Bank di Indonesia (BCA, Mandiri, BRI, BNI, Jago, SeaBank, dll).
+          </div>
+        </div>
+
+        <div class="pan-faq-item">
+          <div class="pan-faq-question">
+            <span>Berapa minimal withdraw dan berapa lama cairnya?</span>
+            <i class="ph-bold ph-caret-down"></i>
+          </div>
+          <div class="pan-faq-answer">
+            Minimal withdraw adalah <?= format_rp($min_wd) ?>. Permintaan penarikan diproses secara cepat 24 jam setiap harinya.
+          </div>
+        </div>
+
+        <?php if (!empty($panduan_faq)): ?>
+          <div class="pan-faq-item">
+            <div class="pan-faq-question">
+              <span>Informasi Tambahan Sistem</span>
+              <i class="ph-bold ph-caret-down"></i>
+            </div>
+            <div class="pan-faq-answer">
+              <?= nl2br(htmlspecialchars($panduan_faq)) ?>
+            </div>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════
+         QUICK ACTION BUTTONS
+         ══════════════════════════════════════════════════════════ -->
+    <div class="pan-action-row">
+      <a href="/farm" class="btn-pan-action btn-pan-action--farm">
+        <i class="ph-fill ph-drop"></i> Buka Kebun Lebah
+      </a>
+      <a href="<?= htmlspecialchars($panduan_cta_url) ?>" class="btn-pan-action btn-pan-action--video">
+        <i class="ph-fill ph-play-circle"></i> <?= htmlspecialchars($panduan_cta_text) ?>
+      </a>
+    </div>
+
   </div>
-
-  <a href="<?= htmlspecialchars($panduan_cta_url) ?>" class="pan-cta">
-    <i class="ph-fill ph-play-circle" style="font-size:22px;"></i> <?= htmlspecialchars($panduan_cta_text) ?>
-  </a>
-
 </div>
 
 <script>
-document.querySelectorAll('.faq-q').forEach(q => {
-  q.addEventListener('click', () => {
-    const item = q.closest('.faq-i');
+// Accordion Toggle Logic
+document.querySelectorAll('.pan-faq-question').forEach(header => {
+  header.addEventListener('click', () => {
+    const item = header.closest('.pan-faq-item');
     const wasOpen = item.classList.contains('open');
-    document.querySelectorAll('.faq-i').forEach(i => i.classList.remove('open'));
+    document.querySelectorAll('.pan-faq-item').forEach(i => i.classList.remove('open'));
     if (!wasOpen) item.classList.add('open');
   });
+});
+
+// Update Tour Badges on Guide Page
+function updatePanduanTourStatus() {
+  const doneBee = localStorage.getItem('lebahcuan_tour_done_lebah') === '1';
+  const doneWatch = localStorage.getItem('lebahcuan_tour_done_watch') === '1';
+
+  const badgeBee = document.getElementById('badge-tour-bee');
+  const badgeWatch = document.getElementById('badge-tour-watch');
+  const statusOverall = document.getElementById('tour-overall-status');
+
+  if (badgeBee) {
+    if (doneBee) {
+      badgeBee.className = 'pan-tour-badge done';
+      badgeBee.innerHTML = '✓ Selesai';
+    } else {
+      badgeBee.className = 'pan-tour-badge new';
+      badgeBee.innerHTML = 'Mulai Tour';
+    }
+  }
+
+  if (badgeWatch) {
+    if (doneWatch) {
+      badgeWatch.className = 'pan-tour-badge done';
+      badgeWatch.innerHTML = '✓ Selesai';
+    } else {
+      badgeWatch.className = 'pan-tour-badge new';
+      badgeWatch.innerHTML = 'Mulai Tour';
+    }
+  }
+
+  if (statusOverall) {
+    if (doneBee && doneWatch) {
+      statusOverall.textContent = '2/2 Selesai 🎉';
+    } else if (doneBee || doneWatch) {
+      statusOverall.textContent = '1/2 Selesai (Lanjutkan)';
+    } else {
+      statusOverall.textContent = '2 Pilihan Tour';
+    }
+  }
+}
+
+// Function to start tour from panduan
+function startPanduanTour(track) {
+  if (typeof window.startGlobalTour === 'function') {
+    window.startGlobalTour(track, 0);
+  } else {
+    // If navigating to home first
+    try {
+      localStorage.setItem('lebahcuan_tour_active', JSON.stringify({
+        track: track,
+        step: 0,
+        isRunning: true,
+        updatedAt: Date.now()
+      }));
+    } catch(e) {}
+    window.location.href = '/home';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  updatePanduanTourStatus();
 });
 </script>
 
