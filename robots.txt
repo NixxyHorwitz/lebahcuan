@@ -3,5 +3,6 @@ Allow: /
 Disallow: /console/
 Disallow: /auth/
 Disallow: /uploads/
+Disallow: /scratch/
 
-Sitemap: https://Meloton.online/sitemap.xml
+Sitemap: https://lebahcuan.com/sitemap.xml

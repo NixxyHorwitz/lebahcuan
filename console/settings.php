@@ -222,7 +222,7 @@ $tabs = [
             <?= csrf_field() ?><input type="hidden" name="action" value="save_general">
             <div class="row g-2">
               <div class="col-md-6"><div class="c-form-group"><label class="c-label">Nama Website</label>
-                <input type="text" name="site_name" class="c-form-control" value="<?= htmlspecialchars($s('site_name','TontonCuan')) ?>"></div></div>
+                <input type="text" name="site_name" class="c-form-control" value="<?= htmlspecialchars($s('site_name','LebahCuan')) ?>"></div></div>
               <div class="col-md-6"><div class="c-form-group"><label class="c-label">Tagline</label>
                 <input type="text" name="site_tagline" class="c-form-control" value="<?= htmlspecialchars($s('site_tagline')) ?>"></div></div>
             </div>

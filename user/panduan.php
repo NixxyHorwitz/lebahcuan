@@ -9,7 +9,7 @@ $free_limit  = (int)   setting($pdo, 'free_watch_limit', '7');
 $min_wd      = (float) setting($pdo, 'min_withdraw', '50000');
 $ref_bonus   = (float) setting($pdo, 'referral_bonus', '1000');
 
-$panduan_intro    = setting($pdo, 'panduan_intro',      'Cara kerja platform reward video TontonCuan');
+$panduan_intro    = setting($pdo, 'panduan_intro',      'Cara kerja platform peternakan lebah madu & reward LebahCuan');
 $panduan_step1    = setting($pdo, 'panduan_step1',      'Buat akun gratis, tidak perlu verifikasi ribet. Langsung bisa mulai tonton.');
 $panduan_step2    = setting($pdo, 'panduan_step2',      'Setiap video yang ditonton hingga selesai akan otomatis memberikan reward ke Saldo Penarikan kamu.');
 $panduan_step3    = setting($pdo, 'panduan_step3',      'Reward terkumpul di Saldo Penarikan. Cek progresmu di halaman Beranda kapan saja.');
@@ -99,7 +99,7 @@ html body { background: #f97316 !important; background-image: none !important; }
 </style>
 
 <div class="pan-top">
-  <div class="pan-title"><i class="ph-bold ph-book-open"></i> Panduan TontonCuan</div>
+  <div class="pan-title"><i class="ph-bold ph-book-open"></i> Panduan LebahCuan</div>
   <div class="pan-desc"><?= htmlspecialchars($panduan_intro) ?></div>
 </div>
 
