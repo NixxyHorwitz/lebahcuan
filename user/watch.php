@@ -11,13 +11,26 @@ $vs->execute([$vid_id]);
 $video = $vs->fetch();
 if (!$video) redirect('/videos');
 
+$is_debug_user = !empty($user['is_debug']);
+$orig_duration = (int)$video['watch_duration'];
+$orig_reward   = (float)$video['reward_amount'];
+
+// Hitung durasi dan reward aktif untuk user ini (mode debug per user)
+$active_duration = ($is_debug_user && !empty($user['debug_watch_duration'])) 
+    ? (int)$user['debug_watch_duration'] 
+    : $orig_duration;
+
+$active_reward = ($is_debug_user && isset($user['debug_watch_reward']) && $user['debug_watch_reward'] !== null) 
+    ? (float)$user['debug_watch_reward'] 
+    : $orig_reward;
+
 $watch_limit = user_watch_limit($pdo, $user);
 $watch_today = user_watch_today($pdo, $user);
 
 $chk = $pdo->prepare("SELECT id FROM watch_history WHERE user_id=? AND video_id=? AND DATE(watched_at)=CURDATE()");
 $chk->execute([$user['id'], $vid_id]);
 $already_watched = (bool)$chk->fetch();
-$canWatch = !$already_watched && $watch_today < $watch_limit;
+$canWatch = (!$already_watched || $is_debug_user) && ($watch_today < $watch_limit || $is_debug_user);
 
 // Check initial like status
 $chk_like = $pdo->prepare("SELECT id FROM video_likes WHERE user_id=? AND video_id=?");
@@ -25,7 +38,7 @@ $chk_like->execute([$user['id'], $vid_id]);
 $user_has_liked = (bool)$chk_like->fetch();
 
 // ── Watch History / In-progress Watch State ──────────────────
-if ($already_watched) {
+if ($already_watched && !$is_debug_user) {
     // Jika sudah selesai ditonton hari ini, bersihkan riwayat progres yang tersisa
     $pdo->prepare("DELETE FROM user_watch_progress WHERE user_id=? AND video_id=?")->execute([$user['id'], $vid_id]);
     $saved_seconds = 0;
@@ -34,7 +47,7 @@ if ($already_watched) {
     $prog_stmt = $pdo->prepare("SELECT seconds_watched, last_position FROM user_watch_progress WHERE user_id=? AND video_id=?");
     $prog_stmt->execute([$user['id'], $vid_id]);
     $prog_row = $prog_stmt->fetch();
-    $saved_seconds = $prog_row ? min((int)$video['watch_duration'] - 1, max(0, (int)$prog_row['seconds_watched'])) : 0;
+    $saved_seconds = $prog_row ? min($active_duration - 1, max(0, (int)$prog_row['seconds_watched'])) : 0;
     $saved_position = $prog_row ? max(0.0, (float)$prog_row['last_position']) : 0.0;
 }
 
@@ -44,11 +57,11 @@ if ($already_watched) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_progress') {
     header('Content-Type: application/json');
     if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF token.']); exit; }
-    if (!$canWatch)     { echo json_encode(['ok'=>false,'msg'=>'Tidak dapat menyimpan sesi ini.']); exit; }
+    if (!$canWatch && !$is_debug_user) { echo json_encode(['ok'=>false,'msg'=>'Tidak dapat menyimpan sesi ini.']); exit; }
 
     $sw = (int)($_POST['seconds_watched'] ?? 0);
     $lp = (float)($_POST['last_position'] ?? 0);
-    $max_d = (int)$video['watch_duration'];
+    $max_d = $active_duration;
 
     if ($sw <= 0) {
         echo json_encode(['ok'=>true]); exit;
@@ -117,29 +130,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reset
 }
 
 // ─────────────────────────────────────────────────────────────
+// AJAX: set_debug_watch — ubah durasi & reward tester per user
+// ─────────────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'set_debug_watch') {
+    header('Content-Type: application/json');
+    if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF token.']); exit; }
+    if (!$is_debug_user) { echo json_encode(['ok'=>false,'msg'=>'Akses debug ditolak.']); exit; }
+
+    $dur = isset($_POST['duration']) ? (int)$_POST['duration'] : null;
+    $rwd = isset($_POST['reward']) ? (float)$_POST['reward'] : null;
+
+    $dur = ($dur !== null && $dur > 0) ? $dur : null;
+    $rwd = ($rwd !== null && $rwd >= 0) ? $rwd : null;
+
+    $pdo->prepare("UPDATE users SET debug_watch_duration = ?, debug_watch_reward = ? WHERE id = ?")
+        ->execute([$dur, $rwd, $user['id']]);
+
+    $effective_dur = $dur ?? $orig_duration;
+    $effective_rwd = $rwd ?? $orig_reward;
+
+    echo json_encode([
+        'ok' => true,
+        'msg' => 'Pengaturan debug tester berhasil diperbarui.',
+        'duration' => $effective_dur,
+        'reward' => $effective_rwd,
+        'reward_formatted' => format_rp($effective_rwd)
+    ]);
+    exit;
+}
+
+// ─────────────────────────────────────────────────────────────
+// AJAX: reset_debug_status — reset riwayat video ini agar bisa dites lagi (khusus user debug)
+// ─────────────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reset_debug_status') {
+    header('Content-Type: application/json');
+    if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF token.']); exit; }
+    if (!$is_debug_user) { echo json_encode(['ok'=>false,'msg'=>'Akses debug ditolak.']); exit; }
+
+    try {
+        $pdo->prepare("DELETE FROM watch_history WHERE user_id=? AND video_id=? AND DATE(watched_at)=CURDATE()")
+            ->execute([$user['id'], $vid_id]);
+        $pdo->prepare("DELETE FROM user_watch_progress WHERE user_id=? AND video_id=?")
+            ->execute([$user['id'], $vid_id]);
+        echo json_encode(['ok'=>true, 'msg'=>'Status tonton video ini telah di-reset untuk akun tester Anda.']);
+    } catch (\Throwable $e) {
+        echo json_encode(['ok'=>false, 'msg'=>$e->getMessage()]);
+    }
+    exit;
+}
+
+// ─────────────────────────────────────────────────────────────
 // AJAX: start_watch — server issues a signed token with saved seconds
 // ─────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'start_watch') {
     header('Content-Type: application/json');
     if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF token.']); exit; }
-    if (!$canWatch)     { echo json_encode(['ok'=>false,'msg'=>'Tidak dapat menonton video ini.']); exit; }
+    if (!$canWatch && !$is_debug_user) { echo json_encode(['ok'=>false,'msg'=>'Tidak dapat menonton video ini.']); exit; }
 
     // Ambil saved_seconds terkini dari DB
     $st = $pdo->prepare("SELECT seconds_watched FROM user_watch_progress WHERE user_id=? AND video_id=?");
     $st->execute([$user['id'], $vid_id]);
     $curr_saved = (int)($st->fetchColumn() ?: 0);
-    $curr_saved = min((int)$video['watch_duration'] - 1, max(0, $curr_saved));
+    $curr_saved = min($active_duration - 1, max(0, $curr_saved));
 
     $ts     = time();
     $secret = $_ENV['APP_SECRET'] ?? 'tonton_secret_2024';
-    $sig    = hash_hmac('sha256', $user['id'] . '|' . $vid_id . '|' . $ts . '|' . $curr_saved, $secret);
-    $token  = base64_encode($user['id'] . '|' . $vid_id . '|' . $ts . '|' . $curr_saved . '|' . $sig);
+
+    if ($is_debug_user) {
+        $sig   = hash_hmac('sha256', $user['id'] . '|' . $vid_id . '|' . $ts . '|' . $curr_saved . '|DBG|' . $active_duration . '|' . $active_reward, $secret);
+        $token = base64_encode($user['id'] . '|' . $vid_id . '|' . $ts . '|' . $curr_saved . '|DBG|' . $active_duration . '|' . $active_reward . '|' . $sig);
+    } else {
+        $sig   = hash_hmac('sha256', $user['id'] . '|' . $vid_id . '|' . $ts . '|' . $curr_saved, $secret);
+        $token = base64_encode($user['id'] . '|' . $vid_id . '|' . $ts . '|' . $curr_saved . '|' . $sig);
+    }
 
     echo json_encode([
         'ok'=>true,
         'watch_token'=>$token,
         'saved_seconds'=>$curr_saved,
-        'remaining_seconds'=>max(0, (int)$video['watch_duration'] - $curr_saved)
+        'remaining_seconds'=>max(0, $active_duration - $curr_saved),
+        'duration'=>$active_duration,
+        'reward'=>$active_reward
     ]);
     exit;
 }
@@ -163,15 +234,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
 
     $parts = explode('|', $decoded);
     $secret = $_ENV['APP_SECRET'] ?? 'tonton_secret_2024';
+    $is_dbg_token = false;
 
-    if (count($parts) === 4) {
-        [$tok_uid, $tok_vid, $tok_ts, $tok_sig] = $parts;
-        $tok_saved = 0;
-        $expected = hash_hmac('sha256', $tok_uid . '|' . $tok_vid . '|' . $tok_ts, $secret);
+    if ($is_debug_user && count($parts) === 8 && $parts[4] === 'DBG') {
+        [$tok_uid, $tok_vid, $tok_ts, $tok_saved, $tok_marker, $tok_dur, $tok_rwd, $tok_sig] = $parts;
+        $tok_saved = (int)$tok_saved;
+        $tok_dur   = (int)$tok_dur;
+        $tok_rwd   = (float)$tok_rwd;
+        $expected  = hash_hmac('sha256', $tok_uid . '|' . $tok_vid . '|' . $tok_ts . '|' . $tok_saved . '|DBG|' . $tok_dur . '|' . $tok_rwd, $secret);
+        $is_dbg_token = true;
     } elseif (count($parts) === 5) {
         [$tok_uid, $tok_vid, $tok_ts, $tok_saved, $tok_sig] = $parts;
         $tok_saved = (int)$tok_saved;
         $expected = hash_hmac('sha256', $tok_uid . '|' . $tok_vid . '|' . $tok_ts . '|' . $tok_saved, $secret);
+    } elseif (count($parts) === 4) {
+        [$tok_uid, $tok_vid, $tok_ts, $tok_sig] = $parts;
+        $tok_saved = 0;
+        $expected = hash_hmac('sha256', $tok_uid . '|' . $tok_vid . '|' . $tok_ts, $secret);
     } else {
         echo json_encode(['ok'=>false,'msg'=>'Format token tidak valid.']); exit;
     }
@@ -183,41 +262,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
         echo json_encode(['ok'=>false,'msg'=>'Signature token tidak valid.']); exit;
     }
 
-    $elapsed = time() - (int)$tok_ts;
-    $total_watched = $elapsed + $tok_saved;
-    $required = (int)$video['watch_duration'];
-    if ($total_watched < $required) {
-        $kurang = $required - $total_watched;
-        echo json_encode(['ok'=>false,'msg'=>"Waktu belum cukup. Tunggu {$kurang} detik lagi."]); exit;
-    }
-    if ($elapsed > ($required - $tok_saved) * 4 + 300) {
-        echo json_encode(['ok'=>false,'msg'=>'Sesi telah kedaluwarsa. Refresh dan putar kembali.']); exit;
+    $is_instant = !empty($_POST['instant']) && $is_dbg_token && $is_debug_user;
+    $required   = ($is_dbg_token && $is_debug_user) ? $tok_dur : (int)$video['watch_duration'];
+    $reward     = ($is_dbg_token && $is_debug_user) ? $tok_rwd : (float)$video['reward_amount'];
+
+    if (!$is_instant) {
+        $elapsed = time() - (int)$tok_ts;
+        $total_watched = $elapsed + $tok_saved;
+        if ($total_watched < $required) {
+            $kurang = $required - $total_watched;
+            echo json_encode(['ok'=>false,'msg'=>"Waktu belum cukup. Tunggu {$kurang} detik lagi."]); exit;
+        }
+        if (!$is_debug_user && $elapsed > ($required - $tok_saved) * 4 + 300) {
+            echo json_encode(['ok'=>false,'msg'=>'Sesi telah kedaluwarsa. Refresh dan putar kembali.']); exit;
+        }
     }
 
-    $reward = (float)$video['reward_amount'];
     try {
         $pdo->beginTransaction();
         
         $pdo->prepare("SELECT id FROM users WHERE id=? FOR UPDATE")->execute([$user['id']]);
         
-        $chk2 = $pdo->prepare("SELECT id FROM watch_history WHERE user_id=? AND video_id=? AND DATE(watched_at)=CURDATE()");
-        $chk2->execute([$user['id'], $vid_id]);
-        if ($chk2->fetch()) { 
-            $pdo->rollBack();
-            echo json_encode(['ok'=>false,'msg'=>'Video ini sudah ditonton hari ini.']); exit; 
-        }
+        if ($is_debug_user) {
+            // Mode debug tester: bersihkan riwayat hari ini untuk video ini agar pengujian berulang kali lancar
+            $pdo->prepare("DELETE FROM watch_history WHERE user_id=? AND video_id=? AND DATE(watched_at)=CURDATE()")
+                ->execute([$user['id'], $vid_id]);
+        } else {
+            $chk2 = $pdo->prepare("SELECT id FROM watch_history WHERE user_id=? AND video_id=? AND DATE(watched_at)=CURDATE()");
+            $chk2->execute([$user['id'], $vid_id]);
+            if ($chk2->fetch()) { 
+                $pdo->rollBack();
+                echo json_encode(['ok'=>false,'msg'=>'Video ini sudah ditonton hari ini.']); exit; 
+            }
 
-        $wt = $pdo->prepare("SELECT COUNT(*) FROM watch_history WHERE user_id=? AND DATE(watched_at)=CURDATE()");
-        $wt->execute([$user['id']]);
-        if ((int)$wt->fetchColumn() >= $watch_limit) {
-            $pdo->rollBack();
-            echo json_encode(['ok'=>false,'msg'=>'Batas tonton harian telah tercapai!']); exit;
+            $wt = $pdo->prepare("SELECT COUNT(*) FROM watch_history WHERE user_id=? AND DATE(watched_at)=CURDATE()");
+            $wt->execute([$user['id']]);
+            if ((int)$wt->fetchColumn() >= $watch_limit) {
+                $pdo->rollBack();
+                echo json_encode(['ok'=>false,'msg'=>'Batas tonton harian telah tercapai!']); exit;
+            }
         }
 
         $pdo->prepare("INSERT INTO watch_history (user_id,video_id,reward_given) VALUES (?,?,?)")
             ->execute([$user['id'], $vid_id, $reward]);
         $pdo->prepare("UPDATE users SET balance_wd=balance_wd+?,total_earned=total_earned+? WHERE id=?")
             ->execute([$reward, $reward, $user['id']]);
+
         // Sinkronkan total_watches = fake_watches + real_watches (watch_history)
         try {
             $pdo->prepare("UPDATE videos SET total_watches = COALESCE(fake_watches, 0) + (SELECT COUNT(*) FROM watch_history WHERE video_id=?) WHERE id=?")
@@ -235,9 +325,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
 
         $pdo->commit();
 
-        $_SESSION['flash_videos_msg'] = 'Reward ' . format_rp($reward) . ' berhasil diklaim!';
+        $debug_notice = $is_debug_user ? ' [Mode Debug Tester]' : '';
+        $_SESSION['flash_videos_msg'] = 'Reward ' . format_rp($reward) . ' berhasil diklaim!' . $debug_notice;
         $_SESSION['flash_videos_type'] = 'success';
-        echo json_encode(['ok'=>true,'reward'=>format_rp($reward),'msg'=>'+' . format_rp($reward) . ' berhasil ditambahkan!']);
+        echo json_encode(['ok'=>true,'reward'=>format_rp($reward),'msg'=>'+' . format_rp($reward) . ' berhasil ditambahkan!' . $debug_notice]);
     } catch (\Throwable) {
         $pdo->rollBack();
         echo json_encode(['ok'=>false,'msg'=>'Terjadi kendala pada server. Silakan coba lagi.']);
@@ -796,6 +887,218 @@ body {
   color: #dc2626;
   box-shadow: 0 1.5px 0 #ef4444;
 }
+
+/* ── MODE DEBUG TESTER STYLES ── */
+.debug-badge-top {
+  background: #7c3aed;
+  color: #fff;
+  border: 1.5px solid #a78bfa;
+  border-radius: 12px;
+  padding: 3.5px 8px;
+  font-size: 11px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.4);
+}
+.debug-panel {
+  background: linear-gradient(135deg, #1e1e2f 0%, #111827 100%);
+  border: 2px solid #8b5cf6;
+  border-radius: 16px;
+  margin: 10px 14px 12px 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25);
+  color: #f8fafc;
+}
+.debug-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(139, 92, 246, 0.15);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+}
+.debug-panel__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #c4b5fd;
+}
+.debug-panel__tag {
+  background: #7c3aed;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+}
+.debug-panel__toggle {
+  background: transparent;
+  border: none;
+  color: #a78bfa;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.debug-panel__toggle:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+.debug-panel__body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.debug-panel__body.collapsed {
+  display: none;
+}
+.debug-panel__info {
+  font-size: 10.5px;
+  color: #94a3b8;
+  line-height: 1.4;
+  background: rgba(0,0,0,0.25);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border-left: 3px solid #8b5cf6;
+}
+.debug-panel__row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.debug-panel__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #e2e8f0;
+}
+.debug-panel__label b {
+  color: #38bdf8;
+}
+.debug-panel__sub {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 700;
+}
+.debug-panel__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dbg-pill {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.dbg-pill:hover {
+  background: rgba(139, 92, 246, 0.3);
+  border-color: #8b5cf6;
+  color: #fff;
+}
+.dbg-pill.active {
+  background: #8b5cf6;
+  border-color: #a78bfa;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+.debug-panel__custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.debug-panel__custom input {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  width: 120px;
+}
+.debug-panel__custom input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+}
+.debug-panel__custom button {
+  background: #3b82f6;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.debug-panel__custom button:hover {
+  background: #2563eb;
+}
+.debug-panel__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.dbg-btn-instant {
+  flex: 1.3;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 1.5px solid #34d399;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 900;
+  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  transition: all 0.15s;
+}
+.dbg-btn-instant:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
+}
+.dbg-btn-instant:active {
+  transform: translateY(1px);
+}
+.dbg-btn-reset {
+  flex: 1;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1.5px solid #ef4444;
+  border-radius: 10px;
+  color: #fca5a5;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.dbg-btn-reset:hover {
+  background: #ef4444;
+  color: #fff;
+}
 </style>
 </head>
 <body>
@@ -816,13 +1119,94 @@ body {
       <i class="ph-bold ph-arrow-left"></i>
       <span>Kembali ke Video</span>
     </a>
-    <div class="watch-topbar__bal" title="Saldo Siap Tarik">
-      <i class="ph-fill ph-wallet"></i>
-      <span><?= format_rp((float)$user['balance_wd']) ?></span>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <?php if ($is_debug_user): ?>
+        <span class="debug-badge-top" title="Akun ini berada dalam Mode Debug Tester">
+          <i class="ph-bold ph-wrench"></i> DEBUG
+        </span>
+      <?php endif; ?>
+      <div class="watch-topbar__bal" title="Saldo Siap Tarik">
+        <i class="ph-fill ph-wallet"></i>
+        <span><?= format_rp((float)$user['balance_wd']) ?></span>
+      </div>
     </div>
   </div>
 
-  <?php if ($saved_seconds > 0 && $canWatch): ?>
+  <?php if ($is_debug_user): ?>
+  <!-- ── MODE DEBUG TESTER PANEL ── -->
+  <div class="debug-panel" id="debugPanel">
+    <div class="debug-panel__header">
+      <div class="debug-panel__title">
+        <i class="ph-bold ph-wrench"></i>
+        <span>MODE DEBUG TESTER</span>
+        <span class="debug-panel__tag">@<?= htmlspecialchars($user['username']) ?></span>
+      </div>
+      <button type="button" class="debug-panel__toggle" onclick="toggleDebugPanel()" id="dbgToggleBtn" title="Perkecil / Buka Panel">
+        <i class="ph-bold ph-caret-up" id="dbgToggleIcon"></i>
+      </button>
+    </div>
+    
+    <div class="debug-panel__body" id="dbgBody">
+      <div class="debug-panel__info">
+        Pengaturan ini <b>hanya berlaku untuk akun Anda</b>. Perubahan durasi & reward langsung aktif seketika tanpa mengubah konfigurasi video asli untuk pengguna lain.
+      </div>
+
+      <!-- Durasi Section -->
+      <div class="debug-panel__row">
+        <div class="debug-panel__label">
+          <span>⏱ Durasi Tonton Tester:</span>
+          <b id="dbgActiveDurLbl"><?= $active_duration ?>s</b>
+          <span class="debug-panel__sub">(Asli: <?= $orig_duration ?>s)</span>
+        </div>
+        <div class="debug-panel__pills">
+          <button type="button" class="dbg-pill <?= $active_duration === 1 ? 'active' : '' ?>" onclick="setDebugDur(1)">1s</button>
+          <button type="button" class="dbg-pill <?= $active_duration === 3 ? 'active' : '' ?>" onclick="setDebugDur(3)">3s</button>
+          <button type="button" class="dbg-pill <?= $active_duration === 5 ? 'active' : '' ?>" onclick="setDebugDur(5)">5s</button>
+          <button type="button" class="dbg-pill <?= $active_duration === 10 ? 'active' : '' ?>" onclick="setDebugDur(10)">10s</button>
+          <button type="button" class="dbg-pill <?= $active_duration === $orig_duration ? 'active' : '' ?>" onclick="setDebugDur(<?= $orig_duration ?>)">Asli (<?= $orig_duration ?>s)</button>
+        </div>
+        <div class="debug-panel__custom">
+          <input type="number" id="dbgInpDur" min="1" max="3600" placeholder="Detik..." value="<?= $active_duration ?>">
+          <button type="button" onclick="setDebugDur(document.getElementById('dbgInpDur').value)">Set Durasi</button>
+        </div>
+      </div>
+
+      <!-- Reward / Benefit Section -->
+      <div class="debug-panel__row">
+        <div class="debug-panel__label">
+          <span>💰 Benefit / Reward Tester:</span>
+          <b id="dbgActiveRwdLbl"><?= format_rp($active_reward) ?></b>
+          <span class="debug-panel__sub">(Asli: <?= format_rp($orig_reward) ?>)</span>
+        </div>
+        <div class="debug-panel__pills">
+          <button type="button" class="dbg-pill <?= (float)$active_reward === 5000.0 ? 'active' : '' ?>" onclick="setDebugRwd(5000)">Rp 5.000</button>
+          <button type="button" class="dbg-pill <?= (float)$active_reward === 25000.0 ? 'active' : '' ?>" onclick="setDebugRwd(25000)">Rp 25.000</button>
+          <button type="button" class="dbg-pill <?= (float)$active_reward === 50000.0 ? 'active' : '' ?>" onclick="setDebugRwd(50000)">Rp 50.000</button>
+          <button type="button" class="dbg-pill <?= (float)$active_reward === 100000.0 ? 'active' : '' ?>" onclick="setDebugRwd(100000)">Rp 100.000</button>
+          <button type="button" class="dbg-pill <?= (float)$active_reward === $orig_reward ? 'active' : '' ?>" onclick="setDebugRwd(<?= $orig_reward ?>)">Asli</button>
+        </div>
+        <div class="debug-panel__custom">
+          <input type="number" id="dbgInpRwd" min="0" step="500" placeholder="Nominal Rp..." value="<?= (int)$active_reward ?>">
+          <button type="button" onclick="setDebugRwd(document.getElementById('dbgInpRwd').value)">Set Reward</button>
+        </div>
+      </div>
+
+      <!-- Quick Action Section -->
+      <div class="debug-panel__actions">
+        <button type="button" class="dbg-btn-instant" onclick="triggerInstantClaim()" title="Selesaikan detik dan klaim langsung">
+          <i class="ph-bold ph-lightning"></i>
+          <span>⚡ Selesai & Klaim Seketika</span>
+        </button>
+        <button type="button" class="dbg-btn-reset" onclick="resetDebugVideoStatus()" title="Hapus riwayat tonton video ini agar bisa dicoba ulang">
+          <i class="ph-bold ph-arrow-counter-clockwise"></i>
+          <span>Reset Status Misi</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <?php endif; ?>
+
+  <?php if ($saved_seconds > 0 && ($canWatch || $is_debug_user)): ?>
   <!-- ── RESUME WATCH PROGRESS BANNER ── -->
   <div class="resume-banner" id="resume-banner">
     <div class="resume-banner__icon">
@@ -831,7 +1215,7 @@ body {
     <div class="resume-banner__content">
       <div class="resume-banner__title">Melanjutkan Riwayat Menonton</div>
       <div class="resume-banner__desc">
-        Tersimpan: <b><?= $saved_seconds ?>s / <?= (int)$video['watch_duration'] ?>s</b> (Tersisa <b id="resume-left-sec"><?= max(0, (int)$video['watch_duration'] - $saved_seconds) ?></b> detik lagi)
+        Tersimpan: <b><?= $saved_seconds ?>s / <?= $active_duration ?>s</b> (Tersisa <b id="resume-left-sec"><?= max(0, $active_duration - $saved_seconds) ?></b> detik lagi)
       </div>
     </div>
     <button type="button" class="resume-banner__btn-reset" onclick="resetWatchProgress()" title="Ulangi video dari detik 0">
@@ -853,35 +1237,35 @@ body {
   <!-- ── 3. STATUS & COUNTDOWN BAR ── -->
   <div class="watch-status-box" id="status-bar">
     <div class="watch-timer-wrap">
-      <div class="timer-pill <?= $already_watched ? 'done' : '' ?>" id="timer-badge">
-        <?php if ($already_watched): ?>
+      <div class="timer-pill <?= ($already_watched && !$is_debug_user) ? 'done' : '' ?>" id="timer-badge">
+        <?php if ($already_watched && !$is_debug_user): ?>
           <i class="ph-bold ph-check"></i>
-        <?php elseif ($canWatch): ?>
-          <?= (int)$video['watch_duration'] ?>
+        <?php elseif ($canWatch || $is_debug_user): ?>
+          <?= $active_duration ?>
         <?php else: ?>
           –
         <?php endif; ?>
       </div>
       <div>
         <div class="watch-status-text" id="status-text">
-          <?php if ($already_watched): ?>
+          <?php if ($already_watched && !$is_debug_user): ?>
             <span style="color:#059669;"><i class="ph-bold ph-check-circle"></i> Selesai ditonton hari ini</span>
-          <?php elseif ($watch_today >= $watch_limit): ?>
+          <?php elseif ($watch_today >= $watch_limit && !$is_debug_user): ?>
             <span style="color:#dc2626;"><i class="ph-bold ph-warning-circle"></i> Kuota harian habis</span>
           <?php else: ?>
-            <span>Putar video untuk mulai misi</span>
+            <span>Putar video untuk mulai misi <?= $is_debug_user ? '(Mode Debug)' : '' ?></span>
           <?php endif; ?>
         </div>
         <div class="watch-status-hint" id="status-hint">
-          <?php if ($canWatch): ?>
-            Reward: +<?= format_rp((float)$video['reward_amount']) ?> setelah <?= (int)$video['watch_duration'] ?> detik
+          <?php if ($canWatch || $is_debug_user): ?>
+            Reward: +<?= format_rp((float)$active_reward) ?> setelah <?= $active_duration ?> detik<?= $is_debug_user ? ' <b style="color:#7c3aed;">[Debug]</b>' : '' ?>
           <?php endif; ?>
         </div>
       </div>
     </div>
 
     <!-- Claim Button -->
-    <?php if ($canWatch): ?>
+    <?php if ($canWatch || $is_debug_user): ?>
       <div id="claim-wrap" style="display:none;">
         <button type="button" class="btn-claim" id="claim-btn" onclick="claimReward()">
           <i class="ph-bold ph-coins"></i>
@@ -920,7 +1304,7 @@ body {
       <!-- Reward -->
       <div class="action-stat action-stat--reward" title="Komisi Reward">
         <i class="ph-bold ph-coins"></i>
-        <span>+<?= format_rp((float)$video['reward_amount']) ?></span>
+        <span>+<?= format_rp((float)$active_reward) ?></span>
       </div>
 
       <!-- Share -->
@@ -947,6 +1331,11 @@ body {
       <div class="banner-watched">
         <i class="ph-bold ph-check-circle" style="font-size:18px;"></i>
         <span>Misi video ini sudah berhasil Anda selesaikan hari ini!</span>
+        <?php if ($is_debug_user): ?>
+          <button type="button" class="resume-banner__btn-reset" onclick="resetDebugVideoStatus()" style="margin-left:auto;">
+            <i class="ph-bold ph-arrow-counter-clockwise"></i> Reset Status
+          </button>
+        <?php endif; ?>
       </div>
       <a href="/videos" class="btn-more-vids">← Pilih Video Misi Lainnya</a>
     <?php endif; ?>
@@ -998,10 +1387,14 @@ body {
 
 <script>
 // ── Server Constants ─────────────────────────────────
-const DURATION      = <?= (int)$video['watch_duration'] ?>;
-const CAN_WATCH     = <?= $canWatch ? 'true' : 'false' ?>;
+let DURATION        = <?= (int)$active_duration ?>;
+const ORIG_DURATION = <?= (int)$orig_duration ?>;
+const CAN_WATCH     = <?= ($canWatch || $is_debug_user) ? 'true' : 'false' ?>;
 const CSRF          = '<?= csrf_token() ?>';
 const WATCH_URL     = '';
+const IS_DEBUG_USER = <?= $is_debug_user ? 'true' : 'false' ?>;
+let currentActiveDur = <?= (int)$active_duration ?>;
+let currentActiveRwd = <?= (float)$active_reward ?>;
 let savedSeconds    = <?= (int)$saved_seconds ?>;
 let savedPosition   = <?= (float)$saved_position ?>;
 
@@ -1016,6 +1409,197 @@ let playerReady     = false;
 let ytPlayer        = null;
 let lastSavedTick   = savedSeconds;
 let hasSeekedToSaved= false;
+
+// ── Mode Debug Tester Controls ───────────────────────
+function toggleDebugPanel() {
+  const b = document.getElementById('dbgBody');
+  const ic = document.getElementById('dbgToggleIcon');
+  if (!b) return;
+  b.classList.toggle('collapsed');
+  if (b.classList.contains('collapsed')) {
+    if (ic) ic.className = 'ph-bold ph-caret-down';
+  } else {
+    if (ic) ic.className = 'ph-bold ph-caret-up';
+  }
+}
+
+async function setDebugDur(dur) {
+  dur = parseInt(dur);
+  if (!dur || dur <= 0) {
+    if (typeof nToast === 'function') nToast('Durasi harus lebih dari 0 detik!', 'error');
+    else alert('Durasi harus lebih dari 0 detik!');
+    return;
+  }
+  await submitDebugSettings(dur, currentActiveRwd);
+}
+
+async function setDebugRwd(rwd) {
+  rwd = parseFloat(rwd);
+  if (isNaN(rwd) || rwd < 0) {
+    if (typeof nToast === 'function') nToast('Nominal reward tidak valid!', 'error');
+    else alert('Nominal reward tidak valid!');
+    return;
+  }
+  await submitDebugSettings(currentActiveDur, rwd);
+}
+
+async function submitDebugSettings(dur, rwd) {
+  const fd = new FormData();
+  fd.append('action', 'set_debug_watch');
+  fd.append('_csrf', CSRF);
+  fd.append('duration', dur);
+  fd.append('reward', rwd);
+
+  try {
+    const res = await fetch(WATCH_URL, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) {
+      currentActiveDur = data.duration;
+      currentActiveRwd = data.reward;
+      DURATION = data.duration;
+
+      // Update badge label di panel
+      const dLbl = document.getElementById('dbgActiveDurLbl');
+      if (dLbl) dLbl.textContent = data.duration + 's';
+      const rLbl = document.getElementById('dbgActiveRwdLbl');
+      if (rLbl) rLbl.textContent = data.reward_formatted;
+
+      const inDur = document.getElementById('dbgInpDur');
+      if (inDur) inDur.value = data.duration;
+      const inRwd = document.getElementById('dbgInpRwd');
+      if (inRwd) inRwd.value = Math.round(data.reward);
+
+      // Update pill active styling
+      document.querySelectorAll('.debug-panel__row:first-of-type .dbg-pill').forEach(btn => {
+        const txt = btn.textContent.trim();
+        if (txt === data.duration + 's' || (data.duration === ORIG_DURATION && txt.startsWith('Asli'))) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      document.querySelectorAll('.debug-panel__row:nth-of-type(2) .dbg-pill').forEach(btn => {
+        const txt = btn.textContent.trim();
+        if ((data.reward === 5000 && txt.includes('5.000')) ||
+            (data.reward === 25000 && txt.includes('25.000')) ||
+            (data.reward === 50000 && txt.includes('50000')) ||
+            (data.reward === 100000 && txt.includes('100.000')) ||
+            (data.reward === <?= (float)$orig_reward ?> && txt.startsWith('Asli'))) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      // Update UI timer badge & hints
+      const tb = document.getElementById('timer-badge');
+      if (tb && !claimReady) {
+        timerLeft = Math.max(0, DURATION - totalWatched);
+        tb.textContent = timerLeft > 0 ? timerLeft : '✓';
+      }
+      const sh = document.getElementById('status-hint');
+      if (sh) {
+        sh.innerHTML = `Reward: +${data.reward_formatted} setelah ${data.duration} detik <b style="color:#7c3aed;">[Debug]</b>`;
+      }
+
+      if (typeof nToast === 'function') {
+        nToast(`Mode Debug: Durasi ${data.duration}s • Reward ${data.reward_formatted}`, 'success');
+      }
+
+      // Re-sign token if session already active
+      if (watchStarted && !claimReady) {
+        startWatchSession(true);
+      }
+    } else {
+      if (typeof nToast === 'function') nToast(data.msg || 'Gagal update debug', 'error');
+      else alert(data.msg);
+    }
+  } catch(e) {
+    if (typeof nToast === 'function') nToast('Kendala jaringan saat update mode debug.', 'error');
+  }
+}
+
+async function triggerInstantClaim() {
+  if (!IS_DEBUG_USER) return;
+
+  const btn = document.getElementById('claim-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph-bold ph-spinner ph-spin"></i> Memproses instant claim...';
+  }
+
+  // Jika token belum ada, generate token terlebih dahulu
+  if (!watchToken) {
+    const fd = new FormData();
+    fd.append('action', 'start_watch');
+    fd.append('_csrf', CSRF);
+    try {
+      const res = await fetch(WATCH_URL, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!data.ok) {
+        alert(data.msg || 'Gagal memulai sesi.');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-coins"></i> Klaim Cuan'; }
+        return;
+      }
+      watchToken = data.watch_token;
+    } catch(err) {
+      alert('Kendala jaringan saat inisialisasi sesi.');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ph-bold ph-coins"></i> Klaim Cuan'; }
+      return;
+    }
+  }
+
+  const fdClaim = new FormData();
+  fdClaim.append('action', 'claim');
+  fdClaim.append('_csrf', CSRF);
+  fdClaim.append('watch_token', watchToken);
+  fdClaim.append('instant', '1');
+
+  try {
+    const res  = await fetch(WATCH_URL, {method:'POST', body:fdClaim});
+    const data = await res.json();
+    if (data.ok) {
+      showPop(data.msg || 'Reward berhasil diklaim!');
+      if (btn) btn.innerHTML = '<i class="ph-bold ph-check"></i> Berhasil!';
+      setStatus('⚡ Mode Debug: Reward berhasil diklaim seketika! Mengalihkan...', '');
+      if (typeof nToast === 'function') nToast(data.msg, 'success');
+      setTimeout(() => location.href = '/videos', 1500);
+    } else {
+      if (typeof nToast === 'function') nToast(data.msg || 'Gagal instant claim', 'error');
+      else alert(data.msg || 'Gagal instant claim');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ph-bold ph-coins"></i> Klaim Cuan';
+      }
+    }
+  } catch(e) {
+    if (typeof nToast === 'function') nToast('Kendala jaringan saat instant claim.', 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ph-bold ph-coins"></i> Klaim Cuan';
+    }
+  }
+}
+
+async function resetDebugVideoStatus() {
+  if (!confirm('Reset status video ini untuk akun tester Anda? Anda akan bisa menonton dan mengklaim video ini kembali dari awal.')) return;
+  const fd = new FormData();
+  fd.append('action', 'reset_debug_status');
+  fd.append('_csrf', CSRF);
+  try {
+    const res = await fetch(WATCH_URL, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) {
+      if (typeof nToast === 'function') nToast(data.msg, 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      alert(data.msg || 'Gagal mereset status.');
+    }
+  } catch(e) {
+    alert('Kendala jaringan saat reset status.');
+  }
+}
 
 // ── YouTube IFrame API ───────────────────────────────
 window.onYouTubeIframeAPIReady = function() {
@@ -1081,7 +1665,7 @@ function onPlayerStateChange(e) {
 }
 
 // ── Request Watch Token (Sertakan Saved Seconds) ─────
-async function startWatchSession() {
+async function startWatchSession(forceRestart = false) {
   const fd = new FormData();
   fd.append('action', 'start_watch');
   fd.append('_csrf', CSRF);
@@ -1090,18 +1674,24 @@ async function startWatchSession() {
     const data = await res.json();
     if (!data.ok) {
       setStatus(data.msg || 'Gagal memulai sesi', '');
-      return;
+      return false;
     }
     watchToken   = data.watch_token;
     watchStarted = true;
-    if (data.saved_seconds !== undefined) {
+    if (data.saved_seconds !== undefined && !forceRestart) {
       savedSeconds = data.saved_seconds;
       totalWatched = savedSeconds;
       timerLeft    = Math.max(0, DURATION - totalWatched);
     }
+    if (data.duration) {
+      DURATION = data.duration;
+      timerLeft = Math.max(0, DURATION - totalWatched);
+    }
     startCountdown();
+    return true;
   } catch(e) {
     setStatus('Error jaringan saat memulai sesi.', '');
+    return false;
   }
 }
 

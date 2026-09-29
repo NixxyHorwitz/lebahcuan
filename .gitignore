@@ -35,3 +35,6 @@ post_receiver.php
 # PHP error logs
 error_log
 *error_log
+
+# Scratch scripts
+scratch/

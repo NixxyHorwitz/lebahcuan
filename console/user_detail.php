@@ -18,6 +18,21 @@ if (!$u) {
     exit;
 }
 
+$flash = $flashType = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_debug_mode') {
+    $is_dbg  = isset($_POST['is_debug']) ? 1 : 0;
+    $dbg_dur = max(1, (int)($_POST['debug_watch_duration'] ?? 3));
+    $dbg_rwd = max(0.0, (float)($_POST['debug_watch_reward'] ?? 50000.00));
+
+    $pdo->prepare("UPDATE users SET is_debug=?, debug_watch_duration=?, debug_watch_reward=? WHERE id=?")
+        ->execute([$is_dbg, $dbg_dur, $dbg_rwd, $uid]);
+
+    $stmt->execute([$uid]);
+    $u = $stmt->fetch();
+    $flash = "Pengaturan Mode Debug berhasil disimpan!";
+    $flashType = "success";
+}
+
 // Pagination parameters
 $depPage = max(1, (int)($_GET['dep_page'] ?? 1));
 $wdPage  = max(1, (int)($_GET['wd_page'] ?? 1));
@@ -59,6 +74,10 @@ require __DIR__ . '/partials/header.php';
   </div>
 </div>
 
+<?php if ($flash): ?>
+<div class="alert alert-success py-2 mb-3" style="border-radius:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
+<?php endif; ?>
+
 <div class="row g-4">
   <!-- Info User -->
   <div class="col-md-4">
@@ -71,6 +90,9 @@ require __DIR__ . '/partials/header.php';
         <table class="table table-sm table-borderless text-white" style="font-size:13px">
           <tr><td style="color:#888">Status</td><td>
             <span class="badge <?= $u['is_active'] ? 'bg-success' : 'bg-danger' ?>"><?= $u['is_active'] ? 'Aktif' : 'Nonaktif' ?></span>
+            <?php if (!empty($u['is_debug'])): ?>
+              <span class="badge" style="background:#6366f1;color:#fff;font-size:10px;margin-left:4px">🛠 DEBUG TESTER</span>
+            <?php endif; ?>
           </td></tr>
           <tr><td style="color:#888">Membership</td><td><?= htmlspecialchars($u['membership_name'] ?: get_free_tier_name($pdo)) ?></td></tr>
           <tr><td style="color:#888">Saldo Beli</td><td style="color:#4E9BFF;font-weight:700"><?= format_rp((float)$u['balance_dep']) ?></td></tr>
@@ -81,12 +103,43 @@ require __DIR__ . '/partials/header.php';
           <tr><td style="color:#888">A.N.</td><td><?= htmlspecialchars($u['account_name'] ?: '-') ?></td></tr>
           <tr><td style="color:#888">Referral Code</td><td><?= htmlspecialchars($u['referral_code']) ?></td></tr>
           <tr><td style="color:#888">Referred By</td><td><?= htmlspecialchars($u['referred_by'] ?: '-') ?></td></tr>
-
           <tr><td style="color:#888">Terdaftar</td><td><?= date('d M Y H:i', strtotime($u['created_at'])) ?></td></tr>
         </table>
-      </div>
-    </div>
-  </div>
+
+        <!-- Mode Debug Tester Card -->
+        <div class="mt-3 p-3" style="background:#161922;border:1px solid <?= !empty($u['is_debug']) ? '#818cf8' : '#232738' ?>;border-radius:12px">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span style="font-size:12px;font-weight:800;color:<?= !empty($u['is_debug']) ? '#818cf8' : '#94a3b8' ?>">
+              🛠 Mode Debug Tester
+            </span>
+            <span class="badge" style="background:<?= !empty($u['is_debug']) ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.06)' ?>;color:<?= !empty($u['is_debug']) ? '#818cf8' : '#888' ?>">
+              <?= !empty($u['is_debug']) ? 'AKTIF' : 'NONAKTIF' ?>
+            </span>
+          </div>
+          <p style="font-size:11px;color:#888;margin-bottom:10px">
+            Jika aktif, akun ini akan memunculkan toolbar pengatur durasi tonton pendek & custom benefit saat membuka halaman tonton video.
+          </p>
+          <form method="POST">
+            <input type="hidden" name="action" value="save_debug_mode">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" name="is_debug" value="1" id="chkDebug" <?= !empty($u['is_debug']) ? 'checked' : '' ?>>
+              <label class="form-check-label text-white" for="chkDebug" style="font-size:12px;font-weight:700">Aktifkan Mode Debug</label>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label style="font-size:10.5px;color:#aaa">Durasi (Detik)</label>
+                <input type="number" name="debug_watch_duration" class="form-control form-control-sm text-white" style="background:#0f172a;border-color:#334155;font-size:11.5px" min="1" value="<?= (int)($u['debug_watch_duration'] ?: 3) ?>">
+              </div>
+              <div class="col-6">
+                <label style="font-size:10.5px;color:#aaa">Benefit / Reward (Rp)</label>
+                <input type="number" name="debug_watch_reward" class="form-control form-control-sm text-white" style="background:#0f172a;border-color:#334155;font-size:11.5px" min="0" step="1000" value="<?= (int)($u['debug_watch_reward'] ?: 50000) ?>">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-sm w-100" style="background:#6366f1;color:#fff;font-weight:800;border-radius:8px;font-size:11.5px">
+              Simpan Pengaturan Debug
+            </button>
+          </form>
+        </div>
 
   <!-- History -->
   <div class="col-md-8">

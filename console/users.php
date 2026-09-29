@@ -17,6 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flash = 'Status pengguna diperbarui.';
     }
 
+    if ($action === 'toggle_debug' && $uid) {
+        $s = $pdo->prepare("SELECT is_debug FROM users WHERE id=?"); $s->execute([$uid]);
+        $cur = (int)$s->fetchColumn();
+        $new = $cur ? 0 : 1;
+        $pdo->prepare("UPDATE users SET is_debug=? WHERE id=?")->execute([$new, $uid]);
+        $flash = 'Mode Debug user ' . ($new ? 'DIAKTIFKAN (Toolbar durasi pendek & custom reward aktif di watch.php)' : 'DINONAKTIFKAN') . '.';
+    }
+
     if ($action === 'adjust_balance' && $uid) {
         $amount = (float)$_POST['amount'];
         $type   = $_POST['type'] === 'add' ? 1 : -1;
@@ -74,6 +82,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $watch_reset   = trim($_POST['watch_reset_date'] ?? '') ?: null;
         $last_checkin  = trim($_POST['last_checkin'] ?? '') ?: null;
 
+        // Mode Debug Tester
+        $is_debug      = (int)($_POST['is_debug'] ?? 0);
+        $dbg_dur       = max(1, (int)($_POST['debug_watch_duration'] ?? 3));
+        $dbg_rwd       = max(0.0, (float)($_POST['debug_watch_reward'] ?? 50000.00));
+
         $errors = [];
         if (strlen($username) < 3) $errors[] = 'Username minimal 3 karakter.';
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email tidak valid.';
@@ -104,7 +117,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     membership_id=?, membership_expires_at=?, can_withdraw=?, can_chat=?, is_refund_enabled=?, refund_cut_percent=?,
                     referral_code=?, referred_by=?, is_referral_active=?,
                     is_promotor=?, promotor_salary_rate=?, promotor_target_deposits=?, promotor_target_regs=?,
-                    watch_count_today=?, watch_reset_date=?, last_checkin=?
+                    watch_count_today=?, watch_reset_date=?, last_checkin=?,
+                    is_debug=?, debug_watch_duration=?, debug_watch_reward=?
                     WHERE id=?";
 
             $pdo->prepare($sql)->execute([
@@ -115,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ref_code, $ref_by, $is_ref_active,
                 $is_promo, $promo_salary, $promo_target_dep, $promo_target_reg,
                 $watch_today, $watch_reset, $last_checkin,
+                $is_debug, $dbg_dur, $dbg_rwd,
                 $uid
             ]);
 
@@ -240,7 +255,13 @@ require __DIR__ . '/partials/header.php';
       <tbody>
         <?php foreach ($users as $u): ?>
         <tr>
-          <td data-label="Username"><strong style="font-size:13px"><?= htmlspecialchars($u['username']) ?></strong><div style="font-size:11px;color:#555"><?= date('d M Y', strtotime($u['created_at'])) ?></div></td>
+          <td data-label="Username">
+            <strong style="font-size:13px"><?= htmlspecialchars($u['username']) ?></strong>
+            <?php if (!empty($u['is_debug'])): ?>
+              <span class="badge" style="background:#6366f1;color:#fff;font-size:9.5px;padding:2px 6px;border-radius:6px;margin-left:4px" title="Mode Debug Tester Aktif">🛠 DEBUG</span>
+            <?php endif; ?>
+            <div style="font-size:11px;color:#555"><?= date('d M Y', strtotime($u['created_at'])) ?></div>
+          </td>
           <td data-label="Kontak"><div style="font-size:12px"><?= htmlspecialchars($u['email']) ?></div><div style="font-size:11px;color:#666"><?= htmlspecialchars($u['whatsapp']) ?></div></td>
           <td data-label="Saldo"><div style="color:#4CAF82;font-weight:700;font-size:12px">WD: <?= format_rp((float)$u['balance_wd']) ?></div><div style="color:#4E9BFF;font-size:11px">Dep: <?= format_rp((float)$u['balance_dep']) ?></div></td>
           <td data-label="Total Earned" style="color:#888;font-size:12px"><?= format_rp((float)$u['total_earned']) ?></td>
@@ -262,6 +283,12 @@ require __DIR__ . '/partials/header.php';
             <button class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#2d3149;color:#fff;border:1px solid #3e445b;padding:4px 8px;font-weight:600;"
               onclick='editUser(<?= htmlspecialchars(json_encode($u), ENT_QUOTES) ?>)'>✏️ Edit</button>
             <a href="/console/user_detail.php?id=<?= $u['id'] ?>" class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#32433e;color:#b2dfdb;border:1px solid #4a665e;padding:4px 8px;font-weight:600;text-decoration:none;">👁️ Detail</a>
+            <form method="POST" class="d-inline">
+              <?= csrf_field() ?><input type="hidden" name="action" value="toggle_debug"><input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+              <button type="submit" class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:<?= !empty($u['is_debug']) ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.05)' ?>;color:<?= !empty($u['is_debug']) ? '#818cf8' : '#888' ?>;border:1px solid <?= !empty($u['is_debug']) ? '#6366f1' : '#3e445b' ?>;padding:4px 8px;font-weight:600;" title="Klik untuk mengaktifkan/menonaktifkan Mode Debug tester">
+                🛠 <?= !empty($u['is_debug']) ? 'Debug ON' : 'Debug OFF' ?>
+              </button>
+            </form>
             <button type="button" class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#4b3f72;color:#d1c4e9;border:1px solid #6b5a9e;padding:4px 8px;font-weight:600;"
               onclick="if(confirm('Yakin ingin login sebagai user ini?')) document.getElementById('loginas-form-<?= $u['id'] ?>').submit()">🔑 Login As</button>
             <form id="loginas-form-<?= $u['id'] ?>" method="POST" style="display:none;"><?= csrf_field() ?><input type="hidden" name="action" value="login_as"><input type="hidden" name="user_id" value="<?= $u['id'] ?>"></form>
@@ -619,6 +646,32 @@ require __DIR__ . '/partials/header.php';
                 <input type="date" name="last_checkin" id="eu-last-checkin" class="c-form-control">
               </div>
             </div>
+
+            <!-- Mode Debug Tester -->
+            <div class="col-12 mt-2 pt-3" style="border-top:1px dashed rgba(255,255,255,0.1)">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="c-label fw-bold mb-0" style="color:#818cf8;font-size:12px">🛠 Mode Debug Tester (Khusus User Ini)</label>
+                <span class="badge" style="background:rgba(99,102,241,0.2);color:#818cf8;font-size:10px">Watch Video Tester</span>
+              </div>
+              <p style="font-size:11px;color:#888;margin-bottom:8px">Jika aktif, user ini akan memiliki toolbar pengatur durasi pendek dan benefit khusus saat menonton di watch.php.</p>
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <label class="c-label" style="font-size:11px">Status Debug</label>
+                  <select name="is_debug" id="eu-is-debug" class="c-form-control">
+                    <option value="0">Nonaktif (Normal)</option>
+                    <option value="1">Aktif (Mode Debug Tester)</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="c-label" style="font-size:11px">Durasi Tonton Default (detik)</label>
+                  <input type="number" name="debug_watch_duration" id="eu-dbg-dur" class="c-form-control" min="1" value="3">
+                </div>
+                <div class="col-md-4">
+                  <label class="c-label" style="font-size:11px">Benefit / Reward Default (Rp)</label>
+                  <input type="number" name="debug_watch_reward" id="eu-dbg-rwd" class="c-form-control" min="0" step="1000" value="50000">
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -779,6 +832,11 @@ function editUser(u) {
   document.getElementById('eu-watch-today').value   = u.watch_count_today !== undefined ? u.watch_count_today : 0;
   document.getElementById('eu-watch-reset').value   = u.watch_reset_date || '';
   document.getElementById('eu-last-checkin').value  = u.last_checkin || '';
+
+  // Mode Debug Tester
+  document.getElementById('eu-is-debug').value      = u.is_debug !== undefined ? u.is_debug : 0;
+  document.getElementById('eu-dbg-dur').value       = u.debug_watch_duration || 3;
+  document.getElementById('eu-dbg-rwd').value       = u.debug_watch_reward ? Math.round(u.debug_watch_reward) : 50000;
 
   // Reset to first tab
   const firstTabEl = document.querySelector('#editUserTabs button[data-bs-target="#tab-account"]');
