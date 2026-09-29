@@ -41,6 +41,43 @@ $videos = $pdo->prepare(
 $videos->execute([$user['id'], $user['id']]);
 $videos = $videos->fetchAll();
 
+// AJAX: Hapus progres tontonan dari riwayat user
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_watch_progress') {
+    header('Content-Type: application/json');
+    if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF token.']); exit; }
+    $del_vid = (int)($_POST['video_id'] ?? 0);
+    if ($del_vid > 0) {
+        $pdo->prepare("DELETE FROM user_watch_progress WHERE user_id=? AND video_id=?")->execute([$user['id'], $del_vid]);
+    }
+    echo json_encode(['ok'=>true]);
+    exit;
+}
+
+// Bersihkan progres tontonan untuk video yang sudah tuntas ditonton hari ini
+$pdo->prepare(
+    "DELETE uwp FROM user_watch_progress uwp
+     JOIN watch_history wh ON wh.user_id = uwp.user_id AND wh.video_id = uwp.video_id AND DATE(wh.watched_at) = CURDATE()
+     WHERE uwp.user_id = ?"
+)->execute([$user['id']]);
+
+// Ambil riwayat tontonan yang sedang berjalan (maksimal 3 per user)
+$cw_stmt = $pdo->prepare(
+    "SELECT uwp.seconds_watched, uwp.duration, uwp.last_position, uwp.updated_at,
+            v.id, v.title, v.youtube_id, v.watch_duration, v.reward_amount, v.total_watches, v.total_likes
+     FROM user_watch_progress uwp
+     JOIN videos v ON v.id = uwp.video_id
+     WHERE uwp.user_id = ? AND v.is_active = 1
+     ORDER BY uwp.updated_at DESC
+     LIMIT 3"
+);
+$cw_stmt->execute([$user['id']]);
+$continue_watching = $cw_stmt->fetchAll();
+
+$saved_prog_map = [];
+foreach ($continue_watching as $cw) {
+    $saved_prog_map[$cw['id']] = $cw;
+}
+
 // AJAX Infinite Scroll Response
 if (isset($_GET['ajax'])) {
     if (empty($videos)) {
@@ -56,6 +93,9 @@ if (isset($_GET['ajax'])) {
         <a href="<?= $href ?>" class="vcard vcard--<?= $status_class ?>" data-status="<?= $done ? 'done' : 'ready' ?>" <?= ($done || $blocked) ? 'style="pointer-events:none"' : '' ?>>
           <div class="vcard__thumb-wrap">
             <img src="<?= yt_thumb($v['youtube_id']) ?>" alt="<?= htmlspecialchars($v['title']) ?>" loading="lazy" onerror="this.src='https://img.youtube.com/vi/<?= $v['youtube_id'] ?>/hqdefault.jpg'">
+            <?php if (isset($saved_prog_map[$v['id']]) && !$done): ?>
+              <div class="vcard__resume-pill"><i class="ph-bold ph-arrow-counter-clockwise"></i> Lanjut <?= round(($saved_prog_map[$v['id']]['seconds_watched'] / $v['watch_duration']) * 100) ?>%</div>
+            <?php endif; ?>
             <div class="vcard__play-overlay">
               <?php if ($done): ?>
                 <div class="vcard__play-ico done"><i class="ph-fill ph-check-circle"></i></div>
@@ -77,8 +117,8 @@ if (isset($_GET['ajax'])) {
                 <span title="Total Ditonton"><i class="ph-bold ph-eye"></i> <?= number_format((int)$v['total_watches']) ?></span>
                 <span title="Disukai"><i class="ph-bold ph-thumbs-up"></i> <?= number_format((int)($v['total_likes'] ?? 0)) ?></span>
               </div>
-              <div class="vcard__cta <?= $done ? 'vcard__cta--done' : '' ?>">
-                <?= $done ? '<i class="ph-bold ph-check"></i> Sudah Diklaim' : 'Tonton →' ?>
+              <div class="vcard__cta <?= $done ? 'vcard__cta--done' : (isset($saved_prog_map[$v['id']]) ? 'vcard__cta--resume' : '') ?>">
+                <?= $done ? '<i class="ph-bold ph-check"></i> Sudah Diklaim' : (isset($saved_prog_map[$v['id']]) ? 'Lanjutkan →' : 'Tonton →') ?>
               </div>
             </div>
           </div>
@@ -453,6 +493,181 @@ require dirname(__DIR__) . '/partials/header.php';
 .vcard__cta--done {
   color: #10b981;
 }
+.vcard__cta--resume {
+  color: #d97706;
+  font-weight: 900;
+}
+.vcard__resume-pill {
+  position: absolute;
+  top: 5px; left: 5px;
+  background: #f59e0b;
+  border: 1.5px solid #78350f;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 2px 0 #78350f;
+  z-index: 2;
+}
+
+/* ── CONTINUE WATCHING (MAX 3) ── */
+.vhub-continue-box {
+  background: #ffffff;
+  border: 2.5px solid #d97706;
+  border-radius: 18px;
+  box-shadow: 0 5px 0 #b45309, 0 10px 20px rgba(217, 119, 6, 0.08);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.vhub-continue-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.vhub-continue-title {
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #78350f;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.vhub-continue-pill {
+  font-size: 10px;
+  font-weight: 900;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1.5px solid #f59e0b;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.vhub-continue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.vhub-continue-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-radius: 14px;
+  padding: 8px 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+  position: relative;
+}
+.vhub-continue-item:hover {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  transform: translateX(2px);
+}
+.vhub-continue-thumb {
+  position: relative;
+  width: 80px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid #78350f;
+  flex-shrink: 0;
+  background: #0f172a;
+}
+.vhub-continue-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.vhub-continue-play {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+}
+.vhub-continue-info {
+  flex: 1;
+  min-width: 0;
+}
+.vhub-continue-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+  text-decoration: none;
+  display: block;
+}
+.vhub-continue-bar-track {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.vhub-continue-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #10b981);
+  border-radius: 6px;
+}
+.vhub-continue-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+}
+.vhub-continue-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.vhub-continue-btn {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1.5px solid #78350f;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 2px 0 #78350f;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+.vhub-continue-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 0 #78350f;
+}
+.vhub-continue-btn-del {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+.vhub-continue-btn-del:hover {
+  color: #ef4444;
+}
 
 /* Empty State */
 .vhub-empty {
@@ -523,6 +738,52 @@ require dirname(__DIR__) . '/partials/header.php';
     <?php endif; ?>
   </div>
 
+  <?php if (!empty($continue_watching)): ?>
+  <!-- ── 2.1 RIWAYAT LANJUTKAN MENONTON (MAKSIMAL 3) ── -->
+  <div class="vhub-continue-box" id="continue-watching-box">
+    <div class="vhub-continue-head">
+      <div class="vhub-continue-title">
+        <i class="ph-fill ph-clock-counter-clockwise" style="color:#d97706;font-size:18px;"></i>
+        <span>Lanjutkan Menonton</span>
+      </div>
+      <span class="vhub-continue-pill" id="continue-watching-count"><?= count($continue_watching) ?> / 3 Video</span>
+    </div>
+    <div class="vhub-continue-list" id="continue-watching-list">
+      <?php foreach ($continue_watching as $cw): 
+        $cw_pct = min(99, max(1, (int)round(($cw['seconds_watched'] / $cw['watch_duration']) * 100)));
+        $cw_remain = max(1, (int)$cw['watch_duration'] - (int)$cw['seconds_watched']);
+      ?>
+      <div class="vhub-continue-item" id="cw-item-<?= $cw['id'] ?>">
+        <a href="/watch?id=<?= $cw['id'] ?>" class="vhub-continue-thumb">
+          <img src="<?= yt_thumb($cw['youtube_id']) ?>" alt="<?= htmlspecialchars($cw['title']) ?>" onerror="this.src='https://img.youtube.com/vi/<?= $cw['youtube_id'] ?>/hqdefault.jpg'">
+          <div class="vhub-continue-play"><i class="ph-fill ph-play"></i></div>
+        </a>
+        <div class="vhub-continue-info">
+          <a href="/watch?id=<?= $cw['id'] ?>" class="vhub-continue-name" title="<?= htmlspecialchars($cw['title']) ?>">
+            <?= htmlspecialchars($cw['title']) ?>
+          </a>
+          <div class="vhub-continue-bar-track">
+            <div class="vhub-continue-bar-fill" style="width:<?= $cw_pct ?>%"></div>
+          </div>
+          <div class="vhub-continue-meta">
+            <span><i class="ph-bold ph-hourglass-medium"></i> <?= $cw['seconds_watched'] ?>s / <?= $cw['watch_duration'] ?>s (<?= $cw_pct ?>%)</span>
+            <span style="color:#d97706;font-weight:900;">+<?= format_rp((float)$cw['reward_amount']) ?></span>
+          </div>
+        </div>
+        <div class="vhub-continue-action">
+          <a href="/watch?id=<?= $cw['id'] ?>" class="vhub-continue-btn">
+            Lanjut <i class="ph-bold ph-arrow-right"></i>
+          </a>
+          <button type="button" class="vhub-continue-btn-del" onclick="dismissWatchProgress(<?= $cw['id'] ?>)" title="Hapus riwayat video ini">
+            <i class="ph-bold ph-x"></i>
+          </button>
+        </div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+  <?php endif; ?>
+
   <!-- ── 3. FILTER TABS ── -->
   <div class="vhub-filter-strip">
     <button type="button" class="vhub-chip active" onclick="filterVideos('all', this)">Semua Video</button>
@@ -550,6 +811,9 @@ require dirname(__DIR__) . '/partials/header.php';
       <a href="<?= $href ?>" class="vcard vcard--<?= $status_class ?>" data-status="<?= $done ? 'done' : 'ready' ?>" <?= ($done || $blocked) ? 'style="pointer-events:none"' : '' ?>>
         <div class="vcard__thumb-wrap">
           <img src="<?= yt_thumb($v['youtube_id']) ?>" alt="<?= htmlspecialchars($v['title']) ?>" loading="lazy" onerror="this.src='https://img.youtube.com/vi/<?= $v['youtube_id'] ?>/hqdefault.jpg'">
+          <?php if (isset($saved_prog_map[$v['id']]) && !$done): ?>
+            <div class="vcard__resume-pill"><i class="ph-bold ph-arrow-counter-clockwise"></i> Lanjut <?= round(($saved_prog_map[$v['id']]['seconds_watched'] / $v['watch_duration']) * 100) ?>%</div>
+          <?php endif; ?>
           <div class="vcard__play-overlay">
             <?php if ($done): ?>
               <div class="vcard__play-ico done"><i class="ph-fill ph-check-circle"></i></div>
@@ -571,8 +835,8 @@ require dirname(__DIR__) . '/partials/header.php';
               <span title="Total Ditonton"><i class="ph-bold ph-eye"></i> <?= number_format((int)$v['total_watches']) ?></span>
               <span title="Disukai"><i class="ph-bold ph-thumbs-up"></i> <?= number_format((int)($v['total_likes'] ?? 0)) ?></span>
             </div>
-            <div class="vcard__cta <?= $done ? 'vcard__cta--done' : '' ?>">
-              <?= $done ? '<i class="ph-bold ph-check"></i> Selesai' : 'Tonton →' ?>
+            <div class="vcard__cta <?= $done ? 'vcard__cta--done' : (isset($saved_prog_map[$v['id']]) ? 'vcard__cta--resume' : '') ?>">
+              <?= $done ? '<i class="ph-bold ph-check"></i> Selesai' : (isset($saved_prog_map[$v['id']]) ? 'Lanjutkan →' : 'Tonton →') ?>
             </div>
           </div>
         </div>
@@ -653,6 +917,49 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 });
+
+// Dismiss Watch Progress
+async function dismissWatchProgress(vidId) {
+  const item = document.getElementById('cw-item-' + vidId);
+  if (item) {
+    item.style.opacity = '0.4';
+    item.style.pointerEvents = 'none';
+  }
+
+  const fd = new FormData();
+  fd.append('action', 'delete_watch_progress');
+  fd.append('_csrf', '<?= csrf_token() ?>');
+  fd.append('video_id', vidId);
+
+  try {
+    const res = await fetch('/videos', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) {
+      if (item) {
+        item.style.transition = 'all 0.3s ease';
+        item.style.transform = 'scale(0.9)';
+        item.style.opacity = '0';
+        setTimeout(() => {
+          item.remove();
+          const list = document.getElementById('continue-watching-list');
+          const remaining = list ? list.querySelectorAll('.vhub-continue-item').length : 0;
+          const countBadge = document.getElementById('continue-watching-count');
+          if (countBadge) countBadge.textContent = remaining + ' / 3 Video';
+          if (remaining === 0) {
+            const box = document.getElementById('continue-watching-box');
+            if (box) box.remove();
+          }
+        }, 300);
+      }
+      if (typeof nToast === 'function') nToast('Riwayat tontonan dihapus.', 'info');
+    }
+  } catch(e) {
+    if (item) {
+      item.style.opacity = '';
+      item.style.pointerEvents = '';
+    }
+  }
+}
 </script>
 
 <?php if (!empty($flash)): ?>

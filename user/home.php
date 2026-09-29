@@ -63,6 +63,30 @@ try {
     $featured_videos = $vStmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (\Throwable) {}
 
+// Riwayat Tontonan Belum Selesai (Maksimal 3 per user)
+$continue_watching_home = [];
+if (!$is_guest) {
+    try {
+        $pdo->prepare(
+            "DELETE uwp FROM user_watch_progress uwp
+             JOIN watch_history wh ON wh.user_id = uwp.user_id AND wh.video_id = uwp.video_id AND DATE(wh.watched_at) = CURDATE()
+             WHERE uwp.user_id = ?"
+        )->execute([$user['id']]);
+
+        $cwHStmt = $pdo->prepare("
+            SELECT uwp.seconds_watched, uwp.duration, uwp.last_position,
+                   v.id, v.title, v.youtube_id, v.watch_duration, v.reward_amount
+            FROM user_watch_progress uwp
+            JOIN videos v ON v.id = uwp.video_id
+            WHERE uwp.user_id = ? AND v.is_active = 1
+            ORDER BY uwp.updated_at DESC
+            LIMIT 3
+        ");
+        $cwHStmt->execute([$user['id']]);
+        $continue_watching_home = $cwHStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\Throwable) {}
+}
+
 // ── SIDEJOB: DATA PETERNAKAN LEBAH 3D ──
 $user_hives = [];
 $total_active_bees = 0;
@@ -1228,6 +1252,50 @@ body {
       </a>
     <?php endif; ?>
   </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       1.5 LANJUTKAN MENONTON (MAKSIMAL 3 RIWAYAT)
+       ══════════════════════════════════════════════════════════ -->
+  <?php if (!empty($continue_watching_home)): ?>
+    <div class="amber-section-card" style="padding:14px;margin-bottom:16px;border-color:#d97706;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:13.5px;font-weight:900;color:#78350f;display:flex;align-items:center;gap:6px;">
+          <i class="ph-fill ph-clock-counter-clockwise" style="color:#d97706;font-size:18px;"></i>
+          <span>Lanjutkan Menonton</span>
+        </div>
+        <span style="font-size:10.5px;font-weight:900;background:#fef3c7;color:#92400e;border:1.5px solid #f59e0b;padding:2px 8px;border-radius:10px;">
+          <?= count($continue_watching_home) ?> / 3 Video
+        </span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <?php foreach ($continue_watching_home as $cwh): 
+          $cwh_pct = min(99, max(1, (int)round(($cwh['seconds_watched'] / $cwh['watch_duration']) * 100)));
+        ?>
+        <a href="/watch?id=<?= $cwh['id'] ?>" style="display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #fde68a;border-radius:12px;padding:8px 10px;text-decoration:none;color:inherit;box-shadow:0 2px 0 #fde68a;">
+          <div style="position:relative;width:64px;height:40px;border-radius:6px;overflow:hidden;border:1px solid #78350f;flex-shrink:0;background:#0f172a;">
+            <img src="<?= yt_thumb($cwh['youtube_id']) ?>" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.src='https://img.youtube.com/vi/<?= $cwh['youtube_id'] ?>/hqdefault.jpg'">
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;"><i class="ph-fill ph-play"></i></div>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:11.5px;font-weight:800;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;">
+              <?= htmlspecialchars($cwh['title']) ?>
+            </div>
+            <div style="height:5px;background:#e2e8f0;border-radius:5px;overflow:hidden;margin-bottom:3px;">
+              <div style="height:100%;background:linear-gradient(90deg,#f59e0b,#10b981);border-radius:5px;width:<?= $cwh_pct ?>%;"></div>
+            </div>
+            <div style="font-size:9.5px;font-weight:800;color:#64748b;display:flex;justify-content:space-between;">
+              <span><?= $cwh['seconds_watched'] ?>s / <?= $cwh['watch_duration'] ?>s (<?= $cwh_pct ?>%)</span>
+              <span style="color:#d97706;font-weight:900;">+<?= format_rp((float)$cwh['reward_amount']) ?></span>
+            </div>
+          </div>
+          <div style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:10.5px;font-weight:900;padding:5px 9px;border-radius:8px;border:1px solid #78350f;flex-shrink:0;display:flex;align-items:center;gap:3px;">
+            Lanjut <i class="ph-bold ph-arrow-right"></i>
+          </div>
+        </a>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  <?php endif; ?>
 
   <!-- ══════════════════════════════════════════════════════════
        2. TUGAS VIDEO PILIHAN HARI INI (FEATURED VIDEOS)

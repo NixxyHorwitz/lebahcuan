@@ -24,20 +24,123 @@ $chk_like = $pdo->prepare("SELECT id FROM video_likes WHERE user_id=? AND video_
 $chk_like->execute([$user['id'], $vid_id]);
 $user_has_liked = (bool)$chk_like->fetch();
 
+// ── Watch History / In-progress Watch State ──────────────────
+if ($already_watched) {
+    // Jika sudah selesai ditonton hari ini, bersihkan riwayat progres yang tersisa
+    $pdo->prepare("DELETE FROM user_watch_progress WHERE user_id=? AND video_id=?")->execute([$user['id'], $vid_id]);
+    $saved_seconds = 0;
+    $saved_position = 0.0;
+} else {
+    $prog_stmt = $pdo->prepare("SELECT seconds_watched, last_position FROM user_watch_progress WHERE user_id=? AND video_id=?");
+    $prog_stmt->execute([$user['id'], $vid_id]);
+    $prog_row = $prog_stmt->fetch();
+    $saved_seconds = $prog_row ? min((int)$video['watch_duration'] - 1, max(0, (int)$prog_row['seconds_watched'])) : 0;
+    $saved_position = $prog_row ? max(0.0, (float)$prog_row['last_position']) : 0.0;
+}
+
 // ─────────────────────────────────────────────────────────────
-// AJAX: start_watch — server issues a signed token with timestamp
+// AJAX: save_progress — simpan progres realtime (maksimal 3 per user)
+// ─────────────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_progress') {
+    header('Content-Type: application/json');
+    if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF token.']); exit; }
+    if (!$canWatch)     { echo json_encode(['ok'=>false,'msg'=>'Tidak dapat menyimpan sesi ini.']); exit; }
+
+    $sw = (int)($_POST['seconds_watched'] ?? 0);
+    $lp = (float)($_POST['last_position'] ?? 0);
+    $max_d = (int)$video['watch_duration'];
+
+    if ($sw <= 0) {
+        echo json_encode(['ok'=>true]); exit;
+    }
+    // Batasi progres agar tidak melebihi durasi misi minus 1 detik
+    $sw = min($max_d - 1, $sw);
+    $lp = max(0.0, $lp);
+
+    try {
+        // Hapus progres video yang sudah pernah selesai hari ini
+        $pdo->prepare(
+            "DELETE uwp FROM user_watch_progress uwp
+             JOIN watch_history wh ON wh.user_id=uwp.user_id AND wh.video_id=uwp.video_id AND DATE(wh.watched_at)=CURDATE()
+             WHERE uwp.user_id=?"
+        )->execute([$user['id']]);
+
+        // Cek apakah video ini sudah tercatat sebelumnya
+        $chk_ex = $pdo->prepare("SELECT id FROM user_watch_progress WHERE user_id=? AND video_id=?");
+        $chk_ex->execute([$user['id'], $vid_id]);
+        if (!$chk_ex->fetch()) {
+            // Batasi maksimal 3 history per user: sisakan maksimal 2 row terlama agar ketika row ke-3 masuk total tetap <= 3
+            $pdo->prepare(
+                "DELETE FROM user_watch_progress 
+                 WHERE user_id = ? 
+                   AND id NOT IN (
+                     SELECT id FROM (
+                       SELECT id FROM user_watch_progress 
+                       WHERE user_id = ? 
+                       ORDER BY updated_at DESC LIMIT 2
+                     ) as _lim
+                   )"
+            )->execute([$user['id'], $user['id']]);
+        }
+
+        // Upsert progres saat ini
+        $upsert = $pdo->prepare(
+            "INSERT INTO user_watch_progress (user_id, video_id, seconds_watched, duration, last_position, updated_at)
+             VALUES (?, ?, ?, ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE 
+               seconds_watched = VALUES(seconds_watched),
+               duration = VALUES(duration),
+               last_position = VALUES(last_position),
+               updated_at = NOW()"
+        );
+        $upsert->execute([$user['id'], $vid_id, $sw, $max_d, $lp]);
+
+        echo json_encode(['ok'=>true, 'saved_seconds'=>$sw]);
+    } catch (\Throwable $e) {
+        echo json_encode(['ok'=>false, 'msg'=>$e->getMessage()]);
+    }
+    exit;
+}
+
+// ─────────────────────────────────────────────────────────────
+// AJAX: reset_progress — ulangi tontonan video dari awal (0 detik)
+// ─────────────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'reset_progress') {
+    header('Content-Type: application/json');
+    if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF token.']); exit; }
+
+    $pdo->prepare("DELETE FROM user_watch_progress WHERE user_id=? AND video_id=?")
+        ->execute([$user['id'], $vid_id]);
+
+    echo json_encode(['ok'=>true]);
+    exit;
+}
+
+// ─────────────────────────────────────────────────────────────
+// AJAX: start_watch — server issues a signed token with saved seconds
 // ─────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'start_watch') {
     header('Content-Type: application/json');
     if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF token.']); exit; }
     if (!$canWatch)     { echo json_encode(['ok'=>false,'msg'=>'Tidak dapat menonton video ini.']); exit; }
 
+    // Ambil saved_seconds terkini dari DB
+    $st = $pdo->prepare("SELECT seconds_watched FROM user_watch_progress WHERE user_id=? AND video_id=?");
+    $st->execute([$user['id'], $vid_id]);
+    $curr_saved = (int)($st->fetchColumn() ?: 0);
+    $curr_saved = min((int)$video['watch_duration'] - 1, max(0, $curr_saved));
+
     $ts     = time();
     $secret = $_ENV['APP_SECRET'] ?? 'tonton_secret_2024';
-    $sig    = hash_hmac('sha256', $user['id'] . '|' . $vid_id . '|' . $ts, $secret);
-    $token  = base64_encode($user['id'] . '|' . $vid_id . '|' . $ts . '|' . $sig);
+    $sig    = hash_hmac('sha256', $user['id'] . '|' . $vid_id . '|' . $ts . '|' . $curr_saved, $secret);
+    $token  = base64_encode($user['id'] . '|' . $vid_id . '|' . $ts . '|' . $curr_saved . '|' . $sig);
 
-    echo json_encode(['ok'=>true,'watch_token'=>$token]);
+    echo json_encode([
+        'ok'=>true,
+        'watch_token'=>$token,
+        'saved_seconds'=>$curr_saved,
+        'remaining_seconds'=>max(0, (int)$video['watch_duration'] - $curr_saved)
+    ]);
     exit;
 }
 
@@ -54,13 +157,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
     }
 
     $decoded = base64_decode($raw_token, true);
-    if ($decoded === false || substr_count($decoded, '|') < 3) {
+    if ($decoded === false) {
         echo json_encode(['ok'=>false,'msg'=>'Token rusak.']); exit;
     }
 
-    [$tok_uid, $tok_vid, $tok_ts, $tok_sig] = explode('|', $decoded, 4);
-    $secret   = $_ENV['APP_SECRET'] ?? 'tonton_secret_2024';
-    $expected = hash_hmac('sha256', $tok_uid . '|' . $tok_vid . '|' . $tok_ts, $secret);
+    $parts = explode('|', $decoded);
+    $secret = $_ENV['APP_SECRET'] ?? 'tonton_secret_2024';
+
+    if (count($parts) === 4) {
+        [$tok_uid, $tok_vid, $tok_ts, $tok_sig] = $parts;
+        $tok_saved = 0;
+        $expected = hash_hmac('sha256', $tok_uid . '|' . $tok_vid . '|' . $tok_ts, $secret);
+    } elseif (count($parts) === 5) {
+        [$tok_uid, $tok_vid, $tok_ts, $tok_saved, $tok_sig] = $parts;
+        $tok_saved = (int)$tok_saved;
+        $expected = hash_hmac('sha256', $tok_uid . '|' . $tok_vid . '|' . $tok_ts . '|' . $tok_saved, $secret);
+    } else {
+        echo json_encode(['ok'=>false,'msg'=>'Format token tidak valid.']); exit;
+    }
 
     if ((int)$tok_uid !== (int)$user['id'] || (int)$tok_vid !== $vid_id) {
         echo json_encode(['ok'=>false,'msg'=>'Token tidak cocok dengan akun ini.']); exit;
@@ -69,13 +183,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
         echo json_encode(['ok'=>false,'msg'=>'Signature token tidak valid.']); exit;
     }
 
-    $elapsed  = time() - (int)$tok_ts;
+    $elapsed = time() - (int)$tok_ts;
+    $total_watched = $elapsed + $tok_saved;
     $required = (int)$video['watch_duration'];
-    if ($elapsed < $required) {
-        $kurang = $required - $elapsed;
+    if ($total_watched < $required) {
+        $kurang = $required - $total_watched;
         echo json_encode(['ok'=>false,'msg'=>"Waktu belum cukup. Tunggu {$kurang} detik lagi."]); exit;
     }
-    if ($elapsed > $required * 4 + 300) {
+    if ($elapsed > ($required - $tok_saved) * 4 + 300) {
         echo json_encode(['ok'=>false,'msg'=>'Sesi telah kedaluwarsa. Refresh dan putar kembali.']); exit;
     }
 
@@ -106,6 +221,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
         // Sinkronkan total_watches = fake_watches + real_watches (watch_history)
         $pdo->prepare("UPDATE videos SET total_watches = fake_watches + (SELECT COUNT(*) FROM watch_history WHERE video_id=?) WHERE id=?")
             ->execute([$vid_id, $vid_id]);
+
+        // Hapus progres video dari user_watch_progress karena misi sudah selesai diklaim
+        $pdo->prepare("DELETE FROM user_watch_progress WHERE user_id=? AND video_id=?")
+            ->execute([$user['id'], $vid_id]);
+
         $pdo->commit();
 
         $_SESSION['flash_videos_msg'] = 'Reward ' . format_rp($reward) . ' berhasil diklaim!';
@@ -599,6 +719,72 @@ body {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* Resume Watch Progress Banner */
+.resume-banner {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 3px 0 #d97706;
+}
+.resume-banner__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.resume-banner__content {
+  flex: 1;
+  min-width: 0;
+}
+.resume-banner__title {
+  font-size: 12px;
+  font-weight: 900;
+  color: #78350f;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.resume-banner__desc {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #92400e;
+  margin-top: 1px;
+}
+.resume-banner__btn-reset {
+  background: #fff;
+  border: 1.5px solid #d97706;
+  border-radius: 8px;
+  color: #b45309;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 4px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 1.5px 0 #d97706;
+  transition: all 0.15s;
+}
+.resume-banner__btn-reset:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #dc2626;
+  box-shadow: 0 1.5px 0 #ef4444;
+}
 </style>
 </head>
 <body>
@@ -624,6 +810,24 @@ body {
       <span><?= format_rp((float)$user['balance_wd']) ?></span>
     </div>
   </div>
+
+  <?php if ($saved_seconds > 0 && $canWatch): ?>
+  <!-- ── RESUME WATCH PROGRESS BANNER ── -->
+  <div class="resume-banner" id="resume-banner">
+    <div class="resume-banner__icon">
+      <i class="ph-bold ph-arrow-counter-clockwise"></i>
+    </div>
+    <div class="resume-banner__content">
+      <div class="resume-banner__title">Melanjutkan Riwayat Menonton</div>
+      <div class="resume-banner__desc">
+        Tersimpan: <b><?= $saved_seconds ?>s / <?= (int)$video['watch_duration'] ?>s</b> (Tersisa <b id="resume-left-sec"><?= max(0, (int)$video['watch_duration'] - $saved_seconds) ?></b> detik lagi)
+      </div>
+    </div>
+    <button type="button" class="resume-banner__btn-reset" onclick="resetWatchProgress()" title="Ulangi video dari detik 0">
+      <i class="ph-bold ph-arrow-u-down-left"></i> Mulai Awal
+    </button>
+  </div>
+  <?php endif; ?>
 
   <!-- ── 2. YOUTUBE PLAYER ── -->
   <div class="player-frame">
@@ -783,19 +987,24 @@ body {
 
 <script>
 // ── Server Constants ─────────────────────────────────
-const DURATION  = <?= (int)$video['watch_duration'] ?>;
-const CAN_WATCH = <?= $canWatch ? 'true' : 'false' ?>;
-const CSRF      = '<?= csrf_token() ?>';
-const WATCH_URL = '';
+const DURATION      = <?= (int)$video['watch_duration'] ?>;
+const CAN_WATCH     = <?= $canWatch ? 'true' : 'false' ?>;
+const CSRF          = '<?= csrf_token() ?>';
+const WATCH_URL     = '';
+let savedSeconds    = <?= (int)$saved_seconds ?>;
+let savedPosition   = <?= (float)$saved_position ?>;
 
 // ── State ────────────────────────────────────────────
-let watchToken  = null;
-let timerLeft   = DURATION;
-let timerHandle = null;
-let watchStarted= false;
-let claimReady  = false;
-let playerReady = false;
-let ytPlayer    = null;
+let watchToken      = null;
+let totalWatched    = savedSeconds;
+let timerLeft       = Math.max(0, DURATION - savedSeconds);
+let timerHandle     = null;
+let watchStarted    = false;
+let claimReady      = false;
+let playerReady     = false;
+let ytPlayer        = null;
+let lastSavedTick   = savedSeconds;
+let hasSeekedToSaved= false;
 
 // ── YouTube IFrame API ───────────────────────────────
 window.onYouTubeIframeAPIReady = function() {
@@ -829,12 +1038,27 @@ function onPlayerReady(e) {
     loader.classList.add('hidden');
     setTimeout(() => loader.remove(), 400);
   }
+
+  // Jika ada riwayat tontonan, langsung seek ke detik tontonan terakhir
+  if (savedPosition > 0 && !hasSeekedToSaved) {
+    try {
+      ytPlayer.seekTo(savedPosition, true);
+      hasSeekedToSaved = true;
+    } catch(err) {}
+  }
 }
 
 function onPlayerStateChange(e) {
   if (!CAN_WATCH) return;
 
   if (e.data === YT.PlayerState.PLAYING) {
+    if (!hasSeekedToSaved && savedPosition > 0) {
+      try {
+        ytPlayer.seekTo(savedPosition, true);
+        hasSeekedToSaved = true;
+      } catch(err) {}
+    }
+
     if (!watchStarted) {
       startWatchSession();
     } else if (timerHandle === null && !claimReady) {
@@ -845,7 +1069,7 @@ function onPlayerStateChange(e) {
   }
 }
 
-// ── Request Watch Token ──────────────────────────────
+// ── Request Watch Token (Sertakan Saved Seconds) ─────
 async function startWatchSession() {
   const fd = new FormData();
   fd.append('action', 'start_watch');
@@ -859,23 +1083,39 @@ async function startWatchSession() {
     }
     watchToken   = data.watch_token;
     watchStarted = true;
-    timerLeft    = DURATION;
+    if (data.saved_seconds !== undefined) {
+      savedSeconds = data.saved_seconds;
+      totalWatched = savedSeconds;
+      timerLeft    = Math.max(0, DURATION - totalWatched);
+    }
     startCountdown();
   } catch(e) {
     setStatus('Error jaringan saat memulai sesi.', '');
   }
 }
 
-// ── Countdown ────────────────────────────────────────
+// ── Countdown & Progress Tracker ────────────────────
 function startCountdown() {
   updateTimerUI();
+  if (timerHandle) clearInterval(timerHandle);
+
   timerHandle = setInterval(() => {
-    timerLeft--;
+    totalWatched++;
+    timerLeft = Math.max(0, DURATION - totalWatched);
     updateTimerUI();
-    if (timerLeft <= 0) {
+
+    // Simpan progres ke server secara berkala tiap 4 detik (agar refresh tidak reset)
+    if (totalWatched - lastSavedTick >= 4 && totalWatched < DURATION) {
+      lastSavedTick = totalWatched;
+      saveProgressToServer(totalWatched, ytPlayer && typeof ytPlayer.getCurrentTime === 'function' ? ytPlayer.getCurrentTime() : 0);
+    }
+
+    if (totalWatched >= DURATION || timerLeft <= 0) {
       clearInterval(timerHandle);
       timerHandle = null;
       claimReady  = true;
+      const rb = document.getElementById('resume-banner');
+      if (rb) rb.style.display = 'none';
       showClaimButton();
     }
   }, 1000);
@@ -883,7 +1123,13 @@ function startCountdown() {
 
 function pauseCountdown() {
   if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
-  if (!claimReady) setStatus('Video dijeda — lanjutkan pemutaran untuk lanjut', '');
+  if (!claimReady) {
+    setStatus('Video dijeda — lanjutkan pemutaran untuk lanjut', '');
+    // Simpan progres saat dijeda
+    if (totalWatched > 0 && totalWatched < DURATION) {
+      saveProgressToServer(totalWatched, ytPlayer && typeof ytPlayer.getCurrentTime === 'function' ? ytPlayer.getCurrentTime() : 0);
+    }
+  }
 }
 
 function resumeCountdown() {
@@ -893,7 +1139,7 @@ function resumeCountdown() {
 function updateTimerUI() {
   const badge = document.getElementById('timer-badge');
   const fill  = document.getElementById('prog-fill');
-  const pct   = Math.min(100, ((DURATION - timerLeft) / DURATION) * 100);
+  const pct   = Math.min(100, (totalWatched / DURATION) * 100);
 
   if (badge) {
     badge.textContent = timerLeft > 0 ? timerLeft : '✓';
@@ -904,8 +1150,11 @@ function updateTimerUI() {
     if (timerLeft <= 0) fill.classList.add('done');
   }
 
+  const rLeft = document.getElementById('resume-left-sec');
+  if (rLeft) rLeft.textContent = timerLeft;
+
   setStatus(
-    timerLeft > 0 ? `Menonton: ${timerLeft} detik lagi...` : 'Misi selesai! Klaim saldo Anda sekarang',
+    timerLeft > 0 ? `Menonton: ${timerLeft} detik lagi... (${Math.round(pct)}%)` : 'Misi selesai! Klaim saldo Anda sekarang',
     timerLeft > 0 ? 'Jangan jeda atau tutup halaman' : ''
   );
 }
@@ -922,6 +1171,66 @@ function setStatus(text, hint) {
   const eh = document.getElementById('status-hint');
   if (el) el.textContent = text;
   if (eh) eh.textContent = hint;
+}
+
+// ── Auto Save Progress ke Server ─────────────────────
+function saveProgressToServer(sec, pos) {
+  if (!CAN_WATCH || sec <= 0 || sec >= DURATION || claimReady) return;
+  try {
+    const fd = new FormData();
+    fd.append('action', 'save_progress');
+    fd.append('_csrf', CSRF);
+    fd.append('seconds_watched', sec);
+    fd.append('last_position', pos || 0);
+    fetch(WATCH_URL, { method: 'POST', body: fd, keepalive: true }).catch(() => {});
+  } catch(e) {}
+}
+
+// Simpan progres saat halaman direfresh atau ditutup mendadak
+window.addEventListener('beforeunload', () => {
+  if (watchStarted && !claimReady && totalWatched > 0 && totalWatched < DURATION) {
+    const fd = new FormData();
+    fd.append('action', 'save_progress');
+    fd.append('_csrf', CSRF);
+    fd.append('seconds_watched', totalWatched);
+    fd.append('last_position', ytPlayer && typeof ytPlayer.getCurrentTime === 'function' ? ytPlayer.getCurrentTime() : 0);
+    navigator.sendBeacon(WATCH_URL, fd);
+  }
+});
+
+// ── Reset Watch Progress ─────────────────────────────
+async function resetWatchProgress() {
+  if (!confirm('Ulangi tontonan video ini dari awal (0 detik)?')) return;
+  try {
+    const fd = new FormData();
+    fd.append('action', 'reset_progress');
+    fd.append('_csrf', CSRF);
+    await fetch(WATCH_URL, { method: 'POST', body: fd });
+  } catch(e) {}
+
+  savedSeconds     = 0;
+  savedPosition    = 0;
+  totalWatched     = 0;
+  lastSavedTick    = 0;
+  timerLeft        = DURATION;
+  watchStarted     = false;
+  claimReady       = false;
+  hasSeekedToSaved = true;
+  if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+
+  const rb = document.getElementById('resume-banner');
+  if (rb) rb.remove();
+
+  if (ytPlayer && typeof ytPlayer.seekTo === 'function') {
+    try { ytPlayer.seekTo(0, true); } catch(e) {}
+  }
+  updateTimerUI();
+  setStatus('Progres diulang dari awal. Putar video untuk mulai misi.', '');
+  if (typeof nToast === 'function') nToast('Progres diulang dari 0 detik.', 'info');
+
+  if (ytPlayer && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+    startWatchSession();
+  }
 }
 
 // ── Claim Reward ─────────────────────────────────────
