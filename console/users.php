@@ -48,9 +48,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $bal_dep       = (float)($_POST['balance_dep'] ?? 0);
         $total_e       = (float)($_POST['total_earned'] ?? 0);
         $spin_tickets  = (int)($_POST['spin_tickets'] ?? 0);
-        $plinko_coins  = (int)($_POST['plinko_coins'] ?? 0);
-        $plinko_rtp    = $_POST['plinko_rtp'] === '' ? null : (float)$_POST['plinko_rtp'];
-        $last_plinko   = trim($_POST['last_plinko_claim'] ?? '') ?: null;
 
         // Membership & Izin
         $mem_id        = $_POST['membership_id'] === '' ? null : (int)$_POST['membership_id'];
@@ -103,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $sql = "UPDATE users SET 
                     username=?, email=?, whatsapp=?, is_active=?, created_at=?,
                     bank_name=?, account_number=?, acc_num_input_type=?, account_name=?, acc_name_input_type=?, edit_bank_deposit_min=?, acc_num_record=?, acc_name_record=?,
-                    balance_wd=?, balance_dep=?, total_earned=?, spin_tickets=?, plinko_coins=?, plinko_rtp=?, last_plinko_claim=?,
+                    balance_wd=?, balance_dep=?, total_earned=?, spin_tickets=?,
                     membership_id=?, membership_expires_at=?, can_withdraw=?, can_chat=?, is_refund_enabled=?, refund_cut_percent=?,
                     referral_code=?, referred_by=?, is_referral_active=?,
                     is_promotor=?, promotor_salary_rate=?, promotor_target_deposits=?, promotor_target_regs=?,
@@ -113,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare($sql)->execute([
                 $username, $email, $whatsapp, $is_active, $created_val,
                 $bank_name, $account_number, $acc_num_type, $account_name, $acc_name_type, $edit_bank_min, $acc_num_rec ?: null, $acc_name_rec ?: null,
-                $bal_wd, $bal_dep, $total_e, $spin_tickets, $plinko_coins, $plinko_rtp, $last_plinko,
+                $bal_wd, $bal_dep, $total_e, $spin_tickets,
                 $mem_id, $mem_exp_val, $can_wd, $can_chat, $ref_en, $ref_cut,
                 $ref_code, $ref_by, $is_ref_active,
                 $is_promo, $promo_salary, $promo_target_dep, $promo_target_reg,
@@ -488,24 +485,6 @@ require __DIR__ . '/partials/header.php';
                 <input type="number" name="spin_tickets" id="eu-spin-tickets" class="c-form-control" min="0">
               </div>
             </div>
-            <div class="col-md-6">
-              <div class="c-form-group mb-3">
-                <label class="c-label">Koin Plinko 🪙</label>
-                <input type="number" name="plinko_coins" id="eu-plinko-coins" class="c-form-control" min="0">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="c-form-group mb-3">
-                <label class="c-label">Custom RTP Plinko User (%) <small style="color:#888">(Kosong = Ikut Setting Global)</small></label>
-                <input type="number" name="plinko_rtp" id="eu-plinko-rtp" class="c-form-control" step="0.01" min="0" max="100" placeholder="Biarkan kosong untuk setting global">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="c-form-group mb-3">
-                <label class="c-label">Terakhir Klaim Koin Plinko</label>
-                <input type="datetime-local" name="last_plinko_claim" id="eu-last-plinko" class="c-form-control">
-              </div>
-            </div>
           </div>
         </div>
 
@@ -777,10 +756,6 @@ function editUser(u) {
   document.getElementById('eu-bal-dep').value      = u.balance_dep !== undefined ? u.balance_dep : 0;
   document.getElementById('eu-total-earned').value = u.total_earned !== undefined ? u.total_earned : 0;
   document.getElementById('eu-spin-tickets').value = u.spin_tickets !== undefined ? u.spin_tickets : 0;
-  document.getElementById('eu-plinko-coins').value = u.plinko_coins !== undefined ? u.plinko_coins : 0;
-  document.getElementById('eu-plinko-rtp').value   = (u.plinko_rtp !== null && u.plinko_rtp !== undefined) ? u.plinko_rtp : '';
-  const lastPlinko = u.last_plinko_claim;
-  document.getElementById('eu-last-plinko').value  = lastPlinko ? lastPlinko.replace(' ', 'T').slice(0, 16) : '';
 
   // Tab 4: Paket & Izin
   document.getElementById('eu-mem-id').value       = u.membership_id || '';

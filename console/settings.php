@@ -148,23 +148,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'save_rtp') {
 
     }
-
-    if ($action === 'save_game_config') {
-        $gameKeys = [
-            'game_base_speed',
-            'game_speed_multiplier',
-            'game_gravity',
-            'game_jump_strength',
-            'game_obstacle_interval',
-            'game_difficulty',
-        ];
-        foreach ($gameKeys as $k) {
-            if (isset($_POST[$k])) setting_set($pdo, $k, clean_input($_POST[$k]));
-        }
-        $_SESSION['settings_flash'] = '✅ Konfigurasi Game Chicky Run berhasil disimpan!';
-        $_SESSION['settings_flash_type'] = 'success';
-        header('Location: ?tab=game'); exit;
-    }
 }
 
 $s = fn($k, $d='') => setting($pdo, $k, $d);
@@ -190,7 +173,6 @@ $tabs = [
     'campaign' => ['icon' => '📢', 'label' => 'Kampanye Threads'],
     'bank'    => ['icon' => '🏦', 'label' => 'Rekening'],
     'system'  => ['icon' => '🔧', 'label' => 'Sistem & TG'],
-    'game'    => ['icon' => '🎮', 'label' => 'Game Config'],
 ];
 ?>
 
@@ -501,122 +483,4 @@ $tabs = [
   </div>
 </div>
 
-<!-- TAB GAME CONFIG -->
-<div class="stab-pane <?= $active_tab==='game'?'active':'' ?>" id="tab-game">
-  <div class="row g-3"><div class="col-md-8">
-    <div class="c-card mb-3">
-      <div class="c-card-header"><span class="c-card-title">🎮 Konfigurasi Game Chicky Run</span></div>
-      <div class="c-card-body">
-        <form method="POST">
-          <?= csrf_field() ?><input type="hidden" name="action" value="save_game_config">
-
-          <!-- DIFFICULTY PRESET -->
-          <div class="c-form-group mb-3">
-            <label class="c-label">Difficulty Preset</label>
-            <select name="game_difficulty" id="game_difficulty" class="c-form-control">
-              <?php $gd = $s('game_difficulty','normal'); ?>
-              <option value="easy"   <?= $gd==='easy'  ?'selected':'' ?>>🟢 Easy — Santai buat pemula</option>
-              <option value="normal" <?= $gd==='normal'?'selected':'' ?>>🟡 Normal — Seimbang</option>
-              <option value="hard"   <?= $gd==='hard'  ?'selected':'' ?>>🔴 Hard — Untuk pro!</option>
-              <option value="custom" <?= $gd==='custom'?'selected':'' ?>>⚙️ Custom — Atur manual</option>
-            </select>
-            <small class="text-muted" style="font-size:11px">Preset otomatis mengisi nilai di bawah. Pilih "Custom" untuk atur bebas.</small>
-          </div>
-
-          <div id="game-manual-config">
-            <div class="row g-2">
-              <div class="col-md-6"><div class="c-form-group">
-                <label class="c-label">Kecepatan Awal Track (Base Speed)</label>
-                <input type="number" name="game_base_speed" id="game_base_speed" class="c-form-control"
-                  value="<?= $s('game_base_speed','2.5') ?>" min="0.5" max="20" step="0.5">
-                <small class="text-muted" style="font-size:11px">Pixel per frame. Default: 2.5</small>
-              </div></div>
-
-              <div class="col-md-6"><div class="c-form-group">
-                <label class="c-label">Akselerasi (Speed Multiplier per skor)</label>
-                <input type="number" name="game_speed_multiplier" id="game_speed_multiplier" class="c-form-control"
-                  value="<?= $s('game_speed_multiplier','0.003') ?>" min="0" max="0.1" step="0.001">
-                <small class="text-muted" style="font-size:11px">Penambahan speed tiap +1 skor. Default: 0.003</small>
-              </div></div>
-
-              <div class="col-md-6"><div class="c-form-group">
-                <label class="c-label">Gravitasi</label>
-                <input type="number" name="game_gravity" id="game_gravity" class="c-form-control"
-                  value="<?= $s('game_gravity','0.45') ?>" min="0.1" max="2" step="0.05">
-                <small class="text-muted" style="font-size:11px">Gaya tarik bumi. Lebih besar = lompatan lebih pendek. Default: 0.45</small>
-              </div></div>
-
-              <div class="col-md-6"><div class="c-form-group">
-                <label class="c-label">Kekuatan Lompat (Jump Strength)</label>
-                <input type="number" name="game_jump_strength" id="game_jump_strength" class="c-form-control"
-                  value="<?= $s('game_jump_strength','-10.5') ?>" min="-20" max="-3" step="0.5">
-                <small class="text-muted" style="font-size:11px">Makin negatif = makin tinggi. Default: -10.5</small>
-              </div></div>
-
-              <div class="col-md-6"><div class="c-form-group">
-                <label class="c-label">Interval Spawn Obstacle (frame)</label>
-                <input type="number" name="game_obstacle_interval" id="game_obstacle_interval" class="c-form-control"
-                  value="<?= $s('game_obstacle_interval','80') ?>" min="20" max="300" step="5">
-                <small class="text-muted" style="font-size:11px">Frekuensi muncul rintangan. Lebih kecil = lebih sering. Default: 80</small>
-              </div></div>
-            </div>
-          </div>
-
-          <div class="mt-3">
-            <button type="submit" class="btn btn-primary" style="border-radius:10px;font-weight:700">💾 Simpan Konfigurasi Game</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="c-card">
-      <div class="c-card-header"><span class="c-card-title">📊 Preview Nilai Aktif</span></div>
-      <div class="c-card-body">
-        <table class="table table-sm" style="font-size:13px;color:inherit">
-          <tbody>
-            <tr><td>Difficulty</td><td><strong><?= strtoupper($s('game_difficulty','normal')) ?></strong></td></tr>
-            <tr><td>Base Speed</td><td><strong><?= $s('game_base_speed','2.5') ?> px/frame</strong></td></tr>
-            <tr><td>Akselerasi</td><td><strong>+<?= $s('game_speed_multiplier','0.003') ?>/skor</strong></td></tr>
-            <tr><td>Gravitasi</td><td><strong><?= $s('game_gravity','0.45') ?></strong></td></tr>
-            <tr><td>Jump Strength</td><td><strong><?= $s('game_jump_strength','-10.5') ?></strong></td></tr>
-            <tr><td>Obstacle Interval</td><td><strong><?= $s('game_obstacle_interval','80') ?> frame</strong></td></tr>
-          </tbody>
-        </table>
-        <hr style="border-color:rgba(255,255,255,0.1)">
-        <small class="text-muted">Nilai ini dibaca secara live oleh halaman game via <code>/api/game_config</code>. Perubahan langsung aktif tanpa reload server.</small>
-      </div>
-    </div>
-  </div>
-  </div>
-</div>
-
 <?php require __DIR__ . '/partials/footer.php'; ?>
-<script>
-// Game Config — Difficulty Preset Auto-fill
-const PRESETS = {
-  easy:   { game_base_speed: 1.5,  game_speed_multiplier: 0.001, game_gravity: 0.35, game_jump_strength: -12.0, game_obstacle_interval: 120 },
-  normal: { game_base_speed: 2.5,  game_speed_multiplier: 0.003, game_gravity: 0.45, game_jump_strength: -10.5, game_obstacle_interval: 80  },
-  hard:   { game_base_speed: 4.0,  game_speed_multiplier: 0.006, game_gravity: 0.60, game_jump_strength: -9.0,  game_obstacle_interval: 50  },
-};
-const diffSel = document.getElementById('game_difficulty');
-const manualDiv = document.getElementById('game-manual-config');
-function applyPreset(val) {
-  const p = PRESETS[val];
-  const isCustom = val === 'custom';
-  if (p) {
-    document.getElementById('game_base_speed').value         = p.game_base_speed;
-    document.getElementById('game_speed_multiplier').value   = p.game_speed_multiplier;
-    document.getElementById('game_gravity').value            = p.game_gravity;
-    document.getElementById('game_jump_strength').value      = p.game_jump_strength;
-    document.getElementById('game_obstacle_interval').value  = p.game_obstacle_interval;
-  }
-  // Grey out manual fields for non-custom
-  const inputs = manualDiv.querySelectorAll('input');
-  inputs.forEach(i => { i.style.opacity = isCustom ? '1' : '0.5'; i.style.pointerEvents = isCustom ? '' : 'none'; });
-}
-if (diffSel) {
-  applyPreset(diffSel.value);
-  diffSel.addEventListener('change', () => applyPreset(diffSel.value));
-}
-</script>

@@ -440,12 +440,9 @@ body {
   border-radius: 2px;
 }
 
-/* Zone 2: Honey Reservoir Tank & Plinko */
+/* Zone 2: Honey Reservoir Tank */
 .vault-reserves {
-  display: grid;
-  grid-template-columns: 1.2fr 0.9fr;
-  gap: 12px;
-  align-items: center;
+  display: block;
   padding-top: 10px;
 }
 .silo-meter {
@@ -492,56 +489,6 @@ body {
   border-radius: 6px;
   transition: width 0.4s ease;
   position: relative;
-}
-
-.plinko-pill {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fffbeb;
-  border: 1.5px solid var(--honey-900);
-  border-radius: 12px;
-  padding: 6px 8px;
-}
-.plinko-info {
-  display: flex;
-  flex-direction: column;
-}
-.pl-lbl {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 8.5px;
-  font-weight: 900;
-  color: var(--honey-800);
-  text-transform: uppercase;
-}
-.pl-lbl i {
-  color: #0284c7;
-  font-size: 11px;
-}
-.pl-val {
-  font-size: 12px;
-  font-weight: 900;
-  color: var(--honey-ink);
-}
-.pl-play-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  background: #38bdf8;
-  border: 1.5px solid var(--honey-900);
-  color: #0369a1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  font-size: 12px;
-  box-shadow: 0 2px 0 var(--honey-900);
-}
-.pl-play-btn:active {
-  transform: translateY(1.5px);
-  box-shadow: 0 0.5px 0 var(--honey-900);
 }
 
 /* ── 3. SEGMENTED TAB SWITCHER ── */
@@ -1129,7 +1076,7 @@ body {
       </div>
     </div>
 
-    <!-- Zone 2: Honey Reservoir Tank & Plinko -->
+    <!-- Zone 2: Honey Reservoir Tank -->
     <div class="vault-reserves">
       <div class="silo-meter">
         <div class="silo-info">
@@ -1145,18 +1092,6 @@ body {
           ?>
           <div class="silo-bar-fill" style="width: <?= $honey_pct ?>%;"></div>
         </div>
-      </div>
-
-      <div class="plinko-pill">
-        <div class="plinko-info">
-          <span class="pl-lbl">
-            <i class="ph-fill ph-game-controller"></i> Koin Plinko
-          </span>
-          <span class="pl-val"><?= number_format((int)$user['plinko_coins']) ?></span>
-        </div>
-        <a href="/plinko" class="pl-play-btn" title="Mainkan Plinko">
-          <i class="ph-bold ph-play"></i>
-        </a>
       </div>
     </div>
   </div>
@@ -1306,17 +1241,6 @@ body {
           <div class="st-text">
             <div class="st-name">Pusat Misi & Tantangan</div>
             <div class="st-desc">Klaim bonus saldo & reward tugas harian</div>
-          </div>
-          <i class="ph-bold ph-caret-right st-arrow"></i>
-        </a>
-
-        <a href="/plinko" class="service-tile">
-          <div class="st-icon-box" style="background: #e0f2fe; color: #0369a1; border-color: #0369a1;">
-            <i class="ph-fill ph-diamonds-four"></i>
-          </div>
-          <div class="st-text">
-            <div class="st-name">Arena Game Plinko</div>
-            <div class="st-desc">Jatuhkan koin keberuntungan raih hadiah</div>
           </div>
           <i class="ph-bold ph-caret-right st-arrow"></i>
         </a>

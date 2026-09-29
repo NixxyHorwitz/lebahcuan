@@ -10,7 +10,7 @@ Dokumen ini menyajikan rancangan strategi komprehensif untuk **mendorong penggun
 2. [Fase 1: Pancingan Kepercayaan & Proof-of-Value (The Taste of Blood)](#2-fase-1-pancingan-kepercayaan--proof-of-value-the-taste-of-blood)
 3. [Fase 2: Perangkap Saldo Mengendap & Loss Aversion (The Endowment Effect)](#3-fase-2-perangkap-saldo-mengendap--loss-aversion-the-endowment-effect)
 4. [Fase 3: Micro-Deposit "Starter Pack" (Penghancur Hambatan Pertama)](#4-fase-3-micro-deposit-starter-pack-penghancur-hambatan-pertama)
-5. [Fase 4: Gamifikasi FOMO & Urgensi di Kebun 3D & Plinko](#5-fase-4-gamifikasi-fomo--urgensi-di-kebun-3d--plinko)
+5. [Fase 4: Gamifikasi FOMO & Urgensi di Kebun Madu 3D](#5-fase-4-gamifikasi-fomo--urgensi-di-kebun-madu-3d)
 6. [Fase 5: Mesin Social Proof & Viral Multiplier (Undang Teman 30%)](#6-fase-5-mesin-social-proof--viral-multiplier-undang-teman-30)
 7. [Fase 6: Rekayasa Antarmuka Pembayaran & Behavioral Nudges](#7-fase-6-rekayasa-antarmuka-pembayaran--behavioral-nudges)
 8. [Matriks Aksi Konkret Implementasi di Codebase](#8-matriks-aksi-konkret-implementasi-di-codebase)
@@ -120,7 +120,7 @@ graph LR
 * **Isi Paket**:
   - 1 Sarang Kayu Starter (Menghasilkan madu 15 ml/hari senilai Rp 3.000/hari).
   - 3 Ekor Lebah Pekerja (Menambah kecepatan panen 2x lipat).
-  - 5 Tiket Plinko Keberuntungan.
+  - 5 Tiket Spin Roda Keberuntungan.
 * **Pemicu Urgensi**:
   - Banner countdown 15:00 menit di halaman lobi setelah registrasi.
   - "Diskon Khusus Peternak Baru — Hanya berlaku 15 menit pertama!".
@@ -130,9 +130,9 @@ graph LR
 
 ---
 
-## 5. Fase 4: Gamifikasi FOMO & Urgensi di Kebun 3D & Plinko
+## 5. Fase 4: Gamifikasi FOMO & Urgensi di Kebun Madu 3D
 
-Fitur visual 3D Farm dan game Plinko bukan sekadar hiasan, melainkan **mesin pemeras komitmen (*retention & upsell engine*)**:
+Fitur visual 3D Farm bukan sekadar hiasan, melainkan **mesin pemeras komitmen (*retention & upsell engine*)**:
 
 ```mermaid
 flowchart TD
@@ -151,12 +151,6 @@ flowchart TD
 * Ketika lebah memproduksi madu dan tangki mencapai batas, tampilkan animasi madu meluap dengan teks:
   > *"⚠️ Tangki Madumu sudah penuh 50/50 ml! 15 ml madu berikutnya akan terbuang sia-sia jika tangki tidak di-upgrade sekarang."*
 * Pemain akan segera deposit Rp 20.000 – Rp 25.000 untuk memperluas tangki agar panen mereka tidak hangus.
-
-### 2. Efek Plinko "Near-Miss Phenomenon":
-* Beri pengguna 1-2 koin gratis Plinko.
-* Bola dijatuhkan dan memantul dramatis, lalu jatuh **persis di sebelah pasak Jackpot 50x / 100x**.
-* Otak manusia membaca kejadian *"hampir kena"* sebagai *"hampir menang, tinggal coba sekali lagi"*.
-* Muncul penawaran cepat: *"Beli 10 Koin Plinko hanya Rp 10.000 (Bonus 2 Tiket Putar)"*.
 
 ---
 
