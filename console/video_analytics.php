@@ -5,16 +5,18 @@ staff_require('video_analytics');
 
 try {
     // 0. Summary Stats Metrics
-    $totalWatchesAll = (int)$pdo->query("SELECT COUNT(*) FROM watch_history")->fetchColumn();
-    $totalRewardAll  = (float)$pdo->query("SELECT COALESCE(SUM(reward_given), 0) FROM watch_history")->fetchColumn();
-    $totalRealLikes  = (int)$pdo->query("SELECT COUNT(*) FROM video_likes")->fetchColumn();
-    $totalFakeLikes  = (int)$pdo->query("SELECT COALESCE(SUM(fake_likes), 0) FROM videos")->fetchColumn();
-    $totalPublicLikes = (int)$pdo->query("SELECT COALESCE(SUM(total_likes), 0) FROM videos")->fetchColumn();
-    $avgLikeRate     = $totalWatchesAll > 0 ? round(($totalRealLikes / $totalWatchesAll) * 100, 1) : 0.0;
+    $totalRealWatches   = (int)$pdo->query("SELECT COUNT(*) FROM watch_history")->fetchColumn();
+    $totalFakeWatches   = (int)$pdo->query("SELECT COALESCE(SUM(fake_watches), 0) FROM videos")->fetchColumn();
+    $totalPublicWatches = (int)$pdo->query("SELECT COALESCE(SUM(total_watches), 0) FROM videos")->fetchColumn();
+    $totalRewardAll     = (float)$pdo->query("SELECT COALESCE(SUM(reward_given), 0) FROM watch_history")->fetchColumn();
+    $totalRealLikes     = (int)$pdo->query("SELECT COUNT(*) FROM video_likes")->fetchColumn();
+    $totalFakeLikes     = (int)$pdo->query("SELECT COALESCE(SUM(fake_likes), 0) FROM videos")->fetchColumn();
+    $totalPublicLikes   = (int)$pdo->query("SELECT COALESCE(SUM(total_likes), 0) FROM videos")->fetchColumn();
+    $avgLikeRate        = $totalRealWatches > 0 ? round(($totalRealLikes / $totalRealWatches) * 100, 1) : 0.0;
 
     // 1. Top Videos (Real dari watch_history + video_likes breakdown)
     $topVideos = $pdo->query(
-        "SELECT v.id, v.title, v.youtube_id, v.total_likes, v.fake_likes,
+        "SELECT v.id, v.title, v.youtube_id, v.total_likes, v.fake_likes, v.total_watches, v.fake_watches,
                 COUNT(wh.id) as watch_count,
                 COALESCE(SUM(wh.reward_given), 0) as total_reward,
                 (SELECT COUNT(*) FROM video_likes vl WHERE vl.video_id = v.id) as real_likes
@@ -62,7 +64,7 @@ try {
     $topVideos = [];
     $topViewers = [];
     $recentLikes = [];
-    $totalWatchesAll = $totalRewardAll = $totalRealLikes = $totalFakeLikes = $totalPublicLikes = $avgLikeRate = 0;
+    $totalRealWatches = $totalFakeWatches = $totalPublicWatches = $totalRewardAll = $totalRealLikes = $totalFakeLikes = $totalPublicLikes = $avgLikeRate = 0;
     $error = $e->getMessage();
 }
 
@@ -73,8 +75,8 @@ require __DIR__ . '/partials/header.php';
 
 <div class="d-flex align-items-center justify-content-between mb-4">
   <div>
-    <h5 class="mb-0 fw-bold">📊 Analisis Video & Interaksi Like</h5>
-    <small class="text-secondary">Statistik penayangan, like asli dari pengguna nyata, dan performa video</small>
+    <h5 class="mb-0 fw-bold">📊 Analisis Video, Tayangan & Like</h5>
+    <small class="text-secondary">Statistik penayangan, perbandingan tayangan & like (Real Pengguna vs Fake Sistem)</small>
   </div>
 </div>
 
@@ -88,14 +90,17 @@ require __DIR__ . '/partials/header.php';
   <div class="col-sm-6 col-xl-3">
     <div class="c-card p-3 h-100" style="background:#161922;border:1px solid #232738">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <span class="text-secondary" style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Total Tayangan</span>
+        <span class="text-secondary" style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Total Tayangan (Views)</span>
         <div style="width:34px;height:34px;border-radius:10px;background:rgba(99,102,241,0.15);color:#818cf8;display:flex;align-items:center;justify-content:center;font-size:16px">
           <i class="ph-bold ph-eye"></i>
         </div>
       </div>
-      <div style="font-size:22px;font-weight:900;color:#fff"><?= number_format($totalWatchesAll) ?>×</div>
+      <div style="font-size:22px;font-weight:900;color:#fff"><?= number_format($totalPublicWatches) ?>×</div>
       <div style="font-size:11.5px;color:#94a3b8;margin-top:2px">
-        Total reward: <span style="color:#4CAF82;font-weight:700"><?= format_rp((float)$totalRewardAll) ?></span>
+        <span style="color:#34d399;font-weight:700">👤 <?= number_format($totalRealWatches) ?> real</span> • <span style="color:#fbbf24;font-weight:700">🤖 <?= number_format($totalFakeWatches) ?> fake</span>
+      </div>
+      <div style="font-size:11px;color:#818cf8;margin-top:2px">
+        Reward: <span style="color:#4CAF82;font-weight:700"><?= format_rp((float)$totalRewardAll) ?></span>
       </div>
     </div>
   </div>
@@ -154,15 +159,17 @@ require __DIR__ . '/partials/header.php';
   <div class="col-lg-6">
     <div class="c-card h-100">
       <div class="c-card-header d-flex justify-content-between align-items-center">
-        <span class="c-card-title">🏆 Top Video & Performa Like</span>
+        <span class="c-card-title">🏆 Top Video & Performa Tayangan/Like</span>
         <span class="badge" style="background:rgba(255,255,255,0.06);color:#94a3b8;font-size:11px"><?= count($topVideos) ?> Video</span>
       </div>
       <div class="c-card-body" style="padding:0; overflow-y:auto; max-height:800px;">
         <?php foreach ($topVideos as $i => $v): 
-          $wCount = (int)$v['watch_count'];
-          $rLikes = (int)$v['real_likes'];
-          $fLikes = (int)$v['fake_likes'];
-          $tLikes = (int)$v['total_likes'];
+          $wCount   = (int)$v['watch_count']; // real views
+          $fWatches = (int)($v['fake_watches'] ?? 0);
+          $tWatches = (int)($v['total_watches'] ?? ($wCount + $fWatches));
+          $rLikes   = (int)$v['real_likes'];
+          $fLikes   = (int)$v['fake_likes'];
+          $tLikes   = (int)$v['total_likes'];
           $likeRate = $wCount > 0 ? round(($rLikes / $wCount) * 100, 1) : 0;
         ?>
         <div style="padding:14px 18px; border-bottom:1px solid #1a1d27; display:flex; align-items:flex-start; gap:12px">
@@ -173,20 +180,35 @@ require __DIR__ . '/partials/header.php';
           <img src="https://img.youtube.com/vi/<?= htmlspecialchars($v['youtube_id']) ?>/default.jpg" style="width:64px;height:38px;object-fit:cover;border-radius:6px;flex-shrink:0" onerror="this.style.display='none'">
 
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:700;color:#e0e0f0;margin-bottom:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
+            <div style="font-size:13px;font-weight:700;color:#e0e0f0;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
               <?= htmlspecialchars($v['title']) ?>
             </div>
             
             <div class="d-flex flex-wrap align-items-center gap-2 mb-2" style="font-size:11.5px">
-              <span style="color:#818cf8;font-weight:700"><i class="ph-bold ph-eye"></i> <?= number_format($wCount) ?>× ditonton</span>
+              <span style="color:#4CAF82;font-weight:700"><?= format_rp((float)$v['total_reward']) ?> reward</span>
+              <?php if ($wCount > 0): ?>
               <span class="text-secondary">•</span>
-              <span style="color:#4CAF82;font-weight:700"><?= format_rp((float)$v['total_reward']) ?></span>
+              <span style="color:#94a3b8" title="Rasio like real per tontonan asli">📈 Like rate: <strong style="color:#38bdf8"><?= $likeRate ?>%</strong></span>
+              <?php endif; ?>
+            </div>
+
+            <!-- Views Pill Breakdown -->
+            <div class="d-flex flex-wrap align-items-center gap-1 mb-1" style="font-size:10.5px">
+              <span class="badge" style="background:rgba(129,140,248,0.15);color:#818cf8;font-weight:800" title="Total tayangan publik">
+                👁 <?= number_format($tWatches) ?> total views
+              </span>
+              <span class="badge" style="background:rgba(16,185,129,0.15);color:#34d399;font-weight:800" title="Tontonan asli dari user">
+                👤 <?= number_format($wCount) ?> real
+              </span>
+              <span class="badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;font-weight:800" title="Tayangan bawaan sistem">
+                🤖 <?= number_format($fWatches) ?> fake
+              </span>
             </div>
 
             <!-- Like Pill Breakdown -->
             <div class="d-flex flex-wrap align-items-center gap-1" style="font-size:10.5px">
-              <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-weight:800">
-                👍 <?= number_format($tLikes) ?> total
+              <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-weight:800" title="Total like publik">
+                👍 <?= number_format($tLikes) ?> total likes
               </span>
               <span class="badge" style="background:rgba(16,185,129,0.15);color:#34d399;font-weight:800" title="Like asli dari user aktif">
                 👤 <?= number_format($rLikes) ?> real
@@ -194,11 +216,6 @@ require __DIR__ . '/partials/header.php';
               <span class="badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;font-weight:800" title="Like bawaan sistem">
                 🤖 <?= number_format($fLikes) ?> fake
               </span>
-              <?php if ($wCount > 0): ?>
-              <span class="badge" style="background:rgba(255,255,255,0.06);color:#94a3b8" title="Rasio like real per tontonan">
-                📈 <?= $likeRate ?>% rate
-              </span>
-              <?php endif; ?>
             </div>
           </div>
         </div>

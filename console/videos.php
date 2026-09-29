@@ -30,16 +30,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $fake_likes  = ($fake_min < $fake_max) ? mt_rand($fake_min, $fake_max) : $fake_min;
                 $total_likes = $fake_likes;
 
-                $pdo->prepare("INSERT INTO videos (title,youtube_id,reward_amount,watch_duration,is_active,sort_order,fake_likes,total_likes) VALUES (?,?,?,?,?,?,?,?)")
-                    ->execute([$title, $yt_id, $reward, $duration, $active, $sort, $fake_likes, $total_likes]);
-                $flash = "Video '{$title}' berhasil ditambahkan dengan {$fake_likes} like awal.";
+                $fake_v_min   = max(0, (int)($_POST['fake_views_min'] ?? 150));
+                $fake_v_max   = max($fake_v_min, (int)($_POST['fake_views_max'] ?? 1200));
+                $fake_watches = ($fake_v_min < $fake_v_max) ? mt_rand($fake_v_min, $fake_v_max) : $fake_v_min;
+                $total_watches = $fake_watches;
+
+                $pdo->prepare("INSERT INTO videos (title,youtube_id,reward_amount,watch_duration,is_active,sort_order,fake_likes,total_likes,fake_watches,total_watches) VALUES (?,?,?,?,?,?,?,?,?,?)")
+                    ->execute([$title, $yt_id, $reward, $duration, $active, $sort, $fake_likes, $total_likes, $fake_watches, $total_watches]);
+                $flash = "Video '{$title}' berhasil ditambahkan (Fake: {$fake_watches} views, {$fake_likes} likes).";
             } else {
                 $fake_likes  = max(0, (int)($_POST['fake_likes'] ?? 0));
                 $real_likes  = (int)$pdo->query("SELECT COUNT(*) FROM video_likes WHERE video_id = " . (int)$id)->fetchColumn();
                 $total_likes = $fake_likes + $real_likes;
 
-                $pdo->prepare("UPDATE videos SET title=?,youtube_id=?,reward_amount=?,watch_duration=?,is_active=?,sort_order=?,fake_likes=?,total_likes=? WHERE id=?")
-                    ->execute([$title, $yt_id, $reward, $duration, $active, $sort, $fake_likes, $total_likes, $id]);
+                $fake_watches  = max(0, (int)($_POST['fake_watches'] ?? 0));
+                $real_watches  = (int)$pdo->query("SELECT COUNT(*) FROM watch_history WHERE video_id = " . (int)$id)->fetchColumn();
+                $total_watches = $fake_watches + $real_watches;
+
+                $pdo->prepare("UPDATE videos SET title=?,youtube_id=?,reward_amount=?,watch_duration=?,is_active=?,sort_order=?,fake_likes=?,total_likes=?,fake_watches=?,total_watches=? WHERE id=?")
+                    ->execute([$title, $yt_id, $reward, $duration, $active, $sort, $fake_likes, $total_likes, $fake_watches, $total_watches, $id]);
                 $flash = "Video berhasil diperbarui.";
             }
         }
@@ -125,6 +134,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $like_max       = max($like_min, (int)($_POST['like_max'] ?? 350));
                 $like_fixed     = max(0, (int)($_POST['like_fixed'] ?? 100));
 
+                // Parameter View / Tayangan Fake Awal (Min - Max Rate)
+                $view_mode      = $_POST['view_mode'] ?? 'random'; // random | fixed | none
+                $view_min       = max(0, (int)($_POST['view_min'] ?? 150));
+                $view_max       = max($view_min, (int)($_POST['view_max'] ?? 1200));
+                $view_fixed     = max(0, (int)($_POST['view_fixed'] ?? 500));
+
                 $skip_duplicate  = isset($_POST['skip_duplicate']) && $_POST['skip_duplicate'] == '1';
                 $is_active       = isset($_POST['is_active']) ? 1 : 0;
                 $sort_order_mode = $_POST['sort_order_mode'] ?? 'auto';
@@ -141,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $imported = 0;
                 $skipped = 0;
 
-                $insertStmt = $pdo->prepare("INSERT INTO videos (title, youtube_id, reward_amount, watch_duration, is_active, sort_order, fake_likes, total_likes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $insertStmt = $pdo->prepare("INSERT INTO videos (title, youtube_id, reward_amount, watch_duration, is_active, sort_order, fake_likes, total_likes, fake_watches, total_watches) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
                 $pdo->beginTransaction();
                 try {
@@ -220,7 +235,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                         $total_likes = $fake_likes;
 
-                        $insertStmt->execute([$title, $ytId, $reward, $duration, $is_active, $sortOrder, $fake_likes, $total_likes]);
+                        // 4. Tentukan Fake Views Awal Berdasarkan Mode
+                        if ($view_mode === 'random') {
+                            $fake_watches = ($view_min < $view_max) ? mt_rand($view_min, $view_max) : $view_min;
+                        } elseif ($view_mode === 'fixed') {
+                            $fake_watches = $view_fixed;
+                        } else {
+                            $fake_watches = 0;
+                        }
+                        $total_watches = $fake_watches;
+
+                        $insertStmt->execute([$title, $ytId, $reward, $duration, $is_active, $sortOrder, $fake_likes, $total_likes, $fake_watches, $total_watches]);
                         $existingIds[$ytId] = true;
                         $imported++;
                     }
@@ -252,7 +277,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $videos = $pdo->query(
     "SELECT v.*,
-            (SELECT COUNT(*) FROM video_likes vl WHERE vl.video_id = v.id) AS real_likes
+            (SELECT COUNT(*) FROM video_likes vl WHERE vl.video_id = v.id) AS real_likes,
+            (SELECT COUNT(*) FROM watch_history wh WHERE wh.video_id = v.id) AS real_watches
      FROM videos v
      ORDER BY sort_order ASC, id DESC"
 )->fetchAll();
@@ -308,7 +334,7 @@ require __DIR__ . '/partials/header.php';
 <div class="c-card">
   <div style="overflow-x:auto">
     <table class="c-table">
-      <thead><tr><th>Urutan</th><th>Thumbnail</th><th>Judul</th><th>Reward</th><th>Durasi</th><th>Tonton</th><th>Likes (Total / Real / Fake)</th><th>Status</th><th>Aksi</th></tr></thead>
+      <thead><tr><th>Urutan</th><th>Thumbnail</th><th>Judul</th><th>Reward</th><th>Durasi</th><th>Tayangan / Views</th><th>Likes</th><th>Status</th><th>Aksi</th></tr></thead>
       <tbody>
       <?php foreach ($videos as $v): ?>
       <tr>
@@ -322,7 +348,19 @@ require __DIR__ . '/partials/header.php';
         </td>
         <td style="color:#4CAF82;font-weight:700"><?= format_rp((float)$v['reward_amount']) ?></td>
         <td style="color:#888"><?= $v['watch_duration'] ?>s</td>
-        <td><span class="badge b-neutral" style="border-radius:6px">👁 <?= number_format((int)$v['total_watches']) ?></span></td>
+        <td>
+          <div style="font-weight:700;color:#fff;font-size:12.5px;display:flex;align-items:center;gap:4px">
+            <i class="ph-bold ph-eye" style="color:#818cf8"></i> <?= number_format((int)$v['total_watches']) ?>
+          </div>
+          <div style="font-size:10.5px;color:#94a3b8;margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">
+            <span class="badge" style="background:rgba(99,102,241,0.15);color:#818cf8;font-weight:700" title="Tontonan asli dari user nyata">
+              👤 <?= number_format((int)$v['real_watches']) ?> real
+            </span>
+            <span class="badge" style="background:rgba(255,255,255,0.06);color:#94a3b8;font-weight:700" title="Tayangan fake bawaan">
+              🤖 <?= number_format((int)$v['fake_watches']) ?> fake
+            </span>
+          </div>
+        </td>
         <td>
           <div style="font-weight:700;color:#38bdf8;font-size:12.5px;display:flex;align-items:center;gap:4px">
             <i class="ph-bold ph-thumbs-up" style="color:#38bdf8"></i> <?= number_format((int)$v['total_likes']) ?>
@@ -396,9 +434,13 @@ require __DIR__ . '/partials/header.php';
 
 <script>
 function editVideo(v) {
-  const realLikes  = v.real_likes !== undefined ? Number(v.real_likes) : 0;
-  const fakeLikes  = v.fake_likes !== undefined ? Number(v.fake_likes) : Number(v.total_likes || 0);
-  const totalLikes = realLikes + fakeLikes;
+  const realLikes   = v.real_likes !== undefined ? Number(v.real_likes) : 0;
+  const fakeLikes   = v.fake_likes !== undefined ? Number(v.fake_likes) : Number(v.total_likes || 0);
+  const totalLikes  = realLikes + fakeLikes;
+
+  const realWatches  = v.real_watches !== undefined ? Number(v.real_watches) : 0;
+  const fakeWatches  = v.fake_watches !== undefined ? Number(v.fake_watches) : Number(v.total_watches || 0);
+  const totalWatches = realWatches + fakeWatches;
 
   document.getElementById('edit-id').value = v.id;
   document.getElementById('edit-body').innerHTML = `
@@ -414,6 +456,29 @@ function editVideo(v) {
         <input type="number" name="watch_duration" class="c-form-control" value="${v.watch_duration}" min="5" required></div>
     </div>
     
+    <!-- Edit Fake & Real Views -->
+    <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08)">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <label class="c-label mb-0 fw-bold" style="font-size:12px;color:#818cf8">👁 Manajemen Tayangan (Views)</label>
+        <span class="badge" style="background:rgba(99,102,241,0.15);color:#818cf8;font-size:11px">
+          Total Tampil: ${totalWatches.toLocaleString('id-ID')}
+        </span>
+      </div>
+      <div class="row g-2 align-items-center">
+        <div class="col-6">
+          <label class="c-label" style="font-size:11px">Fake Views (Bisa Diedit)</label>
+          <input type="number" name="fake_watches" class="c-form-control form-control-sm" value="${fakeWatches}" min="0">
+        </div>
+        <div class="col-6">
+          <label class="c-label" style="font-size:11px">Real Views (User Asli)</label>
+          <div class="form-control form-control-sm text-light fw-bold" style="background:rgba(99,102,241,0.1);border-color:rgba(99,102,241,0.3)">
+            👤 ${realWatches.toLocaleString('id-ID')}x Ditonton
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Fake & Real Likes -->
     <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08)">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <label class="c-label mb-0 fw-bold" style="font-size:12px;color:#fbbf24">👍 Manajemen Like Video</label>
@@ -432,9 +497,6 @@ function editVideo(v) {
             👤 ${realLikes.toLocaleString('id-ID')} Like Asli
           </div>
         </div>
-      </div>
-      <div style="font-size:10.5px;color:#94a3b8;margin-top:6px">
-        Total Like yang dilihat pengguna adalah hasil penjumlahan: <strong>Fake Likes + Real Likes</strong>.
       </div>
     </div>
 
@@ -648,6 +710,47 @@ function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
                   <input type="number" name="like_fixed" id="like_fixed" class="c-form-control form-control-sm" value="100" min="0" oninput="triggerJsonPreviewUpdate()">
                 </div>
               </div>
+
+              <!-- Fake Views Setting -->
+              <div class="col-12 mt-3 pt-2" style="border-top:1px dashed rgba(255,255,255,0.08)">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="c-label fw-bold mb-0" style="font-size:12px;color:#818cf8">👁 Pengaturan View / Tayangan Fake Awal</label>
+                  <span class="badge" style="background:rgba(99,102,241,0.15);color:#818cf8;font-size:10.5px">Otomatis Tiap Video</span>
+                </div>
+                <div class="d-flex flex-wrap gap-3 mb-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="view_mode" id="vm_random" value="random" checked onchange="toggleViewInputs()">
+                    <label class="form-check-label text-primary fw-bold" for="vm_random" style="font-size:12px">🎲 Acak Range (Min - Max)</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="view_mode" id="vm_fixed" value="fixed" onchange="toggleViewInputs()">
+                    <label class="form-check-label text-secondary" for="vm_fixed" style="font-size:12px">📌 Tetap (Fixed)</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="view_mode" id="vm_none" value="none" onchange="toggleViewInputs()">
+                    <label class="form-check-label text-secondary" for="vm_none" style="font-size:12px">❌ Tanpa View (0)</label>
+                  </div>
+                </div>
+
+                <div id="view_range_wrap" class="row g-2">
+                  <div class="col-6">
+                    <div style="font-size:11px;color:#888">Min View Fake</div>
+                    <input type="number" name="view_min" id="view_min" class="c-form-control form-control-sm" value="150" min="0" oninput="triggerJsonPreviewUpdate()">
+                  </div>
+                  <div class="col-6">
+                    <div style="font-size:11px;color:#888">Max View Fake</div>
+                    <input type="number" name="view_max" id="view_max" class="c-form-control form-control-sm" value="1200" min="0" oninput="triggerJsonPreviewUpdate()">
+                  </div>
+                  <div class="col-12" style="font-size:10.5px;color:#64748b">
+                    Setiap video yang diimpor akan mendapatkan jumlah tontonan awal acak dalam rentang ini. Real tontonan dari user akan otomatis ditambahkan ke angka ini.
+                  </div>
+                </div>
+
+                <div id="view_fixed_wrap" style="display:none">
+                  <div style="font-size:11px;color:#888">Jumlah View Tetap per Video</div>
+                  <input type="number" name="view_fixed" id="view_fixed" class="c-form-control form-control-sm" value="500" min="0" oninput="triggerJsonPreviewUpdate()">
+                </div>
+              </div>
             </div>
 
             <!-- Extra Options -->
@@ -775,6 +878,15 @@ function toggleLikeInputs() {
   triggerJsonPreviewUpdate();
 }
 
+function toggleViewInputs() {
+  const mode = document.querySelector('input[name="view_mode"]:checked')?.value || 'random';
+  const rWrap = document.getElementById('view_range_wrap');
+  const fWrap = document.getElementById('view_fixed_wrap');
+  if (rWrap) rWrap.style.display = (mode === 'random') ? 'flex' : 'none';
+  if (fWrap) fWrap.style.display = (mode === 'fixed') ? 'block' : 'none';
+  triggerJsonPreviewUpdate();
+}
+
 const jsonInput = document.getElementById('json_data_input');
 const jsonFileInput = document.getElementById('json_file_input');
 const countBadge = document.getElementById('json_count_badge');
@@ -865,7 +977,7 @@ function validateAndPreviewJson(str) {
           estReward = `Rp ${rmin} - ${rmax}`;
         }
 
-        // Calculate sample likes
+        // Calculate sample likes & views
         const lMode = document.querySelector('input[name="like_mode"]:checked')?.value || 'random';
         let estLikes = '0';
         if (lMode === 'random') {
@@ -879,10 +991,23 @@ function validateAndPreviewJson(str) {
           estLikes = `👍 0`;
         }
 
+        const vMode = document.querySelector('input[name="view_mode"]:checked')?.value || 'random';
+        let estViews = '0';
+        if (vMode === 'random') {
+          const vmin = parseInt(document.getElementById('view_min')?.value, 10) || 150;
+          const vmax = parseInt(document.getElementById('view_max')?.value, 10) || 1200;
+          estViews = `👁 ~${Math.round((vmin + vmax) / 2)}`;
+        } else if (vMode === 'fixed') {
+          const vfix = parseInt(document.getElementById('view_fixed')?.value, 10) || 500;
+          estViews = `👁 ${vfix}`;
+        } else {
+          estViews = `👁 0`;
+        }
+
         const itemRow = document.createElement('div');
         itemRow.style.display = 'flex';
         itemRow.style.alignItems = 'center';
-        itemRow.style.gap = '10px';
+        itemRow.style.gap = '8px';
         itemRow.style.fontSize = '11px';
         itemRow.style.padding = '6px 8px';
         itemRow.style.borderRadius = '6px';
@@ -893,8 +1018,9 @@ function validateAndPreviewJson(str) {
           <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e2e8f0;font-weight:600">
             ${escH(title)}
           </div>
+          <span class="badge" style="background:rgba(99,102,241,0.15);color:#818cf8;font-size:10px">${estViews}</span>
           <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-size:10px">${estLikes}</span>
-          <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-size:10px">${dur}s</span>
+          <span class="badge" style="background:rgba(255,255,255,0.06);color:#94a3b8;font-size:10px">${dur}s</span>
           <span class="badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;font-size:10px;font-weight:700">${estReward}</span>
         `;
         previewList.appendChild(itemRow);
@@ -948,6 +1074,7 @@ document.addEventListener('DOMContentLoaded', () => {
   toggleRewardInputs();
   toggleDurationInputs();
   toggleLikeInputs();
+  toggleViewInputs();
 });
 </script>
 

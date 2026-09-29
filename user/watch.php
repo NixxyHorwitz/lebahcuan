@@ -103,8 +103,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
             ->execute([$user['id'], $vid_id, $reward]);
         $pdo->prepare("UPDATE users SET balance_wd=balance_wd+?,total_earned=total_earned+? WHERE id=?")
             ->execute([$reward, $reward, $user['id']]);
-        $pdo->prepare("UPDATE videos SET total_watches=total_watches+1 WHERE id=?")
-            ->execute([$vid_id]);
+        // Sinkronkan total_watches = fake_watches + real_watches (watch_history)
+        $pdo->prepare("UPDATE videos SET total_watches = fake_watches + (SELECT COUNT(*) FROM watch_history WHERE video_id=?) WHERE id=?")
+            ->execute([$vid_id, $vid_id]);
         $pdo->commit();
 
         $_SESSION['flash_videos_msg'] = 'Reward ' . format_rp($reward) . ' berhasil diklaim!';

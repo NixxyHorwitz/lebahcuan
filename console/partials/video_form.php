@@ -48,3 +48,23 @@
     Sistem akan mengacak jumlah like awal antara nilai min & max (isi angka sama jika ingin jumlah pasti).
   </div>
 </div>
+
+<div class="p-3 mb-2 rounded" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08)">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <label class="c-label mb-0 fw-bold" style="font-size:12px;color:#38bdf8">👁 Setting Fake Views / Tayangan Awal</label>
+    <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-size:10px">Acak Range Min-Max</span>
+  </div>
+  <div class="row g-2">
+    <div class="col-6">
+      <label class="c-label" style="font-size:11px">Min Fake Views</label>
+      <input type="number" name="fake_views_min" class="c-form-control form-control-sm" value="150" min="0" required>
+    </div>
+    <div class="col-6">
+      <label class="c-label" style="font-size:11px">Max Fake Views</label>
+      <input type="number" name="fake_views_max" class="c-form-control form-control-sm" value="1200" min="0" required>
+    </div>
+  </div>
+  <div style="font-size:10.5px;color:#94a3b8;margin-top:4px">
+    Sistem akan mengacak jumlah tayangan awal antara nilai min & max (isi angka sama jika ingin jumlah pasti).
+  </div>
+</div>
