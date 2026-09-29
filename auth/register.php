@@ -921,7 +921,7 @@ select.inp-field {
     </a>
     <div class="mascot-wrap">
       <div class="mascot-badge">
-        <img src="/assets/game/bee_worker.png" alt="LebahCuan">
+        <img src="<?= htmlspecialchars(site_logo($pdo)) ?>" alt="LebahCuan">
       </div>
     </div>
     <h1 class="reg-title">Daftar Akun LebahCuan</h1>

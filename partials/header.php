@@ -12,6 +12,7 @@ $_seo_og_title = setting($pdo, 'seo_og_title', '');
 $_seo_og_desc  = setting($pdo, 'seo_og_description', '');
 $_seo_og_type  = setting($pdo, 'seo_og_type', 'website');
 $_favicon     = setting($pdo, 'favicon_path', '/assets/favicon.png');
+$_site_logo   = site_logo($pdo);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -520,7 +521,7 @@ i[class^="ph-"] {
       <!-- Left: Logo & Mascot -->
       <a href="/home" class="tb-brand">
         <div class="tb-mascot-box">
-          <img src="/assets/game/bee_worker.png" alt="Lebah Cuan" class="tb-mascot-img">
+          <img src="<?= htmlspecialchars($_site_logo) ?>" alt="<?= htmlspecialchars($_site_name) ?>" class="tb-mascot-img">
         </div>
         <div class="tb-brand-info">
           <div class="tb-brand-name">Lebah<em>Cuan</em></div>

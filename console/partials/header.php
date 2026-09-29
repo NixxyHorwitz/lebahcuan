@@ -262,11 +262,11 @@ body { background: #080a12; color: #e2e8f0; min-height: 100vh; font-size: 13.5px
 
 <aside class="c-sidebar" id="sidebar">
   <div class="c-sidebar__logo">
-    <div class="c-sidebar__icon" style="font-size:22px;line-height:1">
-      🐝
+    <div class="c-sidebar__icon" style="display:flex;align-items:center;justify-content:center">
+      <img src="<?= htmlspecialchars(site_logo($pdo)) ?>" alt="Logo" style="width:28px;height:28px;object-fit:contain;border-radius:6px">
     </div>
     <div style="flex:1;min-width:0">
-      <div class="c-sidebar__brand">LebahCuan</div>
+      <div class="c-sidebar__brand"><?= htmlspecialchars(setting($pdo, 'site_name', 'LebahCuan')) ?></div>
       <div class="c-sidebar__sub">Farm Console</div>
     </div>
     <button type="button" class="btn-close btn-close-white d-lg-none" onclick="closeSidebar()" aria-label="Close" style="font-size:11px"></button>

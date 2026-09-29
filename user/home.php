@@ -751,7 +751,7 @@ body {
   <div class="hero-user-bar">
     <div class="hero-user-left">
       <div class="hero-avatar-box">
-        <img src="/assets/game/bee_worker.png" alt="Buzzy Lebah">
+        <img src="<?= htmlspecialchars(site_logo($pdo)) ?>" alt="LebahCuan">
         <span class="hero-avatar-badge"><i class="ph-bold ph-check"></i></span>
       </div>
       <div class="hero-user-meta">

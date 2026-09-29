@@ -47,7 +47,8 @@ end_login:
 // Load SEO settings
 $_seo_title  = setting($pdo, 'seo_title', 'LebahCuan');
 $_seo_desc   = setting($pdo, 'seo_description', 'Platform nonton video dan ternak lebah penghasil cuan resmi.');
-$_favicon    = setting($pdo, 'favicon_path', '');
+$_favicon    = setting($pdo, 'favicon_path', '/assets/favicon.png');
+$_site_logo  = site_logo($pdo);
 $_page_title = 'Masuk Akun — ' . $_seo_title;
 ?>
 <!DOCTYPE html>
@@ -441,10 +442,10 @@ body {
   <div class="login-hero">
     <div class="mascot-wrap">
       <div class="mascot-badge">
-        <img src="/assets/game/bee_worker.png" alt="LebahCuan">
+        <img src="<?= htmlspecialchars($_site_logo) ?>" alt="<?= htmlspecialchars($_seo_title) ?>">
       </div>
     </div>
-    <h1 class="login-title">Masuk Akun LebahCuan</h1>
+    <h1 class="login-title">Masuk Akun <?= htmlspecialchars($_seo_title) ?></h1>
     <p class="login-sub">Tonton Video &amp; Raih Saldo Rupiah Setiap Hari</p>
   </div>
 

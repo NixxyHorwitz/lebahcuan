@@ -49,7 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $favPath = dirname(__DIR__) . '/assets/favicon.png';
                     if (@imagepng($out, $favPath, 7)) {
                         setting_set($pdo, 'favicon_path', '/assets/favicon.png');
-                        $flash = '✅ Favicon berhasil diupload dan dikompres ke 64×64px!';
+                        setting_set($pdo, 'site_logo', '/assets/favicon.png');
+                        $flash = '✅ Favicon & Logo berhasil diupload dan dikompres ke 64×64px!';
                     } else {
                         $flash = '❌ Gagal menyimpan favicon ke /assets/. Cek permission.'; $flashType = 'error';
                     }
@@ -125,7 +126,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $favPath = $favDir . 'favicon.png';
                 if (@imagepng($out, $favPath, 7)) {
                     setting_set($pdo, 'favicon_path', '/assets/favicon.png');
-                    $flash = '✅ Favicon berhasil diupload dan dikompres ke 64×64px!';
+                    setting_set($pdo, 'site_logo', '/assets/favicon.png');
+                    $flash = '✅ Favicon & Logo berhasil diupload dan dikompres ke 64×64px!';
                 } else {
                     $flash = '❌ Gagal menyimpan favicon ke /assets/. Cek permission folder.';
                     $flashType = 'error';

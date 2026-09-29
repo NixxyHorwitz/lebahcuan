@@ -199,6 +199,18 @@ function setting_set(PDO $pdo, string $key, string $value): void {
         ->execute([$key, $value, $value]);
 }
 
+/** Get site logo URL from settings with fallback to favicon_path or default logo */
+function site_logo(PDO $pdo): string {
+    $logo = setting($pdo, 'site_logo', '');
+    if (!$logo) {
+        $logo = setting($pdo, 'favicon_path', '/assets/logo.png');
+    }
+    if (!$logo) {
+        $logo = '/assets/logo.png';
+    }
+    return $logo;
+}
+
 // ============================================================
 // MAINTENANCE MODE ENFORCEMENT
 // ============================================================
