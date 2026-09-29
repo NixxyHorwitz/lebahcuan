@@ -133,13 +133,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggl
 
     if ($already_liked) {
         $pdo->prepare("DELETE FROM video_likes WHERE user_id=? AND video_id=?")->execute([$user['id'], $vid_id]);
-        $pdo->prepare("UPDATE videos SET total_likes = GREATEST(0, CAST(total_likes AS SIGNED) - 1) WHERE id=?")->execute([$vid_id]);
         $is_liked = false;
     } else {
         $pdo->prepare("INSERT IGNORE INTO video_likes (user_id, video_id) VALUES (?, ?)")->execute([$user['id'], $vid_id]);
-        $pdo->prepare("UPDATE videos SET total_likes = total_likes + 1 WHERE id=?")->execute([$vid_id]);
         $is_liked = true;
     }
+
+    // Selalu sinkronkan total_likes = fake_likes + real_likes
+    $pdo->prepare("UPDATE videos SET total_likes = fake_likes + (SELECT COUNT(*) FROM video_likes WHERE video_id=?) WHERE id=?")->execute([$vid_id, $vid_id]);
 
     $cnt = $pdo->prepare("SELECT total_likes FROM videos WHERE id=?");
     $cnt->execute([$vid_id]);

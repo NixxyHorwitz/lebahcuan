@@ -25,12 +25,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         elseif ($duration < 5) { $flash = 'Durasi minimal 5 detik.'; $flashType = 'error'; }
         else {
             if ($action === 'add') {
-                $pdo->prepare("INSERT INTO videos (title,youtube_id,reward_amount,watch_duration,is_active,sort_order) VALUES (?,?,?,?,?,?)")
-                    ->execute([$title, $yt_id, $reward, $duration, $active, $sort]);
-                $flash = "Video '{$title}' berhasil ditambahkan.";
+                $fake_min    = max(0, (int)($_POST['fake_likes_min'] ?? 50));
+                $fake_max    = max($fake_min, (int)($_POST['fake_likes_max'] ?? 250));
+                $fake_likes  = ($fake_min < $fake_max) ? mt_rand($fake_min, $fake_max) : $fake_min;
+                $total_likes = $fake_likes;
+
+                $pdo->prepare("INSERT INTO videos (title,youtube_id,reward_amount,watch_duration,is_active,sort_order,fake_likes,total_likes) VALUES (?,?,?,?,?,?,?,?)")
+                    ->execute([$title, $yt_id, $reward, $duration, $active, $sort, $fake_likes, $total_likes]);
+                $flash = "Video '{$title}' berhasil ditambahkan dengan {$fake_likes} like awal.";
             } else {
-                $pdo->prepare("UPDATE videos SET title=?,youtube_id=?,reward_amount=?,watch_duration=?,is_active=?,sort_order=? WHERE id=?")
-                    ->execute([$title, $yt_id, $reward, $duration, $active, $sort, $id]);
+                $fake_likes  = max(0, (int)($_POST['fake_likes'] ?? 0));
+                $real_likes  = (int)$pdo->query("SELECT COUNT(*) FROM video_likes WHERE video_id = " . (int)$id)->fetchColumn();
+                $total_likes = $fake_likes + $real_likes;
+
+                $pdo->prepare("UPDATE videos SET title=?,youtube_id=?,reward_amount=?,watch_duration=?,is_active=?,sort_order=?,fake_likes=?,total_likes=? WHERE id=?")
+                    ->execute([$title, $yt_id, $reward, $duration, $active, $sort, $fake_likes, $total_likes, $id]);
                 $flash = "Video berhasil diperbarui.";
             }
         }
@@ -110,6 +119,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $duration_max   = max($duration_min, (int)($_POST['duration_max'] ?? 60));
                 $duration_fixed = max(5, (int)($_POST['duration_fixed'] ?? 30));
 
+                // Parameter Like Fake Awal (Min - Max Rate)
+                $like_mode      = $_POST['like_mode'] ?? 'random'; // random | fixed | none
+                $like_min       = max(0, (int)($_POST['like_min'] ?? 50));
+                $like_max       = max($like_min, (int)($_POST['like_max'] ?? 350));
+                $like_fixed     = max(0, (int)($_POST['like_fixed'] ?? 100));
+
                 $skip_duplicate  = isset($_POST['skip_duplicate']) && $_POST['skip_duplicate'] == '1';
                 $is_active       = isset($_POST['is_active']) ? 1 : 0;
                 $sort_order_mode = $_POST['sort_order_mode'] ?? 'auto';
@@ -126,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $imported = 0;
                 $skipped = 0;
 
-                $insertStmt = $pdo->prepare("INSERT INTO videos (title, youtube_id, reward_amount, watch_duration, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?)");
+                $insertStmt = $pdo->prepare("INSERT INTO videos (title, youtube_id, reward_amount, watch_duration, is_active, sort_order, fake_likes, total_likes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
                 $pdo->beginTransaction();
                 try {
@@ -195,7 +210,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $sortOrder = (int)($item['sort_order'] ?? 0);
                         }
 
-                        $insertStmt->execute([$title, $ytId, $reward, $duration, $is_active, $sortOrder]);
+                        // 3. Tentukan Fake Likes Awal Berdasarkan Mode
+                        if ($like_mode === 'random') {
+                            $fake_likes = ($like_min < $like_max) ? mt_rand($like_min, $like_max) : $like_min;
+                        } elseif ($like_mode === 'fixed') {
+                            $fake_likes = $like_fixed;
+                        } else {
+                            $fake_likes = 0;
+                        }
+                        $total_likes = $fake_likes;
+
+                        $insertStmt->execute([$title, $ytId, $reward, $duration, $is_active, $sortOrder, $fake_likes, $total_likes]);
                         $existingIds[$ytId] = true;
                         $imported++;
                     }
@@ -225,7 +250,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$videos = $pdo->query("SELECT * FROM videos ORDER BY sort_order ASC, id DESC")->fetchAll();
+$videos = $pdo->query(
+    "SELECT v.*,
+            (SELECT COUNT(*) FROM video_likes vl WHERE vl.video_id = v.id) AS real_likes
+     FROM videos v
+     ORDER BY sort_order ASC, id DESC"
+)->fetchAll();
 $currentSort = setting($pdo, 'video_sort_mode', 'default');
 
 $pageTitle  = 'Manajemen Video';
@@ -278,7 +308,7 @@ require __DIR__ . '/partials/header.php';
 <div class="c-card">
   <div style="overflow-x:auto">
     <table class="c-table">
-      <thead><tr><th>Urutan</th><th>Thumbnail</th><th>Judul</th><th>Reward</th><th>Durasi</th><th>Tonton</th><th>Status</th><th>Aksi</th></tr></thead>
+      <thead><tr><th>Urutan</th><th>Thumbnail</th><th>Judul</th><th>Reward</th><th>Durasi</th><th>Tonton</th><th>Likes (Total / Real / Fake)</th><th>Status</th><th>Aksi</th></tr></thead>
       <tbody>
       <?php foreach ($videos as $v): ?>
       <tr>
@@ -293,6 +323,19 @@ require __DIR__ . '/partials/header.php';
         <td style="color:#4CAF82;font-weight:700"><?= format_rp((float)$v['reward_amount']) ?></td>
         <td style="color:#888"><?= $v['watch_duration'] ?>s</td>
         <td><span class="badge b-neutral" style="border-radius:6px">👁 <?= number_format((int)$v['total_watches']) ?></span></td>
+        <td>
+          <div style="font-weight:700;color:#38bdf8;font-size:12.5px;display:flex;align-items:center;gap:4px">
+            <i class="ph-bold ph-thumbs-up" style="color:#38bdf8"></i> <?= number_format((int)$v['total_likes']) ?>
+          </div>
+          <div style="font-size:10.5px;color:#94a3b8;margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">
+            <span class="badge" style="background:rgba(16,185,129,0.15);color:#34d399;font-weight:700" title="Like murni dari pengguna aktif">
+              👤 <?= number_format((int)$v['real_likes']) ?> real
+            </span>
+            <span class="badge" style="background:rgba(251,191,36,0.15);color:#fbbf24;font-weight:700" title="Like fake bawaan">
+              🤖 <?= number_format((int)$v['fake_likes']) ?> fake
+            </span>
+          </div>
+        </td>
         <td>
           <form method="POST" class="d-inline">
             <?= csrf_field() ?><input type="hidden" name="action" value="toggle">
@@ -353,6 +396,10 @@ require __DIR__ . '/partials/header.php';
 
 <script>
 function editVideo(v) {
+  const realLikes  = v.real_likes !== undefined ? Number(v.real_likes) : 0;
+  const fakeLikes  = v.fake_likes !== undefined ? Number(v.fake_likes) : Number(v.total_likes || 0);
+  const totalLikes = realLikes + fakeLikes;
+
   document.getElementById('edit-id').value = v.id;
   document.getElementById('edit-body').innerHTML = `
     <div class="c-form-group mb-3"><label class="c-label">Judul Video</label>
@@ -366,6 +413,31 @@ function editVideo(v) {
       <div class="col-6"><label class="c-label">Durasi Min (detik)</label>
         <input type="number" name="watch_duration" class="c-form-control" value="${v.watch_duration}" min="5" required></div>
     </div>
+    
+    <div class="p-3 mb-3 rounded" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08)">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <label class="c-label mb-0 fw-bold" style="font-size:12px;color:#fbbf24">👍 Manajemen Like Video</label>
+        <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-size:11px">
+          Total Tampil: ${totalLikes.toLocaleString('id-ID')}
+        </span>
+      </div>
+      <div class="row g-2 align-items-center">
+        <div class="col-6">
+          <label class="c-label" style="font-size:11px">Fake Likes (Bisa Diedit)</label>
+          <input type="number" name="fake_likes" class="c-form-control form-control-sm" value="${fakeLikes}" min="0">
+        </div>
+        <div class="col-6">
+          <label class="c-label" style="font-size:11px">Real Likes (User Asli)</label>
+          <div class="form-control form-control-sm text-success fw-bold" style="background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.3)">
+            👤 ${realLikes.toLocaleString('id-ID')} Like Asli
+          </div>
+        </div>
+      </div>
+      <div style="font-size:10.5px;color:#94a3b8;margin-top:6px">
+        Total Like yang dilihat pengguna adalah hasil penjumlahan: <strong>Fake Likes + Real Likes</strong>.
+      </div>
+    </div>
+
     <div class="row g-2">
       <div class="col-6"><label class="c-label">Urutan</label>
         <input type="number" name="sort_order" class="c-form-control" value="${v.sort_order}"></div>
@@ -535,6 +607,47 @@ function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
                   <input type="number" name="duration_fixed" class="c-form-control form-control-sm" value="30" min="5">
                 </div>
               </div>
+
+              <!-- Fake Likes Setting -->
+              <div class="col-12 mt-3 pt-2" style="border-top:1px dashed rgba(255,255,255,0.08)">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label class="c-label fw-bold mb-0" style="font-size:12px;color:#38bdf8">👍 Pengaturan Like Fake Awal (Initial/Bot Likes)</label>
+                  <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-size:10.5px">Otomatis Tiap Video</span>
+                </div>
+                <div class="d-flex flex-wrap gap-3 mb-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="like_mode" id="lm_random" value="random" checked onchange="toggleLikeInputs()">
+                    <label class="form-check-label text-info fw-bold" for="lm_random" style="font-size:12px">🎲 Acak Range (Min - Max)</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="like_mode" id="lm_fixed" value="fixed" onchange="toggleLikeInputs()">
+                    <label class="form-check-label text-secondary" for="lm_fixed" style="font-size:12px">📌 Tetap (Fixed)</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="like_mode" id="lm_none" value="none" onchange="toggleLikeInputs()">
+                    <label class="form-check-label text-secondary" for="lm_none" style="font-size:12px">❌ Tanpa Like (0)</label>
+                  </div>
+                </div>
+
+                <div id="like_range_wrap" class="row g-2">
+                  <div class="col-6">
+                    <div style="font-size:11px;color:#888">Min Like Fake</div>
+                    <input type="number" name="like_min" id="like_min" class="c-form-control form-control-sm" value="50" min="0" oninput="triggerJsonPreviewUpdate()">
+                  </div>
+                  <div class="col-6">
+                    <div style="font-size:11px;color:#888">Max Like Fake</div>
+                    <input type="number" name="like_max" id="like_max" class="c-form-control form-control-sm" value="350" min="0" oninput="triggerJsonPreviewUpdate()">
+                  </div>
+                  <div class="col-12" style="font-size:10.5px;color:#64748b">
+                    Setiap video yang diimpor akan mendapatkan like awal acak dalam rentang ini. Real like dari user akan otomatis bertambah di atas nilai ini.
+                  </div>
+                </div>
+
+                <div id="like_fixed_wrap" style="display:none">
+                  <div style="font-size:11px;color:#888">Jumlah Like Tetap per Video</div>
+                  <input type="number" name="like_fixed" id="like_fixed" class="c-form-control form-control-sm" value="100" min="0" oninput="triggerJsonPreviewUpdate()">
+                </div>
+              </div>
             </div>
 
             <!-- Extra Options -->
@@ -653,6 +766,15 @@ function toggleDurationInputs() {
   triggerJsonPreviewUpdate();
 }
 
+function toggleLikeInputs() {
+  const mode = document.querySelector('input[name="like_mode"]:checked')?.value || 'random';
+  const rWrap = document.getElementById('like_range_wrap');
+  const fWrap = document.getElementById('like_fixed_wrap');
+  if (rWrap) rWrap.style.display = (mode === 'random') ? 'flex' : 'none';
+  if (fWrap) fWrap.style.display = (mode === 'fixed') ? 'block' : 'none';
+  triggerJsonPreviewUpdate();
+}
+
 const jsonInput = document.getElementById('json_data_input');
 const jsonFileInput = document.getElementById('json_file_input');
 const countBadge = document.getElementById('json_count_badge');
@@ -743,6 +865,20 @@ function validateAndPreviewJson(str) {
           estReward = `Rp ${rmin} - ${rmax}`;
         }
 
+        // Calculate sample likes
+        const lMode = document.querySelector('input[name="like_mode"]:checked')?.value || 'random';
+        let estLikes = '0';
+        if (lMode === 'random') {
+          const lmin = parseInt(document.getElementById('like_min')?.value, 10) || 50;
+          const lmax = parseInt(document.getElementById('like_max')?.value, 10) || 350;
+          estLikes = `👍 ~${Math.round((lmin + lmax) / 2)}`;
+        } else if (lMode === 'fixed') {
+          const lfix = parseInt(document.getElementById('like_fixed')?.value, 10) || 100;
+          estLikes = `👍 ${lfix}`;
+        } else {
+          estLikes = `👍 0`;
+        }
+
         const itemRow = document.createElement('div');
         itemRow.style.display = 'flex';
         itemRow.style.alignItems = 'center';
@@ -757,6 +893,7 @@ function validateAndPreviewJson(str) {
           <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e2e8f0;font-weight:600">
             ${escH(title)}
           </div>
+          <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-size:10px">${estLikes}</span>
           <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-size:10px">${dur}s</span>
           <span class="badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;font-size:10px;font-weight:700">${estReward}</span>
         `;
@@ -810,6 +947,7 @@ if (confirmDelInput && btnConfirmDel) {
 document.addEventListener('DOMContentLoaded', () => {
   toggleRewardInputs();
   toggleDurationInputs();
+  toggleLikeInputs();
 });
 </script>
 
