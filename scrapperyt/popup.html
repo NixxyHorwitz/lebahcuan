@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LebahCuan YT Scrapper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="glass-card">
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+      <span class="toast-icon">🐝</span>
+      <span id="toastMsg">JSON berhasil disalin!</span>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-area">
+        <div class="logo-icon-wrap">
+          <span style="font-size: 20px;">🐝</span>
+        </div>
+        <div>
+          <h1 class="title">Lebah<span class="accent-text">Cuan</span></h1>
+          <div class="sub-title">YouTube Scraper v1.2</div>
+        </div>
+      </div>
+      
+      <!-- Status Badge / Toggle Switch -->
+      <div class="status-control">
+        <label class="switch" title="Aktifkan / Jeda Scraping Otomatis">
+          <input type="checkbox" id="scrapingToggle" checked>
+          <span class="slider round"></span>
+        </label>
+        <span class="status-label" id="statusLabel">Scraping Aktif</span>
+      </div>
+    </header>
+
+    <!-- Stats & Counter -->
+    <section class="stats-container">
+      <div class="stat-card">
+        <div class="stat-value" id="scrapedCount">0</div>
+        <div class="stat-label">Video Berhasil Di-scrape</div>
+        <div class="stat-hint">Scroll halaman YouTube untuk menambah video secara otomatis!</div>
+      </div>
+    </section>
+
+    <!-- Variable Settings Card -->
+    <section class="settings-card">
+      <div class="settings-header" id="toggleSettingsBtn">
+        <div class="settings-title">
+          <span>⚙️</span> Preset Nilai JSON (Reward & Durasi)
+        </div>
+        <span class="settings-toggle-icon" id="settingsArrow">▼</span>
+      </div>
+
+      <div class="settings-body" id="settingsBody">
+        <div class="form-row">
+          <div class="form-col">
+            <label class="input-label">Benefit / Reward (Rp)</label>
+            <div class="range-inputs">
+              <input type="number" id="rewardMin" placeholder="Min (50)" value="50" min="1" step="1">
+              <span>-</span>
+              <input type="number" id="rewardMax" placeholder="Max (200)" value="200" min="1" step="1">
+            </div>
+            <div class="input-hint">Acak antara min - max</div>
+          </div>
+          <div class="form-col">
+            <label class="input-label">Durasi Tonton (Detik)</label>
+            <div class="range-inputs">
+              <input type="number" id="durationMin" placeholder="Min (15)" value="15" min="5" step="1">
+              <span>-</span>
+              <input type="number" id="durationMax" placeholder="Max (60)" value="60" min="5" step="1">
+            </div>
+            <div class="input-hint">Jika durasi YT kosong</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scraped List Preview -->
+    <section class="preview-section">
+      <div class="preview-header">
+        <h2 class="section-title">Pratinjau Video (30 Terbaru)</h2>
+        <span class="preview-badge" id="previewBadge">0 Video</span>
+      </div>
+      <div class="table-container">
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th width="55%">Judul Video</th>
+              <th width="25%">ID YouTube</th>
+              <th width="20%">Durasi</th>
+            </tr>
+          </thead>
+          <tbody id="previewTableBody">
+            <tr class="empty-row">
+              <td colspan="3">
+                <div class="empty-state">
+                  <div style="font-size:24px;margin-bottom:6px;">🎬</div>
+                  <div>Belum ada video ter-scrape.</div>
+                  <div style="font-size:11px;color:#64748b;margin-top:4px;">Buka YouTube dan scroll ke bawah!</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Actions Section -->
+    <footer class="footer-actions">
+      <button id="copyJsonBtn" class="btn btn-primary" title="Salin seluruh data video ke clipboard dalam format JSON">
+        <svg viewBox="0 0 24 24" class="btn-icon" fill="none" stroke="currentColor" stroke-width="2.5">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+        Salin JSON (LebahCuan)
+      </button>
+
+      <div class="sub-actions">
+        <button id="downloadJsonBtn" class="btn btn-secondary" title="Download file .json">
+          <svg viewBox="0 0 24 24" class="btn-icon" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Unduh .JSON
+        </button>
+
+        <button id="clearBtn" class="btn btn-danger" title="Bersihkan cache scraper">
+          <svg viewBox="0 0 24 24" class="btn-icon" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          Reset
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

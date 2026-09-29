@@ -49,6 +49,162 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flash = 'Video dihapus.';
     }
 
+    if ($action === 'delete_all') {
+        $confirm = trim(strtoupper($_POST['confirm_delete'] ?? ''));
+        if ($confirm !== 'HAPUS') {
+            $flash = 'Konfirmasi gagal. Anda harus mengetik kata "HAPUS" untuk menghapus semua video.';
+            $flashType = 'error';
+        } else {
+            try {
+                $totalBefore = (int)$pdo->query("SELECT COUNT(*) FROM videos")->fetchColumn();
+                $pdo->exec("DELETE FROM videos");
+                try {
+                    $pdo->exec("ALTER TABLE videos AUTO_INCREMENT = 1");
+                } catch (\Throwable) {}
+                $flash = "Seluruh video ({$totalBefore} video) telah berhasil dihapus dari database.";
+                $flashType = 'success';
+            } catch (\Throwable $e) {
+                $flash = 'Gagal menghapus video: ' . $e->getMessage();
+                $flashType = 'error';
+            }
+        }
+    }
+
+    if ($action === 'import_json') {
+        $rawJson = trim($_POST['json_data'] ?? '');
+        if (isset($_FILES['json_file']) && !empty($_FILES['json_file']['tmp_name']) && $_FILES['json_file']['error'] === UPLOAD_ERR_OK) {
+            $uploaded = file_get_contents($_FILES['json_file']['tmp_name']);
+            if ($uploaded !== false && trim($uploaded) !== '') {
+                $rawJson = trim($uploaded);
+            }
+        }
+
+        if (empty($rawJson)) {
+            $flash = 'Data JSON tidak boleh kosong. Silakan salin JSON dari ekstensi scrapper atau upload file .json.';
+            $flashType = 'error';
+        } else {
+            $data = json_decode($rawJson, true);
+            if (!is_array($data)) {
+                $flash = 'Format JSON tidak valid atau rusak. Pastikan JSON berupa array data video.';
+                $flashType = 'error';
+            } else {
+                if (isset($data['videos']) && is_array($data['videos'])) {
+                    $data = $data['videos'];
+                } elseif (isset($data['data']) && is_array($data['data'])) {
+                    $data = $data['data'];
+                }
+
+                $reward_mode   = $_POST['reward_mode'] ?? 'random';
+                $reward_min    = max(1.0, (float)($_POST['reward_min'] ?? 50));
+                $reward_max    = max($reward_min, (float)($_POST['reward_max'] ?? 200));
+                $reward_fixed  = max(1.0, (float)($_POST['reward_fixed'] ?? 100));
+
+                $duration_mode  = $_POST['duration_mode'] ?? 'random';
+                $duration_min   = max(5, (int)($_POST['duration_min'] ?? 15));
+                $duration_max   = max($duration_min, (int)($_POST['duration_max'] ?? 60));
+                $duration_fixed = max(5, (int)($_POST['duration_fixed'] ?? 30));
+
+                $skip_duplicate  = isset($_POST['skip_duplicate']) && $_POST['skip_duplicate'] == '1';
+                $is_active       = isset($_POST['is_active']) ? 1 : 0;
+                $sort_order_mode = $_POST['sort_order_mode'] ?? 'auto';
+
+                $existingIds = [];
+                if ($skip_duplicate) {
+                    $sStmt = $pdo->query("SELECT youtube_id FROM videos");
+                    while ($row = $sStmt->fetchColumn()) {
+                        $existingIds[$row] = true;
+                    }
+                }
+
+                $maxSort = (int)$pdo->query("SELECT COALESCE(MAX(sort_order), 0) FROM videos")->fetchColumn();
+                $imported = 0;
+                $skipped = 0;
+
+                $insertStmt = $pdo->prepare("INSERT INTO videos (title, youtube_id, reward_amount, watch_duration, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?)");
+
+                $pdo->beginTransaction();
+                try {
+                    foreach ($data as $item) {
+                        if (!is_array($item)) continue;
+
+                        $rawYt = trim((string)($item['youtube_id'] ?? $item['youtubeId'] ?? $item['id'] ?? $item['video_id'] ?? $item['url'] ?? ''));
+                        $ytId = extract_youtube_id($rawYt);
+                        if (!$ytId && preg_match('/^[a-zA-Z0-9_-]{11}$/', $rawYt)) {
+                            $ytId = $rawYt;
+                        }
+
+                        if (!$ytId) {
+                            $skipped++;
+                            continue;
+                        }
+
+                        if ($skip_duplicate && isset($existingIds[$ytId])) {
+                            $skipped++;
+                            continue;
+                        }
+
+                        $title = trim((string)($item['title'] ?? ''));
+                        if ($title === '') {
+                            $title = 'Video YouTube ' . $ytId;
+                        }
+                        if (mb_strlen($title) > 250) {
+                            $title = mb_substr($title, 0, 247) . '...';
+                        }
+
+                        // Benefit / Reward
+                        if ($reward_mode === 'random') {
+                            $rMin = (int)($reward_min * 100);
+                            $rMax = (int)($reward_max * 100);
+                            $reward = ($rMin < $rMax) ? (mt_rand($rMin, $rMax) / 100) : $reward_min;
+                            $reward = round($reward / 10) * 10;
+                            if ($reward < 1) $reward = $reward_min;
+                        } elseif ($reward_mode === 'fixed') {
+                            $reward = $reward_fixed;
+                        } else {
+                            $reward = (float)($item['reward_amount'] ?? $item['reward'] ?? $reward_fixed);
+                            if ($reward < 1) $reward = $reward_fixed;
+                        }
+
+                        // Durasi
+                        if ($duration_mode === 'random') {
+                            $duration = ($duration_min < $duration_max) ? mt_rand($duration_min, $duration_max) : $duration_min;
+                        } elseif ($duration_mode === 'fixed') {
+                            $duration = $duration_fixed;
+                        } else {
+                            $duration = (int)($item['watch_duration'] ?? $item['duration'] ?? $duration_fixed);
+                            if ($duration < 5) $duration = $duration_fixed;
+                        }
+
+                        if ($sort_order_mode === 'auto') {
+                            $maxSort++;
+                            $sortOrder = $maxSort;
+                        } else {
+                            $sortOrder = (int)($item['sort_order'] ?? 0);
+                        }
+
+                        $insertStmt->execute([$title, $ytId, $reward, $duration, $is_active, $sortOrder]);
+                        $existingIds[$ytId] = true;
+                        $imported++;
+                    }
+
+                    $pdo->commit();
+
+                    if ($imported > 0) {
+                        $flash = "Berhasil mengimpor {$imported} video baru!" . ($skipped > 0 ? " ({$skipped} video dilewati karena duplikat/invalid)." : "");
+                        $flashType = 'success';
+                    } else {
+                        $flash = "Tidak ada video baru yang diimpor. " . ($skipped > 0 ? "Semua ({$skipped}) video sudah ada di database atau tidak valid." : "");
+                        $flashType = 'warning';
+                    }
+                } catch (\Throwable $e) {
+                    if ($pdo->inTransaction()) $pdo->rollBack();
+                    $flash = 'Gagal menyimpan ke database: ' . $e->getMessage();
+                    $flashType = 'error';
+                }
+            }
+        }
+    }
+
     if ($action === 'save_sort') {
         $sort = $_POST['sort_mode'] ?? 'default';
         $pdo->prepare("INSERT INTO settings (`key`,`value`) VALUES ('video_sort_mode',?) ON DUPLICATE KEY UPDATE `value`=?")->execute([$sort, $sort]);
@@ -64,9 +220,24 @@ $activePage = 'videos';
 require __DIR__ . '/partials/header.php';
 ?>
 
-<div class="d-flex align-items-center justify-content-between mb-4">
-  <div><h5 class="mb-0 fw-bold">🎬 Manajemen Video</h5><small class="text-secondary"><?= count($videos) ?> video tersimpan</small></div>
-  <button class="btn btn-sm text-white" style="background:var(--brand)" data-bs-toggle="modal" data-bs-target="#addModal">+ Tambah Video</button>
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  <div>
+    <h5 class="mb-0 fw-bold">🎬 Manajemen Video</h5>
+    <small class="text-secondary"><?= count($videos) ?> video tersimpan di katalog</small>
+  </div>
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <?php if (!empty($videos)): ?>
+    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+      🗑️ Hapus Semua Video
+    </button>
+    <?php endif; ?>
+    <button class="btn btn-sm text-dark fw-bold" style="background:#fbbf24;border:none;box-shadow:0 3px 12px rgba(251,191,36,0.3)" data-bs-toggle="modal" data-bs-target="#importModal">
+      📥 Impor JSON (YT Scrapper)
+    </button>
+    <button class="btn btn-sm text-white" style="background:var(--brand)" data-bs-toggle="modal" data-bs-target="#addModal">
+      + Tambah Manual
+    </button>
+  </div>
 </div>
 
 <?php if ($flash): ?>
@@ -195,6 +366,334 @@ function editVideo(v) {
   new bootstrap.Modal(document.getElementById('editModal')).show();
 }
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+
+<!-- Import JSON Modal -->
+<div class="modal fade" id="importModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="background:#161922;border:1px solid #2d3149;box-shadow:0 15px 40px rgba(0,0,0,0.6)">
+      <form method="POST" enctype="multipart/form-data">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="import_json">
+        
+        <div class="modal-header border-0 pb-0 d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="modal-title fw-bold text-warning d-flex align-items-center gap-2">
+              <span>📥</span> Impor Video via JSON (LebahCuan Scrapper)
+            </h5>
+            <div style="font-size:12px;color:#94a3b8;margin-top:2px">
+              Salin data JSON dari ekstensi <strong>LebahCuan YT Scrapper</strong> di browser, lalu tempelkan langsung di bawah ini.
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body pt-3">
+          <!-- Textarea JSON -->
+          <div class="c-form-group mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="c-label mb-0 fw-bold">Data JSON Video <span class="text-danger">*</span></label>
+              <span id="json_count_badge" class="badge" style="background:rgba(255,255,255,0.06);color:#94a3b8;font-size:11px">
+                Menunggu input JSON...
+              </span>
+            </div>
+            <textarea name="json_data" id="json_data_input" class="c-form-control font-monospace" rows="6" 
+              placeholder='Tempelkan (Ctrl+V) JSON hasil copy dari ekstensi di sini... Contoh: [{"title":"...","youtube_id":"..."},...]' 
+              style="font-size:12px;line-height:1.4;background:#0d1017;border-color:#2a2e42;color:#e2e8f0;"></textarea>
+            
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <div style="font-size:11px;color:#64748b">
+                Format didukung: <code>[{"youtube_id":"...","title":"..."},...]</code>
+              </div>
+              <label class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:11px;cursor:pointer">
+                📁 Atau Upload File .json
+                <input type="file" id="json_file_input" name="json_file" accept=".json,application/json" style="display:none">
+              </label>
+            </div>
+          </div>
+
+          <!-- Variable Settings Grid -->
+          <div class="p-3 mb-3 rounded" style="background:rgba(20,24,36,0.8);border:1px solid rgba(251,191,36,0.2)">
+            <div class="fw-bold text-warning mb-2 d-flex align-items-center gap-2" style="font-size:13px">
+              <span>⚙️</span> Pengaturan Variabel Otomatis (Benefit & Durasi)
+            </div>
+
+            <div class="row g-3">
+              <!-- Reward Setting -->
+              <div class="col-md-6">
+                <label class="c-label fw-bold" style="font-size:12px">Benefit / Reward Pengguna (Rp)</label>
+                <div class="d-flex gap-2 mb-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="reward_mode" id="rm_random" value="random" checked onchange="toggleRewardInputs()">
+                    <label class="form-check-label text-secondary" for="rm_random" style="font-size:12px">Acak Range</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="reward_mode" id="rm_fixed" value="fixed" onchange="toggleRewardInputs()">
+                    <label class="form-check-label text-secondary" for="rm_fixed" style="font-size:12px">Tetap (Fixed)</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="reward_mode" id="rm_json" value="json" onchange="toggleRewardInputs()">
+                    <label class="form-check-label text-secondary" for="rm_json" style="font-size:12px">Dari JSON</label>
+                  </div>
+                </div>
+
+                <div id="reward_range_wrap" class="row g-2">
+                  <div class="col-6">
+                    <div style="font-size:11px;color:#888">Min Reward (Rp)</div>
+                    <input type="number" name="reward_min" class="c-form-control form-control-sm" value="50" min="1" step="any">
+                  </div>
+                  <div class="col-6">
+                    <div style="font-size:11px;color:#888">Max Reward (Rp)</div>
+                    <input type="number" name="reward_max" class="c-form-control form-control-sm" value="200" min="1" step="any">
+                  </div>
+                </div>
+
+                <div id="reward_fixed_wrap" style="display:none">
+                  <div style="font-size:11px;color:#888">Nominal Reward Tetap (Rp)</div>
+                  <input type="number" name="reward_fixed" class="c-form-control form-control-sm" value="100" min="1" step="any">
+                </div>
+              </div>
+
+              <!-- Duration Setting -->
+              <div class="col-md-6">
+                <label class="c-label fw-bold" style="font-size:12px">Durasi Tonton Minimal (Detik)</label>
+                <div class="d-flex gap-2 mb-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="duration_mode" id="dm_random" value="random" checked onchange="toggleDurationInputs()">
+                    <label class="form-check-label text-secondary" for="dm_random" style="font-size:12px">Acak Range</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="duration_mode" id="dm_fixed" value="fixed" onchange="toggleDurationInputs()">
+                    <label class="form-check-label text-secondary" for="dm_fixed" style="font-size:12px">Tetap (Fixed)</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="duration_mode" id="dm_json" value="json" onchange="toggleDurationInputs()">
+                    <label class="form-check-label text-secondary" for="dm_json" style="font-size:12px">Dari JSON</label>
+                  </div>
+                </div>
+
+                <div id="duration_range_wrap" class="row g-2">
+                  <div class="col-6">
+                    <div style="font-size:11px;color:#888">Min Durasi (detik)</div>
+                    <input type="number" name="duration_min" class="c-form-control form-control-sm" value="15" min="5">
+                  </div>
+                  <div class="col-6">
+                    <div style="font-size:11px;color:#888">Max Durasi (detik)</div>
+                    <input type="number" name="duration_max" class="c-form-control form-control-sm" value="60" min="5">
+                  </div>
+                </div>
+
+                <div id="duration_fixed_wrap" style="display:none">
+                  <div style="font-size:11px;color:#888">Durasi Tetap (detik)</div>
+                  <input type="number" name="duration_fixed" class="c-form-control form-control-sm" value="30" min="5">
+                </div>
+              </div>
+            </div>
+
+            <!-- Extra Options -->
+            <hr style="border-color:rgba(255,255,255,0.08);margin:12px 0 10px">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="skip_duplicate" id="skip_duplicate" value="1" checked>
+                  <label class="form-check-label text-light" for="skip_duplicate" style="font-size:12px">
+                    Cegah Duplikat (Lewati jika ID video sudah ada di database)
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="is_active" id="import_is_active" value="1" checked>
+                  <label class="form-check-label text-light" for="import_is_active" style="font-size:12px">
+                    Langsung Aktifkan Semua Video yang Diimpor
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Sample Preview -->
+          <div id="json_preview_box" style="display:none;background:#0d1017;border:1px solid #232738;border-radius:10px;padding:10px;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase">Contoh Data Terdeteksi (3 Teratas)</div>
+              <span id="preview_total_count" class="badge bg-primary" style="font-size:10px"></span>
+            </div>
+            <div id="preview_items_list" style="display:flex;flex-direction:column;gap:6px"></div>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" id="btn_submit_import" class="btn btn-sm text-dark fw-bold" style="background:#fbbf24;box-shadow:0 3px 12px rgba(251,191,36,0.3)" disabled>
+            🚀 Mulai Impor Video
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete All Videos Modal -->
+<div class="modal fade" id="deleteAllModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background:#1a1d27;border:1.5px solid #ef4444;box-shadow:0 15px 40px rgba(239,68,68,0.25)">
+      <form method="POST">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="delete_all">
+
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2">
+            <span>⚠️</span> Hapus Semua Video
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="alert alert-danger py-2 mb-3" style="font-size:13px;border-radius:10px">
+            <strong>PERINGATAN:</strong> Anda akan menghapus permanen seluruh <strong><?= count($videos) ?> video</strong> yang ada di database. Aksi ini tidak dapat dibatalkan!
+          </div>
+
+          <div class="c-form-group mb-3">
+            <label class="c-label text-warning mb-1" style="font-size:12.5px;font-weight:700">
+              Ketik kata <span style="background:rgba(239,68,68,0.2);color:#ef4444;padding:2px 6px;border-radius:4px">HAPUS</span> untuk konfirmasi:
+            </label>
+            <input type="text" id="confirm_delete_input" name="confirm_delete" class="c-form-control text-uppercase" placeholder="Ketik HAPUS di sini..." autocomplete="off" required>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" id="btn_confirm_delete" class="btn btn-sm btn-danger fw-bold" disabled>
+            🗑️ Ya, Hapus Semua Video Permanen
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// JSON Import & Variable Toggles
+function toggleRewardInputs() {
+  const mode = document.querySelector('input[name="reward_mode"]:checked')?.value || 'random';
+  document.getElementById('reward_range_wrap').style.display = (mode === 'random') ? 'flex' : 'none';
+  document.getElementById('reward_fixed_wrap').style.display = (mode === 'fixed') ? 'block' : 'none';
+}
+
+function toggleDurationInputs() {
+  const mode = document.querySelector('input[name="duration_mode"]:checked')?.value || 'random';
+  document.getElementById('duration_range_wrap').style.display = (mode === 'random') ? 'flex' : 'none';
+  document.getElementById('duration_fixed_wrap').style.display = (mode === 'fixed') ? 'block' : 'none';
+}
+
+const jsonInput = document.getElementById('json_data_input');
+const jsonFileInput = document.getElementById('json_file_input');
+const countBadge = document.getElementById('json_count_badge');
+const submitBtn = document.getElementById('btn_submit_import');
+const previewBox = document.getElementById('json_preview_box');
+const previewList = document.getElementById('preview_items_list');
+const previewTotal = document.getElementById('preview_total_count');
+
+function validateAndPreviewJson(str) {
+  if (!str || !str.trim()) {
+    countBadge.className = 'badge';
+    countBadge.style.background = 'rgba(255,255,255,0.06)';
+    countBadge.style.color = '#94a3b8';
+    countBadge.textContent = 'Menunggu input JSON...';
+    submitBtn.disabled = true;
+    previewBox.style.display = 'none';
+    return;
+  }
+
+  try {
+    let parsed = JSON.parse(str);
+    if (!Array.isArray(parsed)) {
+      if (parsed.videos && Array.isArray(parsed.videos)) parsed = parsed.videos;
+      else if (parsed.data && Array.isArray(parsed.data)) parsed = parsed.data;
+      else throw new Error("JSON harus berupa array");
+    }
+
+    const validItems = parsed.filter(item => {
+      if (!item || typeof item !== 'object') return false;
+      const yt = item.youtube_id || item.youtubeId || item.id || item.url;
+      return !!yt;
+    });
+
+    if (validItems.length > 0) {
+      countBadge.className = 'badge bg-success';
+      countBadge.style.color = '#fff';
+      countBadge.textContent = `✅ ${validItems.length} video valid terdeteksi`;
+      submitBtn.disabled = false;
+
+      // Render 3 sample preview
+      previewBox.style.display = 'block';
+      previewTotal.textContent = `Total: ${validItems.length} item`;
+      previewList.innerHTML = '';
+      
+      validItems.slice(0, 3).forEach(v => {
+        const id = v.youtube_id || v.youtubeId || v.id || '-';
+        const title = v.title || 'Tanpa Judul';
+        const itemRow = document.createElement('div');
+        itemRow.style.display = 'flex';
+        itemRow.style.alignItems = 'center';
+        itemRow.style.gap = '10px';
+        itemRow.style.fontSize = '11px';
+        itemRow.style.padding = '4px 6px';
+        itemRow.style.borderRadius = '6px';
+        itemRow.style.background = '#151926';
+
+        itemRow.innerHTML = `
+          <img src="https://img.youtube.com/vi/${id}/default.jpg" style="width:40px;height:24px;object-fit:cover;border-radius:4px" onerror="this.style.display='none'">
+          <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e2e8f0;font-weight:600">
+            ${escH(title)}
+          </div>
+          <span style="font-family:monospace;color:#38bdf8">${escH(id)}</span>
+        `;
+        previewList.appendChild(itemRow);
+      });
+    } else {
+      countBadge.className = 'badge bg-warning text-dark';
+      countBadge.textContent = '⚠️ Tidak ditemukan item video yang valid';
+      submitBtn.disabled = true;
+      previewBox.style.display = 'none';
+    }
+  } catch (err) {
+    countBadge.className = 'badge bg-danger';
+    countBadge.style.color = '#fff';
+    countBadge.textContent = '❌ Format JSON belum valid';
+    submitBtn.disabled = true;
+    previewBox.style.display = 'none';
+  }
+}
+
+if (jsonInput) {
+  jsonInput.addEventListener('input', (e) => {
+    validateAndPreviewJson(e.target.value);
+  });
+}
+
+if (jsonFileInput) {
+  jsonFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        jsonInput.value = event.target.result;
+        validateAndPreviewJson(event.target.result);
+      };
+      reader.readAsText(file);
+    }
+  });
+}
+
+// Delete All Safety Confirmation
+const confirmDelInput = document.getElementById('confirm_delete_input');
+const btnConfirmDel = document.getElementById('btn_confirm_delete');
+if (confirmDelInput && btnConfirmDel) {
+  confirmDelInput.addEventListener('input', (e) => {
+    btnConfirmDel.disabled = (e.target.value.trim().toUpperCase() !== 'HAPUS');
+  });
+}
 </script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
