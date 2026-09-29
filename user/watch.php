@@ -219,12 +219,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
         $pdo->prepare("UPDATE users SET balance_wd=balance_wd+?,total_earned=total_earned+? WHERE id=?")
             ->execute([$reward, $reward, $user['id']]);
         // Sinkronkan total_watches = fake_watches + real_watches (watch_history)
-        $pdo->prepare("UPDATE videos SET total_watches = fake_watches + (SELECT COUNT(*) FROM watch_history WHERE video_id=?) WHERE id=?")
-            ->execute([$vid_id, $vid_id]);
+        try {
+            $pdo->prepare("UPDATE videos SET total_watches = COALESCE(fake_watches, 0) + (SELECT COUNT(*) FROM watch_history WHERE video_id=?) WHERE id=?")
+                ->execute([$vid_id, $vid_id]);
+        } catch (\Throwable) {
+            $pdo->prepare("UPDATE videos SET total_watches = total_watches + 1 WHERE id=?")
+                ->execute([$vid_id]);
+        }
 
         // Hapus progres video dari user_watch_progress karena misi sudah selesai diklaim
-        $pdo->prepare("DELETE FROM user_watch_progress WHERE user_id=? AND video_id=?")
-            ->execute([$user['id'], $vid_id]);
+        try {
+            $pdo->prepare("DELETE FROM user_watch_progress WHERE user_id=? AND video_id=?")
+                ->execute([$user['id'], $vid_id]);
+        } catch (\Throwable) {}
 
         $pdo->commit();
 
@@ -261,7 +268,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggl
     }
 
     // Selalu sinkronkan total_likes = fake_likes + real_likes
-    $pdo->prepare("UPDATE videos SET total_likes = fake_likes + (SELECT COUNT(*) FROM video_likes WHERE video_id=?) WHERE id=?")->execute([$vid_id, $vid_id]);
+    try {
+        $pdo->prepare("UPDATE videos SET total_likes = COALESCE(fake_likes, 0) + (SELECT COUNT(*) FROM video_likes WHERE video_id=?) WHERE id=?")->execute([$vid_id, $vid_id]);
+    } catch (\Throwable) {
+        $pdo->prepare("UPDATE videos SET total_likes = (SELECT COUNT(*) FROM video_likes WHERE video_id=?) WHERE id=?")->execute([$vid_id, $vid_id]);
+    }
 
     $cnt = $pdo->prepare("SELECT total_likes FROM videos WHERE id=?");
     $cnt->execute([$vid_id]);
