@@ -77,12 +77,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         goto end_reg;
     }
 
-    // ── 1. HONEYPOT ANTI-BOT TRAP ──
-    if (!empty($_POST['website_hp_check'])) {
+    // ── 1. HONEYPOT ANTI-BOT TRAP (DENGAN TOLERANSI BROWSER AUTOFILL) ──
+    $hp_val     = trim((string)($_POST['website_hp_check'] ?? ''));
+    $user_email = trim((string)($_POST['email'] ?? ''));
+    $user_uname = trim((string)($_POST['username'] ?? ''));
+
+    // Deteksi jika terisi karena false-positive autofill browser (email / username pengguna)
+    $is_autofill_accidental = ($hp_val !== '' && (
+        ($user_email !== '' && strcasecmp($hp_val, $user_email) === 0) ||
+        ($user_uname !== '' && strcasecmp($hp_val, $user_uname) === 0)
+    ));
+
+    if (!empty($hp_val) && !$is_autofill_accidental) {
         $msg_bot = "🚨 <b>PERINGATAN ABUSE: BOT SPAMMER TERPERANGKAP HONEYPOT!</b>\n\n"
             . "🌐 <b>IP Address:</b> <code>{$client_ip}</code>\n"
             . "👤 <b>Username:</b> <code>" . htmlspecialchars($_POST['username'] ?? '') . "</code>\n"
-            . "📝 <b>Input Perangkap:</b> " . htmlspecialchars($_POST['website_hp_check']) . "\n"
+            . "📝 <b>Input Perangkap:</b> " . htmlspecialchars($hp_val) . "\n"
             . "🛑 <b>Status:</b> Pendaftaran otomatis digagalkan sistem.\n"
             . "🕐 <b>Waktu:</b> " . date('d M Y H:i:s');
         send_telegram_notif($pdo, $msg_bot, [], 'abuse');
@@ -941,7 +951,6 @@ select.inp-field {
     
     <!-- Anti-Bot Hidden Fields -->
     <input type="hidden" name="form_time_sig" value="<?= time() ?>">
-    <input type="text" name="website_hp_check" value="" style="position:absolute;left:-9999px;opacity:0;pointer-events:none;" tabindex="-1" autocomplete="off">
     <input type="hidden" name="captcha_token" id="captcha_token" value="<?= htmlspecialchars($captcha['token']) ?>">
     <input type="hidden" name="captcha_sig" id="captcha_sig" value="<?= htmlspecialchars($captcha['sig']) ?>">
     <input type="hidden" name="acc_num_input_type" id="f_acc_num_input_type" value="typed">
@@ -1070,6 +1079,11 @@ select.inp-field {
       <span>Daftar Akun Sekarang</span>
       <i class="ph-bold ph-arrow-right"></i>
     </button>
+
+    <!-- Honeypot Anti-Bot Trap (hidden safely from browser autofill) -->
+    <div style="display:none !important;" aria-hidden="true">
+      <input type="text" name="website_hp_check" value="" tabindex="-1" autocomplete="new-password">
+    </div>
   </form>
 
   <!-- Login Link -->
