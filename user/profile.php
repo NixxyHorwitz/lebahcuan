@@ -1260,7 +1260,7 @@ body {
           <i class="ph-fill ph-users-three"></i>
         </div>
         <div class="stream-info">
-          <div class="stream-title">Mitra Peternak (Squad)</div>
+          <div class="stream-title">Mitra Peternak (Undang)</div>
           <div class="stream-desc">Teman bergabung lewat kodemu</div>
         </div>
         <div class="stream-value"><?= number_format($refs) ?> mitra</div>

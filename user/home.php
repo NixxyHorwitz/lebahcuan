@@ -949,12 +949,12 @@ body {
       <span class="b-tile__lbl">Misi</span>
     </a>
 
-    <!-- Tile 7: Squad Afiliasi -->
+    <!-- Tile 7: Undang Teman -->
     <a href="/referral" class="b-tile">
       <div class="b-tile__icon" style="background:linear-gradient(135deg,#10b981,#047857);border-color:#064e3b;">
         <i class="ph-fill ph-users-three"></i>
       </div>
-      <span class="b-tile__lbl">Squad</span>
+      <span class="b-tile__lbl">Undang</span>
     </a>
 
     <!-- Tile 8: Upgrade VIP (Hanya muncul jika sudah menghasilkan cuan lumayan) / Panduan Cuan jika masih baru -->

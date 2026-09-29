@@ -166,7 +166,7 @@
 
     <a href="/referral" class="nav-item <?= ($activePage??'')==='referral'?'active':'' ?>">
       <i class="<?= ($activePage??'')==='referral'?'ph-fill':'ph-bold' ?> ph-users-three"></i>
-      Squad
+      Undang
     </a>
     <a href="/profile" class="nav-item <?= ($activePage??'')==='profile'?'active':'' ?>">
       <i class="<?= ($activePage??'')==='profile'?'ph-fill':'ph-bold' ?> ph-user-circle"></i>

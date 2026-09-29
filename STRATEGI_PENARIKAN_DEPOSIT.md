@@ -11,7 +11,7 @@ Dokumen ini menyajikan rancangan strategi komprehensif untuk **mendorong penggun
 3. [Fase 2: Perangkap Saldo Mengendap & Loss Aversion (The Endowment Effect)](#3-fase-2-perangkap-saldo-mengendap--loss-aversion-the-endowment-effect)
 4. [Fase 3: Micro-Deposit "Starter Pack" (Penghancur Hambatan Pertama)](#4-fase-3-micro-deposit-starter-pack-penghancur-hambatan-pertama)
 5. [Fase 4: Gamifikasi FOMO & Urgensi di Kebun 3D & Plinko](#5-fase-4-gamifikasi-fomo--urgensi-di-kebun-3d--plinko)
-6. [Fase 5: Mesin Social Proof & Viral Multiplier (Squad 30%)](#6-fase-5-mesin-social-proof--viral-multiplier-squad-30)
+6. [Fase 5: Mesin Social Proof & Viral Multiplier (Undang Teman 30%)](#6-fase-5-mesin-social-proof--viral-multiplier-undang-teman-30)
 7. [Fase 6: Rekayasa Antarmuka Pembayaran & Behavioral Nudges](#7-fase-6-rekayasa-antarmuka-pembayaran--behavioral-nudges)
 8. [Matriks Aksi Konkret Implementasi di Codebase](#8-matriks-aksi-konkret-implementasi-di-codebase)
 9. [Kalkulasi Likuiditas & Pertahanan Kas Jangka Panjang](#9-kalkulasi-likuiditas--pertahanan-kas-jangka-panjang)
@@ -160,7 +160,7 @@ flowchart TD
 
 ---
 
-## 6. Fase 5: Mesin Social Proof & Viral Multiplier (Squad 30%)
+## 6. Fase 5: Mesin Social Proof & Viral Multiplier (Undang Teman 30%)
 
 Orang tidak percaya pada kata-kata perusahaan, tetapi orang percaya pada **bukti transfer temannya**.
 
@@ -184,7 +184,7 @@ graph TD
    - Menciptakan efek kerumunan (*Bandwagon Effect*): "Banyak orang lain yang deposit dan menarik uang, jadi aman!".
 2. **Promotor Affiliate Kit (Komisi 30% Menggiurkan)**:
    - Komisi 30% dari deposit langsung masuk ke **Saldo Tarik** (bisa ditarik tunai).
-   - Di halaman Squad/Referral, sediakan:
+   - Di halaman Undang / Referral, sediakan:
      - Tombol 1-klik: "Salin Kata-Kata Promosi Siap Posting ke Grup WA/FB".
      - Gambar promosi bertema lebah cuan yang otomatis ditempeli kode referral pengguna.
 
