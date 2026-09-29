@@ -13,6 +13,45 @@ function get_active_price(array $membership, array $user): float {
     return $price;
 }
 
+// Hitung rata-rata reward video aktif untuk estimasi panen yang akurat
+$v_stats = $pdo->query("SELECT AVG(reward_amount) AS avg_reward, COUNT(*) AS total_videos FROM videos WHERE is_active=1")->fetch();
+$avg_video_reward = (float)($v_stats['avg_reward'] ?? 7200);
+$total_active_videos = (int)($v_stats['total_videos'] ?? 0);
+
+/**
+ * Menghitung estimasi panen berdasarkan limit tonton harian dan rata-rata reward video aktif
+ */
+function get_harvest_calc(?array $m, float $avg_reward): ?array {
+    if (!$m) return null;
+    $watch_limit   = (int)($m['watch_limit'] ?? 0);
+    $duration_days = (int)($m['duration_days'] ?? 30);
+    $price         = (float)($m['price'] ?? 0);
+
+    $daily_income  = $watch_limit * $avg_reward;
+    $total_harvest = $daily_income * $duration_days;
+    $break_even_days = ($daily_income > 0 && $price > 0) ? max(1, (int)ceil($price / $daily_income)) : 1;
+
+    $rounded_total = round($total_harvest / 1000) * 1000;
+    $rounded_daily = round($daily_income / 1000) * 1000;
+
+    if ($duration_days == 60) {
+        $period_label = ' / 2 bln';
+    } elseif ($duration_days == 30) {
+        $period_label = '/bln';
+    } else {
+        $period_label = " / {$duration_days} hari";
+    }
+
+    return [
+        'daily_income'    => $daily_income,
+        'total_harvest'   => $total_harvest,
+        'break_even_days' => $break_even_days,
+        'period_label'    => $period_label,
+        'harvest_text'    => '~' . format_rp($rounded_total) . $period_label,
+        'daily_text'      => '~' . format_rp($rounded_daily) . '/hari',
+    ];
+}
+
 $all_memberships = $pdo->query("SELECT * FROM memberships WHERE is_active=1 ORDER BY sort_order ASC")->fetchAll();
 $memberships = [];
 foreach ($all_memberships as $ms) {
@@ -949,6 +988,13 @@ body {
     <!-- PILIH KASTA KOLONI LEBAH -->
     <div class="sh-honey"><div class="sh-honey__title"><i class="ph-fill ph-crown"></i> Pilih Kasta Rimba</div></div>
 
+    <div style="background:#fffbeb;border:1.5px dashed #f59e0b;border-radius:14px;padding:9px 12px;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+      <i class="ph-fill ph-calculator" style="color:#d97706;font-size:18px;flex-shrink:0;"></i>
+      <div style="font-size:11px;font-weight:800;color:#92400e;line-height:1.4;">
+        Estimasi panen dihitung otomatis berdasarkan <b>rata-rata reward video aktif (<?= format_rp($avg_video_reward) ?> / video)</b> dikalikan kuota harian masing-masing kasta.
+      </div>
+    </div>
+
     <form method="POST" id="upgrade-form">
       <?= csrf_field() ?>
       <input type="hidden" name="membership_id" id="chosen-id" value="">
@@ -960,6 +1006,10 @@ body {
       $kanopi   = $paid[0] ?? null;
       $rimba    = $paid[1] ?? null;
       $ratu     = $paid[2] ?? null;
+
+      $h_kanopi = $kanopi ? get_harvest_calc($kanopi, $avg_video_reward) : null;
+      $h_rimba  = $rimba  ? get_harvest_calc($rimba, $avg_video_reward)  : null;
+      $h_ratu   = $ratu   ? get_harvest_calc($ratu, $avg_video_reward)   : null;
       ?>
 
       <!-- TIER 1: GOLDEN AMBER -->
@@ -991,8 +1041,8 @@ body {
         </div>
 
         <div class="lvl-potensi-cuan">
-          <span>🎯 Estimasi Panen: <strong>~Rp 150rb/bln</strong></span>
-          <span class="lvl-roi-pill">⚡ Balik Modal 4-5 Hari</span>
+          <span>🎯 Estimasi Panen: <strong><?= $h_kanopi['harvest_text'] ?></strong></span>
+          <span class="lvl-roi-pill">⚡ <?= $h_kanopi['daily_text'] ?></span>
         </div>
 
         <div class="lvl-specs">
@@ -1043,8 +1093,8 @@ body {
         </div>
 
         <div class="lvl-potensi-cuan" style="background:#fffbeb;border-color:#f59e0b;color:#92400e;">
-          <span>🎯 Estimasi Panen: <strong>~Rp 310rb/bln</strong></span>
-          <span class="lvl-roi-pill" style="background:#fef3c7;color:#92400e;border-color:#b45309;">🔥 Kuota 2x Lipat</span>
+          <span>🎯 Estimasi Panen: <strong><?= $h_rimba['harvest_text'] ?></strong></span>
+          <span class="lvl-roi-pill" style="background:#fef3c7;color:#92400e;border-color:#b45309;">🔥 <?= $h_rimba['daily_text'] ?></span>
         </div>
 
         <div class="lvl-specs">
@@ -1095,8 +1145,8 @@ body {
         </div>
 
         <div class="lvl-potensi-cuan" style="background:#fff;border-color:#b45309;color:#78350f;">
-          <span>🎯 Estimasi Panen: <strong>~Rp 650rb / 2 bln</strong></span>
-          <span class="lvl-roi-pill" style="background:#fde68a;color:#78350f;border-color:#78350f;">👑 Super Hemat 60 Hari</span>
+          <span>🎯 Estimasi Panen: <strong><?= $h_ratu['harvest_text'] ?></strong></span>
+          <span class="lvl-roi-pill" style="background:#fde68a;color:#78350f;border-color:#78350f;">👑 <?= $h_ratu['daily_text'] ?></span>
         </div>
 
         <div class="lvl-specs">

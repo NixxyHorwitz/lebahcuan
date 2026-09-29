@@ -158,14 +158,19 @@ if (!$is_guest) {
 }
 
 // ── KELAYAKAN FITUR UPGRADE ──
-// Menu upgrade hanya ditampilkan jika user sudah menonton dan menghasilkan cuan lumayan
-// (Kriteria: total_earned >= 1500 atau cuan nonton hari ini >= 1000 atau tonton >= 3 video atau sudah VIP)
-$show_upgrade_feature = !$is_guest && (
+// User berpenghasilan lumayan: total_earned >= 1500, balance_wd >= 1500, cuan hari ini >= 1000,
+// tonton >= 2 video hari ini, atau sudah berstatus VIP
+$user_has_good_income = !$is_guest && (
     (float)($user['total_earned'] ?? 0) >= 1500 || 
+    (float)($user['balance_wd'] ?? 0) >= 1500 ||
     $today_watch_earned >= 1000 || 
-    (int)($user['watch_count_today'] ?? 0) >= 3 || 
+    $watch_today >= 2 || 
+    (int)($user['watch_count_today'] ?? 0) >= 2 ||
     (!empty($user['membership_id']) && (int)$user['membership_id'] > 1)
 );
+
+// Menu upgrade ditampilkan jika sudah berpenghasilan lumayan atau sudah mulai aktif
+$show_upgrade_feature = $user_has_good_income || (!$is_guest && (float)($user['total_earned'] ?? 0) > 0);
 
 // ── PENGATURAN POPUP ──
 $popup_enabled     = setting($pdo, 'popup_enabled', '1') === '1';
@@ -692,6 +697,35 @@ body {
   0%, 100% { box-shadow: 0 4px 0 #b45309, 0 0 8px rgba(245, 158, 11, 0.3); }
   50% { box-shadow: 0 4px 0 #b45309, 0 0 16px rgba(245, 158, 11, 0.7); }
 }
+.b-tile--highlighted {
+  border-color: #d97706 !important;
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%) !important;
+  box-shadow: 0 4px 0 #b45309, 0 0 16px rgba(245, 158, 11, 0.6) !important;
+  animation: vip-glow-highlight 1.8s infinite ease-in-out !important;
+}
+@keyframes vip-glow-highlight {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 0 #b45309, 0 0 10px rgba(245, 158, 11, 0.4); }
+  50% { transform: scale(1.04); box-shadow: 0 4px 0 #b45309, 0 0 20px rgba(245, 158, 11, 0.85); }
+}
+.b-tile-badge-cuan {
+  position: absolute;
+  top: -8px;
+  right: -5px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  border: 1.5px solid #fff;
+  border-radius: 8px;
+  font-size: 7.5px;
+  font-weight: 900;
+  padding: 1px 4px;
+  letter-spacing: 0.2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  animation: pulse-dot 1.2s infinite;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
 .b-tile-badge-dot {
   position: absolute; top: -3px; right: -3px; width: 10px; height: 10px;
   background: #ef4444; border: 2px solid #fff; border-radius: 50%;
@@ -700,6 +734,82 @@ body {
 @keyframes pulse-dot {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.3); opacity: 0.8; }
+}
+
+/* ── UPGRADE VIP HIGHLIGHT STRIP (CUAN LUMAYAN) ── */
+.btn-upgrade-highlight {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 14px;
+  padding: 9px 12px;
+  margin-top: 10px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-decoration: none;
+  box-shadow: 0 3px 0 #78350f, 0 0 14px rgba(245, 158, 11, 0.35);
+  animation: buh-pulse 2.2s infinite ease-in-out;
+  transition: all 0.15s ease;
+}
+.btn-upgrade-highlight:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #78350f;
+}
+@keyframes buh-pulse {
+  0%, 100% { border-color: #f59e0b; box-shadow: 0 3px 0 #78350f, 0 0 10px rgba(245, 158, 11, 0.3); }
+  50% { border-color: #fbbf24; box-shadow: 0 3px 0 #78350f, 0 0 18px rgba(251, 191, 36, 0.65); }
+}
+.buh-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.buh-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #fde68a;
+  letter-spacing: 0.3px;
+}
+.buh-badge-tag {
+  background: #f59e0b;
+  color: #78350f;
+  border-radius: 6px;
+  padding: 1px 5px;
+  font-size: 8.5px;
+  font-weight: 900;
+}
+.buh-text {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.3;
+}
+.buh-text strong {
+  color: #fde047;
+  font-weight: 900;
+}
+.buh-arrow {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1.5px solid #fef3c7;
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: #78350f;
+  font-size: 11px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 #78350f;
+  flex-shrink: 0;
 }
 
 /* ── TIPS & ANNOUNCEMENTS ── */
@@ -1105,6 +1215,26 @@ body {
       </div>
     </div>
 
+    <!-- Highlight Tombol Upgrade jika User Sudah Berpenghasilan Lumayan -->
+    <?php if ($user_has_good_income): ?>
+      <a href="/upgrade" class="btn-upgrade-highlight" title="Upgrade VIP untuk lipatgandakan kuota dan cuan">
+        <div class="buh-content">
+          <div class="buh-badge">
+            <i class="ph-fill ph-crown" style="color:#f59e0b;"></i>
+            <span>REKOMENDASI UPGRADE VIP</span>
+            <span class="buh-badge-tag">PANEN S/D 120 VIDEO</span>
+          </div>
+          <div class="buh-text">
+            <span>Sudah berpenghasilan? Buka kuota <strong>s/d 120 video/hari</strong> &amp; panen jutaan!</span>
+          </div>
+        </div>
+        <div class="buh-arrow">
+          <span>Upgrade</span>
+          <i class="ph-bold ph-arrow-right"></i>
+        </div>
+      </a>
+    <?php endif; ?>
+
     <!-- Primary CTA: Mulai Nonton Video Sekarang -->
     <a href="/videos" class="btn-cuan-watch-now" id="tour-btn-watch">
       <i class="ph-fill ph-play-circle" style="font-size:20px;"></i>
@@ -1237,7 +1367,10 @@ body {
 
     <!-- Tile 8: Upgrade VIP (Hanya muncul jika sudah menghasilkan cuan lumayan) / Panduan Cuan jika masih baru -->
     <?php if ($show_upgrade_feature): ?>
-      <a href="/upgrade" class="b-tile b-tile--vip-glow">
+      <a href="/upgrade" class="b-tile <?= $user_has_good_income ? 'b-tile--highlighted' : 'b-tile--vip-glow' ?>" id="tour-tile-upgrade" style="position:relative;">
+        <?php if ($user_has_good_income): ?>
+          <span class="b-tile-badge-cuan"><i class="ph-fill ph-sparkle"></i> REKOMENDASI</span>
+        <?php endif; ?>
         <div class="b-tile__icon" style="background:linear-gradient(135deg,#fbbf24,#d97706);border-color:#78350f;">
           <i class="ph-fill ph-crown" style="color:#78350f;"></i>
         </div>
