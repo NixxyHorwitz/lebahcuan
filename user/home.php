@@ -960,198 +960,6 @@ body {
   line-height: 1.35;
 }
 
-/* ══════════════════════════════════════════════════════════
-   FULLSCREEN SPOTLIGHT OVERLAY & POPOVER
-   ══════════════════════════════════════════════════════════ */
-#lebah-tour-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 99990;
-  pointer-events: auto;
-  display: none;
-  background: rgba(15, 23, 42, 0.4);
-}
-
-/* Cutout spotlight box with smooth glides */
-#lebah-tour-spotlight {
-  position: fixed;
-  z-index: 99992;
-  border-radius: 18px;
-  border: 3px solid #fbbf24;
-  box-shadow: 0 0 0 9999px rgba(10, 15, 29, 0.82), 0 0 25px rgba(251, 191, 36, 0.7);
-  pointer-events: none;
-  transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-  box-sizing: border-box;
-}
-
-/* Spotlight pulsing beacon indicator */
-#lebah-tour-spotlight::after {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border-radius: inherit;
-  border: 2px solid rgba(251, 191, 36, 0.6);
-  animation: beaconPulse 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-@keyframes beaconPulse {
-  0% { transform: scale(0.98); opacity: 0.9; }
-  100% { transform: scale(1.05); opacity: 0; }
-}
-
-/* Floating popover card */
-#lebah-tour-popover {
-  position: fixed;
-  z-index: 99999;
-  background: #ffffff;
-  border: 3px solid #78350f;
-  border-radius: 22px;
-  box-shadow: 0 8px 0 #78350f, 0 20px 40px rgba(0,0,0,0.45);
-  padding: 15px 15px 13px;
-  max-width: 360px;
-  width: calc(100vw - 28px);
-  box-sizing: border-box;
-  transition: all 0.28s cubic-bezier(0.25, 1, 0.5, 1);
-  display: none;
-}
-.tour-pop-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-.tour-pop-track-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 900;
-  padding: 3px 8px;
-  border-radius: 10px;
-  background: #fef3c7;
-  color: #b45309;
-  border: 1px solid #fde68a;
-}
-.tour-pop-step-count {
-  font-size: 10.5px;
-  font-weight: 800;
-  color: #94a3b8;
-}
-.tour-pop-close {
-  background: transparent;
-  border: none;
-  font-size: 16px;
-  color: #94a3b8;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 6px;
-}
-.tour-pop-close:hover {
-  color: #ef4444;
-}
-.tour-pop-title {
-  font-size: 14px;
-  font-weight: 900;
-  color: #78350f;
-  margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  line-height: 1.25;
-}
-.tour-pop-desc {
-  font-size: 11px;
-  font-weight: 700;
-  color: #475569;
-  line-height: 1.45;
-  margin-bottom: 8px;
-}
-.tour-pop-tip {
-  background: #fffbeb;
-  border: 1.5px solid #fef08a;
-  border-radius: 12px;
-  padding: 6px 10px;
-  font-size: 10.5px;
-  font-weight: 800;
-  color: #92400e;
-  margin-bottom: 11px;
-  display: flex;
-  align-items: flex-start;
-  gap: 5px;
-  line-height: 1.35;
-}
-.tour-pop-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding-top: 9px;
-  border-top: 1.5px dashed #f1f5f9;
-}
-.tour-pop-dots {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.tour-pop-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #cbd5e1;
-  transition: all 0.2s ease;
-}
-.tour-pop-dot.active {
-  width: 16px;
-  border-radius: 4px;
-  background: #d97706;
-}
-.tour-pop-nav-btns {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.btn-tour-nav-prev {
-  background: #f1f5f9;
-  border: 2px solid #cbd5e1;
-  color: #475569;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 6px 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.btn-tour-nav-prev:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-.btn-tour-nav-next {
-  background: linear-gradient(180deg, #f59e0b, #d97706);
-  border: 2px solid #78350f;
-  color: #ffffff;
-  font-size: 11.5px;
-  font-weight: 900;
-  padding: 6px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  box-shadow: 0 2px 0 #78350f;
-  text-shadow: 0 1px 1px #78350f;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.15s ease;
-}
-.btn-tour-nav-next.finish {
-  background: linear-gradient(180deg, #10b981, #059669);
-  border-color: #064e3b;
-  box-shadow: 0 2px 0 #064e3b;
-  text-shadow: 0 1px 1px #064e3b;
-}
-.btn-tour-nav-next:active {
-  transform: translateY(2px);
-  box-shadow: 0 0 0 #78350f;
-}
-</style>
 
 <!-- ══════════════════════════════════════════════════════════
      HERO SECTION: NONTON VIDEO & DISPLAY SALDO VIP (FLEX READY)
@@ -1644,55 +1452,6 @@ body {
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════
-     FULLSCREEN SPOTLIGHT TOUR OVERLAY & FLOATING POPOVER
-     ══════════════════════════════════════════════════════════ -->
-<div id="lebah-tour-overlay">
-  <!-- Cutout spotlight box with smooth gliding -->
-  <div id="lebah-tour-spotlight"></div>
-
-  <!-- Floating Popover Card -->
-  <div id="lebah-tour-popover">
-    <div class="tour-pop-header">
-      <div class="tour-pop-track-tag">
-        <span id="tour-pop-track-text">🐝 Tour Fitur Lebah</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span class="tour-pop-step-count" id="tour-pop-step-text">1/5</span>
-        <button type="button" class="tour-pop-close" onclick="closeInteractiveTour()" title="Tutup Tour">
-          <i class="ph-bold ph-x"></i>
-        </button>
-      </div>
-    </div>
-
-    <div class="tour-pop-title" id="tour-pop-title-text">
-      <!-- Title injected by JS -->
-    </div>
-
-    <div class="tour-pop-desc" id="tour-pop-desc-text">
-      <!-- Description injected by JS -->
-    </div>
-
-    <div class="tour-pop-tip" id="tour-pop-tip-box">
-      <span id="tour-pop-tip-text"></span>
-    </div>
-
-    <div class="tour-pop-footer">
-      <div class="tour-pop-dots" id="tour-pop-dots">
-        <!-- Rendered by JS -->
-      </div>
-      <div class="tour-pop-nav-btns">
-        <button type="button" class="btn-tour-nav-prev" id="btn-tour-prev" onclick="prevTourStep()">
-          <i class="ph-bold ph-arrow-left"></i> Mundur
-        </button>
-        <button type="button" class="btn-tour-nav-next" id="btn-tour-next" onclick="nextTourStep()">
-          Maju <i class="ph-bold ph-arrow-right"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Toast Container for Copy / Share feedback -->
 <div id="cuan-toast"></div>
 
@@ -1760,109 +1519,8 @@ function showCuanToast(msg) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   INTERACTIVE TOUR DATA & FUNCTIONS
+   INTERACTIVE TOUR INTEGRATION & MODAL CONTROLLERS
    ══════════════════════════════════════════════════════════ */
-const TOUR_DATA = {
-  lebah: [
-    {
-      target: '#tour-balance-box',
-      trackName: '🐝 Tour Fitur Lebah',
-      title: '<i class="ph-fill ph-shield-check" style="color:#10b981;"></i> Saldo Siap Tarik (WD)',
-      desc: 'Semua hasil panen madu dan keuntungan peternakan lebahmu akan langsung masuk ke Saldo Siap Tarik ini. Uang ini siap kamu cairkan ke DANA, GoPay, OVO, atau Rekening Bank kapan pun!',
-      tip: '💡 Tarik saldo kapan saja tanpa potongan biaya tersembunyi!',
-      pad: 10,
-      radius: 18
-    },
-    {
-      target: '#tour-tile-farm',
-      trackName: '🐝 Tour Fitur Lebah',
-      title: '<i class="ph-fill ph-drop" style="color:#16a34a;"></i> Kandang & Peternakan Lebah',
-      desc: 'Klik menu ini untuk masuk ke peternakan lebah 3D! Lebah pekerjamu akan mengumpulkan tetesan madu murni secara otomatis setiap jam (cuan pasif) bahkan ketika aplikasi sedang ditutup!',
-      tip: '💡 Buka peternakanmu secara rutin untuk memanen madu yang sudah matang.',
-      pad: 8,
-      radius: 18
-    },
-    {
-      target: '#tour-tile-stall',
-      trackName: '🐝 Tour Fitur Lebah',
-      title: '<i class="ph-fill ph-storefront" style="color:#eab308;"></i> Lapak Penjualan Madu',
-      desc: 'Setelah madu selesai dipanen dari sarang, jual madumu di Lapak Madu ini. Madu akan langsung dibeli dengan harga pasar terbaik dan seketika menjadi Rupiah tunai!',
-      tip: '💡 Penjualan madu diproses instan ke saldo penarikan.',
-      pad: 8,
-      radius: 18
-    },
-    {
-      target: '#tour-tile-shop',
-      trackName: '🐝 Tour Fitur Lebah',
-      title: '<i class="ph-fill ph-shopping-bag" style="color:#0284c7;"></i> Toko Bibit & Sarang Kayu',
-      desc: 'Ingin produksi madu berlipat ganda? Gunakan keuntunganmu untuk membeli bibit lebah unggulan dan menyewa kotak sarang kayu baru di toko ini!',
-      tip: '💡 Semakin banyak lebah aktif, semakin deras tetesan madu yang kamu hasilkan.',
-      pad: 8,
-      radius: 18
-    },
-    {
-      target: '#tour-sidejob-card',
-      trackName: '🐝 Tour Fitur Lebah',
-      title: '<i class="ph-fill ph-binoculars" style="color:#d97706;"></i> Live Monitor Peternakan',
-      desc: 'Dari beranda ini kamu bisa langsung memantau jumlah sarang aktif, total lebah pekerja, dan laju produksi ml/jam secara real-time tanpa harus membuka menu lain!',
-      tip: '💡 Jangan biarkan sarang penuh, segera panen begitu madu siap diambil!',
-      pad: 10,
-      radius: 20
-    }
-  ],
-  watch: [
-    {
-      target: '#tour-video-mission',
-      trackName: '🎬 Tour Cuan Nonton',
-      title: '<i class="ph-fill ph-film-strip" style="color:#f97316;"></i> Kuota Misi Video Harian',
-      desc: 'Setiap hari kamu mendapatkan kuota video berbayar. Progress bar ini menunjukkan berapa video yang sudah kamu tonton dan sisa video yang masih bisa kamu selesaikan hari ini!',
-      tip: '💡 Kuota direset otomatis setiap malam pukul 00:00 WIB.',
-      pad: 10,
-      radius: 16
-    },
-    {
-      target: '#tour-btn-watch',
-      trackName: '🎬 Tour Cuan Nonton',
-      title: '<i class="ph-fill ph-play-circle" style="color:#f59e0b;"></i> Tombol Cepat Mulai Nonton',
-      desc: 'Klik tombol ini untuk langsung memutar video cuan! Cukup tonton video berdurasi singkat hingga hitungan mundur selesai dan saldo Rupiah akan langsung otomatis masuk ke akunmu!',
-      tip: '💡 Santai saja, reward otomatis masuk tanpa perlu klik tombol aneh-aneh.',
-      pad: 8,
-      radius: 16
-    },
-    {
-      target: '#tour-tile-video',
-      trackName: '🎬 Tour Cuan Nonton',
-      title: '<i class="ph-fill ph-film-strip" style="color:#f97316;"></i> Galeri Pilihan Video',
-      desc: 'Di menu ini kamu bisa bebas memilih aneka video menarik yang ingin kamu tonton. Setiap video memiliki keterangan nominal reward uang yang transparan dan jelas!',
-      tip: '💡 Tonton semua video pilihan setiap hari untuk mengumpulkan saldo maksimal.',
-      pad: 8,
-      radius: 18
-    },
-    {
-      target: '#tour-tile-checkin',
-      trackName: '🎬 Tour Cuan Nonton',
-      title: '<i class="ph-fill ph-hexagon" style="color:#f59e0b;"></i> Buka Sarang Madu Harian',
-      desc: 'Selain menonton video, jangan lupa buka hexagon sarang lebah setiap hari! Cukup 1 kali klik setiap hari untuk mendapatkan kejutan uang tunai gratis tanpa syarat.',
-      tip: '💡 Check-in rutin setiap hari untuk menjaga streak bonus aktif!',
-      pad: 8,
-      radius: 18
-    },
-    {
-      target: '#tour-btn-withdraw',
-      trackName: '🎬 Tour Cuan Nonton',
-      title: '<i class="ph-bold ph-arrow-up-right" style="color:#059669;"></i> Tarik Saldo ke Rekening',
-      desc: 'Saat saldo hasil nonton dan panen sudah terkumpul, klik Tarik Saldo untuk mentransfer uang ke DANA, GoPay, OVO, ShopeePay, atau Bank. Proses pencairan cepat dan aman!',
-      tip: '💡 Penarikan diproses setiap hari dengan minimal yang sangat bersahabat.',
-      pad: 8,
-      radius: 14
-    }
-  ]
-};
-
-let currentTourTrack = 'lebah';
-let currentTourStep = 0;
-let isTourRunning = false;
-
 function openTourSelectModal() {
   const m = document.getElementById('tour-select-modal');
   if (!m) return;
@@ -1899,205 +1557,19 @@ function startInteractiveTour(track) {
   if (typeof closeCustomPopup === 'function') closeCustomPopup();
   if (typeof closeCheckinModal === 'function') closeCheckinModal();
 
-  currentTourTrack = track === 'watch' ? 'watch' : 'lebah';
-  currentTourStep = 0;
-  isTourRunning = true;
-
-  const overlay = document.getElementById('lebah-tour-overlay');
-  if (overlay) {
-    overlay.style.display = 'block';
-  }
-
-  // Prevent background scroll interference
-  document.body.style.overflow = 'hidden';
-
-  renderCurrentTourStep();
-}
-
-function renderCurrentTourStep() {
-  const steps = TOUR_DATA[currentTourTrack];
-  if (!steps || !steps[currentTourStep]) return;
-  const s = steps[currentTourStep];
-
-  const targetEl = document.querySelector(s.target);
-  if (!targetEl) {
-    if (currentTourStep < steps.length - 1) {
-      currentTourStep++;
-      renderCurrentTourStep();
-    } else {
-      finishInteractiveTour();
-    }
-    return;
-  }
-
-  // Smoothly scroll target into middle of viewport
-  targetEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-
-  setTimeout(() => {
-    updateTourVisuals(targetEl, s, steps.length);
-  }, 240);
-}
-
-function updateTourVisuals(targetEl, s, totalSteps) {
-  if (!isTourRunning) return;
-  const rect = targetEl.getBoundingClientRect();
-  const pad = s.pad || 8;
-  const spotlight = document.getElementById('lebah-tour-spotlight');
-  const popover = document.getElementById('lebah-tour-popover');
-  if (!spotlight || !popover) return;
-
-  const top = Math.max(0, rect.top - pad);
-  const left = Math.max(4, rect.left - pad);
-  const width = Math.min(window.innerWidth - 8, rect.width + (pad * 2));
-  const height = rect.height + (pad * 2);
-
-  spotlight.style.top = top + 'px';
-  spotlight.style.left = left + 'px';
-  spotlight.style.width = width + 'px';
-  spotlight.style.height = height + 'px';
-  spotlight.style.borderRadius = (s.radius || 18) + 'px';
-
-  // Inject content
-  document.getElementById('tour-pop-track-text').textContent = s.trackName;
-  document.getElementById('tour-pop-step-text').textContent = `${currentTourStep + 1}/${totalSteps}`;
-  document.getElementById('tour-pop-title-text').innerHTML = s.title;
-  document.getElementById('tour-pop-desc-text').textContent = s.desc;
-
-  const tipBox = document.getElementById('tour-pop-tip-box');
-  if (s.tip) {
-    tipBox.style.display = 'flex';
-    document.getElementById('tour-pop-tip-text').textContent = s.tip;
-  } else {
-    tipBox.style.display = 'none';
-  }
-
-  // Dots
-  const dotsContainer = document.getElementById('tour-pop-dots');
-  dotsContainer.innerHTML = '';
-  for (let i = 0; i < totalSteps; i++) {
-    const d = document.createElement('span');
-    d.className = 'tour-pop-dot' + (i === currentTourStep ? ' active' : '');
-    dotsContainer.appendChild(d);
-  }
-
-  // Prev button
-  const prevBtn = document.getElementById('btn-tour-prev');
-  prevBtn.disabled = (currentTourStep === 0);
-
-  // Next button
-  const nextBtn = document.getElementById('btn-tour-next');
-  if (currentTourStep === totalSteps - 1) {
-    nextBtn.className = 'btn-tour-nav-next finish';
-    nextBtn.innerHTML = 'Selesai 🎉';
-  } else {
-    nextBtn.className = 'btn-tour-nav-next';
-    nextBtn.innerHTML = 'Maju <i class="ph-bold ph-arrow-right"></i>';
-  }
-
-  // Position popover
-  popover.style.display = 'block';
-  const popRect = popover.getBoundingClientRect();
-  const vh = window.innerHeight;
-  const vw = window.innerWidth;
-
-  const spaceBelow = vh - (top + height);
-  const spaceAbove = top;
-
-  if (vw <= 640) {
-    popover.style.left = '14px';
-    popover.style.right = '14px';
-    popover.style.width = 'auto';
-
-    if (spaceBelow >= popRect.height + 14) {
-      popover.style.top = (top + height + 10) + 'px';
-      popover.style.bottom = 'auto';
-    } else if (spaceAbove >= popRect.height + 14) {
-      popover.style.bottom = (vh - top + 10) + 'px';
-      popover.style.top = 'auto';
-    } else {
-      // Pin to bottom
-      popover.style.bottom = '14px';
-      popover.style.top = 'auto';
-    }
-  } else {
-    popover.style.width = '360px';
-    popover.style.right = 'auto';
-    let targetLeft = left + (width / 2) - 180;
-    targetLeft = Math.max(16, Math.min(vw - 376, targetLeft));
-    popover.style.left = targetLeft + 'px';
-
-    if (spaceBelow >= popRect.height + 14) {
-      popover.style.top = (top + height + 12) + 'px';
-      popover.style.bottom = 'auto';
-    } else {
-      popover.style.bottom = (vh - top + 12) + 'px';
-      popover.style.top = 'auto';
-    }
+  if (typeof window.startGlobalTour === 'function') {
+    window.startGlobalTour(track, 0);
   }
 }
-
-function nextTourStep() {
-  const steps = TOUR_DATA[currentTourTrack];
-  if (!steps) return;
-  if (currentTourStep < steps.length - 1) {
-    currentTourStep++;
-    renderCurrentTourStep();
-  } else {
-    finishInteractiveTour();
-  }
-}
-
-function prevTourStep() {
-  if (currentTourStep > 0) {
-    currentTourStep--;
-    renderCurrentTourStep();
-  }
-}
-
-function closeInteractiveTour() {
-  isTourRunning = false;
-  document.body.style.overflow = '';
-  const overlay = document.getElementById('lebah-tour-overlay');
-  const popover = document.getElementById('lebah-tour-popover');
-  if (overlay) overlay.style.display = 'none';
-  if (popover) popover.style.display = 'none';
-}
-
-function finishInteractiveTour() {
-  closeInteractiveTour();
-  dismissTourBanner();
-  try {
-    localStorage.setItem('lebahcuan_tour_done', '1');
-  } catch (e) {}
-
-  showCuanToast('<i class="ph-fill ph-sparkle" style="color:#fbbf24;"></i> Selamat! Kamu siap mendulang cuan di LebahCuan! 🐝🍯');
-}
-
-// Window reposition handlers
-window.addEventListener('resize', () => {
-  if (isTourRunning) {
-    const steps = TOUR_DATA[currentTourTrack];
-    if (steps && steps[currentTourStep]) {
-      const el = document.querySelector(steps[currentTourStep].target);
-      if (el) updateTourVisuals(el, steps[currentTourStep], steps.length);
-    }
-  }
-});
-
-// Keyboard support: ArrowLeft, ArrowRight, Escape
-window.addEventListener('keydown', (e) => {
-  if (!isTourRunning) return;
-  if (e.key === 'ArrowRight') {
-    nextTourStep();
-  } else if (e.key === 'ArrowLeft') {
-    prevTourStep();
-  } else if (e.key === 'Escape') {
-    closeInteractiveTour();
-  }
-});
 
 /* ── LOGIKA POP-UP BERANTAI (CHAINED MODALS) ── */
 function openCustomPopup() {
+  // Jangan munculkan jika sedang dalam mode tour interaktif
+  try {
+    const at = localStorage.getItem('lebahcuan_tour_active');
+    if (at && JSON.parse(at).isRunning) return;
+  } catch(e) {}
+
   const p = document.getElementById('custom-announcement-popup');
   if (!p) {
     triggerCheckinPopupIfEligible();
@@ -2129,6 +1601,12 @@ function triggerCheckinPopupIfEligible() {
   if (window.__HAS_CHECKED_IN__ || window.__IS_GUEST__) return;
   if (sessionStorage.getItem('checkin_prompt_closed') === '1') return;
 
+  // Jangan munculkan jika sedang dalam mode tour interaktif
+  try {
+    const at = localStorage.getItem('lebahcuan_tour_active');
+    if (at && JSON.parse(at).isRunning) return;
+  } catch(e) {}
+
   const m = document.getElementById('checkin-prompt-modal');
   if (!m) return;
   m.style.display = 'flex';
@@ -2159,6 +1637,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   } catch (e) {}
 
+  let isTourRunningNow = false;
+  try {
+    const rawTour = localStorage.getItem('lebahcuan_tour_active');
+    if (rawTour && JSON.parse(rawTour).isRunning) {
+      isTourRunningNow = true;
+    }
+  } catch(e) {}
+
   const customPopupEl = document.getElementById('custom-announcement-popup');
   const resetMs = <?= $popup_reset_hours ?> * 3600000;
   let showCustom = <?= $popup_enabled ? 'true' : 'false' ?>;
@@ -2175,24 +1661,26 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(e){}
   }
 
-  if (showCustom && customPopupEl) {
-    setTimeout(openCustomPopup, <?= $popup_delay ?>);
-  } else {
-    // Jika tidak ada custom popup atau sudah dilihat, langsung tampilkan modal ajakan checkin
-    setTimeout(triggerCheckinPopupIfEligible, 600);
-  }
-
-  // Auto-prompt modal tour untuk pengguna baru yang belum pernah tour
-  try {
-    const tourDone = localStorage.getItem('lebahcuan_tour_done');
-    const tourSeen = localStorage.getItem('lebahcuan_tour_seen');
-    if (!tourDone && !tourSeen) {
-      setTimeout(() => {
-        openTourSelectModal();
-        localStorage.setItem('lebahcuan_tour_seen', '1');
-      }, showCustom ? 3200 : 1500);
+  // Jika tour sedang aktif, jangan munculkan popup iklan/checkin
+  if (!isTourRunningNow) {
+    if (showCustom && customPopupEl) {
+      setTimeout(openCustomPopup, <?= $popup_delay ?>);
+    } else {
+      setTimeout(triggerCheckinPopupIfEligible, 600);
     }
-  } catch (e) {}
+
+    // Auto-prompt modal tour untuk pengguna baru yang belum pernah tour
+    try {
+      const tourDone = localStorage.getItem('lebahcuan_tour_done');
+      const tourSeen = localStorage.getItem('lebahcuan_tour_seen');
+      if (!tourDone && !tourSeen) {
+        setTimeout(() => {
+          openTourSelectModal();
+          localStorage.setItem('lebahcuan_tour_seen', '1');
+        }, showCustom ? 3200 : 1500);
+      }
+    } catch (e) {}
+  }
 });
 </script>
 

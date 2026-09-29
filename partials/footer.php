@@ -229,6 +229,257 @@ $_fsvg = [
 </div>
 <?php endif; ?>
 
+<!-- ══════════════════════════════════════════════════════════
+     UNIVERSAL SPOTLIGHT TOUR ENGINE (CROSS-PAGE & SCROLL-SYNC)
+     ══════════════════════════════════════════════════════════ -->
+<style>
+/* Global Spotlight Backdrop (allows pointer events to pass so user can freely scroll) */
+#lebah-tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  pointer-events: none;
+  display: none;
+  background: transparent;
+}
+
+/* Spotlight Cutout Box with Real-time Sync & Dynamic Border Radius */
+#lebah-tour-spotlight {
+  position: fixed;
+  z-index: 99992;
+  border-radius: 18px;
+  border: 3px solid #fbbf24;
+  box-shadow: 0 0 0 9999px rgba(10, 15, 29, 0.82), 0 0 25px rgba(251, 191, 36, 0.75);
+  pointer-events: none;
+  box-sizing: border-box;
+  opacity: 0;
+  transform: scale(0.98);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+#lebah-tour-spotlight.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Spotlight pulsing beacon indicator */
+#lebah-tour-spotlight::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  border: 2px solid rgba(251, 191, 36, 0.65);
+  animation: beaconPulse 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+@keyframes beaconPulse {
+  0% { transform: scale(0.98); opacity: 0.9; }
+  100% { transform: scale(1.05); opacity: 0; }
+}
+
+/* Floating Tour Popover Card */
+#lebah-tour-popover {
+  position: fixed;
+  z-index: 99999;
+  background: #ffffff;
+  border: 3px solid #78350f;
+  border-radius: 22px;
+  box-shadow: 0 8px 0 #78350f, 0 20px 40px rgba(0,0,0,0.5);
+  padding: 15px 15px 13px;
+  max-width: 370px;
+  width: calc(100vw - 28px);
+  box-sizing: border-box;
+  display: none;
+  pointer-events: auto;
+  font-family: 'Nunito', sans-serif;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+#lebah-tour-popover.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tour-pop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.tour-pop-track-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 3px 9px;
+  border-radius: 10px;
+  background: #fef3c7;
+  color: #b45309;
+  border: 1.5px solid #fde68a;
+  letter-spacing: 0.2px;
+}
+.tour-pop-step-count {
+  font-size: 11px;
+  font-weight: 800;
+  color: #94a3b8;
+}
+.tour-pop-close {
+  background: transparent;
+  border: none;
+  font-size: 17px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 8px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.tour-pop-close:hover {
+  color: #ef4444;
+}
+.tour-pop-title {
+  font-size: 14.5px;
+  font-weight: 900;
+  color: #78350f;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.3;
+}
+.tour-pop-desc {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #475569;
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+.tour-pop-tip {
+  background: #fffbeb;
+  border: 1.5px solid #fef08a;
+  border-radius: 12px;
+  padding: 6px 10px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #92400e;
+  margin-bottom: 11px;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  line-height: 1.35;
+}
+.tour-pop-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 9px;
+  border-top: 1.5px dashed #f1f5f9;
+}
+.tour-pop-dots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tour-pop-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  transition: all 0.2s ease;
+}
+.tour-pop-dot.active {
+  width: 16px;
+  border-radius: 4px;
+  background: #d97706;
+}
+.tour-pop-nav-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-tour-nav-prev {
+  background: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 6px 11px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-tour-nav-prev:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.btn-tour-nav-next {
+  background: linear-gradient(180deg, #f59e0b, #d97706);
+  border: 2px solid #78350f;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 900;
+  padding: 6px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 2.5px 0 #78350f;
+  text-shadow: 0 1px 1px #78350f;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+.btn-tour-nav-next.finish {
+  background: linear-gradient(180deg, #10b981, #059669);
+  border-color: #064e3b;
+  box-shadow: 0 2.5px 0 #064e3b;
+  text-shadow: 0 1px 1px #064e3b;
+}
+.btn-tour-nav-next:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 #78350f;
+}
+</style>
+
+<!-- Fullscreen Spotlight Tour Overlay & Popover Container -->
+<div id="lebah-tour-overlay">
+  <div id="lebah-tour-spotlight"></div>
+  <div id="lebah-tour-popover">
+    <div class="tour-pop-header">
+      <div class="tour-pop-track-tag">
+        <span id="tour-pop-track-text">🐝 Tour Fitur Lebah</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="tour-pop-step-count" id="tour-pop-step-text">1/7</span>
+        <button type="button" class="tour-pop-close" onclick="window.closeGlobalTour()" title="Lewati / Tutup Tour">
+          <i class="ph-bold ph-x"></i>
+        </button>
+      </div>
+    </div>
+    <div class="tour-pop-title" id="tour-pop-title-text"></div>
+    <div class="tour-pop-desc" id="tour-pop-desc-text"></div>
+    <div class="tour-pop-tip" id="tour-pop-tip-box" style="display:none;">
+      <span id="tour-pop-tip-text"></span>
+    </div>
+    <div class="tour-pop-footer">
+      <div class="tour-pop-dots" id="tour-pop-dots"></div>
+      <div class="tour-pop-nav-btns">
+        <button type="button" class="btn-tour-nav-prev" id="btn-tour-prev" onclick="window.prevGlobalTourStep()">
+          <i class="ph-bold ph-arrow-left"></i> Mundur
+        </button>
+        <button type="button" class="btn-tour-nav-next" id="btn-tour-next" onclick="window.nextGlobalTourStep()">
+          Maju <i class="ph-bold ph-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="/assets/js/toast.js"></script>
 <?php
 $show_wd_notif = true;
@@ -265,10 +516,515 @@ if ($show_wd_notif) {
       if (typeof window.nToast === 'function') window.nToast(`💸 <b>${uname}</b> baru saja menarik <b>${amtStr}</b>`, 'success', 4000);
       if (wdNotifs.length > 0) setTimeout(showRandomWD, Math.floor(Math.random()*(40000-15000+1))+15000);
     }
-    // setTimeout(showRandomWD, Math.floor(Math.random()*6000)+3000);
   }
 })();
 </script>
 <?php endif; ?>
+
+<!-- GLOBAL SPOTLIGHT TOUR SCRIPT ENGINE -->
+<script>
+(function() {
+  // ── 1. DEFINISI LANGKAH TOUR LENGKAP LINTAS HALAMAN (CROSS-PAGE) ──
+  const GLOBAL_TOUR_CONFIG = {
+    lebah: [
+      {
+        url: '/home',
+        selector: '#tour-balance-box, .cuan-card-balance-box',
+        trackName: '🐝 Tour Fitur Lebah',
+        title: '<i class="ph-fill ph-wallet" style="color:#d97706;"></i> Saldo Siap Tarik (WD)',
+        desc: 'Semua hasil penjualan madu murni dan dividen peternakan lebahmu akan langsung masuk ke Saldo Siap Tarik ini dan siap kamu cairkan 24 jam.',
+        tip: '💡 Saldo bisa ditarik langsung ke rekening Bank atau E-Wallet (DANA, GoPay, OVO, ShopeePay).',
+        btnNext: 'Menu Ternak ➔',
+        pad: 6
+      },
+      {
+        url: '/home',
+        selector: '#tour-tile-farm, [href="/farm"].b-tile, .nav-item--play',
+        trackName: '🐝 Tour Fitur Lebah',
+        title: '<i class="ph-fill ph-drop" style="color:#16a34a;"></i> Akses Ternak Lebah',
+        desc: 'Menu utama untuk mengelola kandang dan kawanan lebah pekerjamu. Dari sini lebah akan terus memproduksi madu otomatis setiap detik!',
+        tip: '💡 Kamu juga bisa mengakses kebun kapan saja melalui tombol lebah di navigasi bawah.',
+        btnNext: 'Buka Kebun Lebah ➔',
+        pad: 8
+      },
+      {
+        url: '/farm',
+        selector: '#farm3dCanvas, .farm3d-container, .farm-ground-ui',
+        trackName: '🐝 Tour Fitur Lebah',
+        title: '<i class="ph-fill ph-binoculars" style="color:#fbbf24;"></i> Kandang Sarang Lebah 3D',
+        desc: 'Selamat datang di kebun lebahmu! Di sini kamu bisa memantau kotak sarang kayu dan melihat lebah pekerjamu terbang aktif memproduksi madu secara otomatis.',
+        tip: '💡 Geser layar untuk melihat kebun sarang dari berbagai sudut pandang sinematik!',
+        btnNext: 'Lihat Tombol Panen ➔',
+        pad: 4
+      },
+      {
+        url: '/farm',
+        selector: '.btn-harvest-all, .meadow-sticky-bar, .hive-quick-list',
+        trackName: '🐝 Tour Fitur Lebah',
+        title: '<i class="ph-fill ph-hand-heart" style="color:#f59e0b;"></i> Tombol Panen Madu',
+        desc: 'Ketika sarang sudah terisi madu, tekan tombol Panen ini untuk memindahkan madu dari sarang ke gudang tokomu!',
+        tip: '💡 Panen secara rutin agar kapasitas sarang tidak penuh sehingga produksi madu terus mengalir lancar.',
+        btnNext: 'Buka Lapak Jual Madu ➔',
+        pad: 6
+      },
+      {
+        url: '/farm/stall',
+        selector: '.stall-hero-card, .cashout-card, .stall-container',
+        trackName: '🐝 Tour Fitur Lebah',
+        title: '<i class="ph-fill ph-storefront" style="color:#ca8a04;"></i> Lapak Jual Madu',
+        desc: 'Di Lapak Madu ini, madu yang sudah kamu panen siap dijual untuk langsung ditukarkan menjadi Uang Tunai Rupiah!',
+        tip: '💡 Tingkatkan level lapakmu di Toko agar memiliki kuota penjualan madu harian yang semakin besar.',
+        btnNext: 'Kunjungi Toko ➔',
+        pad: 6
+      },
+      {
+        url: '/farm/shop',
+        selector: '.shop-cat-tabs, .catalog-grid, .catalog-card',
+        trackName: '🐝 Tour Fitur Lebah',
+        title: '<i class="ph-fill ph-shopping-bag" style="color:#0284c7;"></i> Toko Bibit & Kandang Baru',
+        desc: 'Beli bibit lebah pekerja baru atau tambah kotak sarang kayu baru di sini agar produksi madumu semakin deras dan cuan berlipat ganda!',
+        tip: '💡 Semakin banyak lebah pekerja dan sarang, semakin kencang passive income yang mengalir ke akunmu.',
+        btnNext: 'Kembali ke Beranda ➔',
+        pad: 8
+      },
+      {
+        url: '/home',
+        selector: '#tour-sidejob-card, .sidejob-3d-card',
+        trackName: '🐝 Tour Fitur Lebah',
+        title: '<i class="ph-fill ph-chart-line-up" style="color:#16a34a;"></i> Live Monitor Beranda',
+        desc: 'Hebat! Sekarang kamu sudah menguasai seluruh alur peternakan lebah. Dari beranda depan ini kamu selalu bisa memantau sarang aktif dan produksi ml/jam secara real-time!',
+        tip: '💡 Selesai! Kamu siap menjadi juragan madu terkaya di LebahCuan! 🐝🍯',
+        btnNext: 'Selesai 🎉',
+        pad: 8
+      }
+    ],
+    watch: [
+      {
+        url: '/home',
+        selector: '#tour-video-mission, .cuan-video-mission',
+        trackName: '🎬 Tour Cuan Nonton',
+        title: '<i class="ph-fill ph-film-strip" style="color:#f97316;"></i> Kuota Misi Video Harian',
+        desc: 'Setiap hari kamu mendapatkan kuota video berbayar. Progress bar ini menampilkan berapa video yang sudah kamu selesaikan dan sisa kuota hari ini.',
+        tip: '💡 Kuota direset secara otomatis setiap malam pukul 00:00 WIB.',
+        btnNext: 'Lihat Tombol Nonton ➔',
+        pad: 8
+      },
+      {
+        url: '/home',
+        selector: '#tour-btn-watch, [href="/videos"].btn-cuan-watch-now',
+        trackName: '🎬 Tour Cuan Nonton',
+        title: '<i class="ph-fill ph-play-circle" style="color:#f59e0b;"></i> Tombol Cepat Mulai Nonton',
+        desc: 'Klik tombol cepat ini untuk langsung memutar video cuan dan menghasilkan saldo rupiah dari video berdurasi singkat!',
+        tip: '💡 Cukup tonton video sampai hitungan mundur selesai dan saldo rupiah otomatis bertambah ke akunmu.',
+        btnNext: 'Buka Galeri Video ➔',
+        pad: 6
+      },
+      {
+        url: '/videos',
+        selector: '.vcard, .vhub-hero, .video-hub-page',
+        trackName: '🎬 Tour Cuan Nonton',
+        title: '<i class="ph-fill ph-film-reel" style="color:#ea580c;"></i> Galeri Video Pilihan',
+        desc: 'Pilih aneka video menarik yang ingin kamu tonton. Setiap video dilengkapi keterangan nominal reward uang rupiah yang transparan!',
+        tip: '💡 Tonton seluruh kuota video setiap hari untuk mengumpulkan saldo maksimal.',
+        btnNext: 'Lanjut ke Sarang Harian ➔',
+        pad: 6
+      },
+      {
+        url: '/checkin',
+        selector: '.honeycomb-hive-stage, .hex-row, .ci-streak-strip, .ci-wrap',
+        trackName: '🎬 Tour Cuan Nonton',
+        title: '<i class="ph-fill ph-hexagon" style="color:#f59e0b;"></i> Buka Sarang Madu Harian',
+        desc: 'Klaim hadiah gratis setiap hari! Cukup 1 klik buka hexagon sarang madu untuk mendapatkan kejutan uang tunai gratis tanpa syarat.',
+        tip: '💡 Check-in rutin setiap hari untuk menjaga streak bonus uang yang semakin melimpah!',
+        btnNext: 'Lanjut ke Misi Cuan ➔',
+        pad: 8
+      },
+      {
+        url: '/missions',
+        selector: '.ms-tabs, .ms-card',
+        trackName: '🎬 Tour Cuan Nonton',
+        title: '<i class="ph-fill ph-target" style="color:#8b5cf6;"></i> Misi & Tantangan Harian',
+        desc: 'Dapatkan saldo tambahan berlipat dengan menyelesaikan berbagai misi harian, mingguan, dan pencapaian spesial!',
+        tip: '💡 Tekan tombol Klaim begitu progress misi sudah tercapai 100%.',
+        btnNext: 'Lanjut ke Tarik Saldo ➔',
+        pad: 6
+      },
+      {
+        url: '/withdraw',
+        selector: '.wd-top-banner, .wd-balance-card, .wd-form',
+        trackName: '🎬 Tour Cuan Nonton',
+        title: '<i class="ph-fill ph-arrow-up-right" style="color:#059669;"></i> Tarik Saldo ke Rekening',
+        desc: 'Klaim uang tunaimu! Tarik saldo langsung ke rekening DANA, GoPay, OVO, ShopeePay, atau Bank transfer dalam hitungan menit.',
+        tip: '💡 Penarikan diproses setiap hari dengan proses pencairan cepat dan aman.',
+        btnNext: 'Kembali ke Beranda ➔',
+        pad: 6
+      },
+      {
+        url: '/home',
+        selector: '#tour-balance-box, .cuan-card-balance-box',
+        trackName: '🎬 Tour Cuan Nonton',
+        title: '<i class="ph-fill ph-sparkle" style="color:#fbbf24;"></i> Siap Mendulang Rupiah!',
+        desc: 'Luar biasa! Kamu sudah menyelesaikan seluruh panduan cuan nonton video. Mulai tonton video pertamamu sekarang dan nikmati cuan yang mengalir!',
+        tip: '💡 Tonton video secara rutin setiap hari untuk hasil yang maksimal! 🚀💰',
+        btnNext: 'Selesai 🎉',
+        pad: 6
+      }
+    ]
+  };
+
+  // ── 2. STATE MANAGER ──
+  let isTourRunning = false;
+  let currentTrack = 'lebah';
+  let currentStepIndex = 0;
+  let activeElement = null;
+  let activeStepConfig = null;
+  let rafSyncId = null;
+
+  function normalizePath(p) {
+    if (!p) return '/';
+    let clean = p.split('?')[0].split('#')[0].replace(/\/+$/, '');
+    return clean || '/';
+  }
+
+  function getSavedTourState() {
+    try {
+      const raw = localStorage.getItem('lebahcuan_tour_active');
+      return raw ? JSON.parse(raw) : null;
+    } catch(e) { return null; }
+  }
+
+  function setSavedTourState(track, step) {
+    try {
+      localStorage.setItem('lebahcuan_tour_active', JSON.stringify({
+        track: track,
+        step: step,
+        isRunning: true,
+        updatedAt: Date.now()
+      }));
+    } catch(e) {}
+  }
+
+  function clearSavedTourState() {
+    try {
+      localStorage.removeItem('lebahcuan_tour_active');
+    } catch(e) {}
+  }
+
+  // ── 3. REAL-TIME SCROLL & RESIZE SYNCHRONIZER ──
+  // Menyesuaikan spotlight dan popover secara instan saat layar atau menu di dalam di-scroll
+  function syncSpotlightGeometry() {
+    if (!isTourRunning || !activeElement || !activeStepConfig) return;
+    if (rafSyncId) cancelAnimationFrame(rafSyncId);
+    rafSyncId = requestAnimationFrame(() => {
+      applySpotlightCoordinates(activeElement, activeStepConfig, false);
+    });
+  }
+
+  // Tangkap scroll di window maupun di internal scrollable container dengan capture: true
+  window.addEventListener('scroll', syncSpotlightGeometry, { passive: true, capture: true });
+  window.addEventListener('resize', syncSpotlightGeometry, { passive: true });
+
+  // ── 4. RENDER SPOTLIGHT PADA ELEMENT TARGET ──
+  function applySpotlightCoordinates(el, step, isSmooth = false) {
+    const spotlight = document.getElementById('lebah-tour-spotlight');
+    const popover = document.getElementById('lebah-tour-popover');
+    if (!spotlight || !popover) return;
+
+    const rect = el.getBoundingClientRect();
+    const pad = step.pad || 8;
+
+    const top = Math.max(0, rect.top - pad);
+    const left = Math.max(4, rect.left - pad);
+    const width = Math.min(window.innerWidth - 8, rect.width + (pad * 2));
+    const height = rect.height + (pad * 2);
+
+    // Saat user scrolling, disable CSS transition agar spotlight tidak lag atau tertinggal
+    spotlight.style.transition = isSmooth ? 'all 0.28s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
+    popover.style.transition = isSmooth ? 'opacity 0.2s ease, transform 0.2s ease' : 'none';
+
+    spotlight.style.top = top + 'px';
+    spotlight.style.left = left + 'px';
+    spotlight.style.width = width + 'px';
+    spotlight.style.height = height + 'px';
+
+    // Sesuaikan border-radius spotlight dengan bentuk asli element (bento, pill, circle, box)
+    try {
+      const comp = window.getComputedStyle(el);
+      const radius = comp.borderRadius;
+      if (radius && radius !== '0px') {
+        spotlight.style.borderRadius = radius;
+      } else {
+        spotlight.style.borderRadius = '16px';
+      }
+    } catch(e) {
+      spotlight.style.borderRadius = '16px';
+    }
+
+    // Posisikan popover card secara ergonomis
+    positionPopoverCard(top, left, width, height, popover);
+  }
+
+  function positionPopoverCard(targetTop, targetLeft, targetWidth, targetHeight, popover) {
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const popHeight = popover.offsetHeight || 190;
+    const spaceBelow = vh - (targetTop + targetHeight);
+    const spaceAbove = targetTop;
+
+    if (vw <= 480) {
+      popover.style.left = '12px';
+      popover.style.right = '12px';
+      popover.style.width = 'calc(100vw - 24px)';
+      popover.style.maxWidth = '370px';
+      popover.style.margin = '0 auto';
+
+      if (spaceBelow >= popHeight + 14) {
+        popover.style.top = (targetTop + targetHeight + 10) + 'px';
+        popover.style.bottom = 'auto';
+      } else if (spaceAbove >= popHeight + 14) {
+        popover.style.bottom = (vh - targetTop + 10) + 'px';
+        popover.style.top = 'auto';
+      } else {
+        popover.style.bottom = '12px';
+        popover.style.top = 'auto';
+      }
+    } else {
+      popover.style.width = '360px';
+      popover.style.right = 'auto';
+      let centerLeft = targetLeft + (targetWidth / 2) - 180;
+      centerLeft = Math.max(14, Math.min(vw - 374, centerLeft));
+      popover.style.left = centerLeft + 'px';
+
+      if (spaceBelow >= popHeight + 14) {
+        popover.style.top = (targetTop + targetHeight + 12) + 'px';
+        popover.style.bottom = 'auto';
+      } else {
+        popover.style.bottom = Math.max(12, vh - targetTop + 12) + 'px';
+        popover.style.top = 'auto';
+      }
+    }
+  }
+
+  // ── 5. ASYNC ELEMENT FINDER DENGAN RETRY ──
+  function locateElement(selector, maxTries = 12, delay = 120) {
+    return new Promise((resolve) => {
+      let tries = 0;
+      function check() {
+        const parts = selector.split(',').map(s => s.trim());
+        for (let sel of parts) {
+          try {
+            const el = document.querySelector(sel);
+            if (el) return resolve(el);
+          } catch(e) {}
+        }
+        tries++;
+        if (tries >= maxTries) return resolve(null);
+        setTimeout(check, delay);
+      }
+      check();
+    });
+  }
+
+  // ── 6. RENDER LANGKAH AKTIF ──
+  async function renderActiveStep() {
+    const steps = GLOBAL_TOUR_CONFIG[currentTrack];
+    if (!steps || !steps[currentStepIndex]) {
+      window.finishGlobalTour();
+      return;
+    }
+
+    const step = steps[currentStepIndex];
+    activeStepConfig = step;
+
+    // Cek apakah langkah ini membutuhkan navigasi ke halaman lain
+    const currentPath = normalizePath(window.location.pathname);
+    const targetPath = normalizePath(step.url);
+
+    if (currentPath !== targetPath) {
+      // Simpan state tour dan redirect ke halaman yang sesuai
+      setSavedTourState(currentTrack, currentStepIndex);
+      window.location.href = step.url;
+      return;
+    }
+
+    // Jika sudah di halaman yang benar, simpan state
+    setSavedTourState(currentTrack, currentStepIndex);
+
+    // Tampilkan container overlay
+    const overlay = document.getElementById('lebah-tour-overlay');
+    const spotlight = document.getElementById('lebah-tour-spotlight');
+    const popover = document.getElementById('lebah-tour-popover');
+    if (overlay) overlay.style.display = 'block';
+
+    // Cari element di halaman
+    const el = await locateElement(step.selector);
+    activeElement = el || document.body;
+
+    // Scroll element target ke tengah pandangan secara halus
+    if (el && el !== document.body) {
+      try {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      } catch(e) {}
+    }
+
+    // Isi konten teks popover
+    document.getElementById('tour-pop-track-text').textContent = step.trackName;
+    document.getElementById('tour-pop-step-text').textContent = `${currentStepIndex + 1}/${steps.length}`;
+    document.getElementById('tour-pop-title-text').innerHTML = step.title;
+    document.getElementById('tour-pop-desc-text').textContent = step.desc;
+
+    const tipBox = document.getElementById('tour-pop-tip-box');
+    if (step.tip) {
+      tipBox.style.display = 'flex';
+      document.getElementById('tour-pop-tip-text').textContent = step.tip;
+    } else {
+      tipBox.style.display = 'none';
+    }
+
+    // Render step indicator dots
+    const dotsContainer = document.getElementById('tour-pop-dots');
+    dotsContainer.innerHTML = '';
+    for (let i = 0; i < steps.length; i++) {
+      const d = document.createElement('span');
+      d.className = 'tour-pop-dot' + (i === currentStepIndex ? ' active' : '');
+      dotsContainer.appendChild(d);
+    }
+
+    // Tombol Mundur
+    const prevBtn = document.getElementById('btn-tour-prev');
+    prevBtn.disabled = (currentStepIndex === 0);
+
+    // Tombol Maju
+    const nextBtn = document.getElementById('btn-tour-next');
+    if (currentStepIndex === steps.length - 1) {
+      nextBtn.className = 'btn-tour-nav-next finish';
+      nextBtn.innerHTML = 'Selesai 🎉';
+    } else {
+      nextBtn.className = 'btn-tour-nav-next';
+      nextBtn.innerHTML = (step.btnNext || 'Maju ➔');
+    }
+
+    popover.style.display = 'block';
+
+    // Berikan sedikit jeda untuk kalkulasi posisi setelah layout/scroll selesai
+    setTimeout(() => {
+      applySpotlightCoordinates(activeElement, step, true);
+      if (spotlight) spotlight.classList.add('active');
+      if (popover) popover.classList.add('active');
+    }, 220);
+  }
+
+  // ── 7. KONTROL TOUR PUBLIK (WINDOW EXPOSURE) ──
+  window.startGlobalTour = function(track = 'lebah', stepIndex = 0) {
+    currentTrack = (track === 'watch') ? 'watch' : 'lebah';
+    currentStepIndex = stepIndex;
+    isTourRunning = true;
+
+    const steps = GLOBAL_TOUR_CONFIG[currentTrack];
+    const targetPath = normalizePath(steps[currentStepIndex].url);
+    const currentPath = normalizePath(window.location.pathname);
+
+    if (currentPath !== targetPath) {
+      setSavedTourState(currentTrack, currentStepIndex);
+      window.location.href = steps[currentStepIndex].url;
+      return;
+    }
+
+    renderActiveStep();
+  };
+
+  window.nextGlobalTourStep = function() {
+    const steps = GLOBAL_TOUR_CONFIG[currentTrack];
+    if (!steps) return;
+    if (currentStepIndex < steps.length - 1) {
+      currentStepIndex++;
+      const nextStep = steps[currentStepIndex];
+      const currentPath = normalizePath(window.location.pathname);
+      const nextPath = normalizePath(nextStep.url);
+
+      if (currentPath !== nextPath) {
+        setSavedTourState(currentTrack, currentStepIndex);
+        window.location.href = nextStep.url;
+      } else {
+        renderActiveStep();
+      }
+    } else {
+      window.finishGlobalTour();
+    }
+  };
+
+  window.prevGlobalTourStep = function() {
+    if (currentStepIndex > 0) {
+      currentStepIndex--;
+      const prevStep = GLOBAL_TOUR_CONFIG[currentTrack][currentStepIndex];
+      const currentPath = normalizePath(window.location.pathname);
+      const prevPath = normalizePath(prevStep.url);
+
+      if (currentPath !== prevPath) {
+        setSavedTourState(currentTrack, currentStepIndex);
+        window.location.href = prevStep.url;
+      } else {
+        renderActiveStep();
+      }
+    }
+  };
+
+  window.closeGlobalTour = function() {
+    isTourRunning = false;
+    clearSavedTourState();
+
+    const overlay = document.getElementById('lebah-tour-overlay');
+    const spotlight = document.getElementById('lebah-tour-spotlight');
+    const popover = document.getElementById('lebah-tour-popover');
+
+    if (spotlight) spotlight.classList.remove('active');
+    if (popover) popover.classList.remove('active');
+    setTimeout(() => {
+      if (overlay) overlay.style.display = 'none';
+      if (popover) popover.style.display = 'none';
+    }, 200);
+  };
+
+  window.finishGlobalTour = function() {
+    window.closeGlobalTour();
+    try {
+      localStorage.setItem('lebahcuan_tour_done', '1');
+      const b = document.getElementById('tour-invite-card');
+      if (b) b.style.display = 'none';
+    } catch(e) {}
+
+    if (typeof window.nToast === 'function') {
+      window.nToast('🎉 Selamat! Kamu telah menguasai panduan LebahCuan dan siap mendulang rupiah!', 'success', 5000);
+    }
+  };
+
+  // Keyboard Navigation: ArrowRight (Maju), ArrowLeft (Mundur), Escape (Tutup)
+  window.addEventListener('keydown', (e) => {
+    if (!isTourRunning) return;
+    if (e.key === 'ArrowRight') {
+      window.nextGlobalTourStep();
+    } else if (e.key === 'ArrowLeft') {
+      window.prevGlobalTourStep();
+    } else if (e.key === 'Escape') {
+      window.closeGlobalTour();
+    }
+  });
+
+  // ── 8. AUTO-RESUME TOUR SAAT PINDAH HALAMAN ──
+  document.addEventListener('DOMContentLoaded', () => {
+    const saved = getSavedTourState();
+    if (saved && saved.isRunning) {
+      currentTrack = saved.track || 'lebah';
+      currentStepIndex = parseInt(saved.step, 10) || 0;
+      isTourRunning = true;
+
+      // Tunggu layout dan canvas 3D siap render
+      setTimeout(() => {
+        renderActiveStep();
+      }, 300);
+    }
+  });
+})();
+</script>
 </body>
 </html>
