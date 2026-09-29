@@ -94,10 +94,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data = $data['data'];
                 }
 
-                $reward_mode   = $_POST['reward_mode'] ?? 'random';
+                $reward_mode   = $_POST['reward_mode'] ?? 'random'; // random | fixed | json | rate_duration
                 $reward_min    = max(1.0, (float)($_POST['reward_min'] ?? 50));
                 $reward_max    = max($reward_min, (float)($_POST['reward_max'] ?? 200));
                 $reward_fixed  = max(1.0, (float)($_POST['reward_fixed'] ?? 100));
+
+                // Parameter Rasio Durasi : Benefit (Contoh: per 60 detik = Rp 2.000)
+                $rate_amount    = max(1.0, (float)($_POST['rate_amount'] ?? 2000));
+                $rate_seconds   = max(1, (int)($_POST['rate_seconds'] ?? 60));
+                $rate_min_floor = max(1.0, (float)($_POST['rate_min_floor'] ?? 50));
+                $rate_max_cap   = !empty($_POST['rate_max_cap']) ? (float)$_POST['rate_max_cap'] : 0.0;
 
                 $duration_mode  = $_POST['duration_mode'] ?? 'random';
                 $duration_min   = max(5, (int)($_POST['duration_min'] ?? 15));
@@ -151,8 +157,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $title = mb_substr($title, 0, 247) . '...';
                         }
 
-                        // Benefit / Reward
-                        if ($reward_mode === 'random') {
+                        // 1. Tentukan Durasi Tonton Terlebih Dahulu
+                        if ($duration_mode === 'random') {
+                            $duration = ($duration_min < $duration_max) ? mt_rand($duration_min, $duration_max) : $duration_min;
+                        } elseif ($duration_mode === 'fixed') {
+                            $duration = $duration_fixed;
+                        } else {
+                            $duration = (int)($item['watch_duration'] ?? $item['duration'] ?? $duration_fixed);
+                            if ($duration < 5) $duration = $duration_fixed;
+                        }
+
+                        // 2. Tentukan Benefit / Reward Pengguna Berdasarkan Mode
+                        if ($reward_mode === 'rate_duration') {
+                            // Kalkulasi rasio durasi:benefit (contoh: per 60 detik = Rp 2.000)
+                            $calcReward = ($duration / $rate_seconds) * $rate_amount;
+                            if ($calcReward < $rate_min_floor) $calcReward = $rate_min_floor;
+                            if ($rate_max_cap > 0 && $calcReward > $rate_max_cap) $calcReward = $rate_max_cap;
+                            $reward = round($calcReward / 10) * 10; // Rapi kelipatan Rp 10
+                            if ($reward < 1) $reward = 1.0;
+                        } elseif ($reward_mode === 'random') {
                             $rMin = (int)($reward_min * 100);
                             $rMax = (int)($reward_max * 100);
                             $reward = ($rMin < $rMax) ? (mt_rand($rMin, $rMax) / 100) : $reward_min;
@@ -163,16 +186,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         } else {
                             $reward = (float)($item['reward_amount'] ?? $item['reward'] ?? $reward_fixed);
                             if ($reward < 1) $reward = $reward_fixed;
-                        }
-
-                        // Durasi
-                        if ($duration_mode === 'random') {
-                            $duration = ($duration_min < $duration_max) ? mt_rand($duration_min, $duration_max) : $duration_min;
-                        } elseif ($duration_mode === 'fixed') {
-                            $duration = $duration_fixed;
-                        } else {
-                            $duration = (int)($item['watch_duration'] ?? $item['duration'] ?? $duration_fixed);
-                            if ($duration < 5) $duration = $duration_fixed;
                         }
 
                         if ($sort_order_mode === 'auto') {
@@ -422,9 +435,13 @@ function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
               <!-- Reward Setting -->
               <div class="col-md-6">
                 <label class="c-label fw-bold" style="font-size:12px">Benefit / Reward Pengguna (Rp)</label>
-                <div class="d-flex gap-2 mb-2">
+                <div class="d-flex flex-wrap gap-2 mb-2">
                   <div class="form-check">
-                    <input class="form-check-input" type="radio" name="reward_mode" id="rm_random" value="random" checked onchange="toggleRewardInputs()">
+                    <input class="form-check-input" type="radio" name="reward_mode" id="rm_rate" value="rate_duration" checked onchange="toggleRewardInputs()">
+                    <label class="form-check-label text-warning fw-bold" for="rm_rate" style="font-size:12px">⚡ Rasio Durasi</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="reward_mode" id="rm_random" value="random" onchange="toggleRewardInputs()">
                     <label class="form-check-label text-secondary" for="rm_random" style="font-size:12px">Acak Range</label>
                   </div>
                   <div class="form-check">
@@ -437,20 +454,50 @@ function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
                   </div>
                 </div>
 
-                <div id="reward_range_wrap" class="row g-2">
+                <!-- Input Rasio Durasi (contoh per 1 menit = Rp 2.000) -->
+                <div id="reward_rate_wrap" style="display:block;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.25);border-radius:10px;padding:10px;">
+                  <div class="row g-2 mb-2">
+                    <div class="col-6">
+                      <div style="font-size:11px;color:#fbbf24;font-weight:700">Benefit Reward (Rp)</div>
+                      <input type="number" name="rate_amount" id="rate_amount" class="c-form-control form-control-sm" value="2000" min="1" step="any" oninput="updateRateFormulaHint()">
+                    </div>
+                    <div class="col-6">
+                      <div style="font-size:11px;color:#fbbf24;font-weight:700">Per Berapa Detik</div>
+                      <div class="input-group input-group-sm">
+                        <input type="number" name="rate_seconds" id="rate_seconds" class="c-form-control form-control-sm" value="60" min="1" oninput="updateRateFormulaHint()">
+                        <span class="input-group-text" style="background:#202534;border-color:#2a2e42;color:#94a3b8;font-size:11px">dtk</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <div style="font-size:10.5px;color:#888">Batas Min (Floor Rp)</div>
+                      <input type="number" name="rate_min_floor" class="c-form-control form-control-sm" value="100" min="1" oninput="updateRateFormulaHint()">
+                    </div>
+                    <div class="col-6">
+                      <div style="font-size:10.5px;color:#888">Batas Max (0 = Bebas)</div>
+                      <input type="number" name="rate_max_cap" class="c-form-control form-control-sm" value="10000" min="0" oninput="updateRateFormulaHint()">
+                    </div>
+                  </div>
+                  <div id="rate_formula_hint" style="font-size:11px;color:#38bdf8;margin-top:6px;line-height:1.35">
+                    💡 <strong>Rasio Aktif:</strong> Rp 2.000 per 1 menit (60 detik). Video 30s = Rp 1.000 | 60s = Rp 2.000 | 2 menit = Rp 4.000.
+                  </div>
+                </div>
+
+                <div id="reward_range_wrap" class="row g-2" style="display:none">
                   <div class="col-6">
                     <div style="font-size:11px;color:#888">Min Reward (Rp)</div>
-                    <input type="number" name="reward_min" class="c-form-control form-control-sm" value="50" min="1" step="any">
+                    <input type="number" name="reward_min" class="c-form-control form-control-sm" value="50" min="1" step="any" oninput="triggerJsonPreviewUpdate()">
                   </div>
                   <div class="col-6">
                     <div style="font-size:11px;color:#888">Max Reward (Rp)</div>
-                    <input type="number" name="reward_max" class="c-form-control form-control-sm" value="200" min="1" step="any">
+                    <input type="number" name="reward_max" class="c-form-control form-control-sm" value="200" min="1" step="any" oninput="triggerJsonPreviewUpdate()">
                   </div>
                 </div>
 
                 <div id="reward_fixed_wrap" style="display:none">
                   <div style="font-size:11px;color:#888">Nominal Reward Tetap (Rp)</div>
-                  <input type="number" name="reward_fixed" class="c-form-control form-control-sm" value="100" min="1" step="any">
+                  <input type="number" name="reward_fixed" class="c-form-control form-control-sm" value="100" min="1" step="any" oninput="triggerJsonPreviewUpdate()">
                 </div>
               </div>
 
@@ -575,15 +622,35 @@ function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 <script>
 // JSON Import & Variable Toggles
 function toggleRewardInputs() {
-  const mode = document.querySelector('input[name="reward_mode"]:checked')?.value || 'random';
+  const mode = document.querySelector('input[name="reward_mode"]:checked')?.value || 'rate_duration';
+  document.getElementById('reward_rate_wrap').style.display = (mode === 'rate_duration') ? 'block' : 'none';
   document.getElementById('reward_range_wrap').style.display = (mode === 'random') ? 'flex' : 'none';
   document.getElementById('reward_fixed_wrap').style.display = (mode === 'fixed') ? 'block' : 'none';
+  if (mode === 'rate_duration') updateRateFormulaHint();
+  triggerJsonPreviewUpdate();
+}
+
+function updateRateFormulaHint() {
+  const amt = parseFloat(document.getElementById('rate_amount')?.value) || 2000;
+  const sec = parseInt(document.getElementById('rate_seconds')?.value, 10) || 60;
+  const minFloor = parseFloat(document.querySelector('input[name="rate_min_floor"]')?.value) || 100;
+  const perSec = (amt / sec).toFixed(1);
+  const minText = (sec === 60) ? '1 menit' : (sec + ' dtk');
+  const ex30 = Math.max(minFloor, Math.round((30 / sec) * amt / 10) * 10);
+  const ex60 = Math.max(minFloor, Math.round((60 / sec) * amt / 10) * 10);
+  const ex120 = Math.max(minFloor, Math.round((120 / sec) * amt / 10) * 10);
+  const hintEl = document.getElementById('rate_formula_hint');
+  if (hintEl) {
+    hintEl.innerHTML = `💡 <strong>Rasio Aktif:</strong> Rp ${amt.toLocaleString('id-ID')} per ${minText} (±Rp ${perSec}/detik).<br>Contoh Hasil: Video 30s = <strong>Rp ${ex30.toLocaleString('id-ID')}</strong> | 60s = <strong>Rp ${ex60.toLocaleString('id-ID')}</strong> | 2 menit = <strong>Rp ${ex120.toLocaleString('id-ID')}</strong>`;
+  }
+  triggerJsonPreviewUpdate();
 }
 
 function toggleDurationInputs() {
   const mode = document.querySelector('input[name="duration_mode"]:checked')?.value || 'random';
   document.getElementById('duration_range_wrap').style.display = (mode === 'random') ? 'flex' : 'none';
   document.getElementById('duration_fixed_wrap').style.display = (mode === 'fixed') ? 'block' : 'none';
+  triggerJsonPreviewUpdate();
 }
 
 const jsonInput = document.getElementById('json_data_input');
@@ -593,6 +660,12 @@ const submitBtn = document.getElementById('btn_submit_import');
 const previewBox = document.getElementById('json_preview_box');
 const previewList = document.getElementById('preview_items_list');
 const previewTotal = document.getElementById('preview_total_count');
+
+function triggerJsonPreviewUpdate() {
+  if (jsonInput && jsonInput.value) {
+    validateAndPreviewJson(jsonInput.value);
+  }
+}
 
 function validateAndPreviewJson(str) {
   if (!str || !str.trim()) {
@@ -630,15 +703,52 @@ function validateAndPreviewJson(str) {
       previewTotal.textContent = `Total: ${validItems.length} item`;
       previewList.innerHTML = '';
       
+      const rMode = document.querySelector('input[name="reward_mode"]:checked')?.value || 'rate_duration';
+      const dMode = document.querySelector('input[name="duration_mode"]:checked')?.value || 'random';
+
       validItems.slice(0, 3).forEach(v => {
         const id = v.youtube_id || v.youtubeId || v.id || '-';
         const title = v.title || 'Tanpa Judul';
+
+        // Calculate sample duration
+        let dur = v.watch_duration || v.duration || 30;
+        if (dMode === 'fixed') {
+          dur = parseInt(document.querySelector('input[name="duration_fixed"]')?.value, 10) || 30;
+        } else if (dMode === 'random') {
+          const dmin = parseInt(document.querySelector('input[name="duration_min"]')?.value, 10) || 15;
+          const dmax = parseInt(document.querySelector('input[name="duration_max"]')?.value, 10) || 60;
+          dur = Math.round((dmin + dmax) / 2);
+        }
+
+        // Calculate sample reward
+        let estReward = 100;
+        if (rMode === 'rate_duration') {
+          const amt = parseFloat(document.getElementById('rate_amount')?.value) || 2000;
+          const sec = parseInt(document.getElementById('rate_seconds')?.value, 10) || 60;
+          const minFloor = parseFloat(document.querySelector('input[name="rate_min_floor"]')?.value) || 100;
+          const maxCap = parseFloat(document.querySelector('input[name="rate_max_cap"]')?.value) || 0;
+          let calc = Math.round((dur / sec) * amt / 10) * 10;
+          if (calc < minFloor) calc = minFloor;
+          if (maxCap > 0 && calc > maxCap) calc = maxCap;
+          estReward = `Rp ${calc.toLocaleString('id-ID')}`;
+        } else if (rMode === 'fixed') {
+          const fixVal = parseFloat(document.querySelector('input[name="reward_fixed"]')?.value) || 100;
+          estReward = `Rp ${fixVal.toLocaleString('id-ID')}`;
+        } else if (rMode === 'json') {
+          const jVal = parseFloat(v.reward_amount || v.reward || 100);
+          estReward = `Rp ${jVal.toLocaleString('id-ID')}`;
+        } else {
+          const rmin = parseFloat(document.querySelector('input[name="reward_min"]')?.value) || 50;
+          const rmax = parseFloat(document.querySelector('input[name="reward_max"]')?.value) || 200;
+          estReward = `Rp ${rmin} - ${rmax}`;
+        }
+
         const itemRow = document.createElement('div');
         itemRow.style.display = 'flex';
         itemRow.style.alignItems = 'center';
         itemRow.style.gap = '10px';
         itemRow.style.fontSize = '11px';
-        itemRow.style.padding = '4px 6px';
+        itemRow.style.padding = '6px 8px';
         itemRow.style.borderRadius = '6px';
         itemRow.style.background = '#151926';
 
@@ -647,7 +757,8 @@ function validateAndPreviewJson(str) {
           <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e2e8f0;font-weight:600">
             ${escH(title)}
           </div>
-          <span style="font-family:monospace;color:#38bdf8">${escH(id)}</span>
+          <span class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-size:10px">${dur}s</span>
+          <span class="badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;font-size:10px;font-weight:700">${estReward}</span>
         `;
         previewList.appendChild(itemRow);
       });
@@ -694,6 +805,12 @@ if (confirmDelInput && btnConfirmDel) {
     btnConfirmDel.disabled = (e.target.value.trim().toUpperCase() !== 'HAPUS');
   });
 }
+
+// Initialize on page ready
+document.addEventListener('DOMContentLoaded', () => {
+  toggleRewardInputs();
+  toggleDurationInputs();
+});
 </script>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>

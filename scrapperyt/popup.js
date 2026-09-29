@@ -11,6 +11,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const settingsBody = document.getElementById("settingsBody");
   const settingsArrow = document.getElementById("settingsArrow");
   
+  const extCalcRate = document.getElementById("ext_calc_rate");
+  const extCalcRand = document.getElementById("ext_calc_rand");
+  const extRateWrap = document.getElementById("ext_rate_wrap");
+  const extRangeWrap = document.getElementById("ext_range_wrap");
+
+  const extRateAmount = document.getElementById("extRateAmount");
+  const extRateSeconds = document.getElementById("extRateSeconds");
   const rewardMinInput = document.getElementById("rewardMin");
   const rewardMaxInput = document.getElementById("rewardMax");
   const durationMinInput = document.getElementById("durationMin");
@@ -20,6 +27,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const downloadJsonBtn = document.getElementById("downloadJsonBtn");
   const clearBtn = document.getElementById("clearBtn");
   const toast = document.getElementById("toast");
+
+  function toggleCalcModeUI() {
+    const isRate = extCalcRate && extCalcRate.checked;
+    if (extRateWrap) extRateWrap.style.display = isRate ? "block" : "none";
+    if (extRangeWrap) extRangeWrap.style.display = isRate ? "none" : "block";
+    saveSettings();
+  }
+
+  if (extCalcRate) extCalcRate.addEventListener("change", toggleCalcModeUI);
+  if (extCalcRand) extCalcRand.addEventListener("change", toggleCalcModeUI);
 
   // Load saved state & settings
   function loadData() {
@@ -35,12 +52,29 @@ document.addEventListener("DOMContentLoaded", () => {
       updateStatusUI(isActive);
 
       const s = result.scraperSettings || {
-        rewardMin: 50, rewardMax: 200, durationMin: 15, durationMax: 60
+        calcMode: "rate",
+        rateAmount: 2000,
+        rateSeconds: 60,
+        rewardMin: 50,
+        rewardMax: 200,
+        durationMin: 15,
+        durationMax: 60
       };
-      rewardMinInput.value = s.rewardMin || 50;
-      rewardMaxInput.value = s.rewardMax || 200;
-      durationMinInput.value = s.durationMin || 15;
-      durationMaxInput.value = s.durationMax || 60;
+
+      if (s.calcMode === "random") {
+        if (extCalcRand) extCalcRand.checked = true;
+      } else {
+        if (extCalcRate) extCalcRate.checked = true;
+      }
+
+      if (extRateAmount) extRateAmount.value = s.rateAmount || 2000;
+      if (extRateSeconds) extRateSeconds.value = s.rateSeconds || 60;
+      if (rewardMinInput) rewardMinInput.value = s.rewardMin || 50;
+      if (rewardMaxInput) rewardMaxInput.value = s.rewardMax || 200;
+      if (durationMinInput) durationMinInput.value = s.durationMin || 15;
+      if (durationMaxInput) durationMaxInput.value = s.durationMax || 60;
+
+      toggleCalcModeUI();
     });
   }
 
@@ -108,16 +142,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // Save Settings on Input
   function saveSettings() {
     const settings = {
-      rewardMin: parseFloat(rewardMinInput.value) || 50,
-      rewardMax: parseFloat(rewardMaxInput.value) || 200,
-      durationMin: parseInt(durationMinInput.value, 10) || 15,
-      durationMax: parseInt(durationMaxInput.value, 10) || 60
+      calcMode: (extCalcRate && extCalcRate.checked) ? "rate" : "random",
+      rateAmount: parseFloat(extRateAmount?.value) || 2000,
+      rateSeconds: parseInt(extRateSeconds?.value, 10) || 60,
+      rewardMin: parseFloat(rewardMinInput?.value) || 50,
+      rewardMax: parseFloat(rewardMaxInput?.value) || 200,
+      durationMin: parseInt(durationMinInput?.value, 10) || 15,
+      durationMax: parseInt(durationMaxInput?.value, 10) || 60
     };
     chrome.storage.local.set({ scraperSettings: settings });
   }
 
-  [rewardMinInput, rewardMaxInput, durationMinInput, durationMaxInput].forEach(inp => {
-    inp.addEventListener("change", saveSettings);
+  [extRateAmount, extRateSeconds, rewardMinInput, rewardMaxInput, durationMinInput, durationMaxInput].forEach(inp => {
+    if (inp) inp.addEventListener("change", saveSettings);
   });
 
   // Toggle Scraping Active
@@ -151,25 +188,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Build Clean JSON for LebahCuan
   function buildExportData(videos) {
-    const rMin = Math.min(parseFloat(rewardMinInput.value) || 50, parseFloat(rewardMaxInput.value) || 200);
-    const rMax = Math.max(parseFloat(rewardMinInput.value) || 50, parseFloat(rewardMaxInput.value) || 200);
-    const dMin = Math.min(parseInt(durationMinInput.value, 10) || 15, parseInt(durationMaxInput.value, 10) || 60);
-    const dMax = Math.max(parseInt(durationMinInput.value, 10) || 15, parseInt(durationMaxInput.value, 10) || 60);
+    const isRateMode = extCalcRate && extCalcRate.checked;
+    const rateAmt = parseFloat(extRateAmount?.value) || 2000;
+    const rateSec = parseInt(extRateSeconds?.value, 10) || 60;
+
+    const rMin = Math.min(parseFloat(rewardMinInput?.value) || 50, parseFloat(rewardMaxInput?.value) || 200);
+    const rMax = Math.max(parseFloat(rewardMinInput?.value) || 50, parseFloat(rewardMaxInput?.value) || 200);
+    const dMin = Math.min(parseInt(durationMinInput?.value, 10) || 15, parseInt(durationMaxInput?.value, 10) || 60);
+    const dMax = Math.max(parseInt(durationMinInput?.value, 10) || 15, parseInt(durationMaxInput?.value, 10) || 60);
 
     return videos.map((v, idx) => {
       const vid = v.youtube_id || v.youtubeId;
-      // Randomize reward between min and max rounded to 10
-      const randReward = Math.round((Math.random() * (rMax - rMin) + rMin) / 10) * 10;
-      // Duration from scraped duration or random between dMin and dMax
       const scrapedDur = v.watch_duration || v.duration;
       const finalDur = (scrapedDur && scrapedDur >= 10 && scrapedDur <= 300) 
         ? scrapedDur 
         : Math.round(Math.random() * (dMax - dMin) + dMin);
 
+      let finalReward = 100;
+      if (isRateMode) {
+        // Rumus Rasio: (durasi / rate_detik) * rate_amount (cth per 60s = 2000)
+        finalReward = Math.max(50, Math.round((finalDur / rateSec) * rateAmt / 10) * 10);
+      } else {
+        // Randomize between min and max
+        finalReward = Math.round((Math.random() * (rMax - rMin) + rMin) / 10) * 10;
+      }
+
       return {
         title: v.title,
         youtube_id: vid,
-        reward_amount: randReward,
+        reward_amount: finalReward,
         watch_duration: finalDur,
         sort_order: idx + 1,
         url: `https://www.youtube.com/watch?v=${vid}`

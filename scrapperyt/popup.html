@@ -58,24 +58,57 @@
       </div>
 
       <div class="settings-body" id="settingsBody">
-        <div class="form-row">
-          <div class="form-col">
-            <label class="input-label">Benefit / Reward (Rp)</label>
-            <div class="range-inputs">
-              <input type="number" id="rewardMin" placeholder="Min (50)" value="50" min="1" step="1">
-              <span>-</span>
-              <input type="number" id="rewardMax" placeholder="Max (200)" value="200" min="1" step="1">
-            </div>
-            <div class="input-hint">Acak antara min - max</div>
+        <div style="margin-bottom:8px">
+          <label class="input-label">Metode Penentuan Reward:</label>
+          <div style="display:flex;gap:12px;font-size:0.72rem;margin-top:3px">
+            <label style="cursor:pointer;color:#fbbf24;font-weight:700">
+              <input type="radio" name="ext_calc_mode" value="rate" checked id="ext_calc_rate"> ⚡ Rasio Durasi
+            </label>
+            <label style="cursor:pointer;color:#94a3b8">
+              <input type="radio" name="ext_calc_mode" value="random" id="ext_calc_rand"> Range Acak
+            </label>
           </div>
+        </div>
+
+        <!-- Rasio Section -->
+        <div id="ext_rate_wrap">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="input-label">Benefit Reward (Rp)</label>
+              <input type="number" id="extRateAmount" value="2000" min="1" step="10" style="padding:6px 8px;border-radius:8px;background:#0f172a;border:1px solid rgba(255,255,255,0.12);color:#fff;font-size:0.75rem;font-weight:700;width:100%">
+            </div>
+            <div class="form-col">
+              <label class="input-label">Per Berapa Detik</label>
+              <input type="number" id="extRateSeconds" value="60" min="1" style="padding:6px 8px;border-radius:8px;background:#0f172a;border:1px solid rgba(255,255,255,0.12);color:#fff;font-size:0.75rem;font-weight:700;width:100%">
+            </div>
+          </div>
+          <div class="input-hint" style="margin-top:3px;color:#38bdf8">Cth: Rp 2.000 per 60 dtk (1 menit)</div>
+        </div>
+
+        <!-- Range Section -->
+        <div id="ext_range_wrap" style="display:none">
+          <div class="form-row">
+            <div class="form-col">
+              <label class="input-label">Benefit / Reward (Rp)</label>
+              <div class="range-inputs">
+                <input type="number" id="rewardMin" placeholder="Min (50)" value="50" min="1" step="1">
+                <span>-</span>
+                <input type="number" id="rewardMax" placeholder="Max (200)" value="200" min="1" step="1">
+              </div>
+              <div class="input-hint">Acak antara min - max</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row" style="margin-top:8px">
           <div class="form-col">
-            <label class="input-label">Durasi Tonton (Detik)</label>
+            <label class="input-label">Durasi Tonton Default (Detik)</label>
             <div class="range-inputs">
               <input type="number" id="durationMin" placeholder="Min (15)" value="15" min="5" step="1">
               <span>-</span>
               <input type="number" id="durationMax" placeholder="Max (60)" value="60" min="5" step="1">
             </div>
-            <div class="input-hint">Jika durasi YT kosong</div>
+            <div class="input-hint">Dipakai jika durasi YouTube tidak terdeteksi</div>
           </div>
         </div>
       </div>
