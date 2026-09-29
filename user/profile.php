@@ -1412,12 +1412,6 @@ body {
         <span class="spec-key"><i class="ph-bold ph-crown"></i> Membership</span>
         <span class="spec-val"><?= htmlspecialchars($membership_name) ?></span>
       </div>
-      <?php if ((int)$user['spin_tickets'] > 0): ?>
-      <div class="spec-row">
-        <span class="spec-key"><i class="ph-bold ph-ticket"></i> Tiket Spin</span>
-        <span class="spec-val"><?= (int)$user['spin_tickets'] ?> Tiket</span>
-      </div>
-      <?php endif; ?>
     </div>
 
     <!-- Accordion: Edit Username -->

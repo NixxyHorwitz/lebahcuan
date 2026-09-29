@@ -115,25 +115,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
             ON DUPLICATE KEY UPDATE progress=VALUES(progress), completed_at=COALESCE(completed_at,NOW()), claimed_at=NOW()")
             ->execute([$user['id'], $slug, $progress, $period]);
         // Give reward
-        $is_daily = ($mission['category'] === 'daily');
-        $ticketSql = $is_daily ? ", spin_tickets = spin_tickets + 1" : "";
-        $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ? {$ticketSql} WHERE id=?")
+        $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ? WHERE id=?")
             ->execute([$mission['reward'], $user['id']]);
 
         $tgMsg = "🎯 <b>MEMBER KLAIM MISI!</b>\n";
         $tgMsg .= "Username: <code>" . htmlspecialchars($user['username']) . "</code>\n";
         $tgMsg .= "Misi: <b>" . htmlspecialchars($mission['title']) . "</b>\n";
         $tgMsg .= "Reward: Rp " . number_format($mission['reward'], 0, ',', '.') . "\n";
-        if ($is_daily) {
-            $tgMsg .= "Tambahan: +1 Tiket Spin\n";
-        }
         send_telegram_notif($pdo, $tgMsg, [], 'misi');
 
         $pdo->commit();
         
         $msg = '🎉 Reward diklaim! +'.number_format($mission['reward'],0,',','.').' ke Saldo Tarik.';
-        if ($is_daily) $msg .= ' (+1 Tiket Spin)';
-        echo json_encode(['ok'=>true,'msg'=>$msg,'reward'=>$mission['reward'],'tickets_added'=>$is_daily ? 1 : 0]);
+        echo json_encode(['ok'=>true,'msg'=>$msg,'reward'=>$mission['reward']]);
     } catch (\Throwable $e) {
         $pdo->rollBack();
         echo json_encode(['ok'=>false,'msg'=>'Terjadi kesalahan: '.$e->getMessage()]);
@@ -162,10 +156,6 @@ $weekly   = array_filter($missions_data, fn($m) => $m['category'] === 'weekly');
 $lifetime = array_filter($missions_data, fn($m) => $m['category'] === 'lifetime');
 
 $claimed_today = count(array_filter($missions_data, fn($m) => $m['claimed']));
-
-$stmt = $pdo->prepare("SELECT spin_tickets FROM users WHERE id=?");
-$stmt->execute([$user['id']]);
-$spin_tickets = (int)$stmt->fetchColumn();
 
 $pageTitle  = 'Misi & Tantangan — LebahCuan';
 $activePage = 'missions';
@@ -264,39 +254,6 @@ html body {
   background-image: radial-gradient(rgba(120,53,15,0.04) 12%, transparent 13%), radial-gradient(rgba(120,53,15,0.04) 12%, transparent 13%);
   background-size: 32px 32px; background-position: 0 0, 16px 16px;
   pointer-events: none;
-}
-
-/* ── MINIGAME BANNER: LUCKY CARD ── */
-.ms-game-banner {
-  text-decoration: none; display: block; margin-bottom: 16px;
-  position: relative; z-index: 2;
-}
-.ms-game-banner__card {
-  background: linear-gradient(135deg, #7e22ce 0%, #9333ea 50%, #c084fc 100%);
-  border: 2.5px solid #581c87;
-  border-radius: 18px;
-  box-shadow: 0 5px 0 #581c87, 0 10px 20px rgba(88,28,135,0.22);
-  padding: 13px 16px;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px;
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-.ms-game-banner__card:active { transform: translateY(2px); box-shadow: 0 3px 0 #581c87; }
-.ms-game-banner__left { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.ms-game-banner__icon {
-  width: 44px; height: 44px; border-radius: 14px;
-  background: rgba(255, 255, 255, 0.22);
-  border: 1.5px solid rgba(255, 255, 255, 0.4);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; color: #fff; flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-}
-.ms-game-banner__title { font-size: 14px; font-weight: 900; color: #ffffff; line-height: 1.2; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-.ms-game-banner__desc { font-size: 10px; font-weight: 800; color: #f3e8ff; margin-top: 2px; }
-.ms-game-banner__btn {
-  background: #ffffff; color: #7e22ce; font-size: 11px; font-weight: 900;
-  padding: 7px 14px; border-radius: 20px; box-shadow: 0 2.5px 0 #581c87;
-  white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;
 }
 
 /* ── TABS ── */
@@ -488,24 +445,6 @@ html body {
 </div>
 
 <div class="wd-body">
-  <!-- Minigame Banner: Lucky Card -->
-  <a href="/luckycard" class="ms-game-banner">
-    <div class="ms-game-banner__card">
-      <div class="ms-game-banner__left">
-        <div class="ms-game-banner__icon">
-          <i class="ph-fill ph-cards"></i>
-        </div>
-        <div>
-          <div class="ms-game-banner__title">Game Lucky Card 🃏</div>
-          <div class="ms-game-banner__desc">Gunakan Tiket Spin untuk tebak kartu & raih cuan!</div>
-        </div>
-      </div>
-      <div class="ms-game-banner__btn">
-        Main <strong id="spin-tickets-count"><?= $spin_tickets ?></strong> 🎟️
-      </div>
-    </div>
-  </a>
-
   <!-- TABS -->
   <div class="ms-tabs" role="tablist">
     <button class="ms-tab active" id="tab-daily"    onclick="switchTab('daily')">Harian</button>

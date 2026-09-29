@@ -762,58 +762,293 @@ $activePage = 'promotors';
 require __DIR__ . '/partials/header.php';
 ?>
 
-<div class="mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
-  <div>
-    <h5 class="mb-0 fw-bold">🚀 Manajemen Promotor &amp; Analisis Komisi</h5>
-    <div style="font-size:12px;color:#888;margin-top:2px">Kelola target, komisi jaringan mengakar (multi-tier), dan deteksi akun bercabang</div>
+<style>
+/* ── PROMOTOR CONSOLE REDESIGN TOKENS ── */
+.promotor-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.promotor-title-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.promotor-hero-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.25), rgba(245, 158, 11, 0.15));
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.15);
+  flex-shrink: 0;
+}
+.btn-add-promotor {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  border: 1px solid rgba(254, 240, 138, 0.3);
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 9px 18px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-add-promotor:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.45);
+}
+
+/* ── SEGMENTED GLASS TABS ── */
+.p-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(18, 22, 38, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 6px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.p-tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+.p-tab-item:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.05);
+}
+.p-tab-item.active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
+}
+.p-tab-item--indigo.active {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.45) !important;
+}
+.p-tab-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+}
+
+/* ── TABLE & CHIPS STYLING ── */
+.p-user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.p-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.25), rgba(245, 158, 11, 0.1));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.p-ref-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 3px 8px;
+  border-radius: 6px;
+  color: #fbbf24;
+  letter-spacing: 0.5px;
+}
+.p-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.p-stat-pill--emerald {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.p-stat-pill--amber {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+.p-stat-pill--indigo {
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+/* ── ACTION BUTTON GROUP ── */
+.p-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+.p-action-btn:hover {
+  transform: translateY(-1px);
+}
+.p-action-btn--tree {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+.p-action-btn--downlines {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa !important;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+.p-action-btn--edit {
+  background: rgba(6, 182, 212, 0.15);
+  color: #22d3ee !important;
+  border-color: rgba(6, 182, 212, 0.3);
+}
+.p-action-btn--toggle-stop {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24 !important;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.p-action-btn--toggle-start {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.p-action-btn--danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+</style>
+
+<!-- HERO HEADER -->
+<div class="promotor-hero">
+  <div class="promotor-title-box">
+    <div class="promotor-hero-icon">
+      <i class="ph-fill ph-users-three"></i>
+    </div>
+    <div>
+      <h5 class="mb-0 fw-bold text-white d-flex align-items-center gap-2">
+        Manajemen Promotor &amp; Analisis Komisi
+        <span class="badge" style="background:rgba(217,119,6,0.2);color:#fbbf24;border:1px solid rgba(217,119,6,0.35);font-size:11px;font-weight:700;">Multi-Tier Network</span>
+      </h5>
+      <div style="font-size:12px;color:#94a3b8;margin-top:2px">
+        Kelola target harian, skenario komisi jaringan mengakar (L0 - L10), dan deteksi dini sindikat akun tuyul
+      </div>
+    </div>
   </div>
   <?php if ($tab === 'list'): ?>
-  <button class="btn btn-sm btn-primary text-white" onclick="openAddModal()" style="background:var(--brand);border-color:var(--brand)">
-    + Tambah Promotor
+  <button type="button" class="btn-add-promotor" onclick="openAddModal()">
+    <i class="ph-bold ph-plus-circle" style="font-size:16px;"></i>
+    <span>Tambah Promotor Baru</span>
   </button>
   <?php endif; ?>
 </div>
 
 <?php if ($flash): ?>
-<div class="alert alert-<?= $flashType==='error'?'danger':'success' ?> py-2 mb-3" style="border-radius:10px;font-size:13px">
-  <?= htmlspecialchars($flash) ?>
+<div class="alert alert-<?= $flashType==='error'?'danger':'success' ?> d-flex align-items-center gap-2 py-2 mb-3" style="border-radius:12px;font-size:13px">
+  <i class="ph-bold <?= $flashType==='error'?'ph-x-circle':'ph-check-circle' ?>" style="font-size:18px;"></i>
+  <span><?= htmlspecialchars($flash) ?></span>
 </div>
 <?php endif; ?>
 
-<!-- Tabs navigation -->
-<div class="d-flex gap-2 mb-4 flex-wrap">
-  <a href="?tab=list" class="btn btn-sm <?= $tab==='list'?'text-white':'btn-secondary' ?>" style="<?= $tab==='list'?'background:var(--brand);border-color:var(--brand)':'' ?>">
-    🧑‍💼 Daftar Promotor
+<!-- SEGMENTED GLASS TABS NAVIGATION -->
+<div class="p-tab-bar">
+  <a href="?tab=list" class="p-tab-item <?= $tab==='list'?'active':'' ?>">
+    <i class="ph-bold ph-identification-card"></i>
+    <span>Daftar Promotor</span>
+    <span class="p-tab-badge"><?= count($promotors) ?></span>
   </a>
-  <a href="?tab=commission_panel<?= !empty($selected_promotor_id_param) ? '&promotor_id='.$selected_promotor_id_param : '' ?>" class="btn btn-sm <?= $tab==='commission_panel'?'text-white':'btn-secondary' ?>" style="<?= $tab==='commission_panel'?'background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:#6366f1;box-shadow:0 0 12px rgba(99,102,241,0.4)':'' ?>">
-    🌳 Panel Komisi &amp; Jaringan Mengakar
+  <a href="?tab=commission_panel<?= !empty($selected_promotor_id_param) ? '&promotor_id='.$selected_promotor_id_param : '' ?>" class="p-tab-item p-tab-item--indigo <?= $tab==='commission_panel'?'active':'' ?>">
+    <i class="ph-fill ph-tree-structure"></i>
+    <span>Panel Jaringan &amp; Komisi</span>
   </a>
-  <a href="?tab=scheme" class="btn btn-sm <?= $tab==='scheme'?'text-white':'btn-secondary' ?>" style="<?= $tab==='scheme'?'background:var(--brand);border-color:var(--brand)':'' ?>">
-    ⚙️ Skenario Komisi
+  <a href="?tab=scheme" class="p-tab-item <?= $tab==='scheme'?'active':'' ?>">
+    <i class="ph-bold ph-sliders"></i>
+    <span>Skenario Komisi</span>
   </a>
-  <a href="?tab=logs" class="btn btn-sm <?= $tab==='logs'?'text-white':'btn-secondary' ?>" style="<?= $tab==='logs'?'background:var(--brand);border-color:var(--brand)':'' ?>">
-    📜 Riwayat Target &amp; Payout
+  <a href="?tab=logs" class="p-tab-item <?= $tab==='logs'?'active':'' ?>">
+    <i class="ph-bold ph-calendar-check"></i>
+    <span>Riwayat Target &amp; Payout</span>
+    <span class="p-tab-badge"><?= count($logs) ?></span>
   </a>
-  <a href="?tab=members" class="btn btn-sm <?= $tab==='members'?'text-white':'btn-secondary' ?>" style="<?= $tab==='members'?'background:var(--brand);border-color:var(--brand)':'' ?>">
-    👥 Member Promotor
+  <a href="?tab=members" class="p-tab-item <?= $tab==='members'?'active':'' ?>">
+    <i class="ph-bold ph-users"></i>
+    <span>Member Referral</span>
+    <?php if ($tab === 'members'): ?>
+      <span class="p-tab-badge"><?= count($referred_members) ?></span>
+    <?php endif; ?>
   </a>
 </div>
 
 <?php if ($tab === 'list'): ?>
 <!-- LIST TAB -->
 <div class="c-card">
-  <div class="c-card-header"><span class="c-card-title">Daftar Promotor Aktif</span></div>
+  <div class="c-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <span class="c-card-title">Daftar Promotor Aktif</span>
+      <span class="badge" style="background:rgba(217,119,6,0.15);color:#fbbf24;border:1px solid rgba(217,119,6,0.3);font-size:11px;">
+        Total: <?= count($promotors) ?> Promotor
+      </span>
+    </div>
+  </div>
   <div class="c-card-body p-0">
     <div class="table-responsive">
-      <table class="c-table table table-dark table-striped table-hover mb-0" style="font-size: 13.5px;">
+      <table class="c-table table table-dark table-striped table-hover mb-0" style="font-size: 13px;">
         <thead>
           <tr>
             <th>Promotor</th>
             <th>Referral Code</th>
-            <th>Target Depo</th>
+            <th>Target Depo Harian</th>
             <th>Target Registrasi</th>
             <th>Rate Gaji Harian</th>
-            <th class="text-end">Aksi</th>
+            <th class="text-end">Aksi &amp; Jaringan</th>
           </tr>
         </thead>
         <tbody>
@@ -821,40 +1056,71 @@ require __DIR__ . '/partials/header.php';
             <?php foreach ($promotors as $p): ?>
               <tr style="vertical-align: middle;">
                 <td>
-                  <strong style="color: #fff;"><?= htmlspecialchars($p['username']) ?></strong>
-                  <div style="font-size: 11px; color: #666;"><?= htmlspecialchars($p['email']) ?></div>
+                  <div class="p-user-chip">
+                    <div class="p-user-avatar">
+                      <?= strtoupper(substr($p['username'], 0, 1)) ?>
+                    </div>
+                    <div>
+                      <strong class="text-white"><?= htmlspecialchars($p['username']) ?></strong>
+                      <div style="font-size: 11px; color: #94a3b8;"><?= htmlspecialchars($p['email']) ?></div>
+                    </div>
+                  </div>
                 </td>
-                <td><code><?= htmlspecialchars($p['referral_code']) ?></code></td>
-                <td style="color: #4CAF82; font-weight: 700;"><?= format_rp((float)$p['promotor_target_deposits']) ?></td>
-                <td><?= number_format((int)$p['promotor_target_regs']) ?> member</td>
-                <td style="color: #FF6B35; font-weight: 700;"><?= format_rp((float)$p['promotor_salary_rate']) ?></td>
+                <td>
+                  <span class="p-ref-code"><?= htmlspecialchars($p['referral_code']) ?></span>
+                </td>
+                <td>
+                  <span class="p-stat-pill p-stat-pill--emerald">
+                    <i class="ph-bold ph-wallet"></i> <?= format_rp((float)$p['promotor_target_deposits']) ?>
+                  </span>
+                </td>
+                <td>
+                  <span class="p-stat-pill p-stat-pill--indigo">
+                    <i class="ph-bold ph-user-plus"></i> <?= number_format((int)$p['promotor_target_regs']) ?> member
+                  </span>
+                </td>
+                <td>
+                  <span class="p-stat-pill p-stat-pill--amber">
+                    <i class="ph-bold ph-coins"></i> <?= format_rp((float)$p['promotor_salary_rate']) ?>
+                  </span>
+                </td>
                 <td class="text-end">
-                  <a href="?tab=commission_panel&promotor_id=<?= $p['id'] ?>" class="btn btn-sm text-white me-1" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:6px;font-size:11px">
-                    🌳 Panel Jaringan
-                  </a>
-                  <a href="?tab=members&promotor_id=<?= $p['id'] ?>" class="btn btn-sm btn-primary text-white me-1" style="border:none;border-radius:6px;font-size:11px">
-                    👥 Downlines
-                  </a>
-                  <button class="btn btn-sm btn-info text-white me-1" style="border:none;border-radius:6px;font-size:11px"
-                          onclick="openEditModal(<?= htmlspecialchars(json_encode($p)) ?>)">
-                    ✏️ Edit Target
-                  </button>
-                  <form method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin ' + (<?= $p['is_referral_active'] ? "'menghentikan'" : "'mengaktifkan'" ?>) + ' referral promotor ini?');">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="toggle_referral">
-                    <input type="hidden" name="user_id" value="<?= $p['id'] ?>">
-                    <input type="hidden" name="new_val" value="<?= $p['is_referral_active'] ? 0 : 1 ?>">
-                    <button type="submit" class="btn btn-sm <?= $p['is_referral_active'] ? 'btn-warning' : 'btn-success' ?> text-white me-1" style="border:none;border-radius:6px;font-size:11px">
-                      <?= $p['is_referral_active'] ? '🛑 Stop Referral' : '✅ Aktifkan Referral' ?>
+                  <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-end">
+                    <a href="?tab=commission_panel&promotor_id=<?= $p['id'] ?>" class="p-action-btn p-action-btn--tree" title="Buka Struktur Jaringan Pohon">
+                      <i class="ph-fill ph-tree-structure"></i> Jaringan
+                    </a>
+                    <a href="?tab=members&promotor_id=<?= $p['id'] ?>" class="p-action-btn p-action-btn--downlines" title="Lihat Member Downline">
+                      <i class="ph-bold ph-users"></i> Member
+                    </a>
+                    <button type="button" class="p-action-btn p-action-btn--edit"
+                            onclick="openEditModal(<?= htmlspecialchars(json_encode($p)) ?>)" title="Ubah Konfigurasi Target">
+                      <i class="ph-bold ph-pencil-simple"></i> Edit
                     </button>
-                  </form>
-                  <button class="btn btn-sm btn-danger" style="border:none;border-radius:6px;font-size:11px"
-                          onclick="confirmRemove(<?= $p['id'] ?>, '<?= htmlspecialchars($p['username']) ?>')">
-                    ❌ Nonaktifkan
-                  </button>
+                    <form method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin ' + (<?= $p['is_referral_active'] ? "'menghentikan'" : "'mengaktifkan'" ?>) + ' referral promotor ini?');">
+                      <?= csrf_field() ?>
+                      <input type="hidden" name="action" value="toggle_referral">
+                      <input type="hidden" name="user_id" value="<?= $p['id'] ?>">
+                      <input type="hidden" name="new_val" value="<?= $p['is_referral_active'] ? 0 : 1 ?>">
+                      <button type="submit" class="p-action-btn <?= $p['is_referral_active'] ? 'p-action-btn--toggle-stop' : 'p-action-btn--toggle-start' ?>" title="<?= $p['is_referral_active'] ? 'Hentikan Referral' : 'Aktifkan Referral' ?>">
+                        <i class="ph-bold <?= $p['is_referral_active'] ? 'ph-prohibit' : 'ph-check-circle' ?>"></i>
+                        <?= $p['is_referral_active'] ? 'Stop' : 'Aktifkan' ?>
+                      </button>
+                    </form>
+                    <button type="button" class="p-action-btn p-action-btn--danger"
+                            onclick="confirmRemove(<?= $p['id'] ?>, '<?= htmlspecialchars($p['username']) ?>')" title="Cabut Peran Promotor">
+                      <i class="ph-bold ph-trash"></i>
+                    </button>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>
+          <?php else: ?>
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">
+                <i class="ph-bold ph-users-three" style="font-size:32px;display:block;margin-bottom:6px;opacity:0.4;"></i>
+                Belum ada promotor yang didaftarkan. Klik tombol <strong>+ Tambah Promotor Baru</strong> di atas untuk memulai.
+              </td>
+            </tr>
           <?php endif; ?>
         </tbody>
       </table>
@@ -1614,71 +1880,117 @@ setTimeout(runSim, 100);
 <?php elseif ($tab === 'logs'): ?>
 <!-- LOGS TAB -->
 <div class="c-card">
-  <div class="c-card-header"><span class="c-card-title">Riwayat Performansi Target Harian</span></div>
-  <div class="c-card-body p-3">
+  <div class="c-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <span class="c-card-title">Riwayat Performansi Target Harian</span>
+      <span class="badge" style="background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);font-size:11px;">
+        Total: <?= count($logs) ?> Catatan Target
+      </span>
+    </div>
+  </div>
+  <div class="c-card-body p-0">
     <div class="table-responsive">
       <table class="c-table table table-dark table-striped table-hover mb-0" data-order='[[0, "desc"]]' style="font-size: 13px;">
         <thead>
           <tr>
             <th>Tanggal</th>
             <th>Promotor</th>
-            <th>Persentase</th>
-            <th>Pencapaian (Depo / Reg)</th>
-            <th>Target (Depo / Reg)</th>
-            <th>Gaji Harian</th>
+            <th>Pencapaian %</th>
+            <th>Realisasi Harian</th>
+            <th>Target Harian</th>
+            <th>Kalkulasi Gaji</th>
             <th>Status Payout</th>
-            <th class="text-end">Aksi</th>
+            <th class="text-end">Aksi Payout</th>
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($logs as $log): ?>
-            <tr style="vertical-align: middle;">
-              <td class="fw-bold" style="color: #fff;"><?= htmlspecialchars($log['date']) ?></td>
-              <td><strong>@<?= htmlspecialchars($log['username']) ?></strong></td>
-              <td>
-                <span class="badge <?= (float)$log['percentage'] >= 100 ? 'b-success' : 'b-warn' ?>" style="font-size: 11px; padding: 4px 8px; border-radius: 6px;">
-                  <?= number_format((float)$log['percentage'], 1) ?>%
-                </span>
-              </td>
-              <td style="color:#aaa;">
-                Depo: <?= format_rp((float)$log['actual_deposits']) ?> <br>
-                Reg: <?= $log['actual_regs'] ?> member
-              </td>
-              <td style="color:#666; font-size:11px;">
-                Depo: <?= format_rp((float)$log['target_deposits']) ?> <br>
-                Reg: <?= $log['target_regs'] ?> member
-              </td>
-              <td>
-                <div style="font-size:11px;color:#aaa">Rate: <?= format_rp((float)$log['salary_rate']) ?></div>
-                <?php 
-                $earned = (float)round(($log['salary_rate'] * min(100.0, (float)$log['percentage'])) / 100.0);
-                if ($log['is_paid']): ?>
-                  <div style="font-weight:700;color:#4CAF82;font-size:12.5px">Paid: <?= format_rp((float)$log['paid_amount']) ?></div>
-                <?php else: ?>
-                  <div style="font-weight:700;color:#FF6B35;font-size:12.5px">Earned: <?= format_rp($earned) ?></div>
-                <?php endif; ?>
-              </td>
-              <td>
-                <?php if ($log['is_paid']): ?>
-                  <span class="badge b-success" style="padding: 4px 8px; border-radius: 6px;">Paid ✅</span>
-                <?php elseif ($earned > 0): ?>
-                  <span class="badge b-warn" style="padding: 4px 8px; border-radius: 6px; background:#FF6B35; color:#fff">Ready ⏳</span>
-                <?php else: ?>
-                  <span class="badge b-neutral" style="padding: 4px 8px; border-radius: 6px; background:#444; color:#aaa">0% ❌</span>
-                <?php endif; ?>
-              </td>
-              <td class="text-end">
-                <?php if (!$log['is_paid'] && $earned > 0): ?>
-                  <button class="btn btn-sm btn-success text-white" style="border:none;border-radius:6px;font-size:11px;background:#4CAF82"
-                          onclick="openPayoutModal(<?= $log['id'] ?>, '<?= htmlspecialchars($log['username']) ?>', '<?= date('d M Y', strtotime($log['date'])) ?>', '<?= format_rp($earned) ?>', '<?= number_format((float)$log['percentage'], 1) ?>%')">
-                    💸 Bayar Gaji
-                  </button>
-                <?php else: ?>
-                  <span style="font-size: 11px; color:#555">—</span>
-                <?php endif; ?>
-              </td>
+          <?php if (!empty($logs)): ?>
+            <?php foreach ($logs as $log): ?>
+              <?php 
+                $pct = (float)$log['percentage'];
+                $earned = (float)round(($log['salary_rate'] * min(100.0, $pct)) / 100.0);
+              ?>
+              <tr style="vertical-align: middle;">
+                <td>
+                  <span class="p-ref-code" style="color:#cbd5e1;background:rgba(255,255,255,0.03);">
+                    <i class="ph-bold ph-calendar"></i> <?= htmlspecialchars($log['date']) ?>
+                  </span>
+                </td>
+                <td>
+                  <div class="p-user-chip">
+                    <div class="p-user-avatar" style="width:30px;height:30px;font-size:12px;">
+                      <?= strtoupper(substr($log['username'], 0, 1)) ?>
+                    </div>
+                    <strong class="text-white">@<?= htmlspecialchars($log['username']) ?></strong>
+                  </div>
+                </td>
+                <td>
+                  <?php if ($pct >= 100): ?>
+                    <span class="p-stat-pill p-stat-pill--emerald">
+                      <i class="ph-bold ph-check"></i> <?= number_format($pct, 1) ?>%
+                    </span>
+                  <?php elseif ($pct > 0): ?>
+                    <span class="p-stat-pill p-stat-pill--amber">
+                      <?= number_format($pct, 1) ?>%
+                    </span>
+                  <?php else: ?>
+                    <span class="p-stat-pill" style="background:rgba(148,163,184,0.12);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);">
+                      0.0%
+                    </span>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <div style="font-size:12px;color:#cbd5e1;line-height:1.4;">
+                    <div>Depo: <strong class="text-white"><?= format_rp((float)$log['actual_deposits']) ?></strong></div>
+                    <div class="text-muted">Reg: <strong><?= $log['actual_regs'] ?></strong> member</div>
+                  </div>
+                </td>
+                <td>
+                  <div style="font-size:11.5px;color:#94a3b8;line-height:1.4;">
+                    <div>Depo: <?= format_rp((float)$log['target_deposits']) ?></div>
+                    <div>Reg: <?= $log['target_regs'] ?> member</div>
+                  </div>
+                </td>
+                <td>
+                  <div style="font-size:11px;color:#94a3b8;">Rate: <?= format_rp((float)$log['salary_rate']) ?></div>
+                  <?php if ($log['is_paid']): ?>
+                    <div style="font-weight:800;color:#34d399;font-size:13px">Paid: <?= format_rp((float)$log['paid_amount']) ?></div>
+                  <?php else: ?>
+                    <div style="font-weight:800;color:#fbbf24;font-size:13px">Earned: <?= format_rp($earned) ?></div>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <?php if ($log['is_paid']): ?>
+                    <span class="badge" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);padding:4px 8px;border-radius:6px;font-size:11px;">
+                      <i class="ph-bold ph-check"></i> Paid
+                    </span>
+                  <?php elseif ($earned > 0): ?>
+                    <span class="badge" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);padding:4px 8px;border-radius:6px;font-size:11px;">
+                      <i class="ph-bold ph-clock"></i> Ready
+                    </span>
+                  <?php else: ?>
+                    <span class="badge" style="background:rgba(148,163,184,0.1);color:#94a3b8;border:1px solid rgba(148,163,184,0.2);padding:4px 8px;border-radius:6px;font-size:11px;">
+                      0% Target
+                    </span>
+                  <?php endif; ?>
+                </td>
+                <td class="text-end">
+                  <?php if (!$log['is_paid'] && $earned > 0): ?>
+                    <button type="button" class="btn btn-sm text-white" style="background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:8px;font-size:11px;font-weight:700;padding:5px 10px;box-shadow:0 2px 8px rgba(16,185,129,0.3);"
+                            onclick="openPayoutModal(<?= $log['id'] ?>, '<?= htmlspecialchars($log['username']) ?>', '<?= date('d M Y', strtotime($log['date'])) ?>', '<?= format_rp($earned) ?>', '<?= number_format((float)$log['percentage'], 1) ?>%')">
+                      <i class="ph-bold ph-hand-coins"></i> Bayar Gaji
+                    </button>
+                  <?php else: ?>
+                    <span style="font-size: 11px; color:#555">—</span>
+                  <?php endif; ?>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">Belum ada riwayat performansi target tercatat.</td>
             </tr>
-          <?php endforeach; ?>
+          <?php endif; ?>
         </tbody>
       </table>
     </div>
@@ -1689,16 +2001,21 @@ setTimeout(runSim, 100);
 <!-- MEMBERS TAB -->
 <div class="c-card">
   <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <span class="c-card-title">Member Referral Promotor (Direct Level 1)</span>
+    <div class="d-flex align-items-center gap-2">
+      <span class="c-card-title">Member Referral Promotor (Direct Level 1)</span>
+      <span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);font-size:11px;">
+        Total: <?= count($referred_members) ?> Member
+      </span>
+    </div>
   </div>
-  <div class="c-card-body p-3">
+  <div class="c-card-body p-0">
     <div class="table-responsive">
-      <table class="c-table table table-dark table-striped table-hover mb-0" data-order='[[4, "desc"]]' style="font-size: 13px;">
+      <table class="c-table table table-dark table-striped table-hover mb-0" data-order='[[3, "desc"]]' style="font-size: 13px;">
         <thead>
           <tr>
             <th>Member</th>
-            <th>Promotor</th>
-            <th>Level</th>
+            <th>Promotor (Upline)</th>
+            <th>Tier Membership</th>
             <th>Total Deposit</th>
             <th>Waktu Daftar</th>
           </tr>
@@ -1708,19 +2025,36 @@ setTimeout(runSim, 100);
             <?php foreach ($referred_members as $rm): ?>
               <tr style="vertical-align: middle;">
                 <td>
-                  <strong style="color: #fff;"><?= htmlspecialchars($rm['username']) ?></strong>
-                  <div style="font-size: 11px; color: #666;"><?= htmlspecialchars($rm['email']) ?></div>
+                  <div class="p-user-chip">
+                    <div class="p-user-avatar" style="width:32px;height:32px;font-size:12px;background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.3);color:#60a5fa;">
+                      <?= strtoupper(substr($rm['username'], 0, 1)) ?>
+                    </div>
+                    <div>
+                      <strong class="text-white"><?= htmlspecialchars($rm['username']) ?></strong>
+                      <div style="font-size: 11px; color: #94a3b8;"><?= htmlspecialchars($rm['email']) ?></div>
+                    </div>
+                  </div>
                 </td>
-                <td><strong style="color:var(--brand)">@<?= htmlspecialchars($rm['promotor_name']) ?></strong></td>
                 <td>
-                  <span class="badge b-neutral" style="font-size: 11px; padding: 4px 8px; border-radius: 6px;">
+                  <span class="badge" style="background:rgba(217,119,6,0.15);color:#fbbf24;border:1px solid rgba(217,119,6,0.3);font-size:11.5px;padding:4px 8px;">
+                    @<?= htmlspecialchars($rm['promotor_name']) ?>
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" style="background:rgba(148,163,184,0.12);color:#cbd5e1;border:1px solid rgba(148,163,184,0.25);font-size:11px;padding:4px 8px;">
                     <?= htmlspecialchars($rm['membership_name']) ?>
                   </span>
                 </td>
-                <td style="color: #4CAF82; font-weight: 700;"><?= format_rp((float)$rm['total_deposit']) ?></td>
-                <td style="color: #ccc; font-size: 12px;"><?= date('d M Y H:i', strtotime($rm['created_at'])) ?></td>
+                <td>
+                  <strong style="color: #34d399; font-size:13px;"><?= format_rp((float)$rm['total_deposit']) ?></strong>
+                </td>
+                <td style="color: #94a3b8; font-size: 12px;"><?= date('d M Y H:i', strtotime($rm['created_at'])) ?></td>
               </tr>
             <?php endforeach; ?>
+          <?php else: ?>
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">Belum ada data member referral yang terhubung.</td>
+            </tr>
           <?php endif; ?>
         </tbody>
       </table>
@@ -1733,52 +2067,57 @@ setTimeout(runSim, 100);
 
 <!-- Promotor Setup Modal -->
 <div class="modal fade" id="promotorModal" tabindex="-1">
-  <div class="modal-dialog modal-md">
-    <div class="modal-content" style="background:#1a1d27;border:1px solid #2d3149">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content" style="background:rgba(20,24,42,0.98);border:1px solid rgba(217,119,6,0.35);border-radius:20px;box-shadow:0 20px 50px rgba(0,0,0,0.6);overflow:hidden;">
       <form method="POST">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="save_promotor">
-        <div class="modal-header border-0">
-          <h6 class="modal-title fw-bold" id="modal-title">Konfigurasi Promotor</h6>
+        <div class="modal-header border-0 pb-0" style="padding:22px 24px 10px;">
+          <h6 class="modal-title fw-bold text-white d-flex align-items-center gap-2" id="modal-title">
+            <i class="ph-fill ph-user-gear" style="color:#fbbf24;font-size:20px;"></i>
+            Konfigurasi Promotor
+          </h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
-          <div class="c-form-group" id="user-select-group">
-            <label class="c-label">Pilih User</label>
-            <select name="user_id" id="f_user_id" class="c-form-control">
+        <div class="modal-body" style="padding:16px 24px 24px;">
+          <div class="c-form-group mb-3" id="user-select-group">
+            <label class="c-label" style="font-size:12px;font-weight:700;color:#cbd5e1;margin-bottom:6px;">Pilih User</label>
+            <select name="user_id" id="f_user_id" class="c-form-control" style="background:#0c0e18;border-color:#2a304e;border-radius:10px;">
               <option value="">— Pilih Pengguna —</option>
               <?php foreach ($eligible_users as $eu): ?>
                 <option value="<?= $eu['id'] ?>"><?= htmlspecialchars($eu['username']) ?></option>
               <?php endforeach; ?>
             </select>
           </div>
-          <div class="c-form-group" id="user-display-group" style="display:none">
-            <label class="c-label">User Seleksi</label>
+          <div class="c-form-group mb-3" id="user-display-group" style="display:none">
+            <label class="c-label" style="font-size:12px;font-weight:700;color:#cbd5e1;margin-bottom:6px;">User Seleksi</label>
             <input type="hidden" name="user_id" id="edit_user_id">
-            <input type="text" id="edit_username" class="c-form-control" readonly style="background:#0f1117;color:#888">
+            <input type="text" id="edit_username" class="c-form-control" readonly style="background:#0c0e18;color:#94a3b8;border-color:#2a304e;border-radius:10px;">
           </div>
           
-          <div class="c-form-group mt-3">
-            <label class="c-label">Target Volume Deposit Harian (Rp)</label>
-            <input type="number" name="target_deposits" id="f_target_deposits" class="c-form-control" min="0" step="any" required placeholder="Contoh: 500000">
-            <span style="font-size:10px;color:#666">Reset harian. Total deposit downlines promotor hari itu.</span>
+          <div class="c-form-group mb-3">
+            <label class="c-label" style="font-size:12px;font-weight:700;color:#cbd5e1;margin-bottom:6px;">Target Volume Deposit Harian (Rp)</label>
+            <input type="number" name="target_deposits" id="f_target_deposits" class="c-form-control" min="0" step="any" required placeholder="Contoh: 500000" style="background:#0c0e18;border-color:#2a304e;border-radius:10px;">
+            <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Reset harian otomatis. Total deposit downlines promotor hari itu.</div>
           </div>
           
-          <div class="c-form-group mt-3">
-            <label class="c-label">Target Registrasi Harian (Jumlah Member)</label>
-            <input type="number" name="target_regs" id="f_target_regs" class="c-form-control" min="0" required placeholder="Contoh: 5">
-            <span style="font-size:10px;color:#666">Reset harian. Jumlah member baru mendaftar pakai kode promotor hari itu.</span>
+          <div class="c-form-group mb-3">
+            <label class="c-label" style="font-size:12px;font-weight:700;color:#cbd5e1;margin-bottom:6px;">Target Registrasi Harian (Jumlah Member)</label>
+            <input type="number" name="target_regs" id="f_target_regs" class="c-form-control" min="0" required placeholder="Contoh: 5" style="background:#0c0e18;border-color:#2a304e;border-radius:10px;">
+            <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Reset harian otomatis. Jumlah member baru mendaftar pakai kode promotor.</div>
           </div>
           
-          <div class="c-form-group mt-3">
-            <label class="c-label">Gaji / Rate Harian ketika Target Tercapai (Rp)</label>
-            <input type="number" name="salary_rate" id="f_salary_rate" class="c-form-control" min="0" step="any" required placeholder="Contoh: 50000">
-            <span style="font-size:10px;color:#666">Akan dirilis ke balance WD promotor setelah divalidasi admin.</span>
+          <div class="c-form-group mb-0">
+            <label class="c-label" style="font-size:12px;font-weight:700;color:#cbd5e1;margin-bottom:6px;">Gaji / Rate Harian ketika Target Tercapai (Rp)</label>
+            <input type="number" name="salary_rate" id="f_salary_rate" class="c-form-control" min="0" step="any" required placeholder="Contoh: 50000" style="background:#0c0e18;border-color:#2a304e;border-radius:10px;">
+            <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Akan dirilis ke balance WD promotor setelah divalidasi admin.</div>
           </div>
         </div>
-        <div class="modal-footer border-0">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-sm text-white" style="background:var(--brand)">Simpan Pengaturan</button>
+        <div class="modal-footer border-0 pt-0" style="padding:0 24px 22px;gap:8px;">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:10px;padding:8px 16px;">Batal</button>
+          <button type="submit" class="btn btn-sm text-white" style="background:linear-gradient(135deg,#d97706,#b45309);border:none;border-radius:10px;padding:8px 18px;font-weight:700;box-shadow:0 4px 12px rgba(217,119,6,0.35);">
+            <i class="ph-bold ph-floppy-disk"></i> Simpan Pengaturan
+          </button>
         </div>
       </form>
     </div>
@@ -1787,22 +2126,27 @@ setTimeout(runSim, 100);
 
 <!-- Nonaktifkan Promotor Form Modal -->
 <div class="modal fade" id="removeModal" tabindex="-1">
-  <div class="modal-dialog modal-sm">
-    <div class="modal-content" style="background:#1a1d27;border:1px solid #2d3149">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content" style="background:rgba(20,24,42,0.98);border:1px solid rgba(239,68,68,0.35);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,0.6);overflow:hidden;">
       <form method="POST">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="remove_promotor">
         <input type="hidden" name="user_id" id="remove_user_id">
-        <div class="modal-header border-0">
-          <h6 class="modal-title fw-bold">Cabut Peran Promotor</h6>
+        <div class="modal-header border-0 pb-0" style="padding:20px 20px 10px;">
+          <h6 class="modal-title fw-bold text-white d-flex align-items-center gap-2">
+            <i class="ph-bold ph-warning-circle" style="color:#ef4444;font-size:20px;"></i>
+            Cabut Peran Promotor
+          </h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
-          <p style="font-size:13px;color:#ccc">Apakah Anda yakin ingin mencabut peran Promotor dari <strong id="remove_username" style="color:#fff"></strong>?</p>
+        <div class="modal-body" style="padding:14px 20px 20px;">
+          <p style="font-size:13px;color:#cbd5e1;line-height:1.5;margin-bottom:0;">
+            Apakah Anda yakin ingin mencabut peran Promotor dari <strong id="remove_username" class="text-white"></strong>? Status promotor dan target harian akan dinonaktifkan.
+          </p>
         </div>
-        <div class="modal-footer border-0">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-danger btn-sm">Cabut Peran</button>
+        <div class="modal-footer border-0 pt-0" style="padding:0 20px 18px;gap:8px;">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:8px;">Batal</button>
+          <button type="submit" class="btn btn-danger btn-sm" style="border-radius:8px;font-weight:700;">Cabut Peran</button>
         </div>
       </form>
     </div>
@@ -1811,28 +2155,47 @@ setTimeout(runSim, 100);
 
 <!-- Pay Salary Confirmation Modal -->
 <div class="modal fade" id="payoutModal" tabindex="-1">
-  <div class="modal-dialog modal-md">
-    <div class="modal-content" style="background:#1a1d27;border:1px solid #2d3149">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content" style="background:rgba(20,24,42,0.98);border:1px solid rgba(16,185,129,0.35);border-radius:20px;box-shadow:0 20px 50px rgba(0,0,0,0.6);overflow:hidden;">
       <form method="POST">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="pay_salary">
         <input type="hidden" name="log_id" id="pay_log_id">
-        <div class="modal-header border-0">
-          <h6 class="modal-title fw-bold">💸 Pencairan Gaji Promotor</h6>
+        <div class="modal-header border-0 pb-0" style="padding:22px 24px 10px;">
+          <h6 class="modal-title fw-bold text-white d-flex align-items-center gap-2">
+            <i class="ph-fill ph-hand-coins" style="color:#34d399;font-size:22px;"></i>
+            Pencairan Gaji Promotor
+          </h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
-          <p style="font-size:13.5px;color:#ccc;line-height:1.5">
-            Anda akan merilis gaji harian untuk promotor <strong id="pay_username" style="color:#fff"></strong>.<br>
-            Tanggal Target: <strong id="pay_date" style="color:#fff"></strong><br>
-            Pencapaian Target: <strong id="pay_pct" style="color:#FF6B35"></strong><br>
-            Jumlah Pencairan Gaji: <strong id="pay_amount" style="color:#4CAF82;font-size:16px"></strong><br><br>
-            <span style="font-size:11px;color:#aaa">⚠️ Setelah diklik, saldo Penarikan milik promotor akan langsung bertambah secara proporsional sesuai pencapaian target dan notifikasi Telegram akan terkirim.</span>
-          </p>
+        <div class="modal-body" style="padding:16px 24px 24px;">
+          <div class="p-3 rounded mb-3" style="background:#0c0e18;border:1px solid #2a304e;">
+            <div class="d-flex justify-content-between mb-2" style="font-size:13px;">
+              <span class="text-muted">Promotor:</span>
+              <strong id="pay_username" class="text-white"></strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2" style="font-size:13px;">
+              <span class="text-muted">Tanggal Target:</span>
+              <strong id="pay_date" class="text-white"></strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2" style="font-size:13px;">
+              <span class="text-muted">Pencapaian:</span>
+              <strong id="pay_pct" style="color:#fbbf24;"></strong>
+            </div>
+            <div class="d-flex justify-content-between pt-2 border-top border-secondary" style="font-size:14px;">
+              <span class="text-white fw-bold">Nominal Gaji:</span>
+              <strong id="pay_amount" style="color:#34d399;font-size:17px;"></strong>
+            </div>
+          </div>
+          <div style="font-size:11.5px;color:#94a3b8;line-height:1.4;">
+            <i class="ph-bold ph-info" style="color:#38bdf8;"></i> Setelah diklik, saldo penarikan promotor akan otomatis bertambah secara proporsional sesuai pencapaian target dan notifikasi Telegram akan terkirim.
+          </div>
         </div>
-        <div class="modal-footer border-0">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-sm text-white" style="background:#4CAF82">Rilis Payout Gaji</button>
+        <div class="modal-footer border-0 pt-0" style="padding:0 24px 22px;gap:8px;">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="border-radius:10px;padding:8px 16px;">Batal</button>
+          <button type="submit" class="btn btn-sm text-white" style="background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:10px;padding:8px 18px;font-weight:700;box-shadow:0 4px 12px rgba(16,185,129,0.35);">
+            <i class="ph-bold ph-check"></i> Rilis Payout Gaji
+          </button>
         </div>
       </form>
     </div>
