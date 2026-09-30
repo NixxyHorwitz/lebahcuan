@@ -40,20 +40,20 @@ function lc_admit_queue_entry(PDO $pdo, int $queueId): bool {
     $siteUrl = rtrim(setting($pdo, 'lc_site_url', ''), '/');
     if ($chatId && $token) {
         $threadTitle = "{$userName} #{$sessId}";
-        $intro = "💬 Sesi Chat Baru (Di-admit oleh Admin)\n"
-               . "👤 User: {$userName}\n"
-               . "🔑 Session: #{$sessId}\n"
-               . "🤖 Mode: " . ($initMode === 'admin' ? 'Admin' : 'AI');
+        $intro = "Sesi Chat Baru (Di-admit oleh Admin)\n"
+               . "User: {$userName}\n"
+               . "Session: #{$sessId}\n"
+               . "Mode: " . ($initMode === 'admin' ? 'Admin' : 'AI');
 
         $consoleLink = $siteUrl ? "{$siteUrl}/console/livechat.php?view={$sessId}" : null;
         $inlineKbd = ['inline_keyboard' => []];
         if ($consoleLink) {
-            $inlineKbd['inline_keyboard'][] = [['text' => "🖥️ Buka Console", 'url' => $consoleLink]];
+            $inlineKbd['inline_keyboard'][] = [['text' => "Buka Console", 'url' => $consoleLink]];
         }
         $inlineKbd['inline_keyboard'][] = [
-            ['text' => "📌 Keep", 'callback_data' => "keep_sess:{$sessId}"],
-            ['text' => "🔒 Tutup", 'callback_data' => "close_sess:{$sessId}"],
-            ['text' => "🗑️ Hapus Sesi", 'callback_data' => "del_thread:{$sessId}"]
+            ['text' => "Keep", 'callback_data' => "keep_sess:{$sessId}"],
+            ['text' => "Tutup", 'callback_data' => "close_sess:{$sessId}"],
+            ['text' => "Hapus Sesi", 'callback_data' => "del_thread:{$sessId}"]
         ];
 
         $ch = curl_init("https://api.telegram.org/bot{$token}/createForumTopic");
@@ -95,9 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($tab === 'admit_queue') {
         $qid = (int)($_POST['queue_id'] ?? 0);
         if ($qid && lc_admit_queue_entry($pdo, $qid)) {
-            $_SESSION['flash_msg'] = '✅ User antrean berhasil dimasukkan ke sesi aktif.';
+            $_SESSION['flash_msg'] = 'User antrean berhasil dimasukkan ke sesi aktif.';
         } else {
-            $_SESSION['flash_err'] = '❌ Gagal memasukkan antrean (mungkin sudah tidak aktif).';
+            $_SESSION['flash_err'] = 'Gagal memasukkan antrean (mungkin sudah tidak aktif).';
         }
         header('Location: /console/livechat.php?t=manage'); exit;
     }
@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($waiting as $w) {
             if (lc_admit_queue_entry($pdo, (int)$w['id'])) $cnt++;
         }
-        $_SESSION['flash_msg'] = "✅ Sebanyak {$cnt} user antrean berhasil dimasukkan ke sesi aktif.";
+        $_SESSION['flash_msg'] = "Sebanyak {$cnt} user antrean berhasil dimasukkan ke sesi aktif.";
         header('Location: /console/livechat.php?t=manage'); exit;
     }
 
@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $qid = (int)($_POST['queue_id'] ?? 0);
         if ($qid) {
             $pdo->prepare("UPDATE chat_queue SET status='cancelled' WHERE id=?")->execute([$qid]);
-            $_SESSION['flash_msg'] = "✅ Antrean #{$qid} berhasil dihapus/dibatalkan.";
+            $_SESSION['flash_msg'] = "Antrean #{$qid} berhasil dihapus/dibatalkan.";
         }
         header('Location: /console/livechat.php?t=manage'); exit;
     }
@@ -126,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Clear all queue
     if ($tab === 'clear_all_queue') {
         $pdo->exec("UPDATE chat_queue SET status='cancelled' WHERE status='waiting'");
-        $_SESSION['flash_msg'] = '✅ Seluruh antrean yang menunggu berhasil dibersihkan.';
+        $_SESSION['flash_msg'] = 'Seluruh antrean yang menunggu berhasil dibersihkan.';
         header('Location: /console/livechat.php?t=manage'); exit;
     }
 
@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $pdo->prepare("DELETE FROM chat_messages WHERE session_id=?")->execute([$sid]);
             $pdo->prepare("DELETE FROM chat_sessions WHERE id=?")->execute([$sid]);
-            $_SESSION['flash_msg'] = "✅ Sesi chat #{$sid} berhasil dihapus permanen.";
+            $_SESSION['flash_msg'] = "Sesi chat #{$sid} berhasil dihapus permanen.";
         }
         header('Location: /console/livechat.php?t=manage'); exit;
     }
@@ -174,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 curl_exec($ch); curl_close($ch);
             }
         }
-        $_SESSION['flash_msg'] = '✅ Semua sesi aktif berhasil ditutup.';
+        $_SESSION['flash_msg'] = 'Semua sesi aktif berhasil ditutup.';
         header('Location: /console/livechat.php?t=manage'); exit;
     }
 
@@ -187,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $modeLabel = $newMode === 'admin' ? 'Admin' : 'AI Assistant';
             $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?, 'system', ?)")
                 ->execute([$sid, "Mode chat dialihkan ke: {$modeLabel}"]);
-            $_SESSION['flash_msg'] = "✅ Mode sesi #{$sid} diubah ke {$modeLabel}.";
+            $_SESSION['flash_msg'] = "Mode sesi #{$sid} diubah ke {$modeLabel}.";
         }
         header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/console/livechat.php?t=manage')); exit;
     }
@@ -201,9 +201,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $nextQ = $pdo->query("SELECT id FROM chat_queue WHERE status='waiting' ORDER BY id ASC LIMIT 1")->fetch();
         if ($nextQ && lc_admit_queue_entry($pdo, (int)$nextQ['id'])) {
-            $_SESSION['flash_msg'] = "✅ Sesi #{$sid} ditutup dan antrean berikutnya berhasil dimasukkan ke sesi aktif.";
+            $_SESSION['flash_msg'] = "Sesi #{$sid} ditutup dan antrean berikutnya berhasil dimasukkan ke sesi aktif.";
         } else {
-            $_SESSION['flash_msg'] = "✅ Sesi #{$sid} ditutup (tidak ada antrean yang menunggu).";
+            $_SESSION['flash_msg'] = "Sesi #{$sid} ditutup (tidak ada antrean yang menunggu).";
         }
         header('Location: /console/livechat.php?t=manage'); exit;
     }
@@ -214,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newVal = $curr === '1' ? '0' : '1';
         $pdo->prepare("INSERT INTO settings (`key`,`value`) VALUES ('livechat_enabled',?) ON DUPLICATE KEY UPDATE `value`=?")
             ->execute([$newVal, $newVal]);
-        $_SESSION['flash_msg'] = $newVal === '1' ? '🟢 Livechat berhasil DIBUKA (Online).' : '🔴 Livechat berhasil DITUTUP (Offline).';
+        $_SESSION['flash_msg'] = $newVal === '1' ? 'Livechat berhasil DIBUKA (Online).' : 'Livechat berhasil DITUTUP (Offline).';
         header('Location: /console/livechat.php?t=manage'); exit;
     }
 
@@ -223,7 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $max = max(0, (int)($_POST['lc_max_active_sessions'] ?? 0));
         $pdo->prepare("INSERT INTO settings (`key`,`value`) VALUES ('lc_max_active_sessions',?) ON DUPLICATE KEY UPDATE `value`=?")
             ->execute([$max, $max]);
-        $_SESSION['flash_msg'] = "✅ Batas sesi aktif berhasil diatur ke: " . ($max > 0 ? "{$max} Sesi" : "Unlimited");
+        $_SESSION['flash_msg'] = "Batas sesi aktif berhasil diatur ke: " . ($max > 0 ? "{$max} Sesi" : "Unlimited");
         header('Location: /console/livechat.php?t=manage'); exit;
     }
 
@@ -232,7 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $idle = max(0, (int)($_POST['lc_max_idle_minutes'] ?? 30));
         $pdo->prepare("INSERT INTO settings (`key`,`value`) VALUES ('lc_max_idle_minutes',?) ON DUPLICATE KEY UPDATE `value`=?")
             ->execute([$idle, $idle]);
-        $_SESSION['flash_msg'] = "✅ Batas idle timeout sesi berhasil diatur ke: " . ($idle > 0 ? "{$idle} Menit" : "Nonaktif (Tanpa Auto-Close)");
+        $_SESSION['flash_msg'] = "Batas idle timeout sesi berhasil diatur ke: " . ($idle > 0 ? "{$idle} Menit" : "Nonaktif (Tanpa Auto-Close)");
         header('Location: /console/livechat.php?t=manage'); exit;
     }
 
@@ -566,17 +566,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['tab'] ?? '') === 'reply') 
             if (in_array($ext, ['jpg','jpeg','png','gif'])) {
                 $method = 'sendPhoto';
                 $params['photo'] = new CURLFile(__DIR__ . '/../' . $attachmentPath);
-                $params['caption'] = "🖥️ {$adminName}: {$msg}";
+                $params['caption'] = "[Admin] {$adminName}: {$msg}";
             } else {
                 $method = 'sendDocument';
                 $params['document'] = new CURLFile(__DIR__ . '/../' . $attachmentPath);
-                $params['caption'] = "🖥️ {$adminName}: {$msg}";
+                $params['caption'] = "[Admin] {$adminName}: {$msg}";
             }
             $ch = curl_init("https://api.telegram.org/bot{$token}/{$method}");
             curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true, CURLOPT_POSTFIELDS=>$params]);
             curl_exec($ch); curl_close($ch);
         } else {
-            $params['text'] = "🖥️ {$adminName}: {$msg}";
+            $params['text'] = "[Admin] {$adminName}: {$msg}";
             $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
             curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,
                 CURLOPT_POSTFIELDS=>json_encode($params),CURLOPT_HTTPHEADER=>['Content-Type: application/json']]);
@@ -971,7 +971,7 @@ require_once __DIR__ . '/partials/header.php';
         <div>
           <div class="text-secondary text-uppercase fw-bold" style="font-size:11px;letter-spacing:0.5px;">Status Layanan</div>
           <div class="fw-bold" style="font-size:15px;color:<?= $cfg['livechat_enabled']==='1' ? '#34d399' : '#f87171' ?>;margin-top:2px;">
-            <?= $cfg['livechat_enabled']==='1' ? '🟢 Online (Terbuka)' : '🔴 Offline (Tertutup)' ?>
+            <?= $cfg['livechat_enabled']==='1' ? '<span class="text-success"><i class="ph-bold ph-circle" style="font-size:10px;"></i> Online (Terbuka)</span>' : '<span class="text-danger"><i class="ph-bold ph-circle" style="font-size:10px;"></i> Offline (Tertutup)</span>' ?>
           </div>
         </div>
       </div>
@@ -1068,7 +1068,7 @@ require_once __DIR__ . '/partials/header.php';
                   <div class="sess-right">
                     <span class="sess-badge <?= $s['status'] ?>"><?= $s['status'] ?></span>
                     <div class="sess-mode">
-                      <?= $s['mode'] === 'admin' ? '👨‍💼 Admin' : '🤖 AI' ?> &middot; <?= $s['msg_count'] ?> pesan
+                      <?= $s['mode'] === 'admin' ? '<i class="ph-bold ph-user"></i> Admin' : '<i class="ph-bold ph-robot"></i> AI' ?> &middot; <?= $s['msg_count'] ?> pesan
                     </div>
                     <div style="margin-top:6px;display:flex;gap:4px;justify-content:flex-end;">
                       <a href="/console/livechat.php?view=<?= $s['id'] ?>" class="btn btn-sm d-flex align-items-center gap-1"
@@ -1360,13 +1360,13 @@ require_once __DIR__ . '/partials/header.php';
           <div>
             <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:700;letter-spacing:0.5px;">Status Layanan LiveChat</div>
             <div style="font-size:14.5px;font-weight:800;color:#fff;">
-              <?= $cfg['livechat_enabled']==='1' ? '🟢 BUKA (Online)' : '🔴 TUTUP (Offline)' ?>
+              <?= $cfg['livechat_enabled']==='1' ? '<span class="text-success"><i class="ph-bold ph-broadcast"></i> BUKA (Online)</span>' : '<span class="text-danger"><i class="ph-bold ph-power"></i> TUTUP (Offline)</span>' ?>
             </div>
           </div>
           <form method="POST" class="ms-2 mb-0">
             <input type="hidden" name="tab" value="quick_toggle_livechat">
             <button type="submit" class="btn btn-sm <?= $cfg['livechat_enabled']==='1' ? 'btn-outline-danger' : 'btn-outline-success' ?>" style="font-weight:700;font-size:12px;border-radius:8px;padding:6px 14px;">
-              <?= $cfg['livechat_enabled']==='1' ? '🔴 Tutup LiveChat' : '🟢 Buka LiveChat' ?>
+              <?= $cfg['livechat_enabled']==='1' ? '<i class="ph-bold ph-power"></i> Tutup LiveChat' : '<i class="ph-bold ph-broadcast"></i> Buka LiveChat' ?>
             </button>
           </form>
         </div>
@@ -1410,7 +1410,7 @@ require_once __DIR__ . '/partials/header.php';
 
   <div class="row g-3">
     
-    <!-- 🟢 KOLOM KIRI: SESI CHAT AKTIF -->
+    <!-- KOLOM KIRI: SESI CHAT AKTIF -->
     <div class="col-lg-6">
       <div class="c-card h-100" style="border-top:3px solid #10b981;">
         <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -1470,10 +1470,10 @@ require_once __DIR__ . '/partials/header.php';
 
                   <div class="text-end">
                     <span class="badge <?= $as['mode']==='admin'?'bg-info text-dark':'bg-primary' ?>" style="font-size:10px;font-weight:700;">
-                      <?= $as['mode']==='admin' ? '👨‍💼 Admin' : '🤖 AI' ?>
+                      <?= $as['mode']==='admin' ? '<i class="ph-bold ph-user"></i> Admin' : '<i class="ph-bold ph-robot"></i> AI' ?>
                     </span>
                     <?php if ($isNearTimeout): ?>
-                      <div class="badge bg-danger mt-1 d-block" style="font-size:9.5px;">⚠️ Idle <?= (int)$as['idle_mins'] ?>/<?= $idleLimit ?> mnt (Auto-Close)</div>
+                      <div class="badge bg-danger mt-1 d-block" style="font-size:9.5px;"><i class="ph-bold ph-clock-countdown"></i> Idle <?= (int)$as['idle_mins'] ?>/<?= $idleLimit ?> mnt (Auto-Close)</div>
                     <?php elseif ($idleLimit > 0): ?>
                       <div style="font-size:10px;color:#64748b;margin-top:2px;">Idle: <?= (int)$as['idle_mins'] ?>/<?= $idleLimit ?> mnt</div>
                     <?php else: ?>
@@ -1498,7 +1498,7 @@ require_once __DIR__ . '/partials/header.php';
                       <input type="hidden" name="session_id" value="<?= $as['id'] ?>">
                       <input type="hidden" name="mode" value="<?= $as['mode']==='admin' ? 'ai' : 'admin' ?>">
                       <button type="submit" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" style="font-size:11px;padding:4px 8px;border-radius:6px;" title="Ganti mode obrolan AI / Admin">
-                        <?= $as['mode']==='admin' ? '🤖 Switch AI' : '👨‍💼 Switch Admin' ?>
+                        <?= $as['mode']==='admin' ? '<i class="ph-bold ph-robot"></i> Switch AI' : '<i class="ph-bold ph-user"></i> Switch Admin' ?>
                       </button>
                     </form>
                   </div>
@@ -1605,12 +1605,12 @@ require_once __DIR__ . '/partials/header.php';
 
                   <div class="text-end">
                     <span class="badge bg-dark border border-secondary text-secondary" style="font-size:10px;">
-                      Req: <?= $wq['mode']==='admin' ? '👨‍💼 Admin' : '🤖 AI' ?>
+                      Req: <?= $wq['mode']==='admin' ? '<i class="ph-bold ph-user"></i> Admin' : '<i class="ph-bold ph-robot"></i> AI' ?>
                     </span>
                     <?php if ((int)$wq['ping_ago_sec'] <= 25): ?>
-                      <div style="font-size:10px;color:#34d399;margin-top:2px;">🟢 Online (Ping <?= (int)$wq['ping_ago_sec'] ?>s)</div>
+                      <div style="font-size:10px;color:#34d399;margin-top:2px;"><i class="ph-bold ph-circle" style="font-size:8px;"></i> Online (Ping <?= (int)$wq['ping_ago_sec'] ?>s)</div>
                     <?php else: ?>
-                      <div style="font-size:10px;color:#fbbf24;margin-top:2px;">🟡 Idle (Ping <?= (int)$wq['ping_ago_sec'] ?>s)</div>
+                      <div style="font-size:10px;color:#fbbf24;margin-top:2px;"><i class="ph-bold ph-clock" style="font-size:9px;"></i> Idle (Ping <?= (int)$wq['ping_ago_sec'] ?>s)</div>
                     <?php endif; ?>
                   </div>
                 </div>
@@ -1776,7 +1776,7 @@ require_once __DIR__ . '/partials/header.php';
             <div class="p-3 rounded-3" style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);">
               <label class="d-flex align-items-center gap-2 mb-0" style="font-size:12.5px;cursor:pointer;">
                 <input type="checkbox" name="lc_debug_panel" value="1" <?= $cfg['lc_debug_panel']==='1'?'checked':'' ?> style="accent-color:var(--brand);width:16px;height:16px;">
-                <span>🐛 <strong class="text-warning">Debug Panel</strong> <span class="text-secondary" style="font-size:11px;">(tampilkan floating status debug di widget livechat user)</span></span>
+                <span><i class="ph-bold ph-bug text-warning"></i> <strong class="text-warning">Debug Panel</strong> <span class="text-secondary" style="font-size:11px;">(tampilkan floating status debug di widget livechat user)</span></span>
               </label>
             </div>
           </div>
@@ -1837,7 +1837,7 @@ require_once __DIR__ . '/partials/header.php';
           ?>
           <?php if ($wh_result): ?>
           <div class="mb-3 p-3 rounded-3" style="font-size:12.5px;font-family:ui-monospace,SFMono-Regular,monospace;background:<?= !empty($wh_result['ok']) ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)' ?>;border:1px solid <?= !empty($wh_result['ok']) ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)' ?>;color:<?= !empty($wh_result['ok']) ? '#34d399' : '#f87171' ?>;">
-            <div class="fw-bold mb-1"><?= !empty($wh_result['ok']) ? '✅ Webhook Berhasil Dikonfigurasi' : '❌ Gagal Mengatur Webhook' ?></div>
+            <div class="fw-bold mb-1"><i class="ph-bold <?= !empty($wh_result['ok']) ? 'ph-check-circle' : 'ph-x-circle' ?>"></i> <?= !empty($wh_result['ok']) ? 'Webhook Berhasil Dikonfigurasi' : 'Gagal Mengatur Webhook' ?></div>
             <?php if (!empty($wh_result['ok'])): ?>
               Webhook berhasil diset ke: <strong><?= htmlspecialchars((string)($wh_result['webhook_url'] ?? '')) ?></strong>
             <?php else: ?>
@@ -1940,7 +1940,7 @@ require_once __DIR__ . '/partials/header.php';
           </div>
 
           <p class="text-secondary mt-3 mb-0" style="font-size:11.5px;">
-            ⚠️ Hanya topics yang dibuat oleh bot (memiliki <code>tg_thread_id</code> di database) yang akan dihapus.
+            <i class="ph-bold ph-warning text-warning"></i> Hanya topics yang dibuat oleh bot (memiliki <code>tg_thread_id</code> di database) yang akan dihapus.
             Topic <strong>General</strong> dan topic yang dibuat secara manual tidak akan terhapus oleh bot.
           </p>
 
@@ -1954,7 +1954,7 @@ require_once __DIR__ . '/partials/header.php';
   function copyWebhookUrl() {
     const text = document.getElementById('wh-url-text').innerText.trim();
     navigator.clipboard.writeText(text).then(() => {
-      alert('✅ URL Webhook berhasil disalin ke clipboard!');
+      alert('URL Webhook berhasil disalin ke clipboard!');
     }).catch(err => {
       prompt('Salin URL webhook:', text);
     });
@@ -1971,7 +1971,7 @@ require_once __DIR__ . '/partials/header.php';
     result.style.background = 'rgba(56,189,248,0.08)';
     result.style.border = '1px solid rgba(56,189,248,0.25)';
     result.style.color = '#7dd3fc';
-    result.textContent = '⏳ Sedang memproses... bot mencoba menghapus semua topic. Jangan tutup halaman ini.';
+    result.textContent = 'Sedang memproses... bot mencoba menghapus semua topic. Jangan tutup halaman ini.';
 
     try {
       const fd = new FormData();
@@ -1982,18 +1982,18 @@ require_once __DIR__ . '/partials/header.php';
         result.style.background = 'rgba(16,185,129,0.12)';
         result.style.border = '1px solid rgba(16,185,129,0.3)';
         result.style.color = '#34d399';
-        result.textContent = `✅ Selesai! Topics dihapus: ${data.deleted} | Gagal/tidak ada: ${data.failed} | Range dicek: ${data.range}`;
+        result.textContent = `Selesai! Topics dihapus: ${data.deleted} | Gagal/tidak ada: ${data.failed} | Range dicek: ${data.range}`;
       } else {
         result.style.background = 'rgba(239,68,68,0.12)';
         result.style.border = '1px solid rgba(239,68,68,0.3)';
         result.style.color = '#f87171';
-        result.textContent = '❌ Error: ' + (data.error || 'Unknown error');
+        result.textContent = 'Error: ' + (data.error || 'Unknown error');
       }
     } catch(e) {
       result.style.background = 'rgba(239,68,68,0.12)';
       result.style.border = '1px solid rgba(239,68,68,0.3)';
       result.style.color = '#f87171';
-      result.textContent = '❌ Gagal: ' + e.message;
+      result.textContent = 'Gagal: ' + e.message;
     }
     btn.disabled = false;
     btn.innerHTML = '<i class="ph-bold ph-radioactive"></i> Hapus SEMUA Topics (Nuclear)';

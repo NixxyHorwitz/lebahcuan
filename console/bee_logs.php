@@ -87,12 +87,12 @@ require __DIR__ . '/partials/header.php';
 <ul class="nav nav-pills mb-3 gap-2" id="logTabs" role="tablist">
   <li class="nav-item">
     <button class="nav-link active px-4 py-2 fw-bold" id="sales-tab" data-bs-toggle="tab" data-bs-target="#tab-sales" type="button">
-      💰 Log Penjualan Madu (<?= count($salesLogs) ?>)
+      <i class="ph-bold ph-coins"></i> Log Penjualan Madu (<?= count($salesLogs) ?>)
     </button>
   </li>
   <li class="nav-item">
     <button class="nav-link px-4 py-2 fw-bold" id="harvest-tab" data-bs-toggle="tab" data-bs-target="#tab-harvest" type="button">
-      🍯 Log Panen Madu (<?= count($harvestLogs) ?>)
+      <i class="ph-bold ph-drop"></i> Log Panen Madu (<?= count($harvestLogs) ?>)
     </button>
   </li>
 </ul>

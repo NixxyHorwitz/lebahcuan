@@ -37,6 +37,8 @@ $absolute_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon :
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
 <style>
@@ -49,8 +51,19 @@ $absolute_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon :
   --card-bg: #111422;
   --border-color: #1d2238;
 }
-*, *::before, *::after { font-family: 'Inter', sans-serif; box-sizing: border-box; }
-body { background: #080a12; color: #e2e8f0; min-height: 100vh; font-size: 13.5px; }
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #080a12; color: #e2e8f0; min-height: 100vh; font-size: 13.5px; }
+
+/* Ensure Phosphor Icons are never overridden by Inter font */
+[class^="ph-"], [class*=" ph-"], i[class*="ph-"], .ph, .ph-bold, .ph-fill {
+  font-family: "Phosphor-Bold", "Phosphor-Fill", "Phosphor" !important;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+}
+[class^="ph-"]::before, [class*=" ph-"]::before, i[class*="ph-"]::before {
+  font-family: inherit !important;
+}
 
 /* ── Sidebar ── */
 .c-sidebar {

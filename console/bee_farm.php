@@ -191,22 +191,22 @@ require __DIR__ . '/partials/header.php';
 <!-- ── TABS NAVIGATION ── -->
 <ul class="nav nav-pills mb-3 gap-2" id="beeTabs" role="tablist">
   <li class="nav-item">
-    <button class="nav-link active px-4 py-2 fw-bold" id="hives-tab" data-bs-toggle="tab" data-bs-target="#tab-hives" type="button">
-      🏡 Katalog Kandang Lebah (<?= count($hives) ?>)
+    <button class="nav-link active px-4 py-2 fw-bold d-flex align-items-center gap-2" id="hives-tab" data-bs-toggle="tab" data-bs-target="#tab-hives" type="button">
+      <i class="ph-bold ph-house-line"></i> Katalog Kandang Lebah (<?= count($hives) ?>)
     </button>
   </li>
   <li class="nav-item">
-    <button class="nav-link px-4 py-2 fw-bold" id="bees-tab" data-bs-toggle="tab" data-bs-target="#tab-bees" type="button">
-      🐝 Spesies Lebah Pekerja (<?= count($bees) ?>)
+    <button class="nav-link px-4 py-2 fw-bold d-flex align-items-center gap-2" id="bees-tab" data-bs-toggle="tab" data-bs-target="#tab-bees" type="button">
+      <i class="ph-bold ph-bug"></i> Spesies Lebah Pekerja (<?= count($bees) ?>)
     </button>
   </li>
   <li class="nav-item">
-    <button class="nav-link px-4 py-2 fw-bold" id="stalls-tab" data-bs-toggle="tab" data-bs-target="#tab-stalls" type="button">
-      🏪 Tier Lapak Jual Madu (<?= count($stalls) ?>)
+    <button class="nav-link px-4 py-2 fw-bold d-flex align-items-center gap-2" id="stalls-tab" data-bs-toggle="tab" data-bs-target="#tab-stalls" type="button">
+      <i class="ph-bold ph-storefront"></i> Tier Lapak Jual Madu (<?= count($stalls) ?>)
     </button>
   </li>
   <li class="nav-item">
-    <button class="nav-link px-4 py-2 fw-bold text-warning" id="calc-tab" data-bs-toggle="tab" data-bs-target="#tab-calc" type="button" style="border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.1);">
+    <button class="nav-link px-4 py-2 fw-bold text-warning d-flex align-items-center gap-2" id="calc-tab" data-bs-toggle="tab" data-bs-target="#tab-calc" type="button" style="border: 1px solid rgba(245, 158, 11, 0.45); background: rgba(245, 158, 11, 0.1);">
       <i class="ph-bold ph-calculator"></i> Kalkulator Simulasi Profit &amp; ROI
     </button>
   </li>
@@ -447,19 +447,19 @@ require __DIR__ . '/partials/header.php';
       </div>
       <div class="d-flex flex-wrap gap-2 pt-1">
         <button type="button" class="btn btn-sm btn-dark border-secondary text-warning fw-bold d-flex align-items-center gap-1" onclick="applyCalcPreset(1)">
-          🎋 Tier 1: Raw Amber (Pemula)
+          <i class="ph-bold ph-plant"></i> Tier 1: Raw Amber (Pemula)
         </button>
         <button type="button" class="btn btn-sm btn-dark border-secondary text-warning fw-bold d-flex align-items-center gap-1" onclick="applyCalcPreset(2)">
-          🪵 Tier 2: Golden Amber (Menengah)
+          <i class="ph-bold ph-tree"></i> Tier 2: Golden Amber (Menengah)
         </button>
         <button type="button" class="btn btn-sm btn-dark border-secondary text-warning fw-bold d-flex align-items-center gap-1" onclick="applyCalcPreset(3)">
-          🏛️ Tier 3: Royal Amber (Sultan)
+          <i class="ph-bold ph-bank"></i> Tier 3: Royal Amber (Sultan)
         </button>
         <button type="button" class="btn btn-sm btn-dark border-secondary text-warning fw-bold d-flex align-items-center gap-1" onclick="applyCalcPreset(4)">
-          👑 Tier 4: Imperial Amber (VIP)
+          <i class="ph-bold ph-crown"></i> Tier 4: Imperial Amber (VIP)
         </button>
         <button type="button" class="btn btn-sm btn-dark border-secondary text-warning fw-bold d-flex align-items-center gap-1" onclick="applyCalcPreset(5)">
-          🏭 Tier 5: Pabrik Ekspor Madu
+          <i class="ph-bold ph-factory"></i> Tier 5: Pabrik Ekspor Madu
         </button>
       </div>
     </div>
@@ -483,7 +483,7 @@ require __DIR__ . '/partials/header.php';
                 <?php foreach ($hives as $h): ?>
                   <option value="<?= $h['id'] ?>"><?= htmlspecialchars($h['name']) ?> (<?= $h['max_slots'] ?> slot, +<?= (int)$h['bonus_speed_pct'] ?>% spd, Rp <?= number_format((float)$h['price'],0,',','.') ?>)</option>
                 <?php endforeach; ?>
-                <option value="custom">⚙️ Kustom / Atur Manual...</option>
+                <option value="custom">[Kustom / Atur Manual...]</option>
               </select>
             </div>
 
@@ -510,7 +510,7 @@ require __DIR__ . '/partials/header.php';
                 <?php foreach ($bees as $b): ?>
                   <option value="<?= $b['id'] ?>"><?= htmlspecialchars($b['name']) ?> (+<?= number_format((float)$b['honey_per_hour'],1) ?> ml/jam, Rp <?= number_format((float)$b['price'],0,',','.') ?>)</option>
                 <?php endforeach; ?>
-                <option value="custom">⚙️ Kustom / Atur Manual...</option>
+                <option value="custom">[Kustom / Atur Manual...]</option>
               </select>
             </div>
 
@@ -561,7 +561,7 @@ require __DIR__ . '/partials/header.php';
                 <?php foreach ($stalls as $s): ?>
                   <option value="<?= $s['id'] ?>">Tier <?= $s['tier_level'] ?>: <?= htmlspecialchars($s['name']) ?> (Rp <?= number_format((float)$s['sell_price_per_ml'],0,',','.') ?>/ml, Max <?= number_format((float)$s['daily_max_ml'],0) ?> ml/hari, Sewa Rp <?= number_format((float)$s['price'],0,',','.') ?>)</option>
                 <?php endforeach; ?>
-                <option value="custom">⚙️ Kustom / Atur Manual...</option>
+                <option value="custom">[Kustom / Atur Manual...]</option>
               </select>
             </div>
 
@@ -1158,23 +1158,23 @@ function runLiveCalc() {
   if (wastedDailyMl > 1) {
     alertClass = 'alert-warning';
     iconClass  = 'ph-bold ph-warning';
-    message += '⚠️ <strong>Bottleneck Lapak:</strong> Produksi madu (' + formatMl(totalDailyMl) + ' ml/hari) melampaui kuota jual lapak (' + formatMl(stallMaxMl) + ' ml/hari). Ada <strong>' + formatMl(wastedDailyMl) + ' ml madu/hari</strong> yang menumpuk di stok. User disarankan upgrade tier lapak agar semua madu bisa diuangkan.<br>';
+    message += '<strong>Bottleneck Lapak:</strong> Produksi madu (' + formatMl(totalDailyMl) + ' ml/hari) melampaui kuota jual lapak (' + formatMl(stallMaxMl) + ' ml/hari). Ada <strong>' + formatMl(wastedDailyMl) + ' ml madu/hari</strong> yang menumpuk di stok. User disarankan upgrade tier lapak agar semua madu bisa diuangkan.<br>';
   }
 
   if (netProfit < 0) {
     alertClass = 'alert-danger';
     iconClass  = 'ph-bold ph-warning-circle';
-    message += '❌ <strong>Peringatan Defisit:</strong> Pengguna merugi <strong>' + formatRp(Math.abs(netProfit)) + '</strong>! Total modal awal lebih besar dari potensi omset selama ' + duration + ' hari. Naikkan harga jual madu atau turunkan harga modal.';
+    message += '<strong>Peringatan Defisit:</strong> Pengguna merugi <strong>' + formatRp(Math.abs(netProfit)) + '</strong>! Total modal awal lebih besar dari potensi omset selama ' + duration + ' hari. Naikkan harga jual madu atau turunkan harga modal.';
   } else if (roiPct > 120) {
     if (!message) alertClass = 'alert-warning';
-    message += '⚡ <strong>Peringatan Margin Platform:</strong> Keuntungan pengguna sangat tinggi (+<strong>' + Math.round(roiPct) + '%</strong>). Balik modal dalam <strong>' + bepDays + ' hari</strong>. Pastikan cadangan dana kas platform memadai untuk pembayaran penarikan saldo.';
+    message += '<strong>Peringatan Margin Platform:</strong> Keuntungan pengguna sangat tinggi (+<strong>' + Math.round(roiPct) + '%</strong>). Balik modal dalam <strong>' + bepDays + ' hari</strong>. Pastikan cadangan dana kas platform memadai untuk pembayaran penarikan saldo.';
   } else if (roiPct >= 20 && roiPct <= 120) {
     if (!message) alertClass = 'alert-success';
     iconClass = 'ph-bold ph-check-circle';
-    message += '✅ <strong>Keseimbangan Finansial Sangat Ideal:</strong> Margin keuntungan pengguna menarik (+<strong>' + Math.round(roiPct) + '%</strong>), waktu balik modal <strong>' + bepDays + ' hari</strong>. Sangat aman dan menguntungkan bagi kelangsungan ekosistem platform.';
+    message += '<strong>Keseimbangan Finansial Sangat Ideal:</strong> Margin keuntungan pengguna menarik (+<strong>' + Math.round(roiPct) + '%</strong>), waktu balik modal <strong>' + bepDays + ' hari</strong>. Sangat aman dan menguntungkan bagi kelangsungan ekosistem platform.';
   } else {
     if (!message) alertClass = 'alert-info';
-    message += 'ℹ️ Margin keuntungan tipis (+<strong>' + Math.round(roiPct) + '%</strong>). User balik modal pada hari ke-<strong>' + bepDays + '</strong>.';
+    message += '<strong>Informasi:</strong> Margin keuntungan tipis (+<strong>' + Math.round(roiPct) + '%</strong>). User balik modal pada hari ke-<strong>' + bepDays + '</strong>.';
   }
 
   alertBox.className = 'alert ' + alertClass + ' d-flex align-items-center gap-2 mb-0';
