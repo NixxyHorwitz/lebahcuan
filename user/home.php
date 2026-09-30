@@ -1882,7 +1882,7 @@ body {
     <div class="threads-promo-home-card" id="tour-threads-promo-card">
       <div class="tph-badge-strip">
         <span class="tph-badge-event"><i class="ph-bold ph-threads-logo"></i> EVENT PROMOSI THREADS</span>
-        <span class="tph-badge-cuan">+Rp 75.000 &amp; VIP</span>
+        <span class="tph-badge-cuan">+Rp 75.000 &amp; Gaji Pasti</span>
       </div>
       <div class="tph-content">
         <div class="tph-icon-box">
@@ -1891,7 +1891,7 @@ body {
         <div class="tph-text-col">
           <div class="tph-title">Viral di Threads &amp; Jadi Promotor Khusus! 👑</div>
           <div class="tph-desc">
-            Posting ceritamu, raih <strong><?= format_rp($threads_step1_reward) ?></strong> di Langkah 1 &amp; raih <strong><?= format_rp($threads_step2_reward) ?> + Akses Direct Admin</strong> jika postinganmu tembus 5K views!
+            Posting ceritamu, raih <strong><?= format_rp($threads_step1_reward) ?></strong> di Langkah 1 &amp; raih <strong><?= format_rp($threads_step2_reward) ?> + Gaji Pasti &amp; Chat Admin WA</strong> jika postinganmu tembus 5K views!
           </div>
         </div>
       </div>
@@ -2159,7 +2159,7 @@ body {
     <div style="font-size:9.5px;font-weight:900;background:linear-gradient(135deg,#f59e0b,#d97706);color:#78350f;padding:2px 8px;border-radius:8px;display:inline-block;margin-bottom:6px;">
       🔥 EVENT RESMI LEBAHCUAN
     </div>
-    <h3 class="amber-modal-title" style="color:#fde68a;">Raih Cuan s/d Rp 75.000 di Threads!</h3>
+    <h3 class="amber-modal-title" style="color:#fde68a;">Raih Cuan s/d Rp 75.000 &amp; Gaji Pasti di Threads!</h3>
     <div class="amber-modal-body" style="color:#e2e8f0;font-size:11px;text-align:left;line-height:1.45;margin-bottom:16px;">
       Bagikan ceritamu di Threads dan dapatkan saldo tarik tunai langsung:
       <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:8px 10px;margin-top:8px;">
@@ -2167,7 +2167,7 @@ body {
           • <strong>Langkah 1:</strong> Buat postingan cuan di Threads &rarr; Bonus <strong><?= format_rp($threads_step1_reward) ?></strong>.
         </div>
         <div style="color:#f8fafc;font-weight:800;">
-          • <strong>Langkah 2:</strong> Postingan tembus <strong>minimal 5K views</strong> &rarr; Bonus <strong><?= format_rp($threads_step2_reward) ?></strong> + <strong>Akses Langsung ke Admin &amp; Jadi Promotor Khusus</strong>!
+          • <strong>Langkah 2:</strong> Postingan tembus <strong>minimal 5K views</strong> &rarr; Bonus <strong><?= format_rp($threads_step2_reward) ?></strong> + <strong>Gaji Pasti &amp; Chat WhatsApp Admin</strong>!
         </div>
       </div>
     </div>
@@ -2207,11 +2207,11 @@ body {
     <div class="promo-hub-card-item">
       <div class="phc-header">
         <span class="phc-tag phc-tag--threads"><i class="ph-bold ph-threads-logo"></i> EVENT THREADS</span>
-        <span class="phc-reward">+Rp 75.000 &amp; VIP</span>
+        <span class="phc-reward">+Rp 75.000 &amp; Gaji Pasti</span>
       </div>
       <div class="phc-title">Posting Cerita Cuan di Threads</div>
       <div class="phc-desc">
-        Raih <strong>Rp 25.000</strong> di Langkah 1 &amp; raih <strong>Rp 50.000 + Jalur Khusus Admin</strong> jika postinganmu tembus 5K views!
+        Raih <strong>Rp 25.000</strong> di Langkah 1 &amp; raih <strong>Rp 50.000 + Gaji Pasti &amp; Chat Admin WA</strong> jika postinganmu tembus 5K views!
       </div>
       <div class="phc-actions">
         <a href="/threads" class="btn-phc-action btn-phc-action--primary">

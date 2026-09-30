@@ -12,7 +12,7 @@ $reward_amount  = (float)setting($pdo, 'threads_campaign_reward', '25000');
 $reward_amount2 = (float)setting($pdo, 'threads_campaign_reward_step2', '50000');
 
 $instructions = setting($pdo, 'threads_campaign_instructions', "Promosikan LebahCuan di Threads dan dapatkan cuan tambahan Rp 25.000! \n\nKriteria Postingan Langkah 1:\n1. Postingan harus menyertakan gambar (screenshot/bukti bayar/foto aplikasi).\n2. Di dalam gambar screenshot, HARUS tertera jelas Nama/Username Threads kalian.\n3. Teks postingan berupa kalimat ajakan atau cerita pengalaman positif kamu mendapatkan cuan di LebahCuan.\n4. Berikan komentar atau caption positif tentang LebahCuan.\n\nCara Klaim:\n1. Buat postingan sesuai kriteria di atas pada akun Threads kamu.\n2. Ambil screenshot postingan tersebut (harus terlihat username kalian).\n3. Upload screenshot di form bawah ini.");
-$instructions2 = setting($pdo, 'threads_campaign_instructions_step2', "Promosikan LebahCuan di Threads - Langkah 2 (Dapatkan Rp 50.000 + Akses Langsung Admin & Jadi Promotor Khusus!)\n\nKriteria Postingan Langkah 2:\n1. Kamu telah mengundang minimal 10 referral bergabung di LebahCuan.\n2. Postingan Threads kamu viral / ramai dengan minimal 5.000 (5K) views / tayangan.\n3. Berikan screenshot (bukti SS) bahwa postingan Threads kamu tembus minimal 5.000 views (bisa kirim hingga 3 screenshot bukti statistik & interaksi).");
+$instructions2 = setting($pdo, 'threads_campaign_instructions_step2', "Promosikan LebahCuan di Threads - Langkah 2 (Dapatkan Rp 50.000, Gaji Pasti & Chat Langsung WhatsApp Admin!)\n\nKriteria Postingan Langkah 2:\n1. Kamu telah mengundang minimal 10 referral bergabung di LebahCuan.\n2. Postingan Threads kamu viral / ramai dengan minimal 5.000 (5K) views / tayangan.\n3. Berikan screenshot (bukti SS) bahwa postingan Threads kamu tembus minimal 5.000 views (bisa kirim hingga 3 screenshot bukti statistik & interaksi).");
 
 $admin_contact = trim((string)setting($pdo, 'threads_admin_contact', ''));
 if (empty($admin_contact)) {
@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $tgMsg = "👑 <b>PENGAJUAN PROMOTOR KHUSUS THREADS (LEVEL 2)</b>\n"
                     . "━━━━━━━━━━━━━━━━━━━━━━\n"
                     . "👤 <b>User:</b> <code>{$user['username']}</code> (ID: {$user['id']})\n"
-                    . "🎯 <b>Target:</b> Promotor Khusus & Akses Direct Admin\n"
+                    . "🎯 <b>Target:</b> Promotor Khusus (Gaji Pasti & Chat WhatsApp Admin)\n"
                     . "👁️ <b>Syarat Rule:</b> Minimal 5.000 (5K) Views\n"
                     . "📸 <b>Jumlah Screenshot:</b> {$fileCount} Foto dilampirkan\n"
                     . "👥 <b>Total Referral:</b> <code>{$user_referral_count} orang</code> (Lolos Syarat)\n"
@@ -234,19 +234,19 @@ require dirname(__DIR__) . '/partials/header.php';
 <style>
 /* ══════════════════════════════════════════════════════════
    LEBAHCUAN — THREADS CAMPAIGN (HONEY & AMBER THEMED)
-   Clean, Modern Mobile First UI with 3D Tactile Buttons
+   Compact, Ultra-Responsive Mobile-First UI
    ══════════════════════════════════════════════════════════ */
 .th-page {
   max-width: 480px;
   margin: 0 auto;
-  padding-bottom: calc(var(--nav-h, 64px) + 28px);
+  padding-bottom: calc(var(--nav-h, 64px) + 20px);
 }
 
-/* HERO CANOPY BANNER */
+/* HERO CANOPY BANNER (COMPACT) */
 .th-hero {
   background: linear-gradient(160deg, #18181b 0%, #27272a 40%, #78350f 100%);
-  border-bottom: 3.5px solid #78350f;
-  padding: 16px 16px 20px;
+  border-bottom: 3px solid #78350f;
+  padding: 12px 14px 14px;
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -254,126 +254,129 @@ require dirname(__DIR__) . '/partials/header.php';
 .th-hero::before {
   content: '';
   position: absolute;
-  top: -40px; right: -40px;
-  width: 140px; height: 140px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, transparent 70%);
+  top: -30px; right: -30px;
+  width: 110px; height: 110px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, transparent 70%);
   pointer-events: none;
 }
 .th-hero-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   position: relative;
   z-index: 2;
 }
 .th-back-btn {
-  width: 36px; height: 36px;
+  width: 32px; height: 32px;
   background: #ffffff;
   border: 2px solid #78350f;
-  border-radius: 12px;
+  border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   color: #78350f;
-  font-size: 18px; font-weight: 900;
+  font-size: 16px; font-weight: 900;
   text-decoration: none;
-  box-shadow: 0 3px 0 #78350f;
+  box-shadow: 0 2.5px 0 #78350f;
   transition: transform 0.1s;
 }
 .th-back-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #78350f; }
 
 .th-hero-badge {
-  display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center; gap: 4px;
   background: #fef3c7; color: #78350f;
-  border: 2px solid #78350f;
-  border-radius: 20px;
-  padding: 3.5px 12px;
-  font-size: 11px; font-weight: 900;
-  box-shadow: 0 2.5px 0 #78350f;
+  border: 1.5px solid #78350f;
+  border-radius: 14px;
+  padding: 2.5px 10px;
+  font-size: 10px; font-weight: 900;
+  box-shadow: 0 2px 0 #78350f;
 }
 
 .th-mascot-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   position: relative;
   z-index: 2;
 }
 .th-mascot-img {
-  width: 62px; height: 62px;
+  width: 48px; height: 48px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35));
   animation: thBeeFloat 3s ease-in-out infinite;
   flex-shrink: 0;
 }
 @keyframes thBeeFloat {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  50% { transform: translateY(-3px); }
 }
 .th-bubble {
   background: #ffffff;
-  border: 2.5px solid #78350f;
-  border-radius: 16px;
-  padding: 10px 12px;
-  box-shadow: 0 3.5px 0 #78350f;
+  border: 2px solid #78350f;
+  border-radius: 14px;
+  padding: 8px 10px;
+  box-shadow: 0 3px 0 #78350f;
   flex: 1;
   position: relative;
+  min-width: 0;
 }
 .th-bubble::before {
   content: '';
-  position: absolute; left: -8px; top: 50%;
+  position: absolute; left: -7px; top: 50%;
   transform: translateY(-50%);
-  border-width: 5px 8px 5px 0;
+  border-width: 4px 7px 4px 0;
   border-style: solid;
   border-color: transparent #78350f transparent transparent;
 }
 .th-bubble-title {
-  font-size: 13px; font-weight: 900; color: #78350f;
-  display: flex; align-items: center; gap: 5px; margin-bottom: 2px;
+  font-size: 12px; font-weight: 900; color: #78350f;
+  display: flex; align-items: center; gap: 4px; margin-bottom: 2px;
 }
 .th-bubble-sub {
-  font-size: 11px; font-weight: 700; color: #92400e; line-height: 1.35;
+  font-size: 10px; font-weight: 700; color: #92400e; line-height: 1.3;
 }
 
-/* TRUST STRIP */
+/* TRUST STRIP (COMPACT & RESPONSIVE) */
 .th-trust-strip {
   background: #fffbeb;
-  border-bottom: 2px solid #fde68a;
-  padding: 8px 12px;
+  border-bottom: 1.5px solid #fde68a;
+  padding: 5px 8px;
   display: flex;
   align-items: center;
   justify-content: space-around;
-  gap: 6px;
-  font-size: 10px;
+  gap: 4px;
+  font-size: 9.5px;
   font-weight: 800;
   color: #78350f;
+  flex-wrap: wrap;
 }
 .th-trust-item {
-  display: flex; align-items: center; gap: 4px;
+  display: flex; align-items: center; gap: 3px;
+  white-space: nowrap;
 }
 
 /* PAGE BODY CONTAINER */
 .th-body {
-  padding: 14px 12px;
+  padding: 10px 10px;
 }
 
-/* TABS SWITCHER */
+/* TABS SWITCHER (SLICK & COMPACT) */
 .th-tabs-wrap {
   display: grid;
   grid-template-columns: 1fr 1fr;
   background: #f1f5f9;
-  padding: 4px;
-  border-radius: 16px;
-  border: 2.5px solid #78350f;
-  box-shadow: 0 3px 0 #78350f;
-  margin-bottom: 16px;
-  gap: 4px;
+  padding: 3px;
+  border-radius: 14px;
+  border: 2px solid #78350f;
+  box-shadow: 0 2.5px 0 #78350f;
+  margin-bottom: 10px;
+  gap: 3px;
 }
 .th-tab-btn {
   border: none;
   background: transparent;
-  padding: 9px 6px;
-  border-radius: 12px;
-  font-size: 11.5px;
+  padding: 7px 4px;
+  border-radius: 11px;
+  font-size: 11px;
   font-weight: 900;
   color: #64748b;
   cursor: pointer;
@@ -382,22 +385,23 @@ require dirname(__DIR__) . '/partials/header.php';
   align-items: center;
   justify-content: center;
   gap: 2px;
-  transition: all 0.15s ease;
+  transition: all 0.12s ease;
   font-family: inherit;
   position: relative;
 }
 .th-tab-btn.active {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #ffffff;
-  box-shadow: 0 2px 4px rgba(120,53,15,0.25);
+  box-shadow: 0 2px 4px rgba(120,53,15,0.22);
 }
 .th-tab-badge {
-  font-size: 8.5px;
-  padding: 1px 6px;
-  border-radius: 6px;
+  font-size: 8px;
+  padding: 1px 5px;
+  border-radius: 5px;
   background: #ffffff;
   color: #78350f;
   font-weight: 900;
+  line-height: 1.1;
 }
 .th-tab-btn.active .th-tab-badge {
   background: #fef3c7;
@@ -407,28 +411,28 @@ require dirname(__DIR__) . '/partials/header.php';
 /* MAIN CARD CONTAINER */
 .th-card {
   background: #ffffff;
-  border: 2.5px solid #78350f;
-  border-radius: 20px;
-  padding: 16px 14px;
-  box-shadow: 0 4.5px 0 #78350f;
-  margin-bottom: 16px;
+  border: 2px solid #78350f;
+  border-radius: 18px;
+  padding: 12px 11px;
+  box-shadow: 0 3.5px 0 #78350f;
+  margin-bottom: 12px;
   position: relative;
 }
 
 /* REWARD STRIP */
 .th-reward-strip {
   background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  border: 2px solid #10b981;
-  border-radius: 14px;
-  padding: 10px 14px;
+  border: 1.5px solid #10b981;
+  border-radius: 12px;
+  padding: 7px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
-  box-shadow: 0 2.5px 0 #059669;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 0 #059669;
 }
 .th-reward-strip-lbl {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   color: #065f46;
   display: flex;
@@ -436,91 +440,94 @@ require dirname(__DIR__) . '/partials/header.php';
   gap: 4px;
 }
 .th-reward-strip-val {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 900;
   color: #047857;
   letter-spacing: -0.3px;
 }
 
-/* VIP PROMOTOR BANNER */
+/* VIP PROMOTOR BANNER (COMPACT 2x2 GRID) */
 .th-vip-badge-card {
   background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
   border: 2px solid #f59e0b;
-  border-radius: 16px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
+  border-radius: 14px;
+  padding: 9px 11px;
+  margin-bottom: 10px;
   color: #ffffff;
-  box-shadow: 0 3.5px 0 #78350f, 0 0 14px rgba(245,158,11,0.25);
+  box-shadow: 0 3px 0 #78350f, 0 0 12px rgba(245,158,11,0.22);
 }
 .th-vip-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
 }
 .th-vip-tag {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #78350f;
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 900;
-  padding: 2px 7px;
-  border-radius: 8px;
+  padding: 1.5px 6px;
+  border-radius: 6px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 .th-vip-title {
-  font-size: 13.5px;
+  font-size: 12px;
   font-weight: 900;
   color: #fde68a;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .th-benefits-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 5px;
 }
 .th-benefit-item {
   background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(245,158,11,0.3);
-  border-radius: 10px;
-  padding: 6px 8px;
-  font-size: 10.5px;
+  border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-size: 9px;
   font-weight: 800;
   color: #f8fafc;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* REFERRAL PROGRESS BAR */
 .th-ref-progress {
   background: #f8fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 10px 12px;
-  margin-bottom: 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 7px 9px;
+  margin-bottom: 10px;
 }
 .th-ref-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   color: #475569;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .th-ref-bar {
-  height: 8px;
+  height: 6px;
   background: #e2e8f0;
-  border-radius: 6px;
+  border-radius: 5px;
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .th-ref-fill {
   height: 100%;
   background: linear-gradient(90deg, #f59e0b, #10b981);
-  border-radius: 6px;
+  border-radius: 5px;
   transition: width 0.3s ease;
 }
 
@@ -528,35 +535,35 @@ require dirname(__DIR__) . '/partials/header.php';
 .th-inst-box {
   background: #fffbeb;
   border: 1.5px solid #fde68a;
-  border-radius: 14px;
-  padding: 12px;
-  font-size: 11.5px;
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 10.5px;
   color: #78350f;
-  line-height: 1.45;
+  line-height: 1.4;
   font-weight: 700;
   white-space: pre-line;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 /* COPY REFF BOX */
 .th-copy-reff {
   background: #ffffff;
   border: 1.5px dashed #f59e0b;
-  border-radius: 12px;
-  padding: 8px 10px;
+  border-radius: 10px;
+  padding: 6px 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   gap: 6px;
 }
 .th-copy-btn {
   background: #f59e0b;
   color: #78350f;
   border: none;
-  border-radius: 8px;
-  padding: 5px 10px;
-  font-size: 10.5px;
+  border-radius: 7px;
+  padding: 4px 8px;
+  font-size: 9.5px;
   font-weight: 900;
   cursor: pointer;
   display: inline-flex;
@@ -565,24 +572,24 @@ require dirname(__DIR__) . '/partials/header.php';
   font-family: inherit;
 }
 
-/* UPLOAD SLOTS & MULTI-PREVIEW */
+/* UPLOAD SLOTS & MULTI-PREVIEW (ULTRA RESPONSIVE) */
 .th-slot-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 14px;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 .th-slot-box {
-  border: 2px dashed #cbd5e1;
+  border: 1.5px dashed #cbd5e1;
   background: #f8fafc;
-  border-radius: 14px;
-  padding: 10px 6px;
+  border-radius: 12px;
+  padding: 6px 3px;
   text-align: center;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   transition: all 0.15s ease;
-  min-height: 105px;
+  min-height: 75px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -599,22 +606,23 @@ require dirname(__DIR__) . '/partials/header.php';
   cursor: pointer;
 }
 .th-slot-icon {
-  font-size: 24px;
+  font-size: 20px;
   color: #94a3b8;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .th-slot-lbl {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 800;
   color: #64748b;
-  line-height: 1.2;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 .th-slot-tag {
-  font-size: 7.5px;
+  font-size: 7px;
   font-weight: 900;
-  padding: 1px 4px;
-  border-radius: 4px;
-  margin-top: 3px;
+  padding: 1px 3px;
+  border-radius: 3px;
+  margin-top: 2px;
 }
 .th-slot-tag--req { background: #fef3c7; color: #b45309; }
 .th-slot-tag--opt { background: #e2e8f0; color: #475569; }
@@ -631,62 +639,62 @@ require dirname(__DIR__) . '/partials/header.php';
 .btn-th-cta {
   width: 100%;
   background: linear-gradient(135deg, #f59e0b, #d97706);
-  border: 2.5px solid #78350f;
-  border-radius: 16px;
-  padding: 13px;
+  border: 2px solid #78350f;
+  border-radius: 14px;
+  padding: 10px 12px;
   color: #ffffff;
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 900;
   font-family: inherit;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
-  box-shadow: 0 4px 0 #78350f;
+  box-shadow: 0 3px 0 #78350f;
   transition: transform 0.1s, box-shadow 0.1s;
 }
 .btn-th-cta:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 #78350f;
+  box-shadow: 0 1px 0 #78350f;
 }
 
 /* STATUS BOXES */
 .th-status-box {
   background: #f8fafc;
-  border: 2px solid #cbd5e1;
-  border-radius: 16px;
-  padding: 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 10px 8px;
   text-align: center;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 .th-status-icon {
-  font-size: 38px;
-  margin-bottom: 6px;
+  font-size: 28px;
+  margin-bottom: 2px;
 }
 .th-status-title {
-  font-size: 14.5px;
+  font-size: 13px;
   font-weight: 900;
   color: #1e293b;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .th-status-desc {
-  font-size: 11.5px;
+  font-size: 10.5px;
   font-weight: 700;
   color: #64748b;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 /* VIP APPROVED PROMOTOR CARD */
 .th-promotor-active-card {
   background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
-  border: 2.5px solid #f59e0b;
-  border-radius: 18px;
-  padding: 16px;
+  border: 2px solid #f59e0b;
+  border-radius: 16px;
+  padding: 12px 10px;
   text-align: center;
-  box-shadow: 0 4px 0 #78350f, 0 0 16px rgba(245,158,11,0.4);
+  box-shadow: 0 3px 0 #78350f, 0 0 14px rgba(245,158,11,0.35);
   color: #ffffff;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 .btn-vip-admin-direct {
   display: inline-flex;
@@ -695,15 +703,15 @@ require dirname(__DIR__) . '/partials/header.php';
   gap: 6px;
   width: 100%;
   background: linear-gradient(135deg, #22c55e, #16a34a);
-  border: 2px solid #ffffff;
-  border-radius: 14px;
-  padding: 12px;
+  border: 1.5px solid #ffffff;
+  border-radius: 12px;
+  padding: 10px 12px;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 900;
   text-decoration: none;
-  box-shadow: 0 3px 0 #15803d;
-  margin-top: 12px;
+  box-shadow: 0 2.5px 0 #15803d;
+  margin-top: 10px;
 }
 .btn-vip-admin-direct:active {
   transform: translateY(2px);
@@ -714,13 +722,13 @@ require dirname(__DIR__) . '/partials/header.php';
 .th-gallery-preview {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin-top: 10px;
+  gap: 5px;
+  margin-top: 8px;
 }
 .th-gallery-thumb {
   width: 100%;
-  height: 75px;
-  border-radius: 8px;
+  height: 65px;
+  border-radius: 6px;
   border: 1.5px solid #cbd5e1;
   object-fit: cover;
 }
@@ -747,7 +755,7 @@ require dirname(__DIR__) . '/partials/header.php';
           <i class="ph-fill ph-sparkle" style="color:#f59e0b;"></i> Cuan Viral Threads!
         </div>
         <div class="th-bubble-sub">
-          Bagikan pengalaman cuanmu, kumpulkan reward hingga <strong>Rp 75.000</strong>, dan raih <strong>Jalur Khusus Direct Admin</strong>!
+          Bagikan pengalaman cuanmu, kumpulkan reward hingga <strong>Rp 75.000</strong>, <strong>Gaji Pasti</strong>, dan <strong>Chat WhatsApp Admin</strong>!
         </div>
       </div>
     </div>
@@ -755,15 +763,16 @@ require dirname(__DIR__) . '/partials/header.php';
 
   <!-- TRUST STRIP -->
   <div class="th-trust-strip">
-    <div class="th-trust-item"><i class="ph-fill ph-check-circle" style="color:#10b981;"></i> Saldo Masuk Saldo Tarik</div>
-    <div class="th-trust-item"><i class="ph-fill ph-users-three" style="color:#f59e0b;"></i> Promotor Khusus</div>
+    <div class="th-trust-item"><i class="ph-fill ph-check-circle" style="color:#10b981;"></i> Saldo Masuk WD</div>
+    <div class="th-trust-item"><i class="ph-fill ph-briefcase" style="color:#f59e0b;"></i> Gaji Pasti</div>
+    <div class="th-trust-item"><i class="ph-fill ph-whatsapp-logo" style="color:#22c55e;"></i> Chat Admin WA</div>
     <div class="th-trust-item"><i class="ph-fill ph-lightning" style="color:#ea580c;"></i> Prioritas VIP</div>
   </div>
 
   <div class="th-body">
 
     <?php if ($flash): ?>
-      <div style="padding:10px 14px;border-radius:14px;font-size:12px;font-weight:800;margin-bottom:14px;border:2px solid;<?= $flashType==='error'?'background:#fee2e2;border-color:#ef4444;color:#991b1b;':'background:#dcfce7;border-color:#16a34a;color:#166534;' ?>">
+      <div style="padding:8px 12px;border-radius:12px;font-size:11px;font-weight:800;margin-bottom:10px;border:1.5px solid;<?= $flashType==='error'?'background:#fee2e2;border-color:#ef4444;color:#991b1b;':'background:#dcfce7;border-color:#16a34a;color:#166534;' ?>">
         <i class="ph-bold <?= $flashType==='error'?'ph-warning-circle':'ph-check-circle' ?>"></i>
         <?= htmlspecialchars($flash) ?>
       </div>
@@ -789,7 +798,7 @@ require dirname(__DIR__) . '/partials/header.php';
         
         <div class="th-reward-strip">
           <div class="th-reward-strip-lbl">
-            <i class="ph-bold ph-coins" style="font-size:16px;"></i>
+            <i class="ph-bold ph-coins" style="font-size:15px;"></i>
             <span>REWARD LANGKAH 1</span>
           </div>
           <div class="th-reward-strip-val"><?= format_rp($reward_amount) ?></div>
@@ -798,8 +807,8 @@ require dirname(__DIR__) . '/partials/header.php';
         <!-- Quick Copy Reff Link -->
         <div class="th-copy-reff">
           <div style="min-width:0;flex:1;">
-            <div style="font-size:9.5px;font-weight:800;color:#92400e;">KODE REFERRAL KAMU:</div>
-            <div style="font-size:13px;font-weight:900;color:#78350f;"><?= htmlspecialchars($user['referral_code']) ?></div>
+            <div style="font-size:8.5px;font-weight:800;color:#92400e;">KODE REFERRAL KAMU:</div>
+            <div style="font-size:12px;font-weight:900;color:#78350f;"><?= htmlspecialchars($user['referral_code']) ?></div>
           </div>
           <button type="button" class="th-copy-btn" onclick="copyReffText('<?= htmlspecialchars($user['referral_code']) ?>')">
             <i class="ph-bold ph-copy"></i> Salin Kode
@@ -813,8 +822,8 @@ require dirname(__DIR__) . '/partials/header.php';
             <div class="th-status-title" style="color:#b45309;">Klaim Langkah 1 Sedang Diproses</div>
             <div class="th-status-desc">Screenshot postingan Threads kamu sedang diperiksa admin. Reward <strong><?= format_rp($reward_amount) ?></strong> akan masuk otomatis ke Saldo Tarik setelah disetujui.</div>
             <?php if (!empty($pData['proof_image'])): ?>
-              <div style="margin-top:10px;">
-                <img src="/<?= htmlspecialchars($pData['proof_image']) ?>" alt="Bukti" style="max-height:160px;border-radius:10px;border:1.5px solid #d97706;object-fit:contain;">
+              <div style="margin-top:8px;">
+                <img src="/<?= htmlspecialchars($pData['proof_image']) ?>" alt="Bukti" style="max-height:140px;border-radius:8px;border:1.5px solid #d97706;object-fit:contain;">
               </div>
             <?php endif; ?>
           </div>
@@ -822,15 +831,15 @@ require dirname(__DIR__) . '/partials/header.php';
           <div class="th-status-box" style="border-color:#10b981;background:#f0fdf4;">
             <div class="th-status-icon">🎉</div>
             <div class="th-status-title" style="color:#047857;">Klaim Langkah 1 Disetujui!</div>
-            <div class="th-status-desc">Cuan <strong><?= format_rp($reward_amount) ?></strong> telah ditambahkan ke Saldo Tarik kamu. Ayo lanjutkan ke <strong>Langkah 2</strong> untuk raih Rp 50.000 & Akses Direct Admin!</div>
-            <button type="button" onclick="switchThTab('step2')" class="btn-th-cta" style="margin-top:12px;">
+            <div class="th-status-desc">Cuan <strong><?= format_rp($reward_amount) ?></strong> telah ditambahkan ke Saldo Tarik kamu. Ayo lanjutkan ke <strong>Langkah 2</strong> untuk raih Rp 50.000, Gaji Pasti & Chat WhatsApp Admin!</div>
+            <button type="button" onclick="switchThTab('step2')" class="btn-th-cta" style="margin-top:10px;">
               <span>Lanjut ke Langkah 2 (VIP Promotor)</span>
               <i class="ph-bold ph-arrow-right"></i>
             </button>
           </div>
         <?php else: ?>
           <?php if (!empty($rejectedRequest)): ?>
-            <div style="padding:10px 12px;border-radius:12px;background:#fef2f2;border:2px solid #ef4444;color:#991b1b;font-size:11px;font-weight:800;margin-bottom:12px;">
+            <div style="padding:8px 10px;border-radius:10px;background:#fef2f2;border:1.5px solid #ef4444;color:#991b1b;font-size:10.5px;font-weight:800;margin-bottom:10px;">
               <i class="ph-bold ph-warning-circle"></i> Klaim Sebelumnya Ditolak:
               <div style="font-weight:700;margin-top:2px;"><?= htmlspecialchars($rejectedRequest['admin_note'] ?: 'Bukti postingan belum memenuhi syarat.') ?></div>
             </div>
@@ -844,14 +853,14 @@ require dirname(__DIR__) . '/partials/header.php';
             <?= csrf_field() ?>
             <input type="hidden" name="step" value="step1">
 
-            <div style="margin-bottom:14px;">
-              <label style="font-size:11.5px;font-weight:900;color:#78350f;margin-bottom:6px;display:block;">
+            <div style="margin-bottom:10px;">
+              <label style="font-size:10.5px;font-weight:900;color:#78350f;margin-bottom:4px;display:block;">
                 📸 Upload Screenshot Postingan Threads (Terlihat Username)
               </label>
-              <div class="th-slot-box" id="zone-step1" style="min-height:120px;">
+              <div class="th-slot-box" id="zone-step1" style="min-height:85px;padding:8px 6px;">
                 <input type="file" name="proof" id="file-step1" accept="image/*" required onchange="previewSingleFile(this, 'zone-step1', 'icon-step1', 'lbl-step1')">
-                <i class="ph-bold ph-image th-slot-icon" id="icon-step1" style="font-size:32px;"></i>
-                <div class="th-slot-lbl" id="lbl-step1" style="font-size:11px;font-weight:800;">
+                <i class="ph-bold ph-image th-slot-icon" id="icon-step1" style="font-size:26px;"></i>
+                <div class="th-slot-lbl" id="lbl-step1" style="font-size:10px;font-weight:800;">
                   Pilih atau seret screenshot postingan kamu<br><small style="color:#94a3b8;">Format: JPG, PNG, WEBP (Maks: 5MB)</small>
                 </div>
               </div>
@@ -879,20 +888,20 @@ require dirname(__DIR__) . '/partials/header.php';
             <div class="th-vip-tag">
               <i class="ph-fill ph-crown"></i> PROMOTOR KHUSUS
             </div>
-            <span style="font-size:11px;font-weight:900;color:#fde68a;">LEVEL 2 VIP</span>
+            <span style="font-size:9.5px;font-weight:900;color:#fde68a;">LEVEL 2 VIP</span>
           </div>
           <div class="th-vip-title">
-            Dapatkan Rp 50.000 &amp; Akses Langsung ke Admin!
+            Dapatkan Rp 50.000, Gaji Pasti &amp; Chat Langsung Admin WA!
           </div>
           <div class="th-benefits-grid">
             <div class="th-benefit-item">
               <i class="ph-fill ph-money" style="color:#34d399;"></i> Rp 50.000 Saldo Tarik
             </div>
             <div class="th-benefit-item">
-              <i class="ph-fill ph-chats-circle" style="color:#60a5fa;"></i> Direct Admin WhatsApp
+              <i class="ph-fill ph-briefcase" style="color:#fbbf24;"></i> Gaji Pasti Promotor
             </div>
             <div class="th-benefit-item">
-              <i class="ph-fill ph-seal-check" style="color:#fbbf24;"></i> Gelar Promotor Resmi
+              <i class="ph-fill ph-whatsapp-logo" style="color:#22c55e;"></i> Chat WhatsApp Admin
             </div>
             <div class="th-benefit-item">
               <i class="ph-fill ph-lightning" style="color:#f472b6;"></i> Prioritas Approval WD
@@ -910,7 +919,7 @@ require dirname(__DIR__) . '/partials/header.php';
             <?php $refPct = min(100, (int)round(($user_referral_count / 10) * 100)); ?>
             <div class="th-ref-fill" style="width: <?= $refPct ?>%;"></div>
           </div>
-          <div style="font-size:10px;font-weight:800;display:flex;justify-content:space-between;color:<?= $user_referral_count >= 10 ? '#059669' : '#d97706' ?>;">
+          <div style="font-size:9.5px;font-weight:800;display:flex;justify-content:space-between;color:<?= $user_referral_count >= 10 ? '#059669' : '#d97706' ?>;">
             <span><?= $user_referral_count >= 10 ? '✓ Syarat Referral Terpenuhi' : 'Kurang ' . (10 - $user_referral_count) . ' referral lagi' ?></span>
             <span><?= $refPct ?>%</span>
           </div>
@@ -922,9 +931,9 @@ require dirname(__DIR__) . '/partials/header.php';
             <div class="th-status-icon">🔒</div>
             <div class="th-status-title" style="color:#b91c1c;">Langkah 2 Masih Terkunci</div>
             <div class="th-status-desc" style="color:#b91c1c;">
-              Kamu butuh mengundang <strong><?= 10 - $user_referral_count ?> referral lagi</strong> agar dapat mengajukan Langkah 2 dan menjadi Promotor Khusus.
+              Kamu butuh mengundang <strong><?= 10 - $user_referral_count ?> referral lagi</strong> agar dapat mengajukan Langkah 2, meraih Gaji Pasti, dan menjadi Promotor Khusus.
             </div>
-            <a href="/referral" class="btn-th-cta" style="margin-top:12px;background:linear-gradient(135deg,#10b981,#059669);border-color:#064e3b;box-shadow:0 3px 0 #064e3b;text-decoration:none;">
+            <a href="/referral" class="btn-th-cta" style="margin-top:10px;background:linear-gradient(135deg,#10b981,#059669);border-color:#064e3b;box-shadow:0 3px 0 #064e3b;text-decoration:none;">
               <i class="ph-bold ph-share-network"></i>
               <span>Bagikan Link Referral Sekarang</span>
             </a>
@@ -933,18 +942,18 @@ require dirname(__DIR__) . '/partials/header.php';
         <?php elseif ($approvedRequest2): ?>
           <!-- APPROVED VIP PROMOTOR STATUS -->
           <div class="th-promotor-active-card">
-            <div style="font-size:36px;margin-bottom:6px;">👑</div>
-            <div style="font-size:16px;font-weight:900;color:#fde68a;margin-bottom:4px;">
+            <div style="font-size:32px;margin-bottom:4px;">👑</div>
+            <div style="font-size:15px;font-weight:900;color:#fde68a;margin-bottom:4px;">
               SELAMAT! KAMU PROMOTOR KHUSUS RESMI
             </div>
-            <div style="font-size:11.5px;color:#f8fafc;font-weight:700;line-height:1.4;margin-bottom:12px;">
-              Klaim Langkah 2 kamu telah disetujui admin. Reward <strong><?= format_rp($reward_amount2) ?></strong> telah ditambahkan ke Saldo Tarik kamu. Kamu berhak atas akses langsung ke Admin!
+            <div style="font-size:11px;color:#f8fafc;font-weight:700;line-height:1.4;margin-bottom:10px;">
+              Klaim Langkah 2 kamu telah disetujui admin. Reward <strong><?= format_rp($reward_amount2) ?></strong> telah ditambahkan ke Saldo Tarik kamu. Kamu resmi menjadi Promotor Khusus dan berhak atas <strong>Gaji Pasti</strong> &amp; <strong>Chat Langsung WhatsApp Admin</strong>!
             </div>
 
             <!-- VIP DIRECT ADMIN ACCESS BUTTON -->
             <a href="<?= htmlspecialchars($admin_contact) ?>" target="_blank" class="btn-vip-admin-direct">
               <i class="ph-bold ph-whatsapp-logo" style="font-size:18px;"></i>
-              <span>Hubungi Admin Langsung (VIP Promotor)</span>
+              <span>Chat WhatsApp Admin (Klaim Gaji &amp; Bonus)</span>
             </a>
           </div>
 
@@ -955,7 +964,7 @@ require dirname(__DIR__) . '/partials/header.php';
             <div class="th-status-icon">⏳</div>
             <div class="th-status-title" style="color:#b45309;">Pengajuan Promotor Level 2 Sedang Diverifikasi</div>
             <div class="th-status-desc">
-              Tim admin sedang memeriksa bukti statistik tayangan (views) minimal 5.000 views kamu. Setelah diverifikasi, status <strong>Promotor Khusus</strong> dan reward <strong><?= format_rp($reward_amount2) ?></strong> akan aktif!
+              Tim admin sedang memeriksa bukti statistik tayangan (views) minimal 5.000 views kamu. Setelah diverifikasi, status <strong>Promotor Khusus</strong>, hak <strong>Gaji Pasti</strong>, dan reward <strong><?= format_rp($reward_amount2) ?></strong> akan aktif!
             </div>
 
             <?php 
@@ -993,13 +1002,13 @@ require dirname(__DIR__) . '/partials/header.php';
             <?= csrf_field() ?>
             <input type="hidden" name="step" value="step2">
 
-            <div style="margin-bottom:14px;">
-              <div style="font-size:11.5px;font-weight:900;color:#78350f;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;">
-                <span>📸 Bukti Screenshot Postingan Ramai (Min 5K Views)</span>
-                <span style="font-size:9.5px;color:#d97706;font-weight:800;">Bisa s/d 3 Screenshot</span>
+            <div style="margin-bottom:10px;">
+              <div style="font-size:10.5px;font-weight:900;color:#78350f;margin-bottom:3px;display:flex;align-items:center;justify-content:space-between;">
+                <span>📸 Bukti Screenshot Ramai (Min 5K Views)</span>
+                <span style="font-size:8.5px;color:#d97706;font-weight:800;">Bisa s/d 3 Foto</span>
               </div>
-              <div style="font-size:10.5px;color:#64748b;font-weight:700;margin-bottom:8px;">
-                Lampirkan bukti insight/statistik tayangan postingan Threads kamu (minimal 5.000 views):
+              <div style="font-size:9.5px;color:#64748b;font-weight:700;margin-bottom:6px;">
+                Lampirkan bukti tayangan Threads kamu (minimal 5.000 views) untuk verifikasi:
               </div>
 
               <!-- 3 INTERACTIVE UPLOAD SLOTS -->
@@ -1009,7 +1018,7 @@ require dirname(__DIR__) . '/partials/header.php';
                   <input type="file" name="proof_1" id="file-slot-1" accept="image/*" required onchange="previewSlot(this, 1)">
                   <img id="preview-slot-1" class="th-slot-preview" alt="Preview 1">
                   <i class="ph-bold ph-chart-line-up th-slot-icon" id="icon-slot-1"></i>
-                  <div class="th-slot-lbl" id="lbl-slot-1">Bukti 1 (Views)</div>
+                  <div class="th-slot-lbl" id="lbl-slot-1">Bukti Views</div>
                   <span class="th-slot-tag th-slot-tag--req" id="tag-slot-1">Wajib (5K+)</span>
                 </div>
 
@@ -1018,7 +1027,7 @@ require dirname(__DIR__) . '/partials/header.php';
                   <input type="file" name="proof_2" id="file-slot-2" accept="image/*" onchange="previewSlot(this, 2)">
                   <img id="preview-slot-2" class="th-slot-preview" alt="Preview 2">
                   <i class="ph-bold ph-plus-circle th-slot-icon" id="icon-slot-2"></i>
-                  <div class="th-slot-lbl" id="lbl-slot-2">Bukti 2 (Post)</div>
+                  <div class="th-slot-lbl" id="lbl-slot-2">Postingan</div>
                   <span class="th-slot-tag th-slot-tag--opt" id="tag-slot-2">Opsional</span>
                 </div>
 
@@ -1027,15 +1036,15 @@ require dirname(__DIR__) . '/partials/header.php';
                   <input type="file" name="proof_3" id="file-slot-3" accept="image/*" onchange="previewSlot(this, 3)">
                   <img id="preview-slot-3" class="th-slot-preview" alt="Preview 3">
                   <i class="ph-bold ph-plus-circle th-slot-icon" id="icon-slot-3"></i>
-                  <div class="th-slot-lbl" id="lbl-slot-3">Bukti 3 (Interaksi)</div>
+                  <div class="th-slot-lbl" id="lbl-slot-3">Interaksi</div>
                   <span class="th-slot-tag th-slot-tag--opt" id="tag-slot-3">Opsional</span>
                 </div>
               </div>
             </div>
 
-            <button type="submit" id="btn-sub-step2" class="btn-th-cta" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border-color:#3730a3;box-shadow:0 4px 0 #312e81;">
+            <button type="submit" id="btn-sub-step2" class="btn-th-cta" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border-color:#3730a3;box-shadow:0 3px 0 #312e81;">
               <i class="ph-bold ph-crown"></i>
-              <span>Kirim Bukti Level 2 &amp; Jadi Promotor Khusus</span>
+              <span>Kirim Bukti Level 2 &amp; Raih Gaji Pasti</span>
             </button>
           </form>
 

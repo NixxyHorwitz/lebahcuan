@@ -332,14 +332,14 @@ $tabs = [
 
               <div class="c-form-group mb-3">
                 <label class="c-label">Petunjuk & Syarat Langkah 2 (Promotor Khusus & Min 5K Views)</label>
-                <textarea name="threads_campaign_instructions_step2" class="c-form-control" rows="6" required><?= htmlspecialchars($s('threads_campaign_instructions_step2', "Promosikan LebahCuan di Threads - Langkah 2 (Dapatkan Rp 50.000 + Akses Langsung Admin & Jadi Promotor Khusus!)\n\nKriteria Postingan Langkah 2:\n1. Kamu telah mengundang minimal 10 referral bergabung di LebahCuan.\n2. Postingan Threads kamu viral / ramai dengan minimal 5.000 (5K) views / tayangan.\n3. Berikan screenshot (bukti SS) bahwa postingan Threads kamu tembus minimal 5.000 views (bisa kirim hingga 3 screenshot bukti statistik & interaksi).")) ?></textarea>
+                <textarea name="threads_campaign_instructions_step2" class="c-form-control" rows="6" required><?= htmlspecialchars($s('threads_campaign_instructions_step2', "Promosikan LebahCuan di Threads - Langkah 2 (Dapatkan Rp 50.000, Gaji Pasti & Chat WhatsApp Admin!)\n\nKriteria Postingan Langkah 2:\n1. Kamu telah mengundang minimal 10 referral bergabung di LebahCuan.\n2. Postingan Threads kamu viral / ramai dengan minimal 5.000 (5K) views / tayangan.\n3. Berikan screenshot (bukti SS) bahwa postingan Threads kamu tembus minimal 5.000 views (bisa kirim hingga 3 screenshot bukti statistik & interaksi).")) ?></textarea>
                 <small class="text-muted" style="font-size:11px">Ditampilkan kepada pengguna di halaman klaim Langkah 2.</small>
               </div>
 
               <div class="c-form-group mb-3">
-                <label class="c-label">Kontak Direct Admin VIP (Untuk Promotor Lolos Level 2)</label>
+                <label class="c-label">Kontak WhatsApp Admin VIP (Untuk Promotor Level 2 - Gaji Pasti &amp; Bonus)</label>
                 <input type="text" name="threads_admin_contact" class="c-form-control" value="<?= htmlspecialchars($s('threads_admin_contact', 'https://wa.me/6281234567890')) ?>" placeholder="https://wa.me/628xxx atau @username_telegram">
-                <small class="text-muted" style="font-size:11px">Link direct WhatsApp/Telegram admin yang langsung terbuka untuk user yang telah lolos verifikasi Level 2.</small>
+                <small class="text-muted" style="font-size:11px">Link WhatsApp/Telegram admin yang langsung terbuka untuk user yang telah lolos verifikasi Level 2.</small>
               </div>
 
               <button type="submit" class="btn btn-sm text-white" style="background:var(--brand)">Simpan Pengaturan Kampanye</button>
