@@ -51,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setting_set($pdo, 'threads_campaign_instructions', trim($_POST['threads_campaign_instructions'] ?? ''));
         setting_set($pdo, 'threads_campaign_reward_step2', clean_input($_POST['threads_campaign_reward_step2'] ?? '50000'));
         setting_set($pdo, 'threads_campaign_instructions_step2', trim($_POST['threads_campaign_instructions_step2'] ?? ''));
+        setting_set($pdo, 'threads_admin_contact', trim($_POST['threads_admin_contact'] ?? ''));
         $flash = 'Pengaturan Kampanye Threads (Langkah 1 & 2) berhasil disimpan!';
     }
 
@@ -97,7 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'user_baru' => '🆕 User Baru',
                 'permintaan' => '💬 Permintaan',
                 'misi' => '🎯 Klaim Misi',
-                'abuse' => '🚨 Deteksi Abuse'
+                'abuse' => '🚨 Deteksi Abuse',
+                'threads' => '🧵 Promosi Threads'
             ];
             if ($topic_key && isset($topics[$topic_key])) {
                 $topics = [$topic_key => $topics[$topic_key]];
@@ -329,9 +331,15 @@ $tabs = [
               </div>
 
               <div class="c-form-group mb-3">
-                <label class="c-label">Petunjuk & Syarat Langkah 2</label>
-                <textarea name="threads_campaign_instructions_step2" class="c-form-control" rows="6" required><?= htmlspecialchars($s('threads_campaign_instructions_step2', "Promosikan LebahCuan di Threads - Langkah 2 (Dapatkan Rp 50.000 Tambahan!)\n\nKriteria Postingan Langkah 2:\n1. Kamu telah mengundang minimal 10 referral bergabung di LebahCuan.\n2. Berikan screenshot (bukti SS) bahwa postingan Threads kamu ramai (memiliki banyak interaksi like/komen/share/tayangan).")) ?></textarea>
+                <label class="c-label">Petunjuk & Syarat Langkah 2 (Promotor Khusus & Min 5K Views)</label>
+                <textarea name="threads_campaign_instructions_step2" class="c-form-control" rows="6" required><?= htmlspecialchars($s('threads_campaign_instructions_step2', "Promosikan LebahCuan di Threads - Langkah 2 (Dapatkan Rp 50.000 + Akses Langsung Admin & Jadi Promotor Khusus!)\n\nKriteria Postingan Langkah 2:\n1. Kamu telah mengundang minimal 10 referral bergabung di LebahCuan.\n2. Postingan Threads kamu viral / ramai dengan minimal 5.000 (5K) views / tayangan.\n3. Berikan screenshot (bukti SS) bahwa postingan Threads kamu tembus minimal 5.000 views (bisa kirim hingga 3 screenshot bukti statistik & interaksi).")) ?></textarea>
                 <small class="text-muted" style="font-size:11px">Ditampilkan kepada pengguna di halaman klaim Langkah 2.</small>
+              </div>
+
+              <div class="c-form-group mb-3">
+                <label class="c-label">Kontak Direct Admin VIP (Untuk Promotor Lolos Level 2)</label>
+                <input type="text" name="threads_admin_contact" class="c-form-control" value="<?= htmlspecialchars($s('threads_admin_contact', 'https://wa.me/6281234567890')) ?>" placeholder="https://wa.me/628xxx atau @username_telegram">
+                <small class="text-muted" style="font-size:11px">Link direct WhatsApp/Telegram admin yang langsung terbuka untuk user yang telah lolos verifikasi Level 2.</small>
               </div>
 
               <button type="submit" class="btn btn-sm text-white" style="background:var(--brand)">Simpan Pengaturan Kampanye</button>
@@ -427,7 +435,8 @@ $tabs = [
                   'user_baru' => '🆕 User Baru',
                   'permintaan' => '💬 Permintaan',
                   'misi' => '🎯 Klaim Misi',
-                  'abuse' => '🚨 Deteksi Abuse'
+                  'abuse' => '🚨 Deteksi Abuse',
+                  'threads' => '🧵 Promosi Threads'
               ];
               foreach ($tg_topics as $tk => $tn): ?>
               <form method="POST">

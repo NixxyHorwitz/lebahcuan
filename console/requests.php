@@ -66,10 +66,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ? WHERE id=?")
                             ->execute([$reward, $reqData['user_id']]);
                         
-                        $stepText = $reqData['type'] === 'threads_campaign_step2' ? 'Langkah 2' : 'Langkah 1';
-                        $notifTitle = "Kampanye Threads {$stepText} Disetujui! ✅";
-                        $notifMsg = "Selamat! Promosi Threads {$stepText} kamu disetujui. Cuan tambahan sebesar " . format_rp($reward) . " telah ditambahkan ke Saldo Tarik kamu.";
-                        $pdo->prepare("INSERT INTO notifications (title, message, type, icon, target_type, target_user_ids) VALUES (?, ?, 'success', '🌀', 'single', ?)")
+                        $stepText = $reqData['type'] === 'threads_campaign_step2' ? 'Langkah 2 (Promotor Khusus)' : 'Langkah 1';
+                        if ($reqData['type'] === 'threads_campaign_step2') {
+                            $notifTitle = "Selamat! Kamu Resmi Menjadi Promotor Khusus Threads! 👑";
+                            $notifMsg = "Klaim Langkah 2 kamu disetujui! Reward " . format_rp($reward) . " telah masuk ke Saldo Tarik. Kamu resmi berstatus PROMOTOR KHUSUS LebahCuan dengan akses langsung ke Admin.";
+                        } else {
+                            $notifTitle = "Kampanye Threads {$stepText} Disetujui! ✅";
+                            $notifMsg = "Selamat! Promosi Threads {$stepText} kamu disetujui. Cuan tambahan sebesar " . format_rp($reward) . " telah ditambahkan ke Saldo Tarik kamu.";
+                        }
+                        $pdo->prepare("INSERT INTO notifications (title, message, type, icon, target_type, target_user_ids) VALUES (?, ?, 'success', '🧵', 'single', ?)")
                             ->execute([$notifTitle, $notifMsg, json_encode([$reqData['user_id']])]);
                         
                         $flash = "Berhasil menyetujui promosi Threads {$stepText} untuk user {$reqData['username']}. Reward " . format_rp($reward) . " telah ditambahkan ke Saldo Tarik.";
@@ -166,7 +171,14 @@ require __DIR__ . '/partials/header.php';
                 } else if ($req['type'] === 'threads_campaign' || $req['type'] === 'threads_campaign_step2') {
                     $p = json_decode($req['payload'], true) ?: [];
                     echo "Klaim Reward: <strong>" . format_rp((float)($p['reward_amount'] ?? ($req['type'] === 'threads_campaign' ? 25000 : 50000))) . "</strong><br>";
-                    if (!empty($p['proof_image'])) {
+                    if (!empty($p['proof_images']) && is_array($p['proof_images'])) {
+                        echo "<div class='d-flex flex-wrap gap-1 mt-1'>";
+                        foreach ($p['proof_images'] as $idx => $img) {
+                            $imgNum = $idx + 1;
+                            echo "<a href='/" . htmlspecialchars($img) . "' target='_blank' class='btn btn-xs btn-outline-info text-white py-0 px-1' style='font-size:10px;'>👁️ Bukti #{$imgNum}</a>";
+                        }
+                        echo "</div>";
+                    } elseif (!empty($p['proof_image'])) {
                         echo "<a href='/" . htmlspecialchars($p['proof_image']) . "' target='_blank' class='btn btn-xs btn-outline-info text-white mt-1 py-0 px-1' style='font-size:10px;'>👁️ Lihat Bukti</a>";
                     }
                 } else {

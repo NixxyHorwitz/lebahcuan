@@ -768,6 +768,9 @@ function send_telegram_notif(PDO $pdo, string $message, array $inline_keyboard =
         if (!$thread_id && $topic === 'abuse') {
             $thread_id = setting($pdo, "tg_topic_log", '');
         }
+        if (!$thread_id && ($topic === 'threads' || $topic === 'threads_promo')) {
+            $thread_id = setting($pdo, "tg_topic_permintaan", '');
+        }
         if ($thread_id) {
             $post['message_thread_id'] = $thread_id;
         }
@@ -808,6 +811,9 @@ function send_telegram_photo(PDO $pdo, string $photo_path, string $caption = '',
     
     if ($topic) {
         $thread_id = setting($pdo, "tg_topic_{$topic}", '');
+        if (!$thread_id && ($topic === 'threads' || $topic === 'threads_promo')) {
+            $thread_id = setting($pdo, "tg_topic_permintaan", '');
+        }
         if ($thread_id) {
             $post['message_thread_id'] = $thread_id;
         }

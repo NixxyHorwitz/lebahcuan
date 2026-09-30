@@ -192,6 +192,11 @@ if ($popup_enabled && str_contains($popup_cta_url, 'upgrade') && !$show_upgrade_
     $popup_enabled = false;
 }
 
+// ── KAMPANYE PROMOSI THREADS ──
+$threads_campaign_enabled = setting($pdo, 'threads_campaign_enabled', '1') === '1';
+$threads_step1_reward     = (float)setting($pdo, 'threads_campaign_reward', '25000');
+$threads_step2_reward     = (float)setting($pdo, 'threads_campaign_reward_step2', '50000');
+
 $pageTitle = 'Nonton Video & Ternak Lebah Cuan';
 $activePage = 'home';
 require dirname(__DIR__) . '/partials/header.php';
@@ -824,6 +829,137 @@ body {
   font-size: 20px; flex-shrink: 0;
 }
 
+/* ── THREADS PROMO HOME CARD ── */
+.threads-promo-home-card {
+  background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
+  border: 2.5px solid #f59e0b;
+  border-radius: 20px;
+  padding: 14px 14px 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 4.5px 0 #78350f, 0 0 16px rgba(245, 158, 11, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+.threads-promo-home-card::after {
+  content: '';
+  position: absolute;
+  top: -30px; right: -30px;
+  width: 110px; height: 110px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, transparent 70%);
+  pointer-events: none;
+}
+.tph-badge-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.tph-badge-event {
+  background: #fef3c7;
+  color: #78350f;
+  border: 1.5px solid #78350f;
+  border-radius: 8px;
+  padding: 2px 7px;
+  font-size: 9.5px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.tph-badge-cuan {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+}
+.tph-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.tph-icon-box {
+  width: 48px;
+  height: 48px;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid #f59e0b;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.tph-mascot-img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+.tph-text-col {
+  flex: 1;
+  min-width: 0;
+}
+.tph-title {
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #fde68a;
+  line-height: 1.25;
+  margin-bottom: 3px;
+}
+.tph-desc {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+  line-height: 1.35;
+}
+.tph-desc strong {
+  color: #fde047;
+}
+.tph-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tph-btn-primary {
+  flex: 1;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 2px solid #fef3c7;
+  border-radius: 12px;
+  padding: 9px 12px;
+  color: #78350f;
+  font-size: 11.5px;
+  font-weight: 900;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  box-shadow: 0 3px 0 #78350f;
+  transition: transform 0.1s;
+}
+.tph-btn-primary:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #78350f;
+}
+.tph-btn-info {
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid rgba(255,255,255,0.3);
+  border-radius: 12px;
+  padding: 8px 12px;
+  color: #f8fafc;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+}
+
 /* ── MODAL POPUPS (AMBER THEME) ── */
 .amber-modal-backdrop {
   position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75);
@@ -1092,6 +1228,293 @@ body {
   font-weight: 700;
   color: #64748b;
   line-height: 1.35;
+}
+
+/* ══════════════════════════════════════════════════════════
+   FLOATING PROMO BUTTON (AJAKAN PROMOSI CUAN)
+   ══════════════════════════════════════════════════════════ */
+.floating-promo-btn {
+  position: fixed;
+  bottom: 84px;
+  left: 12px;
+  z-index: 998;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 20px;
+  padding: 6px 11px 6px 7px;
+  color: #fde68a;
+  box-shadow: 0 4px 0 #78350f, 0 8px 18px rgba(0,0,0,0.35);
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.12s, box-shadow 0.12s;
+  animation: promoFloatPulse 3s infinite ease-in-out;
+  font-family: 'Nunito', sans-serif;
+  user-select: none;
+}
+.floating-promo-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #78350f;
+}
+@keyframes promoFloatPulse {
+  0%, 100% {
+    box-shadow: 0 4px 0 #78350f, 0 0 8px rgba(245, 158, 11, 0.35);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 4px 0 #78350f, 0 0 18px rgba(245, 158, 11, 0.7);
+    transform: translateY(-3px);
+  }
+}
+.fpb-icon-wrap {
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1.5px solid #fef3c7;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #78350f;
+  font-size: 15px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 0 #78350f;
+}
+.fpb-text-wrap {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.fpb-title {
+  font-size: 8.5px;
+  font-weight: 900;
+  color: #94a3b8;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.fpb-sub {
+  font-size: 11px;
+  font-weight: 900;
+  color: #fde047;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.fpb-badge {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #ffffff;
+  font-size: 7.5px;
+  font-weight: 900;
+  padding: 1px 4px;
+  border-radius: 6px;
+  border: 1px solid #ffffff;
+  animation: pulse-dot 1.2s infinite;
+}
+
+/* ── IN-FEED PROMO BANNER ── */
+.promo-invite-banner {
+  background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
+  border: 2.5px solid #f59e0b;
+  border-radius: 20px;
+  padding: 11px 13px;
+  margin-bottom: 16px;
+  box-shadow: 0 4.5px 0 #78350f, 0 0 16px rgba(245, 158, 11, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  position: relative;
+  overflow: hidden;
+}
+.promo-invite-banner::after {
+  content: '';
+  position: absolute;
+  top: -20px; right: -20px;
+  width: 90px; height: 90px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+.promo-invite-banner:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #78350f;
+}
+.pib-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+.pib-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1.5px solid #fef3c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #78350f;
+  font-size: 19px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 0 #78350f;
+}
+.pib-text {
+  min-width: 0;
+}
+.pib-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: #fde68a;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 2px;
+}
+.pib-badge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 6px;
+}
+.pib-desc {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pib-cta {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1.5px solid #fef3c7;
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: #78350f;
+  font-size: 10.5px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 2px 0 #78350f;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── PROMO HUB MODAL STYLES ── */
+.promo-hub-card-item {
+  background: #ffffff;
+  border: 2px solid #78350f;
+  border-radius: 16px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  text-align: left;
+  box-shadow: 0 3px 0 #78350f;
+  transition: transform 0.15s;
+}
+.phc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+.phc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8.5px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+.phc-tag--threads {
+  background: #18181b;
+  color: #fde68a;
+  border: 1px solid #f59e0b;
+}
+.phc-tag--referral {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+.phc-reward {
+  font-size: 10px;
+  font-weight: 900;
+  color: #059669;
+}
+.phc-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: #78350f;
+  margin-bottom: 2px;
+}
+.phc-desc {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+.phc-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-phc-action {
+  flex: 1;
+  padding: 7px 8px;
+  border-radius: 10px;
+  font-size: 10.5px;
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  border: 1.5px solid #78350f;
+  box-shadow: 0 2px 0 #78350f;
+  transition: transform 0.1s;
+  font-family: inherit;
+}
+.btn-phc-action:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+.btn-phc-action--primary {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+}
+.btn-phc-action--share {
+  background: #10b981;
+  color: #ffffff;
+  border-color: #064e3b;
+  box-shadow: 0 2px 0 #064e3b;
+}
+.btn-phc-action--copy {
+  background: #fef3c7;
+  color: #78350f;
+}
+.phc-caption-box {
+  background: #fffbeb;
+  border: 1.5px dashed #f59e0b;
+  border-radius: 10px;
+  padding: 7px 9px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #78350f;
+  line-height: 1.35;
+  margin-bottom: 8px;
+  text-align: left;
 }
 </style>
 
@@ -1387,6 +1810,28 @@ body {
   </div>
 
   <!-- ══════════════════════════════════════════════════════════
+       AJAKAN PROMOSI BANNER (PROMO HUB TRIGGER)
+       ══════════════════════════════════════════════════════════ -->
+  <div class="promo-invite-banner" onclick="openPromoHubModal()" title="Klik untuk Buka Event Promosi & Raih Saldo">
+    <div class="pib-left">
+      <div class="pib-icon-box">
+        <i class="ph-bold ph-megaphone"></i>
+      </div>
+      <div class="pib-text">
+        <div class="pib-title">
+          <span>Ajak Teman &amp; Promosi Cuan</span>
+          <span class="pib-badge">+Rp 75.000</span>
+        </div>
+        <div class="pib-desc">Viral di Threads &amp; bagikan link untuk panen komisi saldo tunai!</div>
+      </div>
+    </div>
+    <div class="pib-cta">
+      <span>Mulai</span>
+      <i class="ph-bold ph-arrow-right"></i>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
        1.5 LANJUTKAN MENONTON (MAKSIMAL 3 RIWAYAT)
        ══════════════════════════════════════════════════════════ -->
   <?php if (!empty($continue_watching_home)): ?>
@@ -1426,6 +1871,39 @@ body {
           </div>
         </a>
         <?php endforeach; ?>
+      </div>
+    </div>
+  <?php endif; ?>
+
+  <!-- ══════════════════════════════════════════════════════════
+       1.7 CARD PROMOSI THREADS (EVENT CUAN & PROMOTOR KHUSUS)
+       ══════════════════════════════════════════════════════════ -->
+  <?php if ($threads_campaign_enabled): ?>
+    <div class="threads-promo-home-card" id="tour-threads-promo-card">
+      <div class="tph-badge-strip">
+        <span class="tph-badge-event"><i class="ph-bold ph-threads-logo"></i> EVENT PROMOSI THREADS</span>
+        <span class="tph-badge-cuan">+Rp 75.000 &amp; VIP</span>
+      </div>
+      <div class="tph-content">
+        <div class="tph-icon-box">
+          <img src="/assets/game/bee_golden.png" alt="Bee Mascot" class="tph-mascot-img">
+        </div>
+        <div class="tph-text-col">
+          <div class="tph-title">Viral di Threads &amp; Jadi Promotor Khusus! 👑</div>
+          <div class="tph-desc">
+            Posting ceritamu, raih <strong><?= format_rp($threads_step1_reward) ?></strong> di Langkah 1 &amp; raih <strong><?= format_rp($threads_step2_reward) ?> + Akses Direct Admin</strong> jika postinganmu tembus 5K views!
+          </div>
+        </div>
+      </div>
+      <div class="tph-actions">
+        <a href="/threads" class="tph-btn-primary">
+          <i class="ph-bold ph-threads-logo"></i>
+          <span>Ikuti Event Threads</span>
+          <i class="ph-bold ph-arrow-right"></i>
+        </a>
+        <button type="button" class="tph-btn-info" onclick="openThreadsPromoModal()" title="Lihat Ketentuan Lengkap">
+          <i class="ph-bold ph-info"></i> Detail
+        </button>
       </div>
     </div>
   <?php endif; ?>
@@ -1558,6 +2036,19 @@ body {
     </div>
   <?php endif; ?>
 
+  <!-- ── FLOATING BUTTON: AJAKAN PROMOSI ── -->
+  <div class="floating-promo-btn" id="btn-floating-promo" onclick="openPromoHubModal()" title="Klik untuk Buka Event Promosi Cuan">
+    <div class="fpb-icon-wrap">
+      <i class="ph-bold ph-megaphone"></i>
+    </div>
+    <div class="fpb-text-wrap">
+      <span class="fpb-title">Bonus Promosi</span>
+      <span class="fpb-sub">
+        Raih Rp 75K <span class="fpb-badge">Hot</span>
+      </span>
+    </div>
+  </div>
+
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
@@ -1653,6 +2144,123 @@ body {
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════
+     MODAL POPUP 4: AJAKAN PROMOSI THREADS (EVENT CUAN & PROMOTOR)
+     ══════════════════════════════════════════════════════════ -->
+<?php if ($threads_campaign_enabled): ?>
+<div id="threads-promo-modal" class="amber-modal-backdrop">
+  <div class="amber-modal-box" style="background:#18181b;border-color:#f59e0b;box-shadow:0 10px 0 #78350f, 0 20px 35px rgba(0,0,0,0.5);">
+    <button type="button" class="amber-modal-close" onclick="closeThreadsPromoModal()">
+      <i class="ph-bold ph-x"></i>
+    </button>
+    <div class="amber-modal-badge" style="background:linear-gradient(135deg,#18181b,#27272a);border-color:#f59e0b;color:#fde68a;box-shadow:0 5px 0 #78350f;">
+      <i class="ph-bold ph-threads-logo" style="font-size:36px;"></i>
+    </div>
+    <div style="font-size:9.5px;font-weight:900;background:linear-gradient(135deg,#f59e0b,#d97706);color:#78350f;padding:2px 8px;border-radius:8px;display:inline-block;margin-bottom:6px;">
+      🔥 EVENT RESMI LEBAHCUAN
+    </div>
+    <h3 class="amber-modal-title" style="color:#fde68a;">Raih Cuan s/d Rp 75.000 di Threads!</h3>
+    <div class="amber-modal-body" style="color:#e2e8f0;font-size:11px;text-align:left;line-height:1.45;margin-bottom:16px;">
+      Bagikan ceritamu di Threads dan dapatkan saldo tarik tunai langsung:
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:8px 10px;margin-top:8px;">
+        <div style="margin-bottom:6px;color:#fde68a;font-weight:800;">
+          • <strong>Langkah 1:</strong> Buat postingan cuan di Threads &rarr; Bonus <strong><?= format_rp($threads_step1_reward) ?></strong>.
+        </div>
+        <div style="color:#f8fafc;font-weight:800;">
+          • <strong>Langkah 2:</strong> Postingan tembus <strong>minimal 5K views</strong> &rarr; Bonus <strong><?= format_rp($threads_step2_reward) ?></strong> + <strong>Akses Langsung ke Admin &amp; Jadi Promotor Khusus</strong>!
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <a href="/threads" class="btn-modal-primary" style="background:linear-gradient(135deg,#f59e0b,#d97706);border-color:#fef3c7;color:#78350f;box-shadow:0 4px 0 #78350f;">
+        <i class="ph-bold ph-threads-logo"></i> Mulai Promosi Threads Sekarang
+      </a>
+      <button type="button" onclick="closeThreadsPromoModal()" class="btn-modal-dismiss" style="color:#94a3b8;">Nanti Saja</button>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL POPUP: AJAKAN PROMOSI LENGKAP (PROMO HUB MODAL)
+     ══════════════════════════════════════════════════════════ -->
+<div id="promo-hub-modal" class="amber-modal-backdrop">
+  <div class="amber-modal-box" style="max-width:350px;padding:22px 15px 16px;">
+    <button type="button" class="amber-modal-close" onclick="closePromoHubModal()">
+      <i class="ph-bold ph-x"></i>
+    </button>
+    
+    <div class="amber-modal-badge" style="background:linear-gradient(135deg,#18181b,#27272a);border-color:#f59e0b;color:#fde68a;">
+      <i class="ph-bold ph-megaphone" style="font-size:32px;"></i>
+    </div>
+    
+    <div style="font-size:9.5px;font-weight:900;background:linear-gradient(135deg,#f59e0b,#d97706);color:#78350f;padding:2px 8px;border-radius:8px;display:inline-block;margin-bottom:6px;">
+      🔥 PELUANG CUAN VIRAL
+    </div>
+    
+    <h3 class="amber-modal-title" style="margin-bottom:3px;font-size:16px;">Ajak &amp; Promosikan LebahCuan! 🚀</h3>
+    <p class="amber-modal-body" style="margin-bottom:12px;font-size:10.5px;">
+      Pilih cara promosi dan panen saldo tarik tunai instan ke dompetmu:
+    </p>
+
+    <!-- Kartu 1: Event Threads -->
+    <div class="promo-hub-card-item">
+      <div class="phc-header">
+        <span class="phc-tag phc-tag--threads"><i class="ph-bold ph-threads-logo"></i> EVENT THREADS</span>
+        <span class="phc-reward">+Rp 75.000 &amp; VIP</span>
+      </div>
+      <div class="phc-title">Posting Cerita Cuan di Threads</div>
+      <div class="phc-desc">
+        Raih <strong>Rp 25.000</strong> di Langkah 1 &amp; raih <strong>Rp 50.000 + Jalur Khusus Admin</strong> jika postinganmu tembus 5K views!
+      </div>
+      <div class="phc-actions">
+        <a href="/threads" class="btn-phc-action btn-phc-action--primary">
+          <i class="ph-bold ph-threads-logo"></i>
+          <span>Ikuti Event Threads</span>
+          <i class="ph-bold ph-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Kartu 2: Bagikan Link Referral -->
+    <div class="promo-hub-card-item">
+      <div class="phc-header">
+        <span class="phc-tag phc-tag--referral"><i class="ph-fill ph-users-three"></i> UNDANG TEMAN</span>
+        <span class="phc-reward">Komisi Pasif</span>
+      </div>
+      <div class="phc-title">Sebar Link &amp; Kode Referral</div>
+      <div class="phc-desc">
+        Ajak teman daftar untuk raih bonus komisi saat teman nonton video.
+      </div>
+      
+      <!-- Template Caption Box -->
+      <div class="phc-caption-box">
+        🐝 Mau saldo gratis tiap hari? Cobain LebahCuan! Nonton video dibayar uang tunai &amp; bisa ternak lebah otomatis. Cuan siap ditarik tiap hari!
+        <div style="margin-top:4px;font-weight:900;color:#92400e;">
+          Kode Reff: <span style="font-family:monospace;letter-spacing:0.5px;"><?= htmlspecialchars($ref_code) ?></span>
+        </div>
+      </div>
+
+      <div class="phc-actions">
+        <button type="button" class="btn-phc-action btn-phc-action--copy" onclick="copyPromoFullCaption('<?= htmlspecialchars($ref_url) ?>', '<?= htmlspecialchars($ref_code) ?>')">
+          <i class="ph-bold ph-copy"></i>
+          <span>Salin Teks</span>
+        </button>
+        <button type="button" class="btn-phc-action btn-phc-action--share" onclick="shareRefLink('<?= htmlspecialchars($ref_url) ?>', '<?= htmlspecialchars($ref_code) ?>')">
+          <i class="ph-bold ph-share-network"></i>
+          <span>Share WA</span>
+        </button>
+        <a href="/referral" class="btn-phc-action btn-phc-action--primary" style="flex:0.75;">
+          <i class="ph-bold ph-users-three"></i>
+          <span>Detail</span>
+        </a>
+      </div>
+    </div>
+
+    <button type="button" onclick="closePromoHubModal()" class="btn-modal-dismiss" style="margin-top:4px;">Nanti Saja</button>
+  </div>
+</div>
+
 <!-- Toast Container for Copy / Share feedback -->
 <div id="cuan-toast"></div>
 
@@ -1717,6 +2325,50 @@ function showCuanToast(msg) {
   toastTimer = setTimeout(() => {
     t.classList.remove('show');
   }, 2600);
+}
+
+/* ══════════════════════════════════════════════════════════
+   PROMO HUB MODAL CONTROLLER & COPY FUNCTIONS
+   ══════════════════════════════════════════════════════════ */
+function openPromoHubModal() {
+  const m = document.getElementById('promo-hub-modal');
+  if (!m) return;
+  m.style.display = 'flex';
+  setTimeout(() => {
+    const b = m.querySelector('.amber-modal-box');
+    if (b) { b.style.transform = 'scale(1)'; b.style.opacity = '1'; }
+  }, 30);
+}
+
+function closePromoHubModal() {
+  const m = document.getElementById('promo-hub-modal');
+  if (m) {
+    const b = m.querySelector('.amber-modal-box');
+    if (b) { b.style.transform = 'scale(0.85)'; b.style.opacity = '0'; }
+    setTimeout(() => { m.style.display = 'none'; }, 250);
+  }
+  try {
+    sessionStorage.setItem('promo_hub_dismissed', '1');
+  } catch(e) {}
+
+  // Lanjutkan rantai ke popup check-in jika belum absen
+  setTimeout(triggerCheckinPopupIfEligible, 350);
+}
+
+function copyPromoFullCaption(url, code) {
+  if (!code || code === '-') {
+    showCuanToast('<i class="ph-bold ph-warning-circle"></i> Silakan masuk akun untuk menyalin teks promosi!');
+    return;
+  }
+  const caption = "🐝 Mau saldo gratis tiap hari sambil santai? Cobain LebahCuan! Nonton video berhadiah uang tunai & ternak lebah madu otomatis. Cuan siap ditarik ke DANA/Gopay/OVO/Bank setiap hari!\n\nDaftar sekarang lewat link ini:\n" + url + "\n(Gunakan Kode Referralku: " + code + ")";
+  
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(caption).then(() => {
+      showCuanToast('<i class="ph-bold ph-check"></i> Teks promosi disalin! Siap dibagikan.');
+    }).catch(() => fallbackCopy(caption));
+  } else {
+    fallbackCopy(caption);
+  }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1797,8 +2449,56 @@ function closeCustomPopup() {
     localStorage.setItem('lebah_popup_seen', JSON.stringify({ ts: Date.now() }));
   } catch (e) {}
 
-  // Pemicu rantai: Munculkan popup check-in setelah popup pertama ditutup
+  // Pemicu rantai: Munculkan popup promo hub atau check-in setelah popup pengumuman ditutup
+  setTimeout(() => {
+    const promoDismissed = sessionStorage.getItem('promo_hub_dismissed') === '1';
+    if (!promoDismissed) {
+      openPromoHubModal();
+      return;
+    }
+    if (typeof triggerThreadsPopupIfEligible === 'function' && triggerThreadsPopupIfEligible()) {
+      return;
+    }
+    triggerCheckinPopupIfEligible();
+  }, 350);
+}
+
+function openThreadsPromoModal() {
+  const m = document.getElementById('threads-promo-modal');
+  if (!m) return;
+  m.style.display = 'flex';
+  setTimeout(() => {
+    const b = m.querySelector('.amber-modal-box');
+    if (b) { b.style.transform = 'scale(1)'; b.style.opacity = '1'; }
+  }, 40);
+}
+
+function closeThreadsPromoModal() {
+  const m = document.getElementById('threads-promo-modal');
+  if (m) {
+    const b = m.querySelector('.amber-modal-box');
+    if (b) { b.style.transform = 'scale(0.85)'; b.style.opacity = '0'; }
+    setTimeout(() => { m.style.display = 'none'; }, 260);
+  }
+  try {
+    sessionStorage.setItem('threads_promo_modal_closed', '1');
+  } catch(e) {}
+
+  // Lanjutkan rantai ke popup check-in jika belum absen
   setTimeout(triggerCheckinPopupIfEligible, 350);
+}
+
+function triggerThreadsPopupIfEligible() {
+  if (window.__IS_GUEST__) return false;
+  if (sessionStorage.getItem('threads_promo_modal_closed') === '1') return false;
+  const m = document.getElementById('threads-promo-modal');
+  if (!m) return false;
+  m.style.display = 'flex';
+  setTimeout(() => {
+    const b = m.querySelector('.amber-modal-box');
+    if (b) { b.style.transform = 'scale(1)'; b.style.opacity = '1'; }
+  }, 40);
+  return true;
 }
 
 function triggerCheckinPopupIfEligible() {
@@ -1901,7 +2601,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (showCustom && customPopupEl) {
       setTimeout(openCustomPopup, <?= $popup_delay ?>);
     } else {
-      setTimeout(triggerCheckinPopupIfEligible, 600);
+      const promoDismissed = sessionStorage.getItem('promo_hub_dismissed') === '1';
+      if (!promoDismissed) {
+        setTimeout(openPromoHubModal, 900);
+      } else {
+        setTimeout(triggerCheckinPopupIfEligible, 600);
+      }
     }
 
     // Auto-prompt modal tour jika belum selesai kedua tour-nya (atau baru selesai 1)
