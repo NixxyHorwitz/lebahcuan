@@ -9,6 +9,76 @@ if (!staff_can('surveys') && !staff_can('analytics') && !staff_can('users')) {
 $flash = '';
 $flashType = '';
 
+// Handle Takeback Response (Batalkan Survei & Tarik Hadiah Saldo)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['takeback_id'])) {
+    $tbId = (int)$_POST['takeback_id'];
+    $tbReason = trim((string)($_POST['takeback_reason'] ?? ''));
+    if ($tbReason === '') {
+        $tbReason = 'Jawaban survei tidak valid atau diisi asal-asalan.';
+    }
+
+    if ($tbId > 0) {
+        $pdo->beginTransaction();
+        try {
+            $sStmt = $pdo->prepare("SELECT * FROM user_surveys WHERE id = ? FOR UPDATE");
+            $sStmt->execute([$tbId]);
+            $surveyItem = $sStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$surveyItem) {
+                $pdo->rollBack();
+                $flash = "Data survei #{$tbId} tidak ditemukan.";
+                $flashType = "danger";
+            } elseif (($surveyItem['status'] ?? 'completed') === 'revoked') {
+                $pdo->rollBack();
+                $flash = "Survei #{$tbId} sudah pernah di-takeback sebelumnya.";
+                $flashType = "warning";
+            } else {
+                $userId = (int)$surveyItem['user_id'];
+                $rewardAmount = (float)$surveyItem['reward_amount'];
+
+                // 1. Potong Saldo Tarik (balance_wd) & total_earned pengguna
+                $updUser = $pdo->prepare("
+                    UPDATE users 
+                    SET balance_wd = GREATEST(0, balance_wd - ?),
+                        total_earned = GREATEST(0, total_earned - ?)
+                    WHERE id = ?
+                ");
+                $updUser->execute([$rewardAmount, $rewardAmount, $userId]);
+
+                // 2. Tandai status survei sebagai 'revoked'
+                $updSurvey = $pdo->prepare("
+                    UPDATE user_surveys 
+                    SET status = 'revoked',
+                        revoked_at = NOW(),
+                        revoke_reason = ?
+                    WHERE id = ?
+                ");
+                $updSurvey->execute([$tbReason, $tbId]);
+
+                // 3. Kirim notifikasi sistem ke user
+                $notifTitle = "Saldo Survei Ditarik (Takeback) ⚠️";
+                $notifMsg = "Hadiah survei sebesar Rp " . number_format($rewardAmount, 0, ',', '.') . " telah ditarik kembali oleh Admin. Alasan: " . $tbReason;
+                $insNotif = $pdo->prepare("
+                    INSERT INTO notifications 
+                    (title, message, type, icon, target_type, target_user_ids, action_url, action_text, created_at)
+                    VALUES (?, ?, 'alert', '⚠️', 'single', ?, '/survey', 'Lihat Status', NOW())
+                ");
+                $insNotif->execute([$notifTitle, $notifMsg, (string)$userId]);
+
+                $pdo->commit();
+                $flash = "Berhasil! Survei #{$tbId} dibatalkan dan saldo reward Rp " . number_format($rewardAmount, 0, ',', '.') . " berhasil ditarik (Takeback) dari akun pengguna.";
+                $flashType = "success";
+            }
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            $flash = "Gagal memproses Takeback: " . $e->getMessage();
+            $flashType = "danger";
+        }
+    }
+}
+
 // Handle Delete Response (Opsional)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
     $delId = (int)$_POST['delete_id'];
@@ -25,7 +95,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename=laporan_survei_lebahcuan_' . date('Ymd_His') . '.csv');
     $output = fopen('php://output', 'w');
-    fputcsv($output, ['ID', 'Waktu Submit (WIB)', 'User ID', 'Username', 'Email', 'WhatsApp', 'Sumber Info', 'Rating Kepuasan (1-5)', 'Pengalaman Pengguna', 'Pesan / Keluhan', 'Hadiah Saldo (Rp)', 'IP Address']);
+    fputcsv($output, ['ID', 'Waktu Submit (WIB)', 'User ID', 'Username', 'Email', 'WhatsApp', 'Sumber Info', 'Rating Kepuasan (1-5)', 'Pengalaman Pengguna', 'Pesan / Keluhan', 'Hadiah Saldo (Rp)', 'Status Survei', 'Waktu Takeback', 'Alasan Takeback', 'IP Address']);
 
     $qExp = $pdo->query("
         SELECT s.*, u.username, u.email, u.whatsapp 
@@ -46,6 +116,9 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
             $r['experience'],
             $r['feedback_message'],
             $r['reward_amount'],
+            $r['status'] ?? 'completed',
+            $r['revoked_at'] ?? '-',
+            $r['revoke_reason'] ?? '-',
             $r['ip_address'] ?? '-'
         ]);
     }
@@ -54,11 +127,13 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 }
 
 // ── Ringkasan Statistik ──
-$totalRespondents = (int)$pdo->query("SELECT COUNT(*) FROM user_surveys")->fetchColumn();
-$totalRewards     = (float)$pdo->query("SELECT COALESCE(SUM(reward_amount), 0) FROM user_surveys")->fetchColumn();
-$avgRating        = (float)$pdo->query("SELECT COALESCE(AVG(satisfaction_rating), 0) FROM user_surveys")->fetchColumn();
-$positiveCount    = (int)$pdo->query("SELECT COUNT(*) FROM user_surveys WHERE satisfaction_rating >= 4")->fetchColumn();
-$csatPct          = $totalRespondents > 0 ? round(($positiveCount / $totalRespondents) * 100, 1) : 0;
+$totalRespondents       = (int)$pdo->query("SELECT COUNT(*) FROM user_surveys")->fetchColumn();
+$totalActiveRespondents = (int)$pdo->query("SELECT COUNT(*) FROM user_surveys WHERE status = 'completed'")->fetchColumn();
+$totalRevoked           = (int)$pdo->query("SELECT COUNT(*) FROM user_surveys WHERE status = 'revoked'")->fetchColumn();
+$totalRewards           = (float)$pdo->query("SELECT COALESCE(SUM(reward_amount), 0) FROM user_surveys WHERE status = 'completed'")->fetchColumn();
+$avgRating              = (float)$pdo->query("SELECT COALESCE(AVG(satisfaction_rating), 0) FROM user_surveys")->fetchColumn();
+$positiveCount          = (int)$pdo->query("SELECT COUNT(*) FROM user_surveys WHERE satisfaction_rating >= 4")->fetchColumn();
+$csatPct                = $totalRespondents > 0 ? round(($positiveCount / $totalRespondents) * 100, 1) : 0;
 
 // Distribusi Rating (1 - 5)
 $ratingCounts = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
@@ -153,7 +228,9 @@ require_once __DIR__ . '/partials/header.php';
           </div>
         </div>
         <div class="c-stat__val text-info"><?= number_format($totalRespondents) ?></div>
-        <div class="text-secondary small mt-1">Pengguna unik mengisi survei</div>
+        <div class="text-secondary small mt-1">
+          <?= number_format($totalActiveRespondents) ?> aktif<?php if ($totalRevoked > 0): ?> &bull; <span class="text-danger fw-bold"><?= $totalRevoked ?> di-takeback</span><?php endif; ?>
+        </div>
       </div>
     </div>
 
@@ -167,7 +244,9 @@ require_once __DIR__ . '/partials/header.php';
           </div>
         </div>
         <div class="c-stat__val text-warning">Rp <?= number_format($totalRewards, 0, ',', '.') ?></div>
-        <div class="text-secondary small mt-1">@Rp 15.000 saldo tarik terkredit</div>
+        <div class="text-secondary small mt-1">
+          @Rp 15.000 saldo aktif<?php if ($totalRevoked > 0): ?> (<?= $totalRevoked ?> dibatalkan)<?php endif; ?>
+        </div>
       </div>
     </div>
 
@@ -334,8 +413,8 @@ require_once __DIR__ . '/partials/header.php';
               <th>Rating Kepuasan</th>
               <th>Pengalaman Web</th>
               <th>Pesan / Keluhan</th>
-              <th>Reward</th>
-              <th style="width:80px;text-align:center;">Aksi</th>
+              <th style="width:130px;">Reward &amp; Status</th>
+              <th style="width:140px;text-align:center;">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -397,14 +476,31 @@ require_once __DIR__ . '/partials/header.php';
                     </div>
                   </td>
                   <td>
-                    <span class="badge bg-success text-white fw-bold" style="font-size:11px;">
-                      <i class="ph-bold ph-check"></i> +Rp <?= number_format((float)$s['reward_amount'], 0, ',', '.') ?>
-                    </span>
+                    <?php if (($s['status'] ?? 'completed') === 'revoked'): ?>
+                      <span class="badge bg-danger text-white fw-bold d-inline-flex align-items-center gap-1" style="font-size:11px;" title="<?= htmlspecialchars((string)($s['revoke_reason'] ?? 'Dibatalkan oleh Admin')) ?>">
+                        <i class="ph-bold ph-arrow-u-up-left"></i> Takeback
+                      </span>
+                      <?php if (!empty($s['revoked_at'])): ?>
+                        <div class="text-secondary" style="font-size:10px;"><?= date('d/m H:i', strtotime($s['revoked_at'])) ?></div>
+                      <?php endif; ?>
+                    <?php else: ?>
+                      <span class="badge bg-success text-white fw-bold d-inline-flex align-items-center gap-1" style="font-size:11px;">
+                        <i class="ph-bold ph-check"></i> +Rp <?= number_format((float)$s['reward_amount'], 0, ',', '.') ?>
+                      </span>
+                      <div class="text-success" style="font-size:10px;font-weight:700;">Terkredit</div>
+                    <?php endif; ?>
                   </td>
                   <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-warning" style="border-radius:8px;padding:4px 8px;font-size:11px;" onclick='showSurveyDetail(<?= json_encode($s, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)' title="Lihat Detail Jawaban">
-                      <i class="ph-bold ph-eye"></i> Detail
-                    </button>
+                    <div class="d-flex align-items-center justify-content-center gap-1">
+                      <button type="button" class="btn btn-sm btn-outline-warning" style="border-radius:8px;padding:4px 8px;font-size:11px;" onclick='showSurveyDetail(<?= json_encode($s, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)' title="Lihat Detail Jawaban">
+                        <i class="ph-bold ph-eye"></i> Detail
+                      </button>
+                      <?php if (($s['status'] ?? 'completed') !== 'revoked'): ?>
+                        <button type="button" class="btn btn-sm btn-outline-danger" style="border-radius:8px;padding:4px 8px;font-size:11px;" onclick='openTakebackModal(<?= json_encode($s, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)' title="Batalkan survei & tarik kembali saldo reward Rp 15.000">
+                          <i class="ph-bold ph-arrow-u-up-left"></i> Takeback
+                        </button>
+                      <?php endif; ?>
+                    </div>
                   </td>
                 </tr>
               <?php endforeach; ?>
@@ -443,9 +539,13 @@ require_once __DIR__ . '/partials/header.php';
             <span class="text-secondary small" id="m-time">-</span>
           </div>
           <div class="d-flex justify-content-between align-items-center">
-            <span class="text-secondary small">Hadiah Dikreditkan:</span>
-            <span class="badge bg-success" id="m-reward">Rp 15.000 (Saldo Tarik)</span>
+            <span class="text-secondary small">Status &amp; Hadiah:</span>
+            <span id="m-reward">-</span>
           </div>
+        </div>
+
+        <div id="m-revoked-box" class="p-2 rounded mb-3 bg-danger-subtle border border-danger text-danger small fw-bold d-none">
+          <i class="ph-bold ph-warning-octagon"></i> <span id="m-revoked-text">-</span>
         </div>
 
         <div class="mb-3">
@@ -482,14 +582,72 @@ require_once __DIR__ . '/partials/header.php';
 
       </div>
       <div class="modal-footer border-secondary py-2 justify-content-between">
-        <form method="POST" id="formDeleteSurvey" onsubmit="return confirm('Yakin ingin menghapus catatan survei ini? (Data saldo user tidak akan terhapus)');">
-          <input type="hidden" name="delete_id" id="m-delete-id" value="">
-          <button type="submit" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1">
-            <i class="ph-bold ph-trash"></i> Hapus Respon
-          </button>
-        </form>
+        <div class="d-flex gap-2">
+          <form method="POST" id="formDeleteSurvey" onsubmit="return confirm('Yakin ingin menghapus catatan survei ini? (Data saldo user tidak akan terhapus)');">
+            <input type="hidden" name="delete_id" id="m-delete-id" value="">
+            <button type="submit" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" title="Hapus catatan survei">
+              <i class="ph-bold ph-trash"></i> Hapus
+            </button>
+          </form>
+          <div id="m-takeback-btn-container"></div>
+        </div>
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL TAKEBACK REWARD SURVEI ── -->
+<div class="modal fade" id="takebackModal" tabindex="-1" aria-labelledby="takebackModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:#111422;border:1.5px solid #ef4444;border-radius:18px;color:#f8fafc;">
+      <form method="POST" id="formTakebackSurvey">
+        <input type="hidden" name="takeback_id" id="tb-id" value="">
+        <div class="modal-header border-secondary py-3" style="background:rgba(239, 68, 68, 0.1);">
+          <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2" id="takebackModalLabel" style="font-size:15px;">
+            <i class="ph-bold ph-warning-octagon"></i> Batalkan Survei &amp; Tarik Saldo (Takeback)
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="alert alert-danger d-flex align-items-start gap-2 mb-3" style="font-size:12.5px;border-radius:12px;background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.4);color:#fca5a5;">
+            <i class="ph-bold ph-warning fs-5 flex-shrink-0 mt-1"></i>
+            <div>
+              <strong>Tindakan Takeback:</strong>
+              Saldo Tarik pengguna sebesar <strong>Rp 15.000</strong> akan otomatis ditarik kembali/dikurangkan dari akun pengguna, dan status survei ini dibatalkan.
+            </div>
+          </div>
+
+          <div class="p-3 rounded mb-3" style="background:#090b14;border:1px solid #1d2238;font-size:13px;">
+            <div class="d-flex justify-content-between mb-1">
+              <span class="text-secondary">Pengguna:</span>
+              <span class="text-white fw-bold" id="tb-username">-</span>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span class="text-secondary">Jawaban Pengalaman:</span>
+              <span class="text-light text-truncate" style="max-width:200px;" id="tb-exp">-</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-secondary">Reward yang Ditarik:</span>
+              <span class="badge bg-danger">Rp 15.000 (Saldo Tarik)</span>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-secondary small fw-bold">Alasan Pembatalan / Takeback:</label>
+            <textarea name="takeback_reason" id="tb-reason" class="form-control bg-black border-secondary text-white" rows="3" placeholder="Contoh: Jawaban survei asal-asalan, karakter acak, atau spam..." required>Jawaban survei tidak valid atau diisi asal-asalan.</textarea>
+            <div class="text-secondary" style="font-size:11px;margin-top:4px;">
+              Alasan ini akan dikirimkan ke notifikasi pengguna dan tampil di dashboard akunnya.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary py-2 justify-content-between">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+          <button type="submit" class="btn btn-danger btn-sm fw-bold d-flex align-items-center gap-1">
+            <i class="ph-bold ph-arrow-u-up-left"></i> Konfirmasi Tarik Saldo (Takeback)
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -514,7 +672,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+let currentDetailData = null;
+
 function showSurveyDetail(data) {
+  currentDetailData = data;
   const modalEl = document.getElementById('surveyDetailModal');
   const modal   = new bootstrap.Modal(modalEl);
 
@@ -536,6 +697,31 @@ function showSurveyDetail(data) {
   document.getElementById('m-meta').textContent       = 'IP Address: ' + (data.ip_address || '-') + ' | User Agent: ' + (data.user_agent || '-');
   document.getElementById('m-delete-id').value        = data.id;
 
+  const rewardStatusEl = document.getElementById('m-reward');
+  const revokedBox     = document.getElementById('m-revoked-box');
+  const tbBtnContainer = document.getElementById('m-takeback-btn-container');
+
+  if (data.status === 'revoked') {
+    rewardStatusEl.innerHTML = '<span class="badge bg-danger"><i class="ph-bold ph-arrow-u-up-left"></i> Dibatalkan (Takeback)</span>';
+    revokedBox.classList.remove('d-none');
+    document.getElementById('m-revoked-text').textContent = 'Dibatalkan pada ' + (data.revoked_at || '-') + ' WIB. Alasan: ' + (data.revoke_reason || '-');
+    tbBtnContainer.innerHTML = '';
+  } else {
+    rewardStatusEl.innerHTML = '<span class="badge bg-success"><i class="ph-bold ph-check"></i> Rp 15.000 (Terkredit)</span>';
+    revokedBox.classList.add('d-none');
+    tbBtnContainer.innerHTML = `<button type="button" class="btn btn-danger btn-sm d-flex align-items-center gap-1" onclick="bootstrap.Modal.getInstance(document.getElementById('surveyDetailModal')).hide(); openTakebackModal(currentDetailData);"><i class="ph-bold ph-arrow-u-up-left"></i> Takeback Saldo</button>`;
+  }
+
+  modal.show();
+}
+
+function openTakebackModal(data) {
+  document.getElementById('tb-id').value             = data.id;
+  document.getElementById('tb-username').textContent = data.username || 'User ID #' + data.user_id;
+  document.getElementById('tb-exp').textContent      = data.experience || '-';
+  
+  const modalEl = document.getElementById('takebackModal');
+  const modal   = new bootstrap.Modal(modalEl);
   modal.show();
 }
 </script>

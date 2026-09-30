@@ -526,82 +526,169 @@ body {
   <?php endif; ?>
 
   <?php if ($existingSurvey): ?>
-    <!-- ═══════════════════════════════════════════════════ -->
-    <!-- ── TAMPILAN SUDAH MENGISI SURVEI (COMPLETED) ── -->
-    <!-- ═══════════════════════════════════════════════════ -->
-    <div class="survey-success-card">
-      <div class="survey-success-icon">
-        <i class="ph-bold ph-check"></i>
-      </div>
-      <h2 style="font-size:20px;font-weight:900;color:#065f46;margin:0 0 6px;">Survei Selesai! 🎉</h2>
-      <p style="font-size:13px;color:#047857;margin:0 0 14px;font-weight:600;">
-        Terima kasih atas partisipasi dan masukanmu. Hadiah <strong>Rp <?= number_format((float)$existingSurvey['reward_amount'], 0, ',', '.') ?></strong> Saldo Tarik telah berhasil ditambahkan ke saldo akun kamu.
-      </p>
-
-      <div style="background:#ecfdf5;border:1.5px solid #a7f3d0;padding:12px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:10px;">
-        <i class="ph-fill ph-wallet" style="font-size:22px;color:#059669;"></i>
-        <div style="text-align:left;">
-          <div style="font-size:11px;color:#047857;font-weight:700;">Saldo Tarik Kamu Sekarang:</div>
-          <div style="font-size:16px;font-weight:900;color:#065f46;">Rp <?= number_format((float)($user['balance_wd'] ?? 0), 0, ',', '.') ?></div>
+    <?php if (($existingSurvey['status'] ?? 'completed') === 'revoked'): ?>
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!-- ── TAMPILAN SURVEI DIBATALKAN / DITARIK KEMBALI ── -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div class="survey-success-card" style="border-color:#fecdd3;background:#fff1f2;">
+        <div class="survey-success-icon" style="background:#ffe4e6;color:#e11d48;">
+          <i class="ph-bold ph-warning-octagon"></i>
         </div>
-      </div>
+        <h2 style="font-size:20px;font-weight:900;color:#9f1239;margin:0 0 6px;">Survei Dibatalkan (Takeback)</h2>
+        <p style="font-size:13px;color:#be123c;margin:0 0 14px;font-weight:600;line-height:1.5;">
+          Respon survei Anda telah <strong>dibatalkan</strong> dan hadiah <strong>Rp <?= number_format((float)$existingSurvey['reward_amount'], 0, ',', '.') ?></strong> Saldo Tarik telah ditarik kembali oleh Admin karena jawaban tidak memenuhi kriteria atau terindikasi diisi asal-asalan.
+        </p>
 
-      <!-- Ringkasan Jawaban User -->
-      <div class="survey-summary-box">
-        <div style="font-weight:800;color:#334155;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:6px;">
-          <i class="ph-bold ph-clipboard-text text-warning"></i> Jawaban yang Kamu Kirimkan:
-        </div>
+        <?php if (!empty($existingSurvey['revoke_reason'])): ?>
+          <div style="background:#fff;border:1.5px dashed #f43f5e;border-radius:12px;padding:12px 14px;margin-bottom:14px;text-align:left;">
+            <div style="font-size:11px;font-weight:800;color:#e11d48;text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:4px;">
+              <i class="ph-bold ph-info"></i> Alasan Penarikan Saldo:
+            </div>
+            <div style="font-size:13px;color:#334155;font-weight:600;">
+              <?= htmlspecialchars((string)$existingSurvey['revoke_reason']) ?>
+            </div>
+          </div>
+        <?php endif; ?>
 
-        <div class="survey-summary-row">
-          <span style="color:#64748b;">Sumber Info:</span>
-          <span style="font-weight:700;color:#0f172a;text-align:right;"><?= htmlspecialchars((string)$existingSurvey['source_info']) ?></span>
-        </div>
-
-        <div class="survey-summary-row">
-          <span style="color:#64748b;">Rating Kepuasan:</span>
-          <span style="font-weight:800;color:#b45309;">
-            <?php
-              $r = (int)$existingSurvey['satisfaction_rating'];
-              $emojiMap = [
-                1 => '😡 Sangat Buruk (1/5)',
-                2 => '🙁 Kurang Puas (2/5)',
-                3 => '😐 Biasa Saja (3/5)',
-                4 => '🙂 Puas (4/5)',
-                5 => '🤩 Sangat Puas (5/5)'
-              ];
-              echo $emojiMap[$r] ?? "{$r}/5";
-            ?>
-          </span>
-        </div>
-
-        <div style="margin-top:8px;">
-          <div style="color:#64748b;margin-bottom:2px;font-weight:700;">Pengalamanmu:</div>
-          <div style="background:#fff;border:1px solid #e2e8f0;padding:8px 10px;border-radius:8px;color:#334155;font-style:italic;">
-            "<?= htmlspecialchars((string)$existingSurvey['experience']) ?>"
+        <div style="background:#fff;border:1.5px solid #fecaca;padding:12px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:10px;">
+          <i class="ph-fill ph-wallet" style="font-size:22px;color:#dc2626;"></i>
+          <div style="text-align:left;">
+            <div style="font-size:11px;color:#991b1b;font-weight:700;">Saldo Tarik Kamu Sekarang:</div>
+            <div style="font-size:16px;font-weight:900;color:#7f1d1d;">Rp <?= number_format((float)($user['balance_wd'] ?? 0), 0, ',', '.') ?></div>
           </div>
         </div>
 
-        <div style="margin-top:10px;">
-          <div style="color:#64748b;margin-bottom:2px;font-weight:700;">Pesan / Masukan:</div>
-          <div style="background:#fff;border:1px solid #e2e8f0;padding:8px 10px;border-radius:8px;color:#334155;font-style:italic;">
-            "<?= htmlspecialchars((string)$existingSurvey['feedback_message']) ?>"
+        <!-- Ringkasan Jawaban User -->
+        <div class="survey-summary-box" style="margin-top:16px;text-align:left;">
+          <div style="font-weight:800;color:#334155;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:6px;">
+            <i class="ph-bold ph-clipboard-text text-danger"></i> Catatan Jawaban yang Pernah Dikirim:
+          </div>
+
+          <div class="survey-summary-row">
+            <span style="color:#64748b;">Sumber Info:</span>
+            <span style="font-weight:700;color:#0f172a;text-align:right;"><?= htmlspecialchars((string)$existingSurvey['source_info']) ?></span>
+          </div>
+
+          <div class="survey-summary-row">
+            <span style="color:#64748b;">Rating Kepuasan:</span>
+            <span style="font-weight:800;color:#b45309;">
+              <?php
+                $r = (int)$existingSurvey['satisfaction_rating'];
+                $emojiMap = [
+                  1 => '😡 Sangat Buruk (1/5)',
+                  2 => '🙁 Kurang Puas (2/5)',
+                  3 => '😐 Biasa Saja (3/5)',
+                  4 => '🙂 Puas (4/5)',
+                  5 => '🤩 Sangat Puas (5/5)'
+                ];
+                echo $emojiMap[$r] ?? "{$r}/5";
+              ?>
+            </span>
+          </div>
+
+          <div style="margin-top:8px;">
+            <div style="color:#64748b;margin-bottom:2px;font-weight:700;">Pengalamanmu:</div>
+            <div style="background:#fff;border:1px solid #e2e8f0;padding:8px 10px;border-radius:8px;color:#334155;font-style:italic;">
+              "<?= htmlspecialchars((string)$existingSurvey['experience']) ?>"
+            </div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <div style="color:#64748b;margin-bottom:2px;font-weight:700;">Pesan / Masukan:</div>
+            <div style="background:#fff;border:1px solid #e2e8f0;padding:8px 10px;border-radius:8px;color:#334155;font-style:italic;">
+              "<?= htmlspecialchars((string)$existingSurvey['feedback_message']) ?>"
+            </div>
+          </div>
+
+          <div style="margin-top:10px;font-size:11px;color:#94a3b8;text-align:right;">
+            Dibatalkan pada: <?= !empty($existingSurvey['revoked_at']) ? date('d M Y, H:i', strtotime($existingSurvey['revoked_at'])) . ' WIB' : '-' ?>
           </div>
         </div>
 
-        <div style="margin-top:10px;font-size:11px;color:#94a3b8;text-align:right;">
-          Dikirim pada: <?= date('d M Y, H:i', strtotime($existingSurvey['created_at'])) ?> WIB
+        <div style="margin-top:18px;">
+          <a href="/home" class="btn btn-outline-secondary fw-bold w-100 d-flex align-items-center justify-content-center gap-1" style="border-radius:12px;padding:12px;font-size:13px;">
+            <i class="ph-bold ph-house"></i> Kembali ke Beranda
+          </a>
         </div>
       </div>
+    <?php else: ?>
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!-- ── TAMPILAN SUDAH MENGISI SURVEI (COMPLETED) ── -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div class="survey-success-card">
+        <div class="survey-success-icon">
+          <i class="ph-bold ph-check"></i>
+        </div>
+        <h2 style="font-size:20px;font-weight:900;color:#065f46;margin:0 0 6px;">Survei Selesai! 🎉</h2>
+        <p style="font-size:13px;color:#047857;margin:0 0 14px;font-weight:600;">
+          Terima kasih atas partisipasi dan masukanmu. Hadiah <strong>Rp <?= number_format((float)$existingSurvey['reward_amount'], 0, ',', '.') ?></strong> Saldo Tarik telah berhasil ditambahkan ke saldo akun kamu.
+        </p>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;">
-        <a href="/withdraw" class="btn btn-warning fw-bold d-flex align-items-center justify-content-center gap-1" style="border-radius:12px;padding:12px;font-size:13px;color:#78350f;">
-          <i class="ph-bold ph-hand-coins"></i> Tarik Saldo
-        </a>
-        <a href="/home" class="btn btn-outline-secondary fw-bold d-flex align-items-center justify-content-center gap-1" style="border-radius:12px;padding:12px;font-size:13px;">
-          <i class="ph-bold ph-house"></i> Ke Beranda
-        </a>
+        <div style="background:#ecfdf5;border:1.5px solid #a7f3d0;padding:12px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:10px;">
+          <i class="ph-fill ph-wallet" style="font-size:22px;color:#059669;"></i>
+          <div style="text-align:left;">
+            <div style="font-size:11px;color:#047857;font-weight:700;">Saldo Tarik Kamu Sekarang:</div>
+            <div style="font-size:16px;font-weight:900;color:#065f46;">Rp <?= number_format((float)($user['balance_wd'] ?? 0), 0, ',', '.') ?></div>
+          </div>
+        </div>
+
+        <!-- Ringkasan Jawaban User -->
+        <div class="survey-summary-box">
+          <div style="font-weight:800;color:#334155;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:6px;">
+            <i class="ph-bold ph-clipboard-text text-warning"></i> Jawaban yang Kamu Kirimkan:
+          </div>
+
+          <div class="survey-summary-row">
+            <span style="color:#64748b;">Sumber Info:</span>
+            <span style="font-weight:700;color:#0f172a;text-align:right;"><?= htmlspecialchars((string)$existingSurvey['source_info']) ?></span>
+          </div>
+
+          <div class="survey-summary-row">
+            <span style="color:#64748b;">Rating Kepuasan:</span>
+            <span style="font-weight:800;color:#b45309;">
+              <?php
+                $r = (int)$existingSurvey['satisfaction_rating'];
+                $emojiMap = [
+                  1 => '😡 Sangat Buruk (1/5)',
+                  2 => '🙁 Kurang Puas (2/5)',
+                  3 => '😐 Biasa Saja (3/5)',
+                  4 => '🙂 Puas (4/5)',
+                  5 => '🤩 Sangat Puas (5/5)'
+                ];
+                echo $emojiMap[$r] ?? "{$r}/5";
+              ?>
+            </span>
+          </div>
+
+          <div style="margin-top:8px;">
+            <div style="color:#64748b;margin-bottom:2px;font-weight:700;">Pengalamanmu:</div>
+            <div style="background:#fff;border:1px solid #e2e8f0;padding:8px 10px;border-radius:8px;color:#334155;font-style:italic;">
+              "<?= htmlspecialchars((string)$existingSurvey['experience']) ?>"
+            </div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <div style="color:#64748b;margin-bottom:2px;font-weight:700;">Pesan / Masukan:</div>
+            <div style="background:#fff;border:1px solid #e2e8f0;padding:8px 10px;border-radius:8px;color:#334155;font-style:italic;">
+              "<?= htmlspecialchars((string)$existingSurvey['feedback_message']) ?>"
+            </div>
+          </div>
+
+          <div style="margin-top:10px;font-size:11px;color:#94a3b8;text-align:right;">
+            Dikirim pada: <?= date('d M Y, H:i', strtotime($existingSurvey['created_at'])) ?> WIB
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;">
+          <a href="/withdraw" class="btn btn-warning fw-bold d-flex align-items-center justify-content-center gap-1" style="border-radius:12px;padding:12px;font-size:13px;color:#78350f;">
+            <i class="ph-bold ph-hand-coins"></i> Tarik Saldo
+          </a>
+          <a href="/home" class="btn btn-outline-secondary fw-bold d-flex align-items-center justify-content-center gap-1" style="border-radius:12px;padding:12px;font-size:13px;">
+            <i class="ph-bold ph-house"></i> Ke Beranda
+          </a>
+        </div>
       </div>
-    </div>
+    <?php endif; ?>
 
   <?php else: ?>
     <!-- ═══════════════════════════════════════════════════ -->
@@ -617,6 +704,17 @@ body {
       <p class="survey-hero__p">
         Jawab 2 pertanyaan dan berikan pesan/keluhanmu secara jujur. Setelah selesai, <strong>Rp 15.000 Saldo Tarik</strong> langsung dikreditkan ke akunmu!
       </p>
+    </div>
+
+    <!-- ANCAMAN & PERINGATAN SISTEM TAKEBACK -->
+    <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:16px;padding:14px 16px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start;box-shadow:0 4px 12px rgba(245,158,11,0.08);">
+      <div style="width:36px;height:36px;background:#fef3c7;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#d97706;font-size:20px;flex-shrink:0;">
+        <i class="ph-bold ph-warning"></i>
+      </div>
+      <div style="font-size:12.5px;color:#78350f;line-height:1.5;">
+        <strong style="color:#92400e;display:block;font-size:13px;margin-bottom:2px;">PERINGATAN PENTING &amp; KEBIJAKAN TAKEBACK SALDO:</strong>
+        Harap isi survei dengan <strong>sungguh-sungguh, jujur, dan kalimat yang jelas</strong>. Admin akan meninjau setiap jawaban yang masuk. Jika terbukti <strong>mengisi asal-asalan, mengetik karakter acak, atau spam</strong>, maka status survei akan dibatalkan dan <u><strong>Saldo Rp 15.000 akan ditarik kembali (Takeback)</strong></u> dari akunmu!
+      </div>
     </div>
 
     <form method="POST" id="surveyForm" onsubmit="return validateSurvey(event)">
@@ -683,10 +781,15 @@ body {
           <span class="survey-q-num">2</span> Bagaimana pengalamanmu dengan web ini?
         </div>
         <div class="survey-q-desc">
-          Ceritakan secara bebas tentang kemudahan penggunaan, fitur peternakan lebah, tontonan video, atau hal yang kamu sukai:
+          Ceritakan secara bebas pemikiran pribadimu tentang kemudahan web, peternakan lebah, tugas video, atau fitur yang kamu gunakan:
         </div>
 
-        <textarea name="experience" id="experience" class="survey-input survey-textarea" placeholder="Contoh: Website mudah dipahami, panen madu seru dan lancar, tugas video gampang diselesaikan..." required></textarea>
+        <textarea name="experience" id="experience" class="survey-input survey-textarea" placeholder="Tuliskan pengalaman pribadimu secara jujur di sini (gunakan kalimat sendiri, dilarang asal-asalan)..." required></textarea>
+        
+        <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;color:#b45309;font-weight:700;">
+          <i class="ph-bold ph-shield-warning" style="font-size:15px;color:#d97706;"></i>
+          <span>Peringatan: Saldo Rp 15.000 bisa diambil/ditarik kembali oleh Admin jika tidak mengisi dengan benar!</span>
+        </div>
       </div>
 
       <!-- ── RATING KEPUASAN (DENGAN EMOJI) ── -->
@@ -746,7 +849,20 @@ body {
           Tuliskan kritik, masukan fitur baru, atau kendala/keluhan yang kamu temui agar dapat kami perbaiki segera:
         </div>
 
-        <textarea name="feedback_message" id="feedback_message" class="survey-input survey-textarea" placeholder="Tuliskan keluhan atau saran terbaikmu di sini..." required></textarea>
+        <textarea name="feedback_message" id="feedback_message" class="survey-input survey-textarea" placeholder="Tuliskan kritik, saran, atau keluhan pribadimu di sini..." required></textarea>
+        
+        <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;color:#64748b;font-weight:600;">
+          <i class="ph-bold ph-lightbulb" style="font-size:15px;color:#f59e0b;"></i>
+          <span>Masukan, kritik, atau keluhan kamu sangat kami hargai untuk perbaikan web ke depan.</span>
+        </div>
+      </div>
+
+      <!-- KARTU PERNYATAAN / ANCAMAN SEBELUM SUBMIT -->
+      <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:14px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:flex-start;gap:10px;">
+        <i class="ph-bold ph-shield-warning" style="font-size:22px;color:#dc2626;flex-shrink:0;margin-top:1px;"></i>
+        <div style="font-size:12px;color:#991b1b;font-weight:700;line-height:1.45;">
+          Perhatian: Saya mengisi survei ini secara sadar dan jujur. Saya mengerti bahwa <strong>Saldo Rp 15.000 bisa diambil/ditarik kembali</strong> oleh Admin sewaktu-waktu jika jawaban terbukti asal-asalan, karakter acak, atau spam.
+        </div>
       </div>
 
       <!-- SUBMIT BUTTON -->
@@ -813,8 +929,8 @@ function validateSurvey(e) {
   }
 
   const exp = document.getElementById('experience').value.trim();
-  if (exp.length < 5) {
-    alert('Mohon ceritakan sedikit pengalamanmu di pertanyaan 2 (minimal 5 karakter).');
+  if (exp.length < 10) {
+    alert('Mohon ceritakan pengalamanmu dengan kalimat yang jelas (minimal 10 karakter). Ingat: dilarang mengisi asal-asalan, saldo Rp 15.000 bisa diambil lagi!');
     document.getElementById('experience').focus();
     e.preventDefault();
     return false;
@@ -827,8 +943,8 @@ function validateSurvey(e) {
   }
 
   const fb = document.getElementById('feedback_message').value.trim();
-  if (fb.length < 3) {
-    alert('Mohon tuliskan pesan atau keluhanmu di pertanyaan 4.');
+  if (fb.length < 5) {
+    alert('Mohon tuliskan pesan atau keluhanmu di pertanyaan 4 (minimal 5 karakter).');
     document.getElementById('feedback_message').focus();
     e.preventDefault();
     return false;
