@@ -522,9 +522,24 @@ body {
 .cuan-btn-action--dep {
   background: #38bdf8; color: #0c4a6e; box-shadow: 0 3px 0 #78350f;
 }
+.cuan-btn-action--history {
+  background: #f59e0b; color: #ffffff; box-shadow: 0 3px 0 #b45309;
+  border-color: #b45309; text-shadow: 0 1px 0 #92400e;
+}
 .cuan-btn-action--share {
   background: #fde047; color: #78350f; box-shadow: 0 3px 0 #78350f;
 }
+.cuan-card-history-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #ffffff; border: 2px solid #78350f;
+  border-radius: 20px; padding: 3px 9px; font-size: 10px; font-weight: 900;
+  color: #78350f; text-decoration: none; box-shadow: 0 2px 0 #78350f;
+  transition: transform 0.1s;
+}
+.cuan-card-history-link:active {
+  transform: translateY(1px); box-shadow: none;
+}
+
 
 /* ── CUAN TOAST NOTIFICATION ── */
 #cuan-toast {
@@ -1678,9 +1693,15 @@ body {
         <span class="cuan-card-brand-badge"><i class="ph-fill ph-lightning"></i> VIP CASH</span>
         <span>LEBAHCUAN RESMI</span>
       </div>
-      <div class="cuan-card-status-verified">
-        <span class="pulse-dot"></span>
-        <span>Siap Cair 24 Jam</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div class="cuan-card-status-verified">
+          <span class="pulse-dot"></span>
+          <span>Siap Cair 24 Jam</span>
+        </div>
+        <a href="/history" class="cuan-card-history-link" title="Buka Riwayat Keuangan Lengkap">
+          <i class="ph-bold ph-clock-counter-clockwise"></i>
+          <span>Riwayat</span>
+        </a>
       </div>
     </div>
 
@@ -1780,9 +1801,9 @@ body {
       <a href="/deposit" class="cuan-btn-action cuan-btn-action--dep">
         <i class="ph-bold ph-wallet"></i> Top Up
       </a>
-      <button type="button" onclick="shareRefLink('<?= htmlspecialchars($ref_url) ?>', '<?= htmlspecialchars($ref_code) ?>')" class="cuan-btn-action cuan-btn-action--share" style="cursor:pointer;">
-        <i class="ph-bold ph-share-network"></i> Bagikan
-      </button>
+      <a href="/history" class="cuan-btn-action cuan-btn-action--history" title="Riwayat Keuangan Lengkap">
+        <i class="ph-bold ph-clock-counter-clockwise"></i> Riwayat
+      </a>
     </div>
   </div>
 </div>
