@@ -41,6 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $wd->execute([$id]); $wd = $wd->fetch();
         if ($wd) {
             $pdo->prepare("UPDATE withdrawals SET status='approved',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$note, $id]);
+            
+            // Kirim notifikasi sukses ke user
+            $notifTitle = "Penarikan Berhasil Disetujui! 🎉";
+            $notifMsg   = "Penarikan sebesar " . format_rp((float)$wd['amount']) . " ke " . $wd['bank_name'] . " (" . $wd['account_number'] . ") telah berhasil disetujui & ditransfer.";
+            $pdo->prepare("INSERT INTO notifications (title, message, type, icon, target_type, target_user_ids, action_url, action_text, created_at) VALUES (?, ?, 'success', '💰', 'single', ?, '/withdraw', 'Lihat Status', NOW())")
+                ->execute([$notifTitle, $notifMsg, (string)$wd['user_id']]);
+
             $flash = "Withdraw #{$id} disetujui.";
         }
     }
@@ -48,9 +55,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $wd = $pdo->prepare("SELECT * FROM withdrawals WHERE id=? AND status='pending'");
         $wd->execute([$id]); $wd = $wd->fetch();
         if ($wd) {
+            $reasonNote = $note ?: 'Ditolak admin (Data rekening tidak sesuai)';
             // Refund balance
             $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$wd['amount'], $wd['user_id']]);
-            $pdo->prepare("UPDATE withdrawals SET status='rejected',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$note ?: 'Ditolak admin', $id]);
+            $pdo->prepare("UPDATE withdrawals SET status='rejected',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$reasonNote, $id]);
+            
+            // Kirim notifikasi penolakan ke user beserta alasannya
+            $notifTitle = "Penarikan Dana Ditolak ⚠️";
+            $notifMsg   = "Penarikan sebesar " . format_rp((float)$wd['amount']) . " ditolak dan saldo telah dikembalikan. Alasan: " . $reasonNote;
+            $pdo->prepare("INSERT INTO notifications (title, message, type, icon, target_type, target_user_ids, action_url, action_text, created_at) VALUES (?, ?, 'warning', '⚠️', 'single', ?, '/withdraw', 'Cek Detail', NOW())")
+                ->execute([$notifTitle, $notifMsg, (string)$wd['user_id']]);
+
             $flash = "Withdraw #{$id} ditolak dan saldo dikembalikan.";
         }
     }
@@ -58,7 +73,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $wd = $pdo->prepare("SELECT * FROM withdrawals WHERE id=? AND status='pending'");
         $wd->execute([$id]); $wd = $wd->fetch();
         if ($wd) {
-            $pdo->prepare("UPDATE withdrawals SET status='hold',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$note ?: 'Selesai tanpa refund', $id]);
+            $holdNote = $note ?: 'Peninjauan antrean audit keuangan';
+            $pdo->prepare("UPDATE withdrawals SET status='hold',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$holdNote, $id]);
+            
+            $notifTitle = "Penarikan Sedang Ditahan (Hold) ⏸️";
+            $notifMsg   = "Penarikan sebesar " . format_rp((float)$wd['amount']) . " sedang ditahan untuk peninjauan. Catatan: " . $holdNote;
+            $pdo->prepare("INSERT INTO notifications (title, message, type, icon, target_type, target_user_ids, action_url, action_text, created_at) VALUES (?, ?, 'warning', '⏸️', 'single', ?, '/withdraw', 'Cek Status', NOW())")
+                ->execute([$notifTitle, $notifMsg, (string)$wd['user_id']]);
+
             $flash = "Withdraw #{$id} ditahan (Hold), saldo TIDAK dikembalikan.";
         }
     }
@@ -66,9 +88,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $wd = $pdo->prepare("SELECT * FROM withdrawals WHERE id=? AND status='hold'");
         $wd->execute([$id]); $wd = $wd->fetch();
         if ($wd) {
+            $refundNote = $note ?: 'Refund saldo dari status Hold';
             // Refund balance from hold state
             $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$wd['amount'], $wd['user_id']]);
-            $pdo->prepare("UPDATE withdrawals SET status='refunded',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$note ?: 'Refund dari status Hold', $id]);
+            $pdo->prepare("UPDATE withdrawals SET status='refunded',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$refundNote, $id]);
+            
+            $notifTitle = "Saldo Penarikan Dikembalikan ↩️";
+            $notifMsg   = "Saldo penarikan sebesar " . format_rp((float)$wd['amount']) . " telah dikembalikan ke akunmu. Catatan: " . $refundNote;
+            $pdo->prepare("INSERT INTO notifications (title, message, type, icon, target_type, target_user_ids, action_url, action_text, created_at) VALUES (?, ?, 'info', '↩️', 'single', ?, '/withdraw', 'Cek Saldo', NOW())")
+                ->execute([$notifTitle, $notifMsg, (string)$wd['user_id']]);
+
             $flash = "Withdraw #{$id} di-refund. Status menjadi Rejected dan saldo dikembalikan.";
         }
     }

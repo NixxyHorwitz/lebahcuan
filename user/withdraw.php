@@ -510,7 +510,10 @@ require dirname(__DIR__) . '/partials/header.php';
 .hist-list { display: flex; flex-direction: column; gap: 10px; }
 .hist-card {
   background: #ffffff; border: 2.5px solid #78350f; border-radius: 16px;
-  padding: 12px; box-shadow: 0 3px 0 #78350f; display: flex; align-items: center; gap: 10px;
+  padding: 12px; box-shadow: 0 3px 0 #78350f; display: flex; flex-direction: column; gap: 8px;
+}
+.hist-card-main {
+  display: flex; align-items: center; gap: 10px; width: 100%;
 }
 .hist-card-icon {
   width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
@@ -524,10 +527,28 @@ require dirname(__DIR__) . '/partials/header.php';
   font-size: 9.5px; font-weight: 900; padding: 3px 8px; border-radius: 8px;
   text-transform: uppercase; border: 1.5px solid;
 }
-.wd-badge.pending  { background: #fef3c7; color: #78350f; border-color: #f59e0b; }
-.wd-badge.approved { background: #dcfce7; color: #14532d; border-color: #16a34a; }
-.wd-badge.rejected { background: #fee2e2; color: #7f1d1d; border-color: #dc2626; }
-.wd-badge.hold     { background: #f1f5f9; color: #475569; border-color: #94a3b8; }
+.wd-badge.pending   { background: #fef3c7; color: #78350f; border-color: #f59e0b; }
+.wd-badge.approved  { background: #dcfce7; color: #14532d; border-color: #16a34a; }
+.wd-badge.rejected  { background: #fee2e2; color: #7f1d1d; border-color: #dc2626; }
+.wd-badge.hold      { background: #f1f5f9; color: #475569; border-color: #94a3b8; }
+.wd-badge.refunded  { background: #e0f2fe; color: #0369a1; border-color: #38bdf8; }
+
+.hist-card-reason {
+  border-radius: 10px; padding: 8px 10px; font-size: 11px; font-weight: 700;
+  display: flex; align-items: flex-start; gap: 8px; line-height: 1.4;
+}
+.hist-card-reason.rejected {
+  background: #fff1f2; border: 1.5px dashed #f43f5e; color: #9f1239;
+}
+.hist-card-reason.hold {
+  background: #f8fafc; border: 1.5px dashed #94a3b8; color: #334155;
+}
+.hist-card-reason.info {
+  background: #f0fdf4; border: 1.5px dashed #86efac; color: #166534;
+}
+.hist-card-reason-lbl {
+  font-size: 9.5px; font-weight: 900; text-transform: uppercase; display: block; margin-bottom: 2px;
+}
 </style>
 
 <div class="wd-page-wrap">
@@ -554,6 +575,14 @@ require dirname(__DIR__) . '/partials/header.php';
       <div class="wd-notice-box">
         <div style="font-size:20px;">🔔</div>
         <div class="wd-notice-text">Penarikan kamu sedang diproses tim verifikasi (estimasi 1-24 jam).</div>
+      </div>
+    <?php elseif (!empty($wds) && strtolower($wds[0]['status']) === 'rejected' && strtotime($wds[0]['created_at']) > strtotime('-2 days')): ?>
+      <div class="wd-notice-box" style="background:#fff1f2; border-color:#e11d48; box-shadow:0 3px 0 #9f1239;">
+        <div style="font-size:22px;color:#e11d48;display:flex;align-items:center;"><i class="ph-bold ph-warning-circle"></i></div>
+        <div class="wd-notice-text" style="color:#9f1239;font-size:12px;line-height:1.4;">
+          <strong>Penarikan Terakhir Ditolak</strong> (Saldo telah dikembalikan):<br>
+          <span style="font-weight:700;color:#e11d48;">Alasan: <?= htmlspecialchars($wds[0]['admin_note'] ?: 'Data rekening belum sesuai') ?></span>
+        </div>
       </div>
     <?php elseif ($flash): ?>
       <div class="wd-notice-box" style="<?= $flashType==='error' ? 'background:#fef2f2; border-color:#dc2626; box-shadow:0 3px 0 #991b1b;' : 'background:#ecfdf5; border-color:#16a34a; box-shadow:0 3px 0 #14532d;' ?>">
@@ -720,21 +749,61 @@ require dirname(__DIR__) . '/partials/header.php';
           $st = strtolower($w['status']);
           $bclass = 'hold';
           $stLabel = ucfirst($st);
-          if ($st === 'pending') { $bclass = 'pending'; $stLabel = 'Diproses'; }
-          elseif ($st === 'approved' || $st === 'confirmed') { $bclass = 'approved'; $stLabel = 'Sukses'; }
-          elseif ($st === 'rejected') { $bclass = 'rejected'; $stLabel = 'Ditolak'; }
+          $iconI = 'ph-arrow-u-up-left';
+          $iconStyle = 'background:#f1f5f9;color:#475569;';
+
+          if ($st === 'pending') { 
+              $bclass = 'pending'; 
+              $stLabel = 'Diproses'; 
+              $iconI = 'ph-clock';
+              $iconStyle = 'background:#fef3c7;color:#d97706;';
+          } elseif ($st === 'approved' || $st === 'confirmed') { 
+              $bclass = 'approved'; 
+              $stLabel = 'Sukses'; 
+              $iconI = 'ph-check';
+              $iconStyle = 'background:#dcfce7;color:#15803d;';
+          } elseif ($st === 'rejected') { 
+              $bclass = 'rejected'; 
+              $stLabel = 'Ditolak'; 
+              $iconI = 'ph-x';
+              $iconStyle = 'background:#fee2e2;color:#dc2626;';
+          } elseif ($st === 'hold') {
+              $bclass = 'hold';
+              $stLabel = 'Ditahan';
+              $iconI = 'ph-pause';
+              $iconStyle = 'background:#f1f5f9;color:#64748b;';
+          } elseif ($st === 'refunded') {
+              $bclass = 'refunded';
+              $stLabel = 'Dikembalikan';
+              $iconI = 'ph-arrow-u-up-left';
+              $iconStyle = 'background:#e0f2fe;color:#0284c7;';
+          }
           ?>
           <div class="hist-card">
-            <div class="hist-card-icon" style="background:#dcfce7;color:#15803d;border-color:#78350f;">
-              <i class="ph-bold ph-arrow-up-right"></i>
+            <div class="hist-card-main">
+              <div class="hist-card-icon" style="<?= $iconStyle ?>border-color:#78350f;">
+                <i class="ph-bold <?= $iconI ?>"></i>
+              </div>
+              <div class="hist-card-body">
+                <div class="hist-card-amt"><?= format_rp((float)$w['amount']) ?></div>
+                <div class="hist-card-date"><?= htmlspecialchars($w['bank_name']) ?> · <?= date('d M Y, H:i', strtotime($w['created_at'])) ?> WIB</div>
+              </div>
+              <div class="hist-card-right">
+                <span class="hist-badge wd-badge <?= $bclass ?>"><?= $stLabel ?></span>
+              </div>
             </div>
-            <div class="hist-card-body">
-              <div class="hist-card-amt"><?= format_rp((float)$w['amount']) ?></div>
-              <div class="hist-card-date"><?= htmlspecialchars($w['bank_name']) ?> · <?= date('d M Y, H:i', strtotime($w['created_at'])) ?> WIB</div>
-            </div>
-            <div class="hist-card-right">
-              <span class="hist-badge wd-badge <?= $bclass ?>"><?= $stLabel ?></span>
-            </div>
+
+            <?php if (!empty($w['admin_note'])): ?>
+              <div class="hist-card-reason <?= $st === 'rejected' ? 'rejected' : ($st === 'hold' ? 'hold' : 'info') ?>">
+                <i class="ph-bold <?= $st === 'rejected' ? 'ph-warning-circle' : 'ph-info' ?>" style="font-size:15px;flex-shrink:0;margin-top:1px;"></i>
+                <div style="flex:1;">
+                  <span class="hist-card-reason-lbl">
+                    <?= $st === 'rejected' ? 'Alasan Penolakan:' : ($st === 'hold' ? 'Catatan Hold:' : 'Catatan Admin:') ?>
+                  </span>
+                  <div><?= htmlspecialchars((string)$w['admin_note']) ?></div>
+                </div>
+              </div>
+            <?php endif; ?>
           </div>
         <?php endforeach; ?>
       </div>
