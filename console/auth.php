@@ -32,6 +32,7 @@ define('STAFF_PERMISSIONS', [
     'orderkuota'      => 'OrderKuota API',
     'bee_farm'        => 'Peternakan Lebah',
     'bee_logs'        => 'Log Peternakan',
+    'surveys'         => 'Survei Pengguna',
 ]);
 
 // ── Determine who is logged in ─────────────────────────────────────────────

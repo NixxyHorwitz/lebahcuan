@@ -197,6 +197,16 @@ $threads_campaign_enabled = setting($pdo, 'threads_campaign_enabled', '1') === '
 $threads_step1_reward     = (float)setting($pdo, 'threads_campaign_reward', '25000');
 $threads_step2_reward     = (float)setting($pdo, 'threads_campaign_reward_step2', '50000');
 
+// ── CEK STATUS SURVEI BERHADIAH ──
+$user_has_surveyed = false;
+if (!$is_guest && !empty($user['id'])) {
+    try {
+        $survCheck = $pdo->prepare("SELECT 1 FROM user_surveys WHERE user_id = ? LIMIT 1");
+        $survCheck->execute([$user['id']]);
+        $user_has_surveyed = (bool)$survCheck->fetchColumn();
+    } catch (\Throwable) {}
+}
+
 $pageTitle = 'Nonton Video & Ternak Lebah Cuan';
 $activePage = 'home';
 require dirname(__DIR__) . '/partials/header.php';
@@ -1408,6 +1418,103 @@ body {
   flex-shrink: 0;
 }
 
+/* ── IN-FEED SURVEI BERHADIAH BANNER ── */
+.survey-invite-banner {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2.5px solid #d97706;
+  border-radius: 20px;
+  padding: 11px 13px;
+  margin-bottom: 14px;
+  box-shadow: 0 4.5px 0 #78350f, 0 0 16px rgba(245, 158, 11, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  position: relative;
+  overflow: hidden;
+}
+.survey-invite-banner:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #78350f;
+}
+.sib-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+.sib-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1.5px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 19px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 0 #78350f;
+}
+.sib-icon-box--done {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+.sib-text {
+  min-width: 0;
+}
+.sib-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: #78350f;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 2px;
+}
+.sib-badge {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 6px;
+}
+.sib-badge--done {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+.sib-desc {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #92400e;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sib-cta {
+  background: linear-gradient(135deg, #78350f, #92400e);
+  border: 1.5px solid #fde68a;
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 2px 0 #451a03;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sib-cta--done {
+  background: linear-gradient(135deg, #065f46, #047857);
+}
+
 /* ── PROMO HUB MODAL STYLES ── */
 .promo-hub-card-item {
   background: #ffffff;
@@ -1808,6 +1915,30 @@ body {
       </a>
     <?php endif; ?>
   </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SURVEI PENGGUNA BERHADIAH RP 15.000 SALDO TARIK
+       ══════════════════════════════════════════════════════════ -->
+  <a href="/survey" class="survey-invite-banner" title="Isi Survei Singkat & Dapatkan Rp 15.000 Saldo Tarik">
+    <div class="sib-left">
+      <div class="sib-icon-box <?= $user_has_surveyed ? 'sib-icon-box--done' : '' ?>">
+        <i class="ph-bold <?= $user_has_surveyed ? 'ph-check-circle' : 'ph-clipboard-text' ?>"></i>
+      </div>
+      <div class="sib-text">
+        <div class="sib-title">
+          <span><?= $user_has_surveyed ? 'Survei Selesai (Klaim Berhasil)' : 'Survei Pengguna Berhadiah' ?></span>
+          <span class="sib-badge <?= $user_has_surveyed ? 'sib-badge--done' : '' ?>"><?= $user_has_surveyed ? 'Klaim Berhasil' : '+Rp 15.000 WD' ?></span>
+        </div>
+        <div class="sib-desc">
+          <?= $user_has_surveyed ? 'Terima kasih telah berpartisipasi! Saldo tarik Rp 15.000 sudah masuk.' : 'Bantu kami berkembang 2 menit & dapatkan Rp 15.000 saldo tarik langsung!' ?>
+        </div>
+      </div>
+    </div>
+    <div class="sib-cta <?= $user_has_surveyed ? 'sib-cta--done' : '' ?>">
+      <span><?= $user_has_surveyed ? 'Lihat' : 'Isi Survei' ?></span>
+      <i class="ph-bold ph-arrow-right"></i>
+    </div>
+  </a>
 
   <!-- ══════════════════════════════════════════════════════════
        AJAKAN PROMOSI BANNER (PROMO HUB TRIGGER)

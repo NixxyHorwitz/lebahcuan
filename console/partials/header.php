@@ -376,6 +376,18 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
     <?php endif; ?>
 
     <div class="c-sidebar__label" style="margin-top:6px">Analitik & Interaksi</div>
+    <?php if (staff_can('surveys') || staff_can('analytics') || staff_can('users')): ?>
+    <a href="/console/surveys.php" class="c-nav-link <?= $activePage==='surveys'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Survei Pengguna
+      <?php
+        try {
+          $survey_count = (int)$pdo->query("SELECT COUNT(*) FROM user_surveys")->fetchColumn();
+          if ($survey_count > 0): ?><span class="badge-dot" style="background:#f59e0b;color:#000;font-size:10px;font-weight:800;"><?= $survey_count ?></span><?php endif;
+        } catch (\Throwable) {}
+      ?>
+    </a>
+    <?php endif; ?>
     <?php if (staff_can('redeem')): ?>
     <a href="/console/redeem.php" class="c-nav-link <?= $activePage==='redeem'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 12v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><path d="M12 14v4"/><path d="M9 16h6"/><rect x="4" y="12" width="16" height="10" rx="2"/></svg>

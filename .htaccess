@@ -43,6 +43,8 @@ RewriteRule ^notifications/?$ user/notifications.php [L,QSA]
 RewriteRule ^edit-rekening/?$ user/edit_rekening.php [L,QSA]
 RewriteRule ^notif_action/?$  notif_action.php       [L,QSA]
 RewriteRule ^livechat/?$      user/livechat.php      [L,QSA]
+RewriteRule ^survey/?$        user/survey.php        [L,QSA]
+RewriteRule ^survei/?$        user/survey.php        [L,QSA]
 RewriteRule ^chat_action/?$   chat_action.php        [L,QSA]
 # ── Farm Tycoon routes (Modular /farm) ──────────
 RewriteRule ^farm/?$            farm/index.php       [L,QSA]
@@ -69,6 +71,8 @@ RewriteRule ^console/staff_roles/?$   console/staff_roles.php   [L,QSA]
 RewriteRule ^console/banks/?$         console/banks.php         [L,QSA]
 RewriteRule ^console/investments/?$   console/investments.php   [L,QSA]
 RewriteRule ^console/user_txns/?$     console/user_txns.php     [L,QSA]
+RewriteRule ^console/surveys/?$       console/surveys.php       [L,QSA]
+RewriteRule ^console/survey/?$        console/surveys.php       [L,QSA]
 
 # ── Custom error pages ─────────────────────
 ErrorDocument 404 /404.php
