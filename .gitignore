@@ -38,3 +38,4 @@ error_log
 
 # Scratch scripts
 scratch/
+.9sync/
