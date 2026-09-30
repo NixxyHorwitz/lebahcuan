@@ -12,6 +12,16 @@ if (!empty($_SESSION['flash_videos_msg'])) {
 $watch_limit = user_watch_limit($pdo, $user);
 $watch_today = user_watch_today($pdo, $user);
 
+// Cek status survei berhadiah untuk user
+$user_has_surveyed = false;
+if (!empty($user['id'])) {
+    try {
+        $survCheck = $pdo->prepare("SELECT 1 FROM user_surveys WHERE user_id = ? LIMIT 1");
+        $survCheck->execute([$user['id']]);
+        $user_has_surveyed = (bool)$survCheck->fetchColumn();
+    } catch (\Throwable) {}
+}
+
 // Determine Sort Order
 $sort_mode = setting($pdo, 'video_sort_mode', 'default');
 $order_by = 'v.sort_order ASC, v.id DESC';
@@ -695,6 +705,104 @@ require dirname(__DIR__) . '/partials/header.php';
 .vhub-empty__sub {
   font-size: 11.5px; font-weight: 700; color: #64748b; margin: 0;
 }
+
+/* ── SURVEY BANNER IN VIDEOS HUB ── */
+.vhub-survey-banner {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+  border: 2.5px solid #d97706;
+  border-radius: 18px;
+  box-shadow: 0 5px 0 #78350f, 0 10px 20px rgba(217, 119, 6, 0.12);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  position: relative;
+  overflow: hidden;
+}
+.vhub-survey-banner:active {
+  transform: translateY(2px);
+  box-shadow: 0 3px 0 #78350f;
+}
+.vsb-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+.vsb-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1.5px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 20px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 0 #78350f;
+}
+.vsb-icon-box--done {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+.vsb-text {
+  min-width: 0;
+}
+.vsb-title {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #78350f;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.vsb-badge {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  font-size: 8.5px;
+  font-weight: 900;
+  padding: 1.5px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+}
+.vsb-badge--done {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+.vsb-desc {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #92400e;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vsb-cta {
+  background: linear-gradient(135deg, #78350f, #92400e);
+  border: 1.5px solid #fde68a;
+  border-radius: 10px;
+  padding: 6px 11px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 2px 0 #451a03;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.vsb-cta--done {
+  background: linear-gradient(135deg, #065f46, #047857);
+}
 </style>
 
 <div class="video-hub-page">
@@ -737,6 +845,28 @@ require dirname(__DIR__) . '/partials/header.php';
     </div>
     <?php endif; ?>
   </div>
+
+  <!-- ── 2.0 SURVEY INVITATION BANNER (+Rp 15.000 Saldo Tarik) ── -->
+  <a href="/survey" class="vhub-survey-banner" title="Isi Survei Singkat & Dapatkan Rp 15.000 Saldo Tarik">
+    <div class="vsb-left">
+      <div class="vsb-icon-box <?= $user_has_surveyed ? 'vsb-icon-box--done' : '' ?>">
+        <i class="ph-bold <?= $user_has_surveyed ? 'ph-check-circle' : 'ph-clipboard-text' ?>"></i>
+      </div>
+      <div class="vsb-text">
+        <div class="vsb-title">
+          <span><?= $user_has_surveyed ? 'Survei Selesai (Klaim Berhasil)' : 'Survei Pengguna Berhadiah' ?></span>
+          <span class="vsb-badge <?= $user_has_surveyed ? 'vsb-badge--done' : '' ?>"><?= $user_has_surveyed ? 'Klaim Berhasil' : '+Rp 15.000 Saldo Tarik' ?></span>
+        </div>
+        <div class="vsb-desc">
+          <?= $user_has_surveyed ? 'Terima kasih atas partisipasimu! Saldo tarik Rp 15.000 sudah masuk ke akun.' : 'Isi survei 2 menit & langsung dapat Rp 15.000 saldo tarik tanpa diundi!' ?>
+        </div>
+      </div>
+    </div>
+    <div class="vsb-cta <?= $user_has_surveyed ? 'vsb-cta--done' : '' ?>">
+      <span><?= $user_has_surveyed ? 'Lihat' : 'Isi Survei' ?></span>
+      <i class="ph-bold ph-arrow-right"></i>
+    </div>
+  </a>
 
   <?php if (!empty($continue_watching)): ?>
   <!-- ── 2.1 RIWAYAT LANJUTKAN MENONTON (MAKSIMAL 3) ── -->
