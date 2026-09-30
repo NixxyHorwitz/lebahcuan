@@ -175,6 +175,45 @@ body { background: #071a0c !important; font-family: 'Nunito', sans-serif; overfl
 .hive-quick-meta { font-size: 8.5px; font-weight: 700; color: #94a3b8; margin-top: 1px; }
 .hive-quick-honey { font-size: 11.5px; font-weight: 900; color: #fbbf24; text-align: right; flex-shrink: 0; }
 .hive-quick-honey small { font-size: 8px; color: #94a3b8; display: block; font-weight: 700; }
+
+/* Mini Bee Chips in Hive Quick Card */
+.hive-bees-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 3px;
+}
+.mini-bee-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 6px;
+  padding: 1px 5px;
+  font-size: 8px;
+  font-weight: 800;
+  color: #fde68a;
+  line-height: 1.2;
+}
+.mini-bee-chip img {
+  width: 12px !important;
+  height: 12px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  object-fit: contain !important;
+}
+.mini-bee-empty-tag {
+  display: inline-flex;
+  font-size: 7.5px;
+  font-weight: 800;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 5px;
+  padding: 1px 4px;
+}
 .farm-empty-cta { text-align: center; padding: 16px 12px; background: rgba(255,255,255,0.03); border: 1.5px dashed rgba(251,191,36,0.2); border-radius: 12px; }
 .farm-empty-cta .emoji { font-size: 28px; margin-bottom: 4px; }
 .farm-empty-cta .title { font-size: 12.5px; font-weight: 900; color: #f8fafc; }
@@ -251,7 +290,200 @@ body .float-contact-wrap {
 .hive-inspection-close { position: absolute; top: 18px; right: 18px; width: 44px; height: 44px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; color: #fef3c7; font-size: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100; }
 .hive-inspection-title { position: absolute; top: 22px; left: 0; right: 0; text-align: center; z-index: 50; }
 .hive-inspection-title span { display: inline-flex; align-items: center; gap: 8px; background: rgba(120,53,15,0.6); border: 2px solid rgba(251,191,36,0.4); border-radius: 16px; padding: 6px 16px; font-size: 14px; font-weight: 900; color: #fde68a; backdrop-filter: blur(4px); }
-.hive-inspection-frame { position: relative; z-index: 50; width: 290px; max-width: 85vw; animation: frameSlideIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.hive-inspection-frame { 
+  position: relative; 
+  z-index: 50; 
+  width: 325px; 
+  max-width: 90vw; 
+  max-height: 86vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 15px;
+  animation: frameSlideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; 
+}
+.hive-inspection-frame::-webkit-scrollbar {
+  width: 4px;
+}
+.hive-inspection-frame::-webkit-scrollbar-thumb {
+  background: rgba(251,191,36,0.3);
+  border-radius: 4px;
+}
+
+/* Inspection Modal Bee Roster Panel */
+.inspection-bees-panel {
+  margin-top: 14px;
+  background: rgba(15, 6, 2, 0.75);
+  border: 1.5px solid rgba(251, 191, 36, 0.35);
+  border-radius: 16px;
+  padding: 10px;
+  text-align: left;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+}
+.inspection-bees-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.ibh-title {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #fde68a;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ibh-speed {
+  font-size: 9px;
+  font-weight: 900;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  padding: 1.5px 6px;
+}
+.inspection-bees-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.inspection-bees-list::-webkit-scrollbar {
+  width: 4px;
+}
+.inspection-bees-list::-webkit-scrollbar-thumb {
+  background: rgba(251, 191, 36, 0.35);
+  border-radius: 4px;
+}
+
+/* Bee Resident Card */
+.bee-resident-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(251, 191, 36, 0.22);
+  border-radius: 10px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+.bee-resident-card:hover {
+  background: rgba(251, 191, 36, 0.08);
+}
+.brc-avatar-wrap {
+  width: 36px;
+  height: 36px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.brc-avatar {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+.brc-details {
+  flex: 1;
+  min-width: 0;
+}
+.brc-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+.brc-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.brc-rate {
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #34d399;
+  flex-shrink: 0;
+}
+.brc-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+/* Empty Bee Slot Card */
+.bee-slot-empty-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.bsec-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bsec-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.bsec-title {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #94a3b8;
+}
+.bsec-desc {
+  font-size: 8px;
+  color: #64748b;
+}
+.bsec-btn {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1px solid #78350f;
+  border-radius: 7px;
+  padding: 3px 8px;
+  font-size: 9px;
+  font-weight: 900;
+  color: #ffffff;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 1.5px 0 #78350f;
+  flex-shrink: 0;
+}
+.bee-empty-all-card {
+  padding: 12px 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 @keyframes frameSlideIn { 0% { transform: scale(0.7) translateY(30px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
 .honeycomb-organic-frame { background-image: repeating-linear-gradient(45deg, rgba(120,53,15,0.3) 0px, rgba(120,53,15,0.3) 2px, transparent 2px, transparent 6px), linear-gradient(180deg, #92400e 0%, #78350f 35%, #5c2d0e 100%); border: 4px solid #451a03; border-radius: 24px; padding: 18px 14px; box-shadow: inset 0 4px 8px rgba(0,0,0,0.5), 0 0 40px rgba(251,191,36,0.2); position: relative; overflow: hidden; }
 .honeycomb-organic-frame::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(90deg, transparent 0px, transparent 8px, rgba(69,26,3,0.15) 8px, rgba(69,26,3,0.15) 9px); pointer-events: none; }
@@ -413,6 +645,20 @@ body .float-contact-wrap {
           <div class="hive-quick-info">
             <div class="hive-quick-name"><?= htmlspecialchars($uh['master_name']) ?></div>
             <div class="hive-quick-meta"><?= (int)$det['bee_count'] ?>/<?= (int)$uh['max_slots'] ?> Lebah • +<?= number_format($pr, 1) ?> ml/jam</div>
+            
+            <!-- DAFTAR MINI SPESIES LEBAH DI KANDANG INI -->
+            <div class="hive-bees-chips">
+              <?php if (!empty($det['bees'])): ?>
+                <?php foreach ($det['bees'] as $b): ?>
+                  <span class="mini-bee-chip" title="<?= htmlspecialchars($b['type_name']) ?> (+<?= number_format((float)($b['effective_rate'] ?? $b['honey_per_hour']), 1) ?> ml/jam)">
+                    <img src="<?= htmlspecialchars(!empty($b['type_image']) ? $b['type_image'] : '/assets/game/bee_worker.png') ?>" alt="">
+                    <span><?= htmlspecialchars($b['type_name']) ?></span>
+                  </span>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <span class="mini-bee-empty-tag">⚠️ Belum ada lebah pekerja</span>
+              <?php endif; ?>
+            </div>
           </div>
           <div class="hive-quick-honey"><?= number_format($un, 1) ?> <small>ml madu</small></div>
         </div>
@@ -449,6 +695,17 @@ body .float-contact-wrap {
       <div class="inspection-bee-info" id="inspectionBeeInfo"></div>
       <button type="button" class="btn-inspection-harvest" id="btnInspectionHarvest" onclick="harvestInspectedHive()"><i class="ph-fill ph-drop"></i><span>PANEN SARANG INI</span></button>
     </div>
+
+    <!-- DAFTAR PENGHUNI LEBAH DI KANDANG INI -->
+    <div class="inspection-bees-panel">
+      <div class="inspection-bees-head">
+        <span class="ibh-title"><i class="ph-fill ph-bug-beetle" style="color:#fbbf24;"></i> Penghuni Sarang (<span id="inspectionBeeCountBadge">0/0</span>)</span>
+        <span class="ibh-speed" id="inspectionSpeedBonusBadge">+0% Speed</span>
+      </div>
+      <div class="inspection-bees-list" id="inspectionBeesList">
+        <!-- Rendered dynamically by renderInspectionBees() -->
+      </div>
+    </div>
   </div>
 </div>
 
@@ -475,6 +732,93 @@ function renderHexagonCells(fp, gid) {
     g.appendChild(r); 
   });
 }
+function getDaysRemaining(expiresAtStr) {
+  if (!expiresAtStr) return 'Permanen';
+  const exp = new Date(expiresAtStr.replace(/-/g, '/')).getTime();
+  const diff = exp - Date.now();
+  if (diff <= 0) return 'Kedaluwarsa';
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  return 'Sisa ' + days + ' hari';
+}
+
+function renderInspectionBees(h, d) {
+  const beesListEl = document.getElementById('inspectionBeesList');
+  const countBadge = document.getElementById('inspectionBeeCountBadge');
+  const speedBadge = document.getElementById('inspectionSpeedBonusBadge');
+  if (!beesListEl) return;
+
+  const bees = d.bees || [];
+  const maxSlots = parseInt(h.max_slots) || 2;
+  const speedBonus = parseInt(h.bonus_speed_pct) || 0;
+
+  if (countBadge) countBadge.innerText = bees.length + '/' + maxSlots;
+  if (speedBadge) {
+    if (speedBonus > 0) {
+      speedBadge.innerText = '+' + speedBonus + '% Speed Sarang';
+      speedBadge.style.display = 'inline-block';
+    } else {
+      speedBadge.style.display = 'none';
+    }
+  }
+
+  let html = '';
+  if (bees.length === 0) {
+    html += `
+      <div class="bee-empty-all-card">
+        <div style="font-size:24px;margin-bottom:2px;">🐝</div>
+        <div style="font-weight:900;color:#fde68a;font-size:11.5px;">Sarang Ini Belum Memiliki Lebah!</div>
+        <div style="font-size:9.5px;color:#cbd5e1;margin-bottom:8px;">Beli lebah pekerja di toko untuk mulai memproduksi madu di sarang ini.</div>
+        <a href="/farm/shop?tab=bees" class="bsec-btn"><i class="ph-bold ph-storefront"></i> Beli Lebah ke Toko</a>
+      </div>
+    `;
+  } else {
+    bees.forEach((b) => {
+      const img = b.type_image || '/assets/game/bee_worker.png';
+      const rate = parseFloat(b.effective_rate || b.honey_per_hour || 0).toFixed(1);
+      const accHoney = parseFloat(b.accumulated_honey || 0).toFixed(2);
+      const remDays = getDaysRemaining(b.expires_at);
+      const isExp = remDays.includes('Kedaluwarsa');
+
+      html += `
+        <div class="bee-resident-card">
+          <div class="brc-avatar-wrap">
+            <img src="${img}" class="brc-avatar" alt="${b.type_name || 'Lebah'}">
+          </div>
+          <div class="brc-details">
+            <div class="brc-name-row">
+              <span class="brc-name" title="${b.type_name || 'Lebah'}">${b.type_name || 'Lebah'}</span>
+              <span class="brc-rate">+${rate} ml/j</span>
+            </div>
+            <div class="brc-meta-row">
+              <span><i class="ph-fill ph-drop" style="color:#fbbf24;"></i> Hasil: <strong>${accHoney} ml</strong></span>
+              <span style="color:${isExp ? '#ef4444' : '#94a3b8'};">${remDays}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    // Render empty slots if any
+    const emptySlots = maxSlots - bees.length;
+    for (let i = 0; i < emptySlots; i++) {
+      html += `
+        <div class="bee-slot-empty-card">
+          <div class="bsec-left">
+            <div class="bsec-icon"><i class="ph-bold ph-plus"></i></div>
+            <div class="bsec-info">
+              <div class="bsec-title">Slot Kosong (${bees.length + i + 1}/${maxSlots})</div>
+              <div class="bsec-desc">Kandang siap menampung 1 lebah lagi</div>
+            </div>
+          </div>
+          <a href="/farm/shop?tab=bees" class="bsec-btn"><i class="ph-bold ph-plus"></i> Beli</a>
+        </div>
+      `;
+    }
+  }
+
+  beesListEl.innerHTML = html;
+}
+
 function openHiveInspection(hiveId) {
   currentInspectedHiveId = hiveId; 
   const h = USER_HIVES_MAP[hiveId]; 
@@ -494,6 +838,7 @@ function openHiveInspection(hiveId) {
   const btnH = document.getElementById('btnInspectionHarvest');
   if (btnH) btnH.disabled = th<0.1;
   renderHexagonCells(pct,'inspectionHexGrid');
+  renderInspectionBees(h, d);
   const overlay = document.getElementById('hiveInspectionOverlay');
   if (overlay) overlay.classList.add('active');
   document.body.style.overflow='hidden';
