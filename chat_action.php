@@ -137,6 +137,7 @@ function cleanup_inactive_sessions(PDO $pdo): int {
     $closedCount = 0;
     try {
         $maxIdle = (int)setting($pdo, 'lc_max_idle_minutes', '30');
+        $chatId  = setting($pdo, 'lc_tg_chat_id', '');
         
         // Auto-close open sessions inactive > $maxIdle minutes (kecuali yang di-keep) jika maxIdle > 0
         if ($maxIdle > 0) {
@@ -148,10 +149,9 @@ function cleanup_inactive_sessions(PDO $pdo): int {
             $stale = $staleStmt->fetchAll();
 
             if (!empty($stale)) {
-                $chatId = setting($pdo, 'lc_tg_chat_id', '');
                 $closeMsg = "Sesi chat ditutup otomatis karena tidak ada aktivitas selama {$maxIdle} menit.";
-                $updStmt = $pdo->prepare("UPDATE chat_sessions SET status='closed', close_reason=? WHERE id=?");
-                $msgStmt = $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system',?)");
+                $updStmt  = $pdo->prepare("UPDATE chat_sessions SET status='closed', close_reason=?, tg_thread_id=NULL WHERE id=?");
+                $msgStmt  = $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system',?)");
 
                 foreach ($stale as $st) {
                     $updStmt->execute([$closeMsg, $st['id']]);
@@ -159,10 +159,44 @@ function cleanup_inactive_sessions(PDO $pdo): int {
                     $closedCount++;
 
                     if ($st['tg_thread_id'] && $chatId) {
+                        $threadId = (int)$st['tg_thread_id'];
+                        // 1. Tutup topik forum di Telegram
                         tg_api($pdo, 'closeForumTopic', [
                             'chat_id'           => $chatId,
-                            'message_thread_id' => (int)$st['tg_thread_id'],
+                            'message_thread_id' => $threadId,
                         ]);
+                        // 2. Hapus topik forum di Telegram agar bersih & tidak nyampah
+                        tg_api($pdo, 'deleteForumTopic', [
+                            'chat_id'           => $chatId,
+                            'message_thread_id' => $threadId,
+                        ]);
+                    }
+                }
+            }
+
+            // Bersihkan juga topik Telegram dari sesi yang sebelumnya sudah closed/timeout tapi topiknya belum sempat terhapus
+            if ($chatId) {
+                $orphanStmt = $pdo->query(
+                    "SELECT id, tg_thread_id FROM chat_sessions 
+                     WHERE status='closed' AND is_kept=0 AND tg_thread_id IS NOT NULL 
+                     LIMIT 10"
+                );
+                $orphans = $orphanStmt->fetchAll();
+                if (!empty($orphans)) {
+                    $clearTgStmt = $pdo->prepare("UPDATE chat_sessions SET tg_thread_id=NULL WHERE id=?");
+                    foreach ($orphans as $orp) {
+                        if ($orp['tg_thread_id']) {
+                            $threadId = (int)$orp['tg_thread_id'];
+                            tg_api($pdo, 'closeForumTopic', [
+                                'chat_id'           => $chatId,
+                                'message_thread_id' => $threadId,
+                            ]);
+                            tg_api($pdo, 'deleteForumTopic', [
+                                'chat_id'           => $chatId,
+                                'message_thread_id' => $threadId,
+                            ]);
+                        }
+                        $clearTgStmt->execute([$orp['id']]);
                     }
                 }
             }
@@ -952,6 +986,13 @@ switch ($action) {
         json_ok(['closed' => true]);
 
 
+    // ── Manual / Cron Cleanup ─────────────────────────────────────
+    case 'cleanup':
+        $closed = cleanup_inactive_sessions($pdo);
+        check_and_process_queue($pdo);
+        json_ok(['closed_count' => $closed]);
+
+
     // ── Webhook dari Telegram ─────────────────────────────────────
     case 'tg_webhook':
         $update = json_decode(file_get_contents('php://input'), true);
@@ -1267,7 +1308,7 @@ switch ($action) {
                 check_and_process_queue($pdo);
                 tg_api($pdo, 'answerCallbackQuery', [
                     'callback_query_id' => $cbId,
-                    'text'              => "🧹 Selesai! {$closed} sesi inactive ditutup.",
+                    'text'              => "🧹 Selesai! {$closed} sesi inactive ditutup dan topiknya dihapus.",
                     'show_alert'        => true,
                 ]);
                 $panel = lc_render_panel($pdo);
