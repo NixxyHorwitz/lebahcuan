@@ -5,7 +5,7 @@ $_seo_title   = setting($pdo, 'seo_title', 'LebahCuan');
 $_seo_desc    = setting($pdo, 'seo_description', 'LebahCuan adalah platform penghasil saldo nyata terpercaya di Indonesia. Mainkan game ternak lebah madu 3D, tonton video harian, dan cairkan saldo cuan instan.');
 $_seo_kw      = setting($pdo, 'seo_keywords', 'lebahcuan, lebah cuan, game ternak lebah 3d, nonton video dapat uang, panen madu cuan, aplikasi penghasil saldo dana');
 $_seo_robots  = setting($pdo, 'seo_robots', 'index,follow');
-$_seo_og      = setting($pdo, 'seo_og_image', '/assets/seobanner.png');
+$_seo_og      = setting($pdo, 'seo_og_image', '/assets/seobanner.jpg');
 $_seo_twcard  = setting($pdo, 'seo_twitter_card', 'summary_large_image');
 $_seo_author  = setting($pdo, 'seo_author', 'LebahCuan Official');
 $_seo_og_title = setting($pdo, 'seo_og_title', '');
@@ -13,6 +13,17 @@ $_seo_og_desc  = setting($pdo, 'seo_og_description', '');
 $_seo_og_type  = setting($pdo, 'seo_og_type', 'website');
 $_favicon     = setting($pdo, 'favicon_path', '/assets/favicon.png');
 $_site_logo   = site_logo($pdo);
+
+$og_disk = $_seo_og ? dirname(__DIR__) . '/' . ltrim(preg_replace('~\?.*$~', '', $_seo_og), '/') : '';
+if (!$_seo_og || !file_exists($og_disk)) {
+    $_seo_og = '/assets/seobanner.jpg';
+}
+$absolute_og = preg_match('~^https?://~', $_seo_og) ? $_seo_og : base_url(ltrim($_seo_og, '/'));
+$og_mime = str_ends_with(strtolower($absolute_og), '.png') ? 'image/png' : 'image/jpeg';
+$fav_url = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : '/' . ltrim($_favicon, '/')) : '/assets/favicon.png';
+$current_url = base_url(ltrim($_SERVER['REQUEST_URI'] ?? '', '/'));
+$final_og_title = $_seo_og_title ?: (($pageTitle ?? '') ? $pageTitle . ' — ' . $_seo_title : $_seo_title);
+$final_og_desc = $_seo_og_desc ?: $_seo_desc;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -29,17 +40,6 @@ $_site_logo   = site_logo($pdo);
 <?php if ($_seo_kw):   ?><meta name="keywords"    content="<?= htmlspecialchars($_seo_kw) ?>"><?php endif; ?>
 <?php if ($_seo_author):?><meta name="author"     content="<?= htmlspecialchars($_seo_author) ?>"><?php endif; ?>
 <meta name="robots" content="<?= htmlspecialchars($_seo_robots) ?>">
-$og_disk = $_seo_og ? dirname(__DIR__) . '/' . ltrim(preg_replace('~\?.*$~', '', $_seo_og), '/') : '';
-if (!$_seo_og || !file_exists($og_disk)) {
-    $_seo_og = '/assets/seobanner.jpg';
-}
-$absolute_og = preg_match('~^https?://~', $_seo_og) ? $_seo_og : base_url(ltrim($_seo_og, '/'));
-$og_mime = str_ends_with(strtolower($absolute_og), '.png') ? 'image/png' : 'image/jpeg';
-$fav_url = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : '/' . ltrim($_favicon, '/')) : '/assets/favicon.png';
-$current_url = base_url(ltrim($_SERVER['REQUEST_URI'] ?? '', '/'));
-$final_og_title = $_seo_og_title ?: (($pageTitle ?? '') ? $pageTitle . ' — ' . $_seo_title : $_seo_title);
-$final_og_desc = $_seo_og_desc ?: $_seo_desc;
-?>
 <link rel="canonical" href="<?= htmlspecialchars($current_url) ?>">
 <meta property="og:locale" content="id_ID">
 <meta property="og:site_name" content="<?= htmlspecialchars($_site_name) ?>">
