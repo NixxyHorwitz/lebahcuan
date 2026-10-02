@@ -306,13 +306,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ref_abuse_note = "Self-referral: Perangkat sama dengan pemilik referral (@{$referrer['username']})";
                 }
 
-                // Check C: Referral Velocity
-                $vel_check = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
-                $vel_check->execute([$ref_input]);
-                $vel_cnt = (int)$vel_check->fetchColumn();
-                if ($vel_cnt >= 5) {
-                    $ref_abuse = true;
-                    $ref_abuse_note = "Referral Burst: Kode @{$referrer['username']} menerima {$vel_cnt} pendaftaran dalam 15 menit";
+                // Check C: Referral Velocity (Bypass jika pemilik referral adalah promotor resmi)
+                if (empty($referrer['is_promotor'])) {
+                    $vel_check = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
+                    $vel_check->execute([$ref_input]);
+                    $vel_cnt = (int)$vel_check->fetchColumn();
+                    if ($vel_cnt >= 5) {
+                        $ref_abuse = true;
+                        $ref_abuse_note = "Referral Burst: Kode @{$referrer['username']} menerima {$vel_cnt} pendaftaran dalam 15 menit";
+                    }
                 }
             }
         }
