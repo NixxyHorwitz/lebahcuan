@@ -507,6 +507,7 @@ $current_url = base_url('register' . (!empty($ref_from_url) ? '/' . urlencode($r
 }
 </script>
 
+<!-- VERSION_CHECK_PROMOTOR_BYPASS_20261002 -->
 <!-- Google Fonts & Phosphor Icons -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
