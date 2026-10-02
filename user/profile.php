@@ -6,22 +6,6 @@ $active_section = 'main';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
-    if ($action === 'update_profile') {
-        $username = trim($_POST['username'] ?? '');
-        if (strlen($username) < 3) { $flash = 'Username minimal 3 karakter.'; $flashType = 'error'; }
-        elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) { $flash = 'Username hanya boleh huruf, angka, underscore.'; $flashType = 'error'; }
-        else {
-            $ex = $pdo->prepare("SELECT id FROM users WHERE username=? AND id!=?");
-            $ex->execute([$username, $user['id']]);
-            if ($ex->fetch()) { $flash = 'Username sudah digunakan.'; $flashType = 'error'; }
-            else {
-                $pdo->prepare("UPDATE users SET username=? WHERE id=?")->execute([$username, $user['id']]);
-                $flash = 'Username berhasil diperbarui!';
-                $flashType = 'success';
-            }
-        }
-        $active_section = 'edit';
-    }
     if ($action === 'change_password') {
         $old = $_POST['old_password'] ?? '';
         $new = $_POST['new_password'] ?? '';
@@ -80,7 +64,7 @@ $show_edit_rek_btn = $membership_allow_edit_bank || $is_promotor_prof;
 // Member since
 $member_since = date('d M Y', strtotime($user['created_at']));
 $days_member  = max(1, (int)((time() - strtotime($user['created_at'])) / 86400));
-$initial_tab  = ($active_section === 'edit' || $active_section === 'password') ? 'security' : 'summary';
+$initial_tab  = ($active_section === 'password') ? 'security' : 'summary';
 
 // Contact buttons
 try {
@@ -1338,28 +1322,6 @@ body {
       </div>
     </div>
 
-    <!-- Accordion: Edit Username -->
-    <div class="accordion-card">
-      <div class="acc-header <?= $active_section === 'edit' ? 'open' : '' ?>" onclick="toggleAccordion('edit')" id="hdr-edit">
-        <div class="acc-header-left">
-          <i class="ph-bold ph-pencil-simple"></i>
-          <span>Ubah Username Akun</span>
-        </div>
-        <i class="ph-bold ph-caret-down acc-chevron"></i>
-      </div>
-      <div class="acc-body <?= $active_section === 'edit' ? 'open' : '' ?>" id="body-edit">
-        <form method="POST">
-          <?= csrf_field() ?>
-          <input type="hidden" name="action" value="update_profile">
-          <label class="input-lbl">Username Baru (Minimal 3 Karakter)</label>
-          <input class="prof-input-ctrl" type="text" name="username" value="<?= htmlspecialchars($user['username']) ?>" required minlength="3">
-          <button class="prof-submit-btn" type="submit">
-            <i class="ph-bold ph-floppy-disk"></i>
-            <span>Simpan Perubahan</span>
-          </button>
-        </form>
-      </div>
-    </div>
 
     <!-- Accordion: Change Password -->
     <div class="accordion-card">
