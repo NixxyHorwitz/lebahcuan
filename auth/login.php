@@ -45,28 +45,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 end_login:
 
 // Load SEO settings
-$_seo_title  = setting($pdo, 'seo_title', 'LebahCuan');
+$_seo_title  = setting($pdo, 'seo_title', 'LebahCuan — Game Ternak Lebah & Nonton Video Penghasil Saldo Cuan');
 $_seo_desc   = setting($pdo, 'seo_description', 'Platform nonton video dan ternak lebah penghasil cuan resmi.');
 $_favicon    = setting($pdo, 'favicon_path', '/assets/favicon.png');
+$_site_name  = setting($pdo, 'site_name', 'LebahCuan');
 $_site_logo  = site_logo($pdo);
+$_seo_kw     = setting($pdo, 'seo_keywords', 'lebahcuan, game ternak lebah 3d, nonton video dapat uang, panen madu cuan, aplikasi penghasil saldo dana');
+$_seo_author = setting($pdo, 'seo_author', 'LebahCuan Official');
+$_seo_twcard = setting($pdo, 'seo_twitter_card', 'summary_large_image');
+$_seo_og_img = setting($pdo, 'seo_og_image', '/assets/seobanner.jpg');
+
+$_og_disk = dirname(__DIR__) . '/' . ltrim(preg_replace('~\?.*$~', '', $_seo_og_img), '/');
+if (!$_seo_og_img || !file_exists($_og_disk)) {
+    $_seo_og_img = '/assets/seobanner.jpg';
+}
+$absolute_og = preg_match('~^https?://~', $_seo_og_img) ? $_seo_og_img : base_url(ltrim($_seo_og_img, '/'));
+$fav_url     = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : base_url(ltrim($_favicon, '/'))) : base_url('assets/favicon.png');
+$og_mime     = str_ends_with(strtolower($absolute_og), '.png') ? 'image/png' : 'image/jpeg';
+$current_url = base_url('login');
 $_page_title = 'Masuk Akun — ' . $_seo_title;
+$_final_og_title = setting($pdo, 'seo_og_title', 'LebahCuan — Main Game Ternak Lebah & Panen Saldo Nyata Tiap Hari!');
+$_final_og_desc  = setting($pdo, 'seo_og_description', $_seo_desc);
 ?>
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" prefix="og: https://ogp.me/ns#">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#78350f">
 <title><?= htmlspecialchars($_page_title) ?></title>
+<link rel="canonical" href="<?= htmlspecialchars($current_url) ?>">
+<meta name="description" content="<?= htmlspecialchars($_final_og_desc) ?>">
+<?php if ($_seo_kw): ?><meta name="keywords" content="<?= htmlspecialchars($_seo_kw) ?>"><?php endif; ?>
+<?php if ($_seo_author): ?><meta name="author" content="<?= htmlspecialchars($_seo_author) ?>"><?php endif; ?>
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph / Facebook / WhatsApp / Telegram Meta Tags -->
+<meta property="og:locale" content="id_ID">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="<?= htmlspecialchars($_site_name) ?>">
+<meta property="og:url" content="<?= htmlspecialchars($current_url) ?>">
+<meta property="og:title" content="<?= htmlspecialchars($_final_og_title) ?>">
+<meta property="og:description" content="<?= htmlspecialchars($_final_og_desc) ?>">
+<meta property="og:image" content="<?= htmlspecialchars($absolute_og) ?>">
+<meta property="og:image:secure_url" content="<?= htmlspecialchars($absolute_og) ?>">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="<?= $og_mime ?>">
+<meta property="og:image:alt" content="<?= htmlspecialchars($_final_og_title) ?>">
+
+<!-- Twitter Card Meta Tags -->
+<meta name="twitter:card" content="<?= htmlspecialchars($_seo_twcard) ?>">
+<meta name="twitter:site" content="@LebahCuan">
+<meta name="twitter:creator" content="@LebahCuan">
+<meta name="twitter:url" content="<?= htmlspecialchars($current_url) ?>">
+<meta name="twitter:title" content="<?= htmlspecialchars($_final_og_title) ?>">
+<meta name="twitter:description" content="<?= htmlspecialchars($_final_og_desc) ?>">
+<meta name="twitter:image" content="<?= htmlspecialchars($absolute_og) ?>">
+<meta name="twitter:image:alt" content="<?= htmlspecialchars($_final_og_title) ?>">
+
+<link rel="icon" type="image/png" sizes="192x192" href="<?= htmlspecialchars($fav_url) ?>">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+<link rel="shortcut icon" href="/assets/favicon.ico">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
 <!-- Phosphor Icons (CDN) -->
 <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
-
-<?php if ($_favicon): ?>
-<link rel="icon" href="<?= htmlspecialchars($_favicon) ?>">
-<?php endif; ?>
 
 <style>
 /* ══════════════════════════════════════════════════════════

@@ -583,8 +583,17 @@ if (!function_exists('base_url')) {
         if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
             $scheme = 'https';
         }
-        $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $root   = rtrim($scheme . '://' . $host . '/', '/') . '/';
+        if (!empty($_SERVER['HTTP_CF_VISITOR'])) {
+            $cf = json_decode((string)$_SERVER['HTTP_CF_VISITOR'], true);
+            if (!empty($cf['scheme']) && $cf['scheme'] === 'https') {
+                $scheme = 'https';
+            }
+        }
+        $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
+        if (str_contains($host, ',')) {
+            $host = trim(explode(',', $host)[0]);
+        }
+        $root = rtrim($scheme . '://' . $host . '/', '/') . '/';
         return $root . ltrim($path, '/');
     }
 }

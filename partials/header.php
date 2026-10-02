@@ -29,8 +29,12 @@ $_site_logo   = site_logo($pdo);
 <?php if ($_seo_kw):   ?><meta name="keywords"    content="<?= htmlspecialchars($_seo_kw) ?>"><?php endif; ?>
 <?php if ($_seo_author):?><meta name="author"     content="<?= htmlspecialchars($_seo_author) ?>"><?php endif; ?>
 <meta name="robots" content="<?= htmlspecialchars($_seo_robots) ?>">
-<?php
-$absolute_og = $_seo_og ? (preg_match('~^https?://~', $_seo_og) ? $_seo_og : base_url(ltrim($_seo_og, '/'))) : base_url('assets/seobanner.png');
+$og_disk = $_seo_og ? dirname(__DIR__) . '/' . ltrim(preg_replace('~\?.*$~', '', $_seo_og), '/') : '';
+if (!$_seo_og || !file_exists($og_disk)) {
+    $_seo_og = '/assets/seobanner.jpg';
+}
+$absolute_og = preg_match('~^https?://~', $_seo_og) ? $_seo_og : base_url(ltrim($_seo_og, '/'));
+$og_mime = str_ends_with(strtolower($absolute_og), '.png') ? 'image/png' : 'image/jpeg';
 $fav_url = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : '/' . ltrim($_favicon, '/')) : '/assets/favicon.png';
 $current_url = base_url(ltrim($_SERVER['REQUEST_URI'] ?? '', '/'));
 $final_og_title = $_seo_og_title ?: (($pageTitle ?? '') ? $pageTitle . ' — ' . $_seo_title : $_seo_title);
@@ -50,7 +54,7 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
 <meta property="og:image:secure_url" content="<?= htmlspecialchars($absolute_og) ?>">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:type" content="image/png">
+<meta property="og:image:type" content="<?= $og_mime ?>">
 <meta property="og:image:alt" content="<?= htmlspecialchars($_site_name) ?>">
 <?php endif; ?>
 <meta name="twitter:card" content="<?= htmlspecialchars($_seo_twcard) ?>">
