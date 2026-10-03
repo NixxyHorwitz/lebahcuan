@@ -29,6 +29,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($_SESSION[$ip_key . '_att'], $_SESSION[$ip_key . '_lock']);
         session_regenerate_id(true);
         set_auth_cookie((int)$user['id']);
+        try {
+            $pdo->prepare("UPDATE users SET last_seen = NOW() WHERE id = ?")->execute([(int)$user['id']]);
+        } catch (\Throwable) {}
         redirect('/home');
     }
 

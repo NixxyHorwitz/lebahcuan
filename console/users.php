@@ -201,6 +201,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+if (!function_exists('time_ago_id')) {
+    function time_ago_id(?string $datetime): array {
+        if (!$datetime) return ['text' => 'Belum masuk', 'online' => false, 'exact' => '-'];
+        $ts = strtotime($datetime);
+        $diff = time() - $ts;
+        $exact = date('d M Y, H:i', $ts);
+        
+        if ($diff < 180) { // < 3 menit
+            return ['text' => 'Online sekarang', 'online' => true, 'exact' => $exact];
+        }
+        if ($diff < 3600) {
+            $m = max(1, (int)floor($diff / 60));
+            return ['text' => "{$m} mnt lalu", 'online' => false, 'exact' => $exact];
+        }
+        if ($diff < 86400) {
+            $h = (int)floor($diff / 3600);
+            return ['text' => "{$h} jam lalu", 'online' => false, 'exact' => $exact];
+        }
+        if ($diff < 86400 * 7) {
+            $d = (int)floor($diff / 86400);
+            return ['text' => "{$d} hari lalu", 'online' => false, 'exact' => $exact];
+        }
+        return ['text' => date('d/m/y H:i', $ts), 'online' => false, 'exact' => $exact];
+    }
+}
+
 $memberships = $pdo->query("SELECT id, name FROM memberships WHERE is_active=1 ORDER BY sort_order ASC")->fetchAll();
 
 $limit = 50;
@@ -210,8 +236,13 @@ $q     = trim($_GET['q'] ?? '');
 $where = "";
 $params = [];
 if ($q !== '') {
-    $where = "WHERE u.username LIKE ? OR u.email LIKE ?";
-    $params = ["%{$q}%", "%{$q}%"];
+    if (is_numeric($q)) {
+        $where = "WHERE u.id = ? OR u.username LIKE ? OR u.email LIKE ?";
+        $params = [(int)$q, "%{$q}%", "%{$q}%"];
+    } else {
+        $where = "WHERE u.username LIKE ? OR u.email LIKE ?";
+        $params = ["%{$q}%", "%{$q}%"];
+    }
 }
 
 $stmtTotal = $pdo->prepare("SELECT COUNT(*) FROM users u $where");
@@ -236,7 +267,7 @@ require __DIR__ . '/partials/header.php';
     <small class="text-secondary"><?= number_format($total) ?> pengguna <?= $q ? 'ditemukan' : 'terdaftar' ?></small>
   </div>
   <form method="GET" class="d-flex gap-2">
-    <input type="text" name="q" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Cari username / email..." value="<?= htmlspecialchars($q) ?>">
+    <input type="text" name="q" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Cari ID / username / email..." value="<?= htmlspecialchars($q) ?>">
     <button type="submit" class="btn btn-sm btn-primary">Cari</button>
     <?php if ($q): ?>
     <a href="users.php" class="btn btn-sm btn-secondary">Reset</a>
@@ -251,16 +282,46 @@ require __DIR__ . '/partials/header.php';
 <div class="c-card">
   <div style="overflow-x:auto">
     <table class="c-table" style="white-space: nowrap;">
-      <thead><tr><th>Username</th><th>Email / WA</th><th>Saldo (WD/Dep)</th><th>Total Earned</th><th>Paket</th><th>Referral</th><th>Status</th><th>Aksi</th></tr></thead>
-      <tbody>
-        <?php foreach ($users as $u): ?>
+      <thead>
         <tr>
+          <th style="width:65px">ID</th>
+          <th>Username</th>
+          <th>Terakhir Masuk (Last Seen)</th>
+          <th>Email / WA</th>
+          <th>Saldo (WD/Dep)</th>
+          <th>Total Earned</th>
+          <th>Paket</th>
+          <th>Referral</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($users as $u): 
+          $ls = time_ago_id($u['last_seen'] ?? null);
+        ?>
+        <tr>
+          <td data-label="ID">
+            <span class="badge" style="background:rgba(255,255,255,0.06);color:#e2e8f0;font-family:monospace;font-size:11.5px;padding:3px 7px;border-radius:6px;border:1px solid rgba(255,255,255,0.12)">#<?= $u['id'] ?></span>
+          </td>
           <td data-label="Username">
             <strong style="font-size:13px"><?= htmlspecialchars($u['username']) ?></strong>
             <?php if (!empty($u['is_debug'])): ?>
               <span class="badge" style="background:#6366f1;color:#fff;font-size:9.5px;padding:2px 6px;border-radius:6px;margin-left:4px" title="Mode Debug Tester Aktif">🛠 DEBUG</span>
             <?php endif; ?>
-            <div style="font-size:11px;color:#555"><?= date('d M Y', strtotime($u['created_at'])) ?></div>
+            <div style="font-size:11px;color:#555">Daftar: <?= date('d M Y', strtotime($u['created_at'])) ?></div>
+          </td>
+          <td data-label="Last Seen">
+            <div class="d-flex align-items-center gap-2" title="<?= $ls['exact'] ?>">
+              <?php if ($ls['online']): ?>
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;flex-shrink:0;"></span>
+                <span style="color:#10b981;font-weight:700;font-size:11.5px"><?= $ls['text'] ?></span>
+              <?php else: ?>
+                <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#64748b;flex-shrink:0;"></span>
+                <span style="color:#94a3b8;font-size:11.5px"><?= $ls['text'] ?></span>
+              <?php endif; ?>
+            </div>
+            <div style="font-size:10px;color:#555;margin-top:2px"><?= $ls['exact'] ?></div>
           </td>
           <td data-label="Kontak"><div style="font-size:12px"><?= htmlspecialchars($u['email']) ?></div><div style="font-size:11px;color:#666"><?= htmlspecialchars($u['whatsapp']) ?></div></td>
           <td data-label="Saldo"><div style="color:#4CAF82;font-weight:700;font-size:12px">WD: <?= format_rp((float)$u['balance_wd']) ?></div><div style="color:#4E9BFF;font-size:11px">Dep: <?= format_rp((float)$u['balance_dep']) ?></div></td>

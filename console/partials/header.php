@@ -202,7 +202,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
   transition: max-height .28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .c-nav-collapse-group.open .c-nav-collapse-body {
-  max-height: 400px;
+  max-height: 650px;
 }
 .c-nav-collapse-inner {
   margin: 3px 0 5px 14px;
@@ -406,127 +406,53 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
   </div>
 
   <nav class="c-sidebar__nav">
+    <!-- 1. UTAMA -->
     <div class="c-sidebar__label">Utama</div>
     <?php if (staff_can('dashboard')): ?>
     <a href="/console/" class="c-nav-link <?= $activePage==='dashboard'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      Dashboard
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span>Dashboard</span>
     </a>
     <?php endif; ?>
 
-    <div class="c-sidebar__label" style="margin-top:8px">Sistem Ternak Lebah 🐝</div>
-    <?php if (staff_can('bee_farm')): ?>
-    <a href="/console/bee_farm.php" class="c-nav-link <?= $activePage==='bee_farm'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5z"/><path d="M12 22V12"/><path d="M21 7l-9 5L3 7"/></svg>
-      Kelola Ternak Lebah
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('bee_logs')): ?>
-    <a href="/console/bee_logs.php" class="c-nav-link <?= $activePage==='bee_logs'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-      Log Panen &amp; Jual Madu
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('users')): ?>
-    <a href="/console/requests.php" class="c-nav-link <?= $activePage==='requests'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-      Permintaan
-      <?php if ($pending_req > 0): ?><span class="badge-dot"><?= $pending_req ?></span><?php endif; ?>
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('videos')): ?>
-    <a href="/console/videos.php" class="c-nav-link <?= $activePage==='videos'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-      Manajemen Video
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('users')): ?>
-    <a href="/console/users.php" class="c-nav-link <?= $activePage==='users'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-      Pengguna
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('user_txns')): ?>
-    <a href="/console/user_txns" class="c-nav-link <?= $activePage==='user_txns'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      Transaksi User
-    </a>
-    <?php endif; ?>
-
-    <div class="c-sidebar__label" style="margin-top:6px">Keuangan</div>
-    <?php if (staff_can('deposits')): ?>
-    <a href="/console/deposits.php" class="c-nav-link <?= $activePage==='deposits'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-      Deposit
-      <?php if ($pending_dep > 0): ?><span class="badge-dot"><?= $pending_dep ?></span><?php endif; ?>
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('withdrawals')): ?>
-    <a href="/console/withdrawals.php" class="c-nav-link <?= $activePage==='withdrawals'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
-      Withdraw
-      <?php if ($pending_wd > 0): ?><span class="badge-dot"><?= $pending_wd ?></span><?php endif; ?>
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('transaction_flow') || staff_can('deposits')): ?>
-    <a href="/console/transaction_flow.php" class="c-nav-link <?= $activePage==='transaction_flow'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-      Transaction Flow
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('settings')): ?>
-    <a href="/console/wd_settings.php" class="c-nav-link <?= $activePage==='wd_settings'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/><path d="M21 12H3"/></svg>
-      Wd Settings
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('upgrades')): ?>
-    <a href="/console/upgrades.php" class="c-nav-link <?= $activePage==='upgrades'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      Upgrade Orders
-      <?php if ($pending_upg > 0): ?><span class="badge-dot"><?= $pending_upg ?></span><?php endif; ?>
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('orders')): ?>
-    <a href="/console/orders.php" class="c-nav-link <?= $activePage==='orders'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
-      Orders
-      <?php if ($pending_ord > 0): ?><span class="badge-dot"><?= $pending_ord ?></span><?php endif; ?>
-    </a>
-    <?php endif; ?>
-
+    <!-- 2. PUSAT ANALISIS & DATA (COLLAPSIBLE) -->
     <?php
-    $analyticsPages = ['analytics', 'video_analytics', 'registration_analytics', 'target', 'heartbeats', 'qris_logs', 'missions'];
-    $isAnalyticsActive = in_array($activePage ?? '', $analyticsPages, true);
-
-    $allowedAnalyticsCount = 0;
-    if (staff_can('analytics')) $allowedAnalyticsCount += 4; // analytics, registration_analytics, heartbeats, missions
-    if (staff_can('video_analytics')) $allowedAnalyticsCount += 1;
-    if (staff_can('target')) $allowedAnalyticsCount += 1;
-    if (staff_can('analytics') || staff_can('deposits')) $allowedAnalyticsCount += 1; // qris_logs
-    $canViewAnyAnalytics = $allowedAnalyticsCount > 0;
+    $analPages = ['activity_analytics', 'transaction_flow', 'analytics', 'video_analytics', 'registration_analytics', 'target', 'heartbeats', 'qris_logs', 'missions'];
+    $isAnalActive = in_array($activePage ?? '', $analPages, true);
+    $canAnal = staff_can('analytics') || staff_can('video_analytics') || staff_can('target') || staff_can('transaction_flow') || staff_can('deposits');
     ?>
-
-    <?php if ($canViewAnyAnalytics): ?>
-    <div class="c-sidebar__label" style="margin-top:6px">Pusat Analisis 📊</div>
-    <div class="c-nav-collapse-group <?= $isAnalyticsActive ? 'open' : '' ?>" id="nav-collapse-analytics">
-      <button type="button" class="c-nav-collapse-btn <?= $isAnalyticsActive ? 'is-active' : '' ?>" onclick="toggleSidebarCollapse('nav-collapse-analytics')" aria-expanded="<?= $isAnalyticsActive ? 'true' : 'false' ?>">
+    <?php if ($canAnal): ?>
+    <div class="c-sidebar__label" style="margin-top:6px">Pusat Analisis &amp; Data 📈</div>
+    <div class="c-nav-collapse-group <?= $isAnalActive ? 'open' : '' ?>" id="nav-col-analytics">
+      <button type="button" class="c-nav-collapse-btn <?= $isAnalActive ? 'is-active' : '' ?>" onclick="toggleSidebarCollapse('nav-col-analytics')" aria-expanded="<?= $isAnalActive ? 'true' : 'false' ?>">
         <div class="c-nav-collapse-btn__left">
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-          <span>Analisis &amp; Log</span>
+          <span>Pusat Analitik</span>
         </div>
         <div class="c-nav-collapse-btn__right">
-          <span class="c-nav-collapse-badge"><?= $allowedAnalyticsCount ?> Menu</span>
+          <span class="c-nav-collapse-badge">9 Menu</span>
           <svg class="c-nav-collapse-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
       </button>
 
       <div class="c-nav-collapse-body">
         <div class="c-nav-collapse-inner">
+          <a href="/console/activity_analytics.php" class="c-nav-sublink <?= $activePage==='activity_analytics'?'active':'' ?>" style="background:rgba(245,158,11,0.08);color:#fbbf24;font-weight:700;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#fbbf24;"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span>⭐ Analisis Aktivitas Utama</span>
+          </a>
+
+          <?php if (staff_can('transaction_flow') || staff_can('deposits')): ?>
+          <a href="/console/transaction_flow.php" class="c-nav-sublink <?= $activePage==='transaction_flow'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span>Transaction Flow</span>
+          </a>
+          <?php endif; ?>
+
           <?php if (staff_can('analytics')): ?>
           <a href="/console/analytics.php" class="c-nav-sublink <?= $activePage==='analytics'?'active':'' ?>">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            <span>Traffic Analytics</span>
+            <span>Traffic &amp; Pengunjung</span>
           </a>
           <?php endif; ?>
 
@@ -576,113 +502,340 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
     </div>
     <?php endif; ?>
 
-    <div class="c-sidebar__label" style="margin-top:6px">Interaksi &amp; Promosi 🎁</div>
-    <?php if (staff_can('analytics') || staff_can('users')): ?>
-    <a href="/console/promotors.php" class="c-nav-link <?= $activePage==='promotors'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-      Kelola Promotor
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('surveys') || staff_can('analytics') || staff_can('users')): ?>
-    <a href="/console/surveys.php" class="c-nav-link <?= $activePage==='surveys'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-      Survei Pengguna
-      <?php
-        try {
-          $survey_count = (int)$pdo->query("SELECT COUNT(*) FROM user_surveys")->fetchColumn();
-          if ($survey_count > 0): ?><span class="badge-dot" style="background:#f59e0b;color:#000;font-size:10px;font-weight:800;"><?= $survey_count ?></span><?php endif;
-        } catch (\Throwable) {}
-      ?>
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('redeem')): ?>
-    <a href="/console/redeem.php" class="c-nav-link <?= $activePage==='redeem'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 12v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><path d="M12 14v4"/><path d="M9 16h6"/><rect x="4" y="12" width="16" height="10" rx="2"/></svg>
-      Kode Redeem
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('vouchers')): ?>
-    <a href="/console/vouchers.php" class="c-nav-link <?= $activePage==='vouchers'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 5v2m0 4v2M5 5v2m0 4v2M3 7h18M3 17h18M3 12h18"/></svg>
-      Voucher Diskon
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('investments')): ?>
-    <a href="/console/investments.php" class="c-nav-link <?= $activePage==='investments'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      Investasi Ponzi
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('livechat')): ?>
-    <a href="/console/livechat.php" class="c-nav-link <?= $activePage==='livechat'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-      Live Chat
-      <?php
-        try { $pending_chat = (int)$pdo->query("SELECT COUNT(*) FROM chat_sessions WHERE status='open'")->fetchColumn(); } catch(\Throwable) { $pending_chat = 0; }
-        if ($pending_chat > 0): ?><span class="badge-dot"><?= $pending_chat ?></span><?php endif; ?>
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('notifications')): ?>
-    <a href="/console/notifications" class="c-nav-link <?= $activePage==='notifications'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-      Push Notifikasi
-    </a>
+    <!-- 3. PETERNAKAN & KONTEN LEBAH (COLLAPSIBLE) -->
+    <?php
+    $farmPages = ['bee_farm', 'bee_logs', 'videos', 'memberships'];
+    $isFarmActive = in_array($activePage ?? '', $farmPages, true);
+    $canFarm = staff_can('bee_farm') || staff_can('bee_logs') || staff_can('videos') || staff_can('memberships');
+    ?>
+    <?php if ($canFarm): ?>
+    <div class="c-sidebar__label" style="margin-top:6px">Ternak &amp; Konten 🐝</div>
+    <div class="c-nav-collapse-group <?= $isFarmActive ? 'open' : '' ?>" id="nav-col-farm">
+      <button type="button" class="c-nav-collapse-btn <?= $isFarmActive ? 'is-active' : '' ?>" onclick="toggleSidebarCollapse('nav-col-farm')" aria-expanded="<?= $isFarmActive ? 'true' : 'false' ?>">
+        <div class="c-nav-collapse-btn__left">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5z"/><path d="M12 22V12"/><path d="M21 7l-9 5L3 7"/></svg>
+          <span>Sistem Peternakan</span>
+        </div>
+        <div class="c-nav-collapse-btn__right">
+          <svg class="c-nav-collapse-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </button>
+
+      <div class="c-nav-collapse-body">
+        <div class="c-nav-collapse-inner">
+          <?php if (staff_can('bee_farm')): ?>
+          <a href="/console/bee_farm.php" class="c-nav-sublink <?= $activePage==='bee_farm'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5z"/><path d="M12 22V12"/><path d="M21 7l-9 5L3 7"/></svg>
+            <span>Kelola Ternak Lebah</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('bee_logs')): ?>
+          <a href="/console/bee_logs.php" class="c-nav-sublink <?= $activePage==='bee_logs'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Log Panen &amp; Jual Madu</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('videos')): ?>
+          <a href="/console/videos.php" class="c-nav-sublink <?= $activePage==='videos'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            <span>Manajemen Video</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('memberships')): ?>
+          <a href="/console/memberships.php" class="c-nav-sublink <?= $activePage==='memberships'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+            <span>Paket Membership</span>
+          </a>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
     <?php endif; ?>
 
-    <div class="c-sidebar__label" style="margin-top:6px">Tampilan & Konten</div>
-    <?php if (staff_can('memberships')): ?>
-    <a href="/console/memberships.php" class="c-nav-link <?= $activePage==='memberships'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-      Paket Membership
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('panduan')): ?>
-    <a href="/console/panduan" class="c-nav-link <?= $activePage==='panduan'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-      Panduan &amp; Popup
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('contacts')): ?>
-    <a href="/console/contacts" class="c-nav-link <?= $activePage==='contacts'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-      Tombol Kontak
-    </a>
+    <!-- 4. KEUANGAN & TRANSAKSI (COLLAPSIBLE) -->
+    <?php
+    $finPages = ['deposits', 'withdrawals', 'wd_settings', 'upgrades', 'orders'];
+    $isFinActive = in_array($activePage ?? '', $finPages, true);
+    $canFin = staff_can('deposits') || staff_can('withdrawals') || staff_can('settings') || staff_can('upgrades') || staff_can('orders');
+    $finPendingSum = $pending_dep + $pending_wd + $pending_upg + $pending_ord;
+    ?>
+    <?php if ($canFin): ?>
+    <div class="c-sidebar__label" style="margin-top:6px">Keuangan &amp; Order 💰</div>
+    <div class="c-nav-collapse-group <?= $isFinActive ? 'open' : '' ?>" id="nav-col-finance">
+      <button type="button" class="c-nav-collapse-btn <?= $isFinActive ? 'is-active' : '' ?>" onclick="toggleSidebarCollapse('nav-col-finance')" aria-expanded="<?= $isFinActive ? 'true' : 'false' ?>">
+        <div class="c-nav-collapse-btn__left">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          <span>Keuangan Platform</span>
+        </div>
+        <div class="c-nav-collapse-btn__right">
+          <?php if ($finPendingSum > 0): ?>
+            <span class="badge-dot" style="background:#e11d48;color:#fff;"><?= $finPendingSum ?></span>
+          <?php endif; ?>
+          <svg class="c-nav-collapse-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </button>
+
+      <div class="c-nav-collapse-body">
+        <div class="c-nav-collapse-inner">
+          <?php if (staff_can('deposits')): ?>
+          <a href="/console/deposits.php" class="c-nav-sublink <?= $activePage==='deposits'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            <span>Deposit User</span>
+            <?php if ($pending_dep > 0): ?><span class="badge-dot ms-auto"><?= $pending_dep ?></span><?php endif; ?>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('withdrawals')): ?>
+          <a href="/console/withdrawals.php" class="c-nav-sublink <?= $activePage==='withdrawals'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+            <span>Withdraw</span>
+            <?php if ($pending_wd > 0): ?><span class="badge-dot ms-auto"><?= $pending_wd ?></span><?php endif; ?>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('settings')): ?>
+          <a href="/console/wd_settings.php" class="c-nav-sublink <?= $activePage==='wd_settings'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/><path d="M21 12H3"/></svg>
+            <span>WD Settings</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('upgrades')): ?>
+          <a href="/console/upgrades.php" class="c-nav-sublink <?= $activePage==='upgrades'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span>Upgrade Orders</span>
+            <?php if ($pending_upg > 0): ?><span class="badge-dot ms-auto"><?= $pending_upg ?></span><?php endif; ?>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('orders')): ?>
+          <a href="/console/orders.php" class="c-nav-sublink <?= $activePage==='orders'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+            <span>Orders Produk</span>
+            <?php if ($pending_ord > 0): ?><span class="badge-dot ms-auto"><?= $pending_ord ?></span><?php endif; ?>
+          </a>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
     <?php endif; ?>
 
-    <div class="c-sidebar__label" style="margin-top:6px">Sistem & Pengaturan</div>
-    <?php if (staff_can('payment')): ?>
-    <a href="/console/payment.php" class="c-nav-link <?= $activePage==='payment'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-      Rekening &amp; QRIS
-    </a>
-    <a href="/console/banks" class="c-nav-link <?= $activePage==='banks'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Bank &amp; E-Wallet
-    </a>
+    <!-- 5. PENGGUNA & AKSES (COLLAPSIBLE) -->
+    <?php
+    $usrPages = ['users', 'user_txns', 'requests', 'livechat'];
+    $isUsrActive = in_array($activePage ?? '', $usrPages, true);
+    $canUsr = staff_can('users') || staff_can('user_txns') || staff_can('livechat');
+    $usrPendingSum = $pending_req;
+    try {
+        $pChat = (int)$pdo->query("SELECT COUNT(*) FROM chat_sessions WHERE status='open'")->fetchColumn();
+    } catch(\Throwable) { $pChat = 0; }
+    $usrPendingSum += $pChat;
+    ?>
+    <?php if ($canUsr): ?>
+    <div class="c-sidebar__label" style="margin-top:6px">Pengguna &amp; Chat 👥</div>
+    <div class="c-nav-collapse-group <?= $isUsrActive ? 'open' : '' ?>" id="nav-col-users">
+      <button type="button" class="c-nav-collapse-btn <?= $isUsrActive ? 'is-active' : '' ?>" onclick="toggleSidebarCollapse('nav-col-users')" aria-expanded="<?= $isUsrActive ? 'true' : 'false' ?>">
+        <div class="c-nav-collapse-btn__left">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          <span>Pengguna &amp; CS</span>
+        </div>
+        <div class="c-nav-collapse-btn__right">
+          <?php if ($usrPendingSum > 0): ?>
+            <span class="badge-dot" style="background:#e11d48;color:#fff;"><?= $usrPendingSum ?></span>
+          <?php endif; ?>
+          <svg class="c-nav-collapse-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </button>
+
+      <div class="c-nav-collapse-body">
+        <div class="c-nav-collapse-inner">
+          <?php if (staff_can('users')): ?>
+          <a href="/console/users.php" class="c-nav-sublink <?= $activePage==='users'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <span>Kelola Pengguna</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('user_txns')): ?>
+          <a href="/console/user_txns" class="c-nav-sublink <?= $activePage==='user_txns'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span>Transaksi User</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('users')): ?>
+          <a href="/console/requests.php" class="c-nav-sublink <?= $activePage==='requests'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            <span>Permintaan</span>
+            <?php if ($pending_req > 0): ?><span class="badge-dot ms-auto"><?= $pending_req ?></span><?php endif; ?>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('livechat')): ?>
+          <a href="/console/livechat.php" class="c-nav-sublink <?= $activePage==='livechat'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <span>Live Chat CS</span>
+            <?php if ($pChat > 0): ?><span class="badge-dot ms-auto"><?= $pChat ?></span><?php endif; ?>
+          </a>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
     <?php endif; ?>
-    <?php if (staff_can('seo')): ?>
-    <a href="/console/seo.php" class="c-nav-link <?= $activePage==='seo'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      SEO Management
-    </a>
+
+    <!-- 6. PROMOSI & MARKETING (COLLAPSIBLE) -->
+    <?php
+    $mktPages = ['promotors', 'surveys', 'redeem', 'vouchers', 'investments', 'notifications'];
+    $isMktActive = in_array($activePage ?? '', $mktPages, true);
+    $canMkt = staff_can('analytics') || staff_can('users') || staff_can('surveys') || staff_can('redeem') || staff_can('vouchers') || staff_can('investments') || staff_can('notifications');
+    try {
+        $surveyCount = (int)$pdo->query("SELECT COUNT(*) FROM user_surveys")->fetchColumn();
+    } catch(\Throwable) { $surveyCount = 0; }
+    ?>
+    <?php if ($canMkt): ?>
+    <div class="c-sidebar__label" style="margin-top:6px">Promosi &amp; Reward 🎁</div>
+    <div class="c-nav-collapse-group <?= $isMktActive ? 'open' : '' ?>" id="nav-col-promo">
+      <button type="button" class="c-nav-collapse-btn <?= $isMktActive ? 'is-active' : '' ?>" onclick="toggleSidebarCollapse('nav-col-promo')" aria-expanded="<?= $isMktActive ? 'true' : 'false' ?>">
+        <div class="c-nav-collapse-btn__left">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 12v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><path d="M12 14v4"/><path d="M9 16h6"/><rect x="4" y="12" width="16" height="10" rx="2"/></svg>
+          <span>Program &amp; Promo</span>
+        </div>
+        <div class="c-nav-collapse-btn__right">
+          <?php if ($surveyCount > 0): ?>
+            <span class="badge" style="background:#f59e0b;color:#000;font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:6px;"><?= $surveyCount ?></span>
+          <?php endif; ?>
+          <svg class="c-nav-collapse-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </button>
+
+      <div class="c-nav-collapse-body">
+        <div class="c-nav-collapse-inner">
+          <?php if (staff_can('analytics') || staff_can('users')): ?>
+          <a href="/console/promotors.php" class="c-nav-sublink <?= $activePage==='promotors'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            <span>Kelola Promotor</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('surveys') || staff_can('analytics') || staff_can('users')): ?>
+          <a href="/console/surveys.php" class="c-nav-sublink <?= $activePage==='surveys'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Survei Pengguna</span>
+            <?php if ($surveyCount > 0): ?><span class="badge ms-auto" style="background:#f59e0b;color:#000;font-size:9.5px;font-weight:800;padding:1px 5px;"><?= $surveyCount ?></span><?php endif; ?>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('redeem')): ?>
+          <a href="/console/redeem.php" class="c-nav-sublink <?= $activePage==='redeem'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 12v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><path d="M12 14v4"/><path d="M9 16h6"/><rect x="4" y="12" width="16" height="10" rx="2"/></svg>
+            <span>Kode Redeem</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('vouchers')): ?>
+          <a href="/console/vouchers.php" class="c-nav-sublink <?= $activePage==='vouchers'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 5v2m0 4v2M5 5v2m0 4v2M3 7h18M3 17h18M3 12h18"/></svg>
+            <span>Voucher Diskon</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('investments')): ?>
+          <a href="/console/investments.php" class="c-nav-sublink <?= $activePage==='investments'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            <span>Investasi Ponzi</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('notifications')): ?>
+          <a href="/console/notifications" class="c-nav-sublink <?= $activePage==='notifications'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <span>Push Notifikasi</span>
+          </a>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
     <?php endif; ?>
-    <?php if (staff_can('settings')): ?>
-    <a href="/console/settings.php" class="c-nav-link <?= $activePage==='settings'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-      Pengaturan Umum
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('orderkuota')): ?>
-    <a href="/console/orderkuota.php" class="c-nav-link <?= $activePage==='orderkuota'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      API OrderKuota
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('staff')): ?>
-    <a href="/console/staff.php" class="c-nav-link <?= $activePage==='staff'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>
-      Kelola Staff
-    </a>
+
+    <!-- 7. SISTEM & PENGATURAN (COLLAPSIBLE) -->
+    <?php
+    $sysPages = ['payment', 'banks', 'seo', 'panduan', 'contacts', 'orderkuota', 'settings', 'staff'];
+    $isSysActive = in_array($activePage ?? '', $sysPages, true);
+    $canSys = staff_can('payment') || staff_can('seo') || staff_can('panduan') || staff_can('contacts') || staff_can('orderkuota') || staff_can('settings') || staff_can('staff');
+    ?>
+    <?php if ($canSys): ?>
+    <div class="c-sidebar__label" style="margin-top:6px">Sistem &amp; Pengaturan ⚙️</div>
+    <div class="c-nav-collapse-group <?= $isSysActive ? 'open' : '' ?>" id="nav-col-settings">
+      <button type="button" class="c-nav-collapse-btn <?= $isSysActive ? 'is-active' : '' ?>" onclick="toggleSidebarCollapse('nav-col-settings')" aria-expanded="<?= $isSysActive ? 'true' : 'false' ?>">
+        <div class="c-nav-collapse-btn__left">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span>Konfigurasi &amp; App</span>
+        </div>
+        <div class="c-nav-collapse-btn__right">
+          <svg class="c-nav-collapse-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </button>
+
+      <div class="c-nav-collapse-body">
+        <div class="c-nav-collapse-inner">
+          <?php if (staff_can('payment')): ?>
+          <a href="/console/payment.php" class="c-nav-sublink <?= $activePage==='payment'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <span>Rekening &amp; QRIS</span>
+          </a>
+          <a href="/console/banks" class="c-nav-sublink <?= $activePage==='banks'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Bank &amp; E-Wallet</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('seo')): ?>
+          <a href="/console/seo.php" class="c-nav-sublink <?= $activePage==='seo'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>SEO Management</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('panduan')): ?>
+          <a href="/console/panduan" class="c-nav-sublink <?= $activePage==='panduan'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+            <span>Panduan &amp; Popup</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('contacts')): ?>
+          <a href="/console/contacts" class="c-nav-sublink <?= $activePage==='contacts'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <span>Tombol Kontak</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('orderkuota')): ?>
+          <a href="/console/orderkuota.php" class="c-nav-sublink <?= $activePage==='orderkuota'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>API OrderKuota</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('settings')): ?>
+          <a href="/console/settings.php" class="c-nav-sublink <?= $activePage==='settings'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            <span>Pengaturan Umum</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('staff')): ?>
+          <a href="/console/staff.php" class="c-nav-sublink <?= $activePage==='staff'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>
+            <span>Kelola Staff</span>
+          </a>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
     <?php endif; ?>
   </nav>
 
@@ -711,17 +864,20 @@ function toggleSidebarCollapse(id) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  const el = document.getElementById('nav-collapse-analytics');
-  if (el && !el.classList.contains('open')) {
-    try {
-      const saved = sessionStorage.getItem('nav-collapse-analytics_state');
-      if (saved === 'open') {
-        el.classList.add('open');
-        const btn = el.querySelector('.c-nav-collapse-btn');
-        if (btn) btn.setAttribute('aria-expanded', 'true');
-      }
-    } catch(e) {}
-  }
+  const collapseIds = ['nav-col-analytics', 'nav-col-farm', 'nav-col-finance', 'nav-col-users', 'nav-col-promo', 'nav-col-settings'];
+  collapseIds.forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el && !el.classList.contains('open')) {
+      try {
+        const saved = sessionStorage.getItem(id + '_state');
+        if (saved === 'open') {
+          el.classList.add('open');
+          const btn = el.querySelector('.c-nav-collapse-btn');
+          if (btn) btn.setAttribute('aria-expanded', 'true');
+        }
+      } catch(e) {}
+    }
+  });
 });
 </script>
 

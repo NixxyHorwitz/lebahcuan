@@ -15,3 +15,16 @@ if (is_maintenance($pdo) && !auth_admin()) {
 
 // Track pageview (analytics)
 track_pageview($pdo, parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
+
+// Update last_seen user aktif (di-throttle per 60 detik)
+if (!empty($user['id'])) {
+    $now = time();
+    $last_update = (int)($_SESSION['last_seen_synced'] ?? 0);
+    if ($now - $last_update >= 60) {
+        $_SESSION['last_seen_synced'] = $now;
+        try {
+            $pdo->prepare("UPDATE users SET last_seen = NOW() WHERE id = ?")->execute([(int)$user['id']]);
+        } catch (\Throwable) {}
+    }
+}
+

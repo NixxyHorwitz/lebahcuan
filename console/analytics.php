@@ -113,7 +113,7 @@ try {
         $user_match_stmt = $pdo->prepare("
             SELECT pv.ip_hash, u.id, u.username, u.email, u.whatsapp, u.balance_dep, u.balance_wd, u.is_active, u.created_at as registered_at, m.name as membership_name
             FROM page_views pv
-            INNER JOIN users u ON u.id = pv.user_id
+            INNER JOIN users u ON (u.id = pv.user_id OR (pv.user_id IS NULL AND u.registration_ip = pv.ip_hash))
             LEFT JOIN memberships m ON m.id = u.membership_id
             WHERE pv.ip_hash IN ($placeholders)
             GROUP BY pv.ip_hash, u.id
@@ -144,6 +144,7 @@ try {
     $has_data = true;
 } catch (\Throwable $e) {
     $has_data = false;
+    $analytics_error = $e->getMessage();
     $total_pv = $unique_ip = $today_pv = 0;
     $daily = $top_pages = $top_refs = $traffic_ips = [];
     $ip_users_map = [];
@@ -177,6 +178,13 @@ require __DIR__ . '/partials/header.php';
     <?php endforeach; ?>
   </div>
 </div>
+
+<?php if (!empty($analytics_error)): ?>
+<div class="alert alert-danger d-flex align-items-center gap-2 mb-3" style="border-radius:10px;font-size:12.5px;">
+  <span>⚠️</span>
+  <div><strong>Gagal memuat sebagian data analitik:</strong> <?= htmlspecialchars($analytics_error) ?></div>
+</div>
+<?php endif; ?>
 
 <!-- Stat cards -->
 <div class="row row-cols-2 row-cols-md-5 g-3 mb-4">
