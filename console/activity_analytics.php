@@ -222,9 +222,9 @@ try {
         for ($h = 0; $h <= 23; $h++) {
             $label = sprintf("%02d:00", $h);
             $chartLabels[] = $label;
-            $chartDepoData[] = ($hourlyActivity[$h]['deposits'] ?? 0);
-            $chartViewsData[] = ($hourlyActivity[$h]['views'] ?? 0);
-            $chartWatchData[] = ($hourlyActivity[$h]['watches'] ?? 0);
+            $chartDepoData[] = (float)($hourlyActivity[$h]['deposits'] ?? 0);
+            $chartViewsData[] = (int)($hourlyActivity[$h]['views'] ?? 0);
+            $chartWatchData[] = (int)($hourlyActivity[$h]['watches'] ?? 0);
         }
     } else {
         // Mode N days
@@ -621,6 +621,7 @@ document.addEventListener('DOMContentLoaded', function() {
           yDeposit: {
             type: 'linear',
             position: 'left',
+            beginAtZero: true,
             grid: { color: 'rgba(255,255,255,0.05)' },
             ticks: {
               color: '#10b981',
@@ -628,15 +629,20 @@ document.addEventListener('DOMContentLoaded', function() {
               callback: function(val) {
                 if (val >= 1000000) return (val/1000000).toFixed(1) + 'jt';
                 if (val >= 1000) return (val/1000).toFixed(0) + 'rb';
-                return val;
+                return val > 0 ? 'Rp ' + Number(val).toLocaleString('id-ID') : '0';
               }
             }
           },
           yCount: {
             type: 'linear',
             position: 'right',
+            beginAtZero: true,
             grid: { drawOnChartArea: false },
-            ticks: { color: '#94a3b8', font: { size: 10.5 } }
+            ticks: {
+              precision: 0,
+              color: '#94a3b8',
+              font: { size: 10.5 }
+            }
           }
         }
       }
