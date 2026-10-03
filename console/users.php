@@ -279,21 +279,110 @@ require __DIR__ . '/partials/header.php';
 <div class="alert alert-<?= $flashType==='error'?'danger':'success' ?> py-2 mb-3" style="border-radius:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
 <?php endif; ?>
 
-<div class="c-card">
-  <div style="overflow-x:auto">
-    <table class="c-table" style="white-space: nowrap;">
+<style>
+.users-card {
+  background: #0f121d;
+  border: 1px solid #1f2538;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+.users-table {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: collapse;
+}
+.users-table th {
+  background: #0a0c14;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #1f2538;
+}
+.users-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid #171b29;
+  vertical-align: middle;
+}
+.users-table tbody tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+.users-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.u-act-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 3.5px 7.5px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.25;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.u-act-btn:hover {
+  transform: translateY(-1px);
+}
+.btn-u-edit { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+.btn-u-edit:hover { background: #334155; color: #fff; }
+.btn-u-detail { background: #132e27; color: #6ee7b7; border-color: #1e4d41; }
+.btn-u-detail:hover { background: #1a4238; color: #a7f3d0; }
+.btn-u-saldo { background: #1e3a5f; color: #93c5fd; border-color: #2b4f7e; }
+.btn-u-saldo:hover { background: #254a78; color: #bfdbfe; }
+.btn-u-loginas { background: #2e1065; color: #d8b4fe; border-color: #4c1d95; }
+.btn-u-loginas:hover { background: #3b0764; color: #f3e8ff; }
+.btn-u-debug-on { background: rgba(99,102,241,0.25); color: #a5b4fc; border-color: #6366f1; }
+.btn-u-debug-on:hover { background: rgba(99,102,241,0.35); color: #fff; }
+.btn-u-debug-off { background: rgba(255,255,255,0.05); color: #94a3b8; border-color: #334155; }
+.btn-u-debug-off:hover { background: rgba(255,255,255,0.1); color: #cbd5e1; }
+.btn-u-refund { background: #451a03; color: #fcd34d; border-color: #78350f; }
+.btn-u-refund:hover { background: #5a2205; color: #fde68a; }
+.btn-u-delete { background: #450a0a; color: #fca5a5; border-color: #7f1d1d; }
+.btn-u-delete:hover { background: #5f1010; color: #fecaca; }
+
+@keyframes onlinePulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.online-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: onlinePulse 2s infinite;
+  flex-shrink: 0;
+}
+.offline-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64748b;
+  flex-shrink: 0;
+}
+</style>
+
+<div class="users-card">
+  <div class="table-responsive">
+    <table class="users-table no-datatable">
       <thead>
         <tr>
-          <th style="width:65px">ID</th>
-          <th>Username</th>
-          <th>Terakhir Masuk (Last Seen)</th>
-          <th>Email / WA</th>
-          <th>Saldo (WD/Dep)</th>
-          <th>Total Earned</th>
-          <th>Paket</th>
-          <th>Referral</th>
-          <th>Status</th>
-          <th>Aksi</th>
+          <th style="min-width:240px">Pengguna &amp; Kontak</th>
+          <th style="min-width:195px">Status &amp; Aktivitas</th>
+          <th style="min-width:185px">Saldo &amp; Finansial</th>
+          <th style="min-width:160px">Paket &amp; Level</th>
+          <th style="min-width:215px">Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -301,67 +390,137 @@ require __DIR__ . '/partials/header.php';
           $ls = time_ago_id($u['last_seen'] ?? null);
         ?>
         <tr>
-          <td data-label="ID">
-            <span class="badge" style="background:rgba(255,255,255,0.06);color:#e2e8f0;font-family:monospace;font-size:11.5px;padding:3px 7px;border-radius:6px;border:1px solid rgba(255,255,255,0.12)">#<?= $u['id'] ?></span>
+          <!-- Kolom 1: Pengguna & Kontak -->
+          <td data-label="Pengguna">
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+              <span class="badge" style="background:rgba(255,255,255,0.07);color:#cbd5e1;font-family:monospace;font-size:11px;padding:2px 6px;border-radius:5px;border:1px solid rgba(255,255,255,0.12)">#<?= $u['id'] ?></span>
+              <strong style="font-size:13.5px;color:#f8fafc;letter-spacing:0.2px"><?= htmlspecialchars($u['username']) ?></strong>
+              <?php if (!empty($u['is_debug'])): ?>
+                <span class="badge" style="background:#6366f1;color:#fff;font-size:9.5px;padding:2px 5px;border-radius:4px" title="Mode Debug Tester Aktif">🛠 DEBUG</span>
+              <?php endif; ?>
+              <?php if (!empty($u['is_promotor'])): ?>
+                <span class="badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);font-size:9.5px;padding:2px 5px;border-radius:4px">⭐ Promotor</span>
+              <?php endif; ?>
+            </div>
+            <div style="font-size:11.5px;color:#94a3b8;display:flex;align-items:center;gap:5px;margin-bottom:2px" title="Email: <?= htmlspecialchars($u['email']) ?>">
+              <span style="opacity:0.6;font-size:11px">✉️</span>
+              <span style="max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;"><?= htmlspecialchars($u['email']) ?></span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between" style="font-size:11px;color:#64748b;">
+              <?php if (!empty($u['whatsapp'])): ?>
+                <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $u['whatsapp']) ?>" target="_blank" style="color:#10b981;text-decoration:none;font-weight:500;" title="WhatsApp">📱 <?= htmlspecialchars($u['whatsapp']) ?></a>
+              <?php else: ?>
+                <span style="color:#555">📱 -</span>
+              <?php endif; ?>
+              <span title="Waktu Pendaftaran" style="color:#64748b;font-size:10.5px">Reg: <?= date('d/m/y', strtotime($u['created_at'])) ?></span>
+            </div>
           </td>
-          <td data-label="Username">
-            <strong style="font-size:13px"><?= htmlspecialchars($u['username']) ?></strong>
-            <?php if (!empty($u['is_debug'])): ?>
-              <span class="badge" style="background:#6366f1;color:#fff;font-size:9.5px;padding:2px 6px;border-radius:6px;margin-left:4px" title="Mode Debug Tester Aktif">🛠 DEBUG</span>
-            <?php endif; ?>
-            <div style="font-size:11px;color:#555">Daftar: <?= date('d M Y', strtotime($u['created_at'])) ?></div>
-          </td>
-          <td data-label="Last Seen">
-            <div class="d-flex align-items-center gap-2" title="<?= $ls['exact'] ?>">
+
+          <!-- Kolom 2: Status & Aktivitas (Last Seen) -->
+          <td data-label="Status & Aktivitas">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <form method="POST" class="d-inline m-0">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="toggle_active">
+                <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+                <button type="submit" class="badge border-0 <?= $u['is_active'] ? 'b-success' : 'b-danger' ?>" style="cursor:pointer;border-radius:5px;padding:3px 7px;font-size:10.5px;font-weight:700" title="Klik untuk mengubah status akun">
+                  <?= $u['is_active'] ? '● Aktif' : '● Nonaktif' ?>
+                </button>
+              </form>
+              <span style="font-family:monospace;font-size:10.5px;color:#94a3b8;background:rgba(255,255,255,0.04);padding:2px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.08)" title="Kode Referral">
+                Ref: <strong style="color:#e2e8f0"><?= htmlspecialchars($u['referral_code']) ?></strong>
+              </span>
+            </div>
+            <div class="d-flex align-items-center gap-2" style="margin-top:4px" title="<?= $ls['exact'] ?>">
               <?php if ($ls['online']): ?>
-                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981;flex-shrink:0;"></span>
+                <span class="online-dot"></span>
                 <span style="color:#10b981;font-weight:700;font-size:11.5px"><?= $ls['text'] ?></span>
               <?php else: ?>
-                <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#64748b;flex-shrink:0;"></span>
+                <span class="offline-dot"></span>
                 <span style="color:#94a3b8;font-size:11.5px"><?= $ls['text'] ?></span>
               <?php endif; ?>
             </div>
-            <div style="font-size:10px;color:#555;margin-top:2px"><?= $ls['exact'] ?></div>
+            <div style="font-size:10px;color:#64748b;margin-top:2px">
+              🕒 <?= $ls['exact'] ?>
+            </div>
           </td>
-          <td data-label="Kontak"><div style="font-size:12px"><?= htmlspecialchars($u['email']) ?></div><div style="font-size:11px;color:#666"><?= htmlspecialchars($u['whatsapp']) ?></div></td>
-          <td data-label="Saldo"><div style="color:#4CAF82;font-weight:700;font-size:12px">WD: <?= format_rp((float)$u['balance_wd']) ?></div><div style="color:#4E9BFF;font-size:11px">Dep: <?= format_rp((float)$u['balance_dep']) ?></div></td>
-          <td data-label="Total Earned" style="color:#888;font-size:12px"><?= format_rp((float)$u['total_earned']) ?></td>
-          <td data-label="Paket">
-            <?php if ($u['membership_name'] && $u['membership_expires_at'] && strtotime($u['membership_expires_at'])>time()): ?>
-            <span class="badge b-success" style="border-radius:6px;font-size:11px"><?= htmlspecialchars($u['membership_name']) ?></span>
-            <?php else: ?><span class="badge b-neutral" style="border-radius:6px;font-size:11px"><?= htmlspecialchars(get_free_tier_name($pdo)) ?></span><?php endif; ?>
+
+          <!-- Kolom 3: Saldo & Finansial -->
+          <td data-label="Saldo & Finansial">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span style="font-size:10.5px;color:#94a3b8;font-weight:600">Saldo WD:</span>
+              <span style="color:#10b981;font-weight:700;font-size:12px"><?= format_rp((float)$u['balance_wd']) ?></span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span style="font-size:10.5px;color:#94a3b8;font-weight:600">Saldo Dep:</span>
+              <span style="color:#38bdf8;font-weight:600;font-size:11.5px"><?= format_rp((float)$u['balance_dep']) ?></span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center" style="border-top:1px dashed rgba(255,255,255,0.08);padding-top:2px">
+              <span style="font-size:10px;color:#64748b;">Total Cuan:</span>
+              <span style="color:#f59e0b;font-size:11px;font-weight:600"><?= format_rp((float)$u['total_earned']) ?></span>
+            </div>
           </td>
-          <td data-label="Referral" style="font-size:12px;letter-spacing:1px;color:#888"><?= $u['referral_code'] ?></td>
-          <td data-label="Status">
-            <form method="POST" class="d-inline">
-              <?= csrf_field() ?><input type="hidden" name="action" value="toggle_active"><input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-              <button type="submit" class="badge border-0 <?= $u['is_active']?'b-success':'b-danger' ?>" style="cursor:pointer;border-radius:6px;padding:4px 8px">
-                <?= $u['is_active']?'Aktif':'Nonaktif' ?>
-              </button>
-            </form>
-          </td>
-          <td data-label="Aksi" style="white-space:nowrap">
-            <button class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#2d3149;color:#fff;border:1px solid #3e445b;padding:4px 8px;font-weight:600;"
-              onclick='editUser(<?= htmlspecialchars(json_encode($u), ENT_QUOTES) ?>)'>✏️ Edit</button>
-            <a href="/console/user_detail.php?id=<?= $u['id'] ?>" class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#32433e;color:#b2dfdb;border:1px solid #4a665e;padding:4px 8px;font-weight:600;text-decoration:none;">👁️ Detail</a>
-            <form method="POST" class="d-inline">
-              <?= csrf_field() ?><input type="hidden" name="action" value="toggle_debug"><input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-              <button type="submit" class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:<?= !empty($u['is_debug']) ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.05)' ?>;color:<?= !empty($u['is_debug']) ? '#818cf8' : '#888' ?>;border:1px solid <?= !empty($u['is_debug']) ? '#6366f1' : '#3e445b' ?>;padding:4px 8px;font-weight:600;" title="Klik untuk mengaktifkan/menonaktifkan Mode Debug tester">
-                🛠 <?= !empty($u['is_debug']) ? 'Debug ON' : 'Debug OFF' ?>
-              </button>
-            </form>
-            <button type="button" class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#4b3f72;color:#d1c4e9;border:1px solid #6b5a9e;padding:4px 8px;font-weight:600;"
-              onclick="if(confirm('Yakin ingin login sebagai user ini?')) document.getElementById('loginas-form-<?= $u['id'] ?>').submit()">🔑 Login As</button>
-            <form id="loginas-form-<?= $u['id'] ?>" method="POST" style="display:none;"><?= csrf_field() ?><input type="hidden" name="action" value="login_as"><input type="hidden" name="user_id" value="<?= $u['id'] ?>"></form>
-            <button class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#1e3a5f;color:#90caf9;border:1px solid #2b4f7e;padding:4px 8px;font-weight:600;"
-              onclick="adjustBalance(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>')">💰 Saldo</button>
-            <?php if ($u['membership_id'] && $u['membership_name']): ?>
-            <button class="btn btn-sm" style="border-radius:6px;font-size:11px;background:#4a1923;color:#ef9a9a;border:1px solid #6b2533;padding:4px 8px;font-weight:600;"
-              onclick="refundLevel(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>', '<?= htmlspecialchars($u['membership_name']) ?>')">⏪ Refund</button>
+
+          <!-- Kolom 4: Paket & Level -->
+          <td data-label="Paket & Level">
+            <div class="mb-1">
+              <?php if ($u['membership_name'] && $u['membership_expires_at'] && strtotime($u['membership_expires_at']) > time()): ?>
+                <span class="badge" style="background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);border-radius:6px;font-size:11px;font-weight:700;padding:3px 7px;">
+                  👑 <?= htmlspecialchars($u['membership_name']) ?>
+                </span>
+                <div style="font-size:10px;color:#94a3b8;margin-top:3px">
+                  Exp: <?= date('d M Y', strtotime($u['membership_expires_at'])) ?>
+                </div>
+              <?php else: ?>
+                <span class="badge b-neutral" style="border-radius:6px;font-size:11px;padding:3px 7px">
+                  🌱 <?= htmlspecialchars(get_free_tier_name($pdo)) ?>
+                </span>
+                <div style="font-size:10px;color:#64748b;margin-top:3px">Permanen</div>
+              <?php endif; ?>
+            </div>
+            <?php if (!empty($u['referred_by'])): ?>
+              <div style="font-size:10px;color:#64748b;margin-top:2px">
+                Upline: <span style="color:#cbd5e1"><?= htmlspecialchars($u['referred_by']) ?></span>
+              </div>
             <?php endif; ?>
-            <button class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-left:2px;background:#4a1923;color:#ef9a9a;border:1px solid #6b2533;padding:4px 8px;font-weight:600;"
-              onclick="if(confirm('Yakin ingin menghapus akun ini permanen?')) document.getElementById('del-form-<?= $u['id'] ?>').submit()">🗑️ Hapus</button>
-            <form id="del-form-<?= $u['id'] ?>" method="POST" style="display:none;"><?= csrf_field() ?><input type="hidden" name="action" value="delete_user"><input type="hidden" name="user_id" value="<?= $u['id'] ?>"></form>
+          </td>
+
+          <!-- Kolom 5: Aksi (Action Hub) -->
+          <td data-label="Aksi">
+            <div class="d-flex flex-wrap gap-1" style="max-width:215px;">
+              <button class="u-act-btn btn-u-edit" onclick='editUser(<?= htmlspecialchars(json_encode($u), ENT_QUOTES) ?>)' title="Edit Profil & Data User">
+                ✏️ Edit
+              </button>
+              <a href="/console/user_detail.php?id=<?= $u['id'] ?>" class="u-act-btn btn-u-detail" title="Lihat Detail Profil & Mutasi">
+                👁️ Detail
+              </a>
+              <button class="u-act-btn btn-u-saldo" onclick="adjustBalance(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>')" title="Atur / Mutasi Saldo">
+                💰 Saldo
+              </button>
+              <button type="button" class="u-act-btn btn-u-loginas" onclick="if(confirm('Yakin ingin login sebagai user ini?')) document.getElementById('loginas-form-<?= $u['id'] ?>').submit()" title="Masuk ke Akun User">
+                🔑 Login
+              </button>
+              <form id="loginas-form-<?= $u['id'] ?>" method="POST" style="display:none;">
+                <?= csrf_field() ?><input type="hidden" name="action" value="login_as"><input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+              </form>
+              <form method="POST" class="d-inline m-0">
+                <?= csrf_field() ?><input type="hidden" name="action" value="toggle_debug"><input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+                <button type="submit" class="u-act-btn <?= !empty($u['is_debug']) ? 'btn-u-debug-on' : 'btn-u-debug-off' ?>" title="Toggle Mode Debug">
+                  🛠 <?= !empty($u['is_debug']) ? 'Dbg ON' : 'Debug' ?>
+                </button>
+              </form>
+              <?php if ($u['membership_id'] && $u['membership_name']): ?>
+              <button class="u-act-btn btn-u-refund" onclick="refundLevel(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>', '<?= htmlspecialchars($u['membership_name']) ?>')" title="Refund Paket Membership">
+                ⏪ Refund
+              </button>
+              <?php endif; ?>
+              <button class="u-act-btn btn-u-delete" onclick="if(confirm('Yakin ingin menghapus akun ini permanen?')) document.getElementById('del-form-<?= $u['id'] ?>').submit()" title="Hapus User Permanen">
+                🗑️ Hapus
+              </button>
+              <form id="del-form-<?= $u['id'] ?>" method="POST" style="display:none;">
+                <?= csrf_field() ?><input type="hidden" name="action" value="delete_user"><input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+              </form>
+            </div>
           </td>
         </tr>
         <?php endforeach; ?>
