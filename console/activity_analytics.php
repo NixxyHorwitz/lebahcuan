@@ -189,7 +189,7 @@ try {
 
     // Recent upgrades
     $recUpg = $pdo->query("
-        SELECT uo.id, uo.price as amount, uo.status, uo.created_at, u.username, m.name as extra_info, 'upgrade' as act_type
+        SELECT uo.id, uo.amount as amount, uo.status, uo.created_at, u.username, m.name as extra_info, 'upgrade' as act_type
         FROM upgrade_orders uo
         JOIN users u ON u.id = uo.user_id
         JOIN memberships m ON m.id = uo.membership_id
