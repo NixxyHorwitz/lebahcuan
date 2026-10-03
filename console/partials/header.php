@@ -94,39 +94,159 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
 }
 .c-sidebar__brand { font-size: 16px; font-weight: 800; color: #fff; line-height: 1.2; letter-spacing: -0.3px; }
 .c-sidebar__sub { font-size: 10.5px; color: #f59e0b; font-weight: 600; }
-.c-sidebar__nav { flex: 1; overflow-y: auto; padding: 12px 10px; scrollbar-width: thin; scrollbar-color: #1e243d transparent; }
+.c-sidebar__nav { flex: 1; overflow-y: auto; padding: 10px 8px; scrollbar-width: thin; scrollbar-color: rgba(245,158,11,0.2) transparent; }
 .c-sidebar__nav::-webkit-scrollbar { width: 4px; }
 .c-sidebar__nav::-webkit-scrollbar-thumb { background: #1e243d; border-radius: 4px; }
-.c-sidebar__label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: #505876; padding: 14px 12px 6px; }
+.c-sidebar__label { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: #505876; padding: 12px 10px 4px; }
 .c-nav-link {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9.5px 12px;
-  border-radius: 10px;
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px;
+  border-radius: 8px;
   color: #94a3b8;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   text-decoration: none;
   margin-bottom: 2px;
   transition: all .15s ease;
   position: relative;
 }
-.c-nav-link:hover { background: rgba(255,255,255,0.05); color: #f8fafc; transform: translateX(3px); }
+.c-nav-link:hover { background: rgba(255,255,255,0.05); color: #f8fafc; transform: translateX(2px); }
 .c-nav-link.active {
-  background: linear-gradient(90deg, rgba(245,158,11,0.18), rgba(245,158,11,0.05));
+  background: linear-gradient(90deg, rgba(245,158,11,0.18), rgba(245,158,11,0.04));
   color: var(--brand); font-weight: 700;
-  border-left: 3.5px solid var(--brand);
+  border-left: 3px solid var(--brand);
 }
 .c-nav-link.active svg { color: var(--brand) !important; }
 .c-nav-link .badge-dot {
   margin-left: auto;
   background: #e11d48;
   color: #fff;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
-  padding: 2px 7px;
+  padding: 1.5px 6px;
   border-radius: 10px;
-  min-width: 20px;
+  min-width: 18px;
   text-align: center;
+}
+
+/* ── Collapsible Menu (Compact & Clean) ── */
+.c-nav-collapse-group {
+  margin-bottom: 3px;
+  border-radius: 9px;
+}
+.c-nav-collapse-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s ease;
+  text-align: left;
+}
+.c-nav-collapse-btn:hover {
+  background: rgba(255,255,255,0.05);
+  color: #f8fafc;
+}
+.c-nav-collapse-btn.is-active,
+.c-nav-collapse-group.open .c-nav-collapse-btn {
+  color: #f8fafc;
+}
+.c-nav-collapse-btn.is-active {
+  background: rgba(245, 158, 11, 0.09);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: var(--brand);
+}
+.c-nav-collapse-btn__left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.c-nav-collapse-btn__left svg {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+.c-nav-collapse-btn__right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.c-nav-collapse-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+.c-nav-collapse-chevron {
+  transition: transform .22s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #64748b;
+}
+.c-nav-collapse-group.open .c-nav-collapse-chevron {
+  transform: rotate(180deg);
+  color: #f59e0b;
+}
+.c-nav-collapse-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.c-nav-collapse-group.open .c-nav-collapse-body {
+  max-height: 400px;
+}
+.c-nav-collapse-inner {
+  margin: 3px 0 5px 14px;
+  padding-left: 10px;
+  border-left: 1.5px dashed rgba(245, 158, 11, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5px;
+}
+.c-nav-sublink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6.5px 8px;
+  border-radius: 7px;
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 550;
+  text-decoration: none;
+  transition: all .15s ease;
+  position: relative;
+}
+.c-nav-sublink svg {
+  flex-shrink: 0;
+  color: #64748b;
+  transition: color .15s ease;
+}
+.c-nav-sublink:hover {
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  transform: translateX(2px);
+}
+.c-nav-sublink:hover svg {
+  color: #f59e0b;
+}
+.c-nav-sublink.active {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.04));
+  color: #fbbf24;
+  font-weight: 700;
+  border-left: 2.5px solid #f59e0b;
+  padding-left: 6px;
+}
+.c-nav-sublink.active svg {
+  color: #fbbf24 !important;
 }
 .c-sidebar__footer { padding: 12px; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.2); }
 
@@ -375,7 +495,94 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
     </a>
     <?php endif; ?>
 
-    <div class="c-sidebar__label" style="margin-top:6px">Analitik & Interaksi</div>
+    <?php
+    $analyticsPages = ['analytics', 'video_analytics', 'registration_analytics', 'target', 'heartbeats', 'qris_logs', 'missions'];
+    $isAnalyticsActive = in_array($activePage ?? '', $analyticsPages, true);
+
+    $allowedAnalyticsCount = 0;
+    if (staff_can('analytics')) $allowedAnalyticsCount += 4; // analytics, registration_analytics, heartbeats, missions
+    if (staff_can('video_analytics')) $allowedAnalyticsCount += 1;
+    if (staff_can('target')) $allowedAnalyticsCount += 1;
+    if (staff_can('analytics') || staff_can('deposits')) $allowedAnalyticsCount += 1; // qris_logs
+    $canViewAnyAnalytics = $allowedAnalyticsCount > 0;
+    ?>
+
+    <?php if ($canViewAnyAnalytics): ?>
+    <div class="c-sidebar__label" style="margin-top:6px">Pusat Analisis 📊</div>
+    <div class="c-nav-collapse-group <?= $isAnalyticsActive ? 'open' : '' ?>" id="nav-collapse-analytics">
+      <button type="button" class="c-nav-collapse-btn <?= $isAnalyticsActive ? 'is-active' : '' ?>" onclick="toggleSidebarCollapse('nav-collapse-analytics')" aria-expanded="<?= $isAnalyticsActive ? 'true' : 'false' ?>">
+        <div class="c-nav-collapse-btn__left">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          <span>Analisis &amp; Log</span>
+        </div>
+        <div class="c-nav-collapse-btn__right">
+          <span class="c-nav-collapse-badge"><?= $allowedAnalyticsCount ?> Menu</span>
+          <svg class="c-nav-collapse-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </button>
+
+      <div class="c-nav-collapse-body">
+        <div class="c-nav-collapse-inner">
+          <?php if (staff_can('analytics')): ?>
+          <a href="/console/analytics.php" class="c-nav-sublink <?= $activePage==='analytics'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Traffic Analytics</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('video_analytics')): ?>
+          <a href="/console/video_analytics.php" class="c-nav-sublink <?= $activePage==='video_analytics'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            <span>Analisis Video</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('analytics')): ?>
+          <a href="/console/registration_analytics.php" class="c-nav-sublink <?= $activePage==='registration_analytics'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            <span>Analisis Pendaftaran</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('target')): ?>
+          <a href="/console/target.php" class="c-nav-sublink <?= $activePage==='target'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            <span>Persentase Target</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('analytics')): ?>
+          <a href="/console/heartbeats.php" class="c-nav-sublink <?= $activePage==='heartbeats'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.42 4.58a5.4 5.4 0 00-7.65 0l-.77.78-.77-.78a5.4 5.4 0 00-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
+            <span>Status Forwarder</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('analytics') || staff_can('deposits')): ?>
+          <a href="/console/qris_logs.php" class="c-nav-sublink <?= $activePage==='qris_logs'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
+            <span>Log QRIS Otomatis</span>
+          </a>
+          <?php endif; ?>
+
+          <?php if (staff_can('analytics')): ?>
+          <a href="/console/missions.php" class="c-nav-sublink <?= $activePage==='missions'?'active':'' ?>">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            <span>Log Misi User</span>
+          </a>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+    <?php endif; ?>
+
+    <div class="c-sidebar__label" style="margin-top:6px">Interaksi &amp; Promosi 🎁</div>
+    <?php if (staff_can('analytics') || staff_can('users')): ?>
+    <a href="/console/promotors.php" class="c-nav-link <?= $activePage==='promotors'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Kelola Promotor
+    </a>
+    <?php endif; ?>
     <?php if (staff_can('surveys') || staff_can('analytics') || staff_can('users')): ?>
     <a href="/console/surveys.php" class="c-nav-link <?= $activePage==='surveys'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -404,44 +611,6 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
     <a href="/console/investments.php" class="c-nav-link <?= $activePage==='investments'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
       Investasi Ponzi
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('video_analytics')): ?>
-    <a href="/console/video_analytics.php" class="c-nav-link <?= $activePage==='video_analytics'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-      Analisis Video
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('analytics')): ?>
-    <a href="/console/analytics.php" class="c-nav-link <?= $activePage==='analytics'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      Traffic Analytics
-    </a>
-    <a href="/console/registration_analytics.php" class="c-nav-link <?= $activePage==='registration_analytics'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-      Analisis Pendaftaran
-    </a>
-    <a href="/console/promotors.php" class="c-nav-link <?= $activePage==='promotors'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-      Kelola Promotor
-    </a>
-    <a href="/console/qris_logs.php" class="c-nav-link <?= $activePage==='qris_logs'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
-      Log QRIS Otomatis
-    </a>
-    <a href="/console/heartbeats.php" class="c-nav-link <?= $activePage==='heartbeats'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.42 4.58a5.4 5.4 0 00-7.65 0l-.77.78-.77-.78a5.4 5.4 0 00-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
-      Status Forwarder
-    </a>
-    <a href="/console/missions.php" class="c-nav-link <?= $activePage==='missions'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-      Log Misi User
-    </a>
-    <?php endif; ?>
-    <?php if (staff_can('target')): ?>
-    <a href="/console/target.php" class="c-nav-link <?= $activePage==='target'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-      Persentase Target
     </a>
     <?php endif; ?>
     <?php if (staff_can('livechat')): ?>
@@ -528,6 +697,33 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
     </a>
   </div>
 </aside>
+
+<script>
+function toggleSidebarCollapse(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isOpen = el.classList.toggle('open');
+  const btn = el.querySelector('.c-nav-collapse-btn');
+  if (btn) btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  try {
+    sessionStorage.setItem(id + '_state', isOpen ? 'open' : 'closed');
+  } catch(e) {}
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const el = document.getElementById('nav-collapse-analytics');
+  if (el && !el.classList.contains('open')) {
+    try {
+      const saved = sessionStorage.getItem('nav-collapse-analytics_state');
+      if (saved === 'open') {
+        el.classList.add('open');
+        const btn = el.querySelector('.c-nav-collapse-btn');
+        if (btn) btn.setAttribute('aria-expanded', 'true');
+      }
+    } catch(e) {}
+  }
+});
+</script>
 
 <div class="c-main">
   <header class="c-topbar">
