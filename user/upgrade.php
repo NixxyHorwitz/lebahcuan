@@ -1050,6 +1050,9 @@ body {
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min WD: <strong><?= format_rp((float)$m['min_wd']) ?></strong></div>
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-up" style="color:#d97706;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
           <div class="lvl-spec-item"><i class="ph-bold ph-clock" style="color:#64748b;"></i> Proses 1-24 Jam</div>
+          <?php if (!empty($m['allow_edit_bank'])): ?>
+          <div class="lvl-spec-item"><i class="ph-bold ph-pencil-simple" style="color:#2563eb;"></i> Bebas Ganti Rekening</div>
+          <?php endif; ?>
           <div class="lvl-spec-item lvl-spec-item--full" style="background:#fef3c7;border-color:#d97706;color:#92400e;">
             <i class="ph-fill ph-storefront" style="color:#d97706;"></i> <strong>Bonus: Lapak Golden Amber (Jual Rp 35/ml · Kuota 600 ml/hari)</strong>
           </div>
@@ -1101,7 +1104,9 @@ body {
           <div class="lvl-spec-item"><i class="ph-bold ph-video-camera" style="color:#d97706;"></i> <strong><?= $m['watch_limit'] ?> Video</strong> / hari</div>
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min WD: <strong><?= format_rp((float)$m['min_wd']) ?></strong></div>
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-up" style="color:#d97706;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
+          <?php if (!empty($m['allow_edit_bank'])): ?>
           <div class="lvl-spec-item"><i class="ph-bold ph-pencil-simple" style="color:#2563eb;"></i> Bebas Ganti Rekening</div>
+          <?php endif; ?>
           <div class="lvl-spec-item lvl-spec-item--full" style="background:#fef3c7;border-color:#b45309;color:#78350f;">
             <i class="ph-fill ph-storefront" style="color:#b45309;"></i> <strong>Bonus: Lapak Royal Amber (Jual Rp 55/ml · Kuota 2.000 ml/hari)</strong>
           </div>
@@ -1153,7 +1158,9 @@ body {
           <div class="lvl-spec-item"><i class="ph-bold ph-video-camera" style="color:#b45309;"></i> <strong><?= $m['watch_limit'] ?> Video</strong> / hari</div>
           <div class="lvl-spec-item"><i class="ph-bold ph-arrow-circle-down" style="color:#10b981;"></i> Min WD: <strong><?= format_rp((float)$m['min_wd']) ?></strong></div>
           <div class="lvl-spec-item"><i class="ph-bold ph-rocket-launch" style="color:#ea580c;"></i> Max WD: <strong><?= format_rp((float)$m['max_wd']) ?></strong></div>
+          <?php if (!empty($m['allow_edit_bank'])): ?>
           <div class="lvl-spec-item"><i class="ph-bold ph-pencil-simple" style="color:#2563eb;"></i> Bebas Ganti Rekening</div>
+          <?php endif; ?>
           <div class="lvl-spec-item lvl-spec-item--full" style="background:#fef08a;border-color:#78350f;color:#78350f;">
             <i class="ph-fill ph-storefront" style="color:#78350f;"></i> <strong>Bonus: Lapak Imperial Amber (Jual Rp 85/ml · Kuota 6.000 ml/hari)</strong>
           </div>
