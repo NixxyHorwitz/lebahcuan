@@ -3,6 +3,65 @@ declare(strict_types=1);
 require_once __DIR__ . '/auth.php';
 staff_require('analytics');
 
+// Helper: Parse User Agent into readable text
+if (!function_exists('parse_ua_short')) {
+    function parse_ua_short(?string $ua): string {
+        if (empty($ua)) return 'Web Browser';
+        $os = 'Device';
+        if (stripos($ua, 'windows nt 10.0') !== false) $os = 'Windows 10/11';
+        elseif (stripos($ua, 'windows nt 6.1') !== false) $os = 'Windows 7';
+        elseif (stripos($ua, 'iphone') !== false) $os = 'iPhone';
+        elseif (stripos($ua, 'ipad') !== false) $os = 'iPad';
+        elseif (stripos($ua, 'macintosh') !== false || stripos($ua, 'mac os x') !== false) $os = 'macOS';
+        elseif (stripos($ua, 'android') !== false) $os = 'Android';
+        elseif (stripos($ua, 'linux') !== false) $os = 'Linux';
+        
+        $browser = 'Browser';
+        if (stripos($ua, 'edg/') !== false) $browser = 'Edge';
+        elseif (stripos($ua, 'chrome') !== false || stripos($ua, 'crios') !== false) $browser = 'Chrome';
+        elseif (stripos($ua, 'safari') !== false) $browser = 'Safari';
+        elseif (stripos($ua, 'firefox') !== false) $browser = 'Firefox';
+        elseif (stripos($ua, 'opera') !== false || stripos($ua, 'opr/') !== false) $browser = 'Opera';
+        
+        return "{$os} ({$browser})";
+    }
+}
+
+if (!function_exists('format_activity_path')) {
+    function format_activity_path(?string $path): array {
+        if (!$path) return ['label' => 'Web App', 'badge' => 'rgba(255,255,255,0.08)', 'color' => '#94a3b8', 'icon' => '🌐'];
+        $clean = strtolower(rtrim($path, '/'));
+        if ($clean === '/videos' || strpos($clean, '/watch') !== false) {
+            return ['label' => 'Nonton Video', 'badge' => 'rgba(245,158,11,0.15)', 'color' => '#fbbf24', 'icon' => '🎬'];
+        }
+        if ($clean === '/home' || $clean === '') {
+            return ['label' => 'Dashboard User', 'badge' => 'rgba(56,189,248,0.15)', 'color' => '#38bdf8', 'icon' => '🏠'];
+        }
+        if (strpos($clean, '/farm') !== false) {
+            return ['label' => 'Ternak Lebah', 'badge' => 'rgba(16,185,129,0.15)', 'color' => '#10b981', 'icon' => '🐝'];
+        }
+        if (strpos($clean, '/withdraw') !== false) {
+            return ['label' => 'Halaman WD', 'badge' => 'rgba(239,68,68,0.15)', 'color' => '#f87171', 'icon' => '💸'];
+        }
+        if (strpos($clean, '/deposit') !== false) {
+            return ['label' => 'Halaman Deposit', 'badge' => 'rgba(168,85,247,0.15)', 'color' => '#c084fc', 'icon' => '💳'];
+        }
+        if (strpos($clean, '/history') !== false) {
+            return ['label' => 'Riwayat Mutasi', 'badge' => 'rgba(148,163,184,0.15)', 'color' => '#cbd5e1', 'icon' => '📜'];
+        }
+        if (strpos($clean, '/upgrade') !== false) {
+            return ['label' => 'Upgrade Level', 'badge' => 'rgba(245,158,11,0.2)', 'color' => '#f59e0b', 'icon' => '👑'];
+        }
+        if (strpos($clean, '/survey') !== false) {
+            return ['label' => 'Survei Akun', 'badge' => 'rgba(99,102,241,0.15)', 'color' => '#818cf8', 'icon' => '📝'];
+        }
+        if (strpos($clean, '/edit-rekening') !== false) {
+            return ['label' => 'Edit Rekening', 'badge' => 'rgba(234,179,8,0.15)', 'color' => '#eab308', 'icon' => '💳'];
+        }
+        return ['label' => $path, 'badge' => 'rgba(255,255,255,0.06)', 'color' => '#94a3b8', 'icon' => '📄'];
+    }
+}
+
 // Range Filter: today, 7, 14, 30 days
 $range = trim($_GET['range'] ?? '7');
 if (!in_array($range, ['today', '7', '14', '30'], true)) {
@@ -211,6 +270,45 @@ try {
     });
     $activityStream = array_slice($activityStream, 0, 30);
 
+    // ── 7. ONLINE USERS (Aktif dalam 15 Menit Terakhir) ───────────────
+    $onlineUsers = [];
+    try {
+        $onlineUsersStmt = $pdo->query("
+            SELECT 
+                u.id, 
+                u.username, 
+                u.email, 
+                u.whatsapp,
+                u.balance_wd, 
+                u.balance_dep, 
+                u.last_seen,
+                u.membership_id,
+                m.name as membership_name,
+                pv.path as current_path,
+                pv.ip_hash,
+                pv.user_agent,
+                pv.created_at as page_hit_at,
+                TIMESTAMPDIFF(SECOND, u.last_seen, NOW()) as seconds_ago
+            FROM users u
+            LEFT JOIN memberships m ON m.id = u.membership_id
+            LEFT JOIN (
+                SELECT pv1.user_id, pv1.path, pv1.ip_hash, pv1.user_agent, pv1.created_at
+                FROM page_views pv1
+                INNER JOIN (
+                    SELECT user_id, MAX(id) as max_id
+                    FROM page_views
+                    WHERE user_id IS NOT NULL AND created_at >= DATE_SUB(NOW(), INTERVAL 2 HOUR)
+                    GROUP BY user_id
+                ) pv2 ON pv1.id = pv2.max_id
+            ) pv ON pv.user_id = u.id
+            WHERE u.last_seen >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+            ORDER BY u.last_seen DESC
+            LIMIT 50
+        ");
+        $onlineUsers = $onlineUsersStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\Throwable) {}
+    $onlineCount = count($onlineUsers);
+
     // ── 6. BUILD MULTI-METRIC CHART DATA ──────────────────────────────
     $chartLabels = [];
     $chartDepoData = [];
@@ -246,6 +344,31 @@ $activePage = 'activity_analytics';
 require __DIR__ . '/partials/header.php';
 ?>
 
+<style>
+@keyframes onlinePulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.online-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: onlinePulse 2s infinite;
+  flex-shrink: 0;
+}
+.offline-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #64748b;
+  flex-shrink: 0;
+}
+</style>
+
 <!-- Header Toolbar -->
 <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
   <div>
@@ -261,13 +384,19 @@ require __DIR__ . '/partials/header.php';
     </div>
   </div>
 
-  <!-- Range Filter Buttons -->
-  <div class="d-flex align-items-center gap-1 p-1" style="background:#121524;border-radius:10px;border:1px solid #1f2438;">
-    <span class="text-secondary small px-2 fw-semibold" style="font-size:11px;">Periode:</span>
-    <a href="?range=today" class="btn btn-sm <?= $range==='today'?'btn-warning text-dark fw-bold':'btn-dark text-secondary' ?>" style="font-size:11.5px;border-radius:7px;padding:4px 10px;">Hari Ini</a>
-    <a href="?range=7" class="btn btn-sm <?= $range==='7'?'btn-warning text-dark fw-bold':'btn-dark text-secondary' ?>" style="font-size:11.5px;border-radius:7px;padding:4px 10px;">7 Hari</a>
-    <a href="?range=14" class="btn btn-sm <?= $range==='14'?'btn-warning text-dark fw-bold':'btn-dark text-secondary' ?>" style="font-size:11.5px;border-radius:7px;padding:4px 10px;">14 Hari</a>
-    <a href="?range=30" class="btn btn-sm <?= $range==='30'?'btn-warning text-dark fw-bold':'btn-dark text-secondary' ?>" style="font-size:11.5px;border-radius:7px;padding:4px 10px;">30 Hari</a>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <a href="#section-online-users" class="btn btn-sm d-flex align-items-center gap-2" style="background:rgba(16,185,129,0.12);color:#34d399;border:1px solid rgba(16,185,129,0.3);border-radius:10px;font-size:12px;font-weight:700;padding:5px 12px;text-decoration:none;" title="Lihat daftar user yang sedang online">
+      <span class="online-dot"></span> <?= $onlineCount ?> User Sedang Online
+    </a>
+
+    <!-- Range Filter Buttons -->
+    <div class="d-flex align-items-center gap-1 p-1" style="background:#121524;border-radius:10px;border:1px solid #1f2438;">
+      <span class="text-secondary small px-2 fw-semibold" style="font-size:11px;">Periode:</span>
+      <a href="?range=today" class="btn btn-sm <?= $range==='today'?'btn-warning text-dark fw-bold':'btn-dark text-secondary' ?>" style="font-size:11.5px;border-radius:7px;padding:4px 10px;">Hari Ini</a>
+      <a href="?range=7" class="btn btn-sm <?= $range==='7'?'btn-warning text-dark fw-bold':'btn-dark text-secondary' ?>" style="font-size:11.5px;border-radius:7px;padding:4px 10px;">7 Hari</a>
+      <a href="?range=14" class="btn btn-sm <?= $range==='14'?'btn-warning text-dark fw-bold':'btn-dark text-secondary' ?>" style="font-size:11.5px;border-radius:7px;padding:4px 10px;">14 Hari</a>
+      <a href="?range=30" class="btn btn-sm <?= $range==='30'?'btn-warning text-dark fw-bold':'btn-dark text-secondary' ?>" style="font-size:11.5px;border-radius:7px;padding:4px 10px;">30 Hari</a>
+    </div>
   </div>
 </div>
 
@@ -530,6 +659,148 @@ require __DIR__ . '/partials/header.php';
             </div>
           </div>
           <?php endforeach; endif; ?>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TABEL PENGGUNA SEDANG ONLINE (LIVE REAL-TIME) -->
+<div class="row g-3 mb-4" id="section-online-users">
+  <div class="col-12">
+    <div class="c-card">
+      <div class="c-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="online-dot"></span>
+          <span class="c-card-title">Pengguna Sedang Online &amp; Berselancar (Live Session)</span>
+          <span class="badge" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);font-size:11px;font-weight:700;border-radius:12px;padding:3px 9px;">
+            <?= $onlineCount ?> User Aktif (&lt; 15 Menit)
+          </span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <small class="text-secondary" style="font-size:11px;">Mendeteksi realtime session &amp; halaman terakhir dibuka</small>
+          <a href="activity_analytics.php<?= $range !== '7' ? '?range=' . urlencode($range) : '' ?>#section-online-users" class="btn btn-sm" style="background:#1e2438;color:#94a3b8;border:1px solid #2d3652;font-size:11px;border-radius:6px;padding:3px 9px;">
+            🔄 Refresh Live
+          </a>
+        </div>
+      </div>
+      <div class="c-card-body p-0">
+        <div class="table-responsive">
+          <table class="c-table no-datatable mb-0">
+            <thead>
+              <tr>
+                <th style="min-width:210px">Pengguna / Akun</th>
+                <th style="min-width:170px">Status Keaktifan</th>
+                <th style="min-width:220px">Halaman Terakhir Diakses</th>
+                <th style="min-width:180px">Saldo (WD / Dep)</th>
+                <th style="min-width:190px">Perangkat &amp; IP</th>
+                <th style="min-width:140px;text-align:center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (empty($onlineUsers)): ?>
+              <tr>
+                <td colspan="6" class="text-center text-secondary py-4" style="font-size:13px;">
+                  Tidak ada pengguna yang terdeteksi aktif dalam 15 menit terakhir.
+                </td>
+              </tr>
+              <?php else: foreach ($onlineUsers as $ou): 
+                $secAgo = (int)($ou['seconds_ago'] ?? 0);
+                $isRealtime = $secAgo < 180; // < 3 menit
+                $pageInfo = format_activity_path($ou['current_path'] ?? null);
+                $deviceInfo = parse_ua_short($ou['user_agent'] ?? null);
+                $exactTime = !empty($ou['last_seen']) ? date('H:i:s', strtotime($ou['last_seen'])) : '-';
+                
+                if ($secAgo < 60) {
+                    $agoText = "{$secAgo} detik lalu";
+                } elseif ($secAgo < 3600) {
+                    $m = max(1, (int)floor($secAgo / 60));
+                    $agoText = "{$m} menit lalu";
+                } else {
+                    $h = (int)floor($secAgo / 3600);
+                    $agoText = "{$h} jam lalu";
+                }
+              ?>
+              <tr>
+                <!-- 1. Pengguna -->
+                <td>
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge" style="background:rgba(255,255,255,0.06);color:#cbd5e1;font-family:monospace;font-size:11px;padding:2px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.1)">#<?= $ou['id'] ?></span>
+                    <strong style="font-size:13px;color:#f8fafc;"><?= htmlspecialchars($ou['username']) ?></strong>
+                    <?php if (!empty($ou['membership_name'])): ?>
+                      <span class="badge" style="background:rgba(245,158,11,0.15);color:#fbbf24;font-size:9.5px;padding:2px 5px;border-radius:4px;">👑 <?= htmlspecialchars($ou['membership_name']) ?></span>
+                    <?php else: ?>
+                      <span class="badge b-neutral" style="font-size:9px;padding:2px 5px;border-radius:4px;">🌱 Free</span>
+                    <?php endif; ?>
+                  </div>
+                  <div style="font-size:11px;color:#64748b;" title="<?= htmlspecialchars($ou['email']) ?>">
+                    ✉️ <?= htmlspecialchars($ou['email']) ?>
+                  </div>
+                </td>
+
+                <!-- 2. Status Keaktifan -->
+                <td>
+                  <div class="d-flex align-items-center gap-1.5 mb-1">
+                    <?php if ($isRealtime): ?>
+                      <span class="online-dot"></span>
+                      <span style="color:#10b981;font-weight:700;font-size:11.5px;">Online Sekarang</span>
+                    <?php else: ?>
+                      <span class="offline-dot"></span>
+                      <span style="color:#94a3b8;font-size:11.5px;"><?= $agoText ?></span>
+                    <?php endif; ?>
+                  </div>
+                  <div style="font-size:10px;color:#64748b;">
+                    🕒 <?= $exactTime ?> WIB
+                  </div>
+                </td>
+
+                <!-- 3. Halaman Terakhir Diakses -->
+                <td>
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge" style="background:<?= $pageInfo['badge'] ?>;color:<?= $pageInfo['color'] ?>;font-size:11px;font-weight:600;padding:3.5px 8px;border-radius:6px;">
+                      <?= $pageInfo['icon'] ?> <?= htmlspecialchars($pageInfo['label']) ?>
+                    </span>
+                  </div>
+                  <div style="font-size:10.5px;color:#64748b;font-family:monospace;">
+                    Path: <?= htmlspecialchars($ou['current_path'] ?? '-') ?>
+                  </div>
+                </td>
+
+                <!-- 4. Saldo (WD / Dep) -->
+                <td>
+                  <div style="font-size:12px;font-weight:700;color:#10b981;margin-bottom:2px;">
+                    WD: <?= format_rp((float)$ou['balance_wd']) ?>
+                  </div>
+                  <div style="font-size:11px;color:#38bdf8;">
+                    Dep: <?= format_rp((float)$ou['balance_dep']) ?>
+                  </div>
+                </td>
+
+                <!-- 5. Perangkat & IP -->
+                <td>
+                  <div style="font-size:11.5px;color:#cbd5e1;margin-bottom:2px;" title="<?= htmlspecialchars($ou['user_agent'] ?? '') ?>">
+                    💻 <?= htmlspecialchars($deviceInfo) ?>
+                  </div>
+                  <div style="font-size:10.5px;color:#64748b;font-family:monospace;">
+                    IP: <?= htmlspecialchars($ou['ip_hash'] ?? '-') ?>
+                  </div>
+                </td>
+
+                <!-- 6. Aksi Cepat -->
+                <td style="text-align:center;">
+                  <div class="d-flex align-items-center justify-content-center gap-1">
+                    <a href="/console/user_detail.php?id=<?= $ou['id'] ?>" class="btn btn-sm" style="background:#132e27;color:#6ee7b7;border:1px solid #1e4d41;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;text-decoration:none;" title="Lihat Profil Lengkap">
+                      👁️ Detail
+                    </a>
+                    <a href="/console/users.php?q=<?= $ou['id'] ?>" class="btn btn-sm" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;text-decoration:none;" title="Kelola / Edit di Users">
+                      ✏️ Edit
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              <?php endforeach; endif; ?>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
