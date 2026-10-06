@@ -1153,7 +1153,7 @@ window.cineZoomIn = function() {};
 window.cineZoomOut = function() {};
 
 // ══════════════════════════════════════════════════════════
-// THREE.JS — CINEMATIC CAM + SMOOTH MOUNTAINS + VIBRANT
+// THREE.JS — CINEMATIC CAM + KEBUN ORGANIK (ANGIN, AIR, AWAN)
 // ══════════════════════════════════════════════════════════
 (function() {
   const container = document.getElementById('farm3dCanvas');
@@ -1176,7 +1176,6 @@ window.cineZoomOut = function() {};
   }
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x8ec8e8, 35, 90);
 
   const camera = new THREE.PerspectiveCamera(50, (container.clientWidth || 360) / (container.clientHeight || 260), 0.1, 300);
   renderer.setSize(container.clientWidth, container.clientHeight);
@@ -1192,322 +1191,277 @@ window.cineZoomOut = function() {};
   renderer.domElement.style.touchAction = 'pan-y';
   container.insertBefore(renderer.domElement, container.firstChild);
 
-  // Sky
-  const skyC = document.createElement('canvas'); skyC.width = 2; skyC.height = 512;
-  const skyX = skyC.getContext('2d'), skyG = skyX.createLinearGradient(0, 0, 0, 512);
-  skyG.addColorStop(0, '#1e3a8a'); skyG.addColorStop(0.2, '#3b82f6'); skyG.addColorStop(0.45, '#60a5fa');
-  skyG.addColorStop(0.65, '#93c5fd'); skyG.addColorStop(0.8, '#dbeafe'); skyG.addColorStop(0.92, '#fef3c7');
-  skyG.addColorStop(1, '#fbbf24');
-  skyX.fillStyle = skyG; skyX.fillRect(0, 0, 2, 512);
-  scene.background = new THREE.CanvasTexture(skyC);
+  // ══════════════════════════════════════════════════════════
+  // KEBUN 3D v2 — bentuk organik, bertekstur, dan hidup (angin, awan, air)
+  // ══════════════════════════════════════════════════════════
+  const U = { uTime: { value: 0 } };          // jam bersama untuk semua shader angin
+  const swayers = [];                          // tajuk pohon / bunga yang digoyang angin (CPU)
+  const leafSources = [];                      // titik asal daun gugur
+  const flowerPatches = [];                    // tujuan lebah & kupu-kupu mencari nektar
 
-  // Lights — warmer, more vibrant
-  scene.add(new THREE.AmbientLight(0xfff5e0, 0.5));
-  scene.add(new THREE.HemisphereLight(0x87ceeb, 0x4ade80, 0.4));
-  const sun = new THREE.DirectionalLight(0xfff8e8, 1.4);
-  sun.position.set(14, 20, 12);
+  // ── Util: RNG ber-seed (tata letak kebun sama tiap reload) + noise ──
+  let _sd = 20240607;
+  function rnd() { _sd = (_sd * 16807) % 2147483647; return (_sd - 1) / 2147483646; }
+  function rr(a, b) { return a + rnd() * (b - a); }
+  function sstep(a, b, x) { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+  function h2(x, y) { const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); }
+  function vnoise(x, y) {
+    const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+    const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    const a = h2(xi, yi), b = h2(xi + 1, yi), c = h2(xi, yi + 1), d = h2(xi + 1, yi + 1);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  }
+  function fbm(x, y, oct) {
+    let a = 0.5, f = 1, s = 0, n = 0;
+    for (let i = 0; i < (oct || 3); i++) { s += a * vnoise(x * f, y * f); n += a; a *= 0.5; f *= 2.03; }
+    return s / n;
+  }
+  // Angin global: hembusan (gust) pelan + riak cepat. Dipakai pohon, bunga, daun, asap.
+  function windAt(t, x, z) {
+    const gust = 0.5 + 0.5 * Math.sin(t * 0.35 + x * 0.09 + z * 0.06);
+    return (Math.sin(t * 1.1 + x * 0.5 + z * 0.35) + 0.4 * Math.sin(t * 2.3 + x * 1.4 - z * 1.1)) * (0.25 + 0.75 * gust);
+  }
+
+  // ── Util: geometri gabungan ber-warna-vertex (hemat draw call) ──
+  function M(p, r, s) {
+    const sc = (s === undefined) ? [1, 1, 1] : (typeof s === 'number' ? [s, s, s] : s);
+    return new THREE.Matrix4().compose(
+      new THREE.Vector3(p[0], p[1], p[2]),
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(r ? r[0] : 0, r ? r[1] : 0, r ? r[2] : 0)),
+      new THREE.Vector3(sc[0], sc[1], sc[2])
+    );
+  }
+  // Matriks batang dari titik a ke b (untuk geometri setinggi 1 di sumbu Y, berpusat di tengah)
+  function Mseg(a, b, thick) {
+    const dir = new THREE.Vector3().subVectors(b, a), len = dir.length();
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+    return new THREE.Matrix4().compose(new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5), q, new THREE.Vector3(thick, len, thick));
+  }
+  const _pc = new THREE.Color();
+  function part(geo, mat4, color) {
+    const g = geo.index ? geo.toNonIndexed() : geo.clone();
+    if (mat4) g.applyMatrix4(mat4);
+    const p = g.attributes.position, n = p.count, c = new Float32Array(n * 3);
+    const isFn = typeof color === 'function';
+    if (!isFn) _pc.set(color);
+    for (let i = 0; i < n; i++) {
+      if (isFn) color(p.getX(i), p.getY(i), p.getZ(i), _pc);
+      c[i * 3] = _pc.r; c[i * 3 + 1] = _pc.g; c[i * 3 + 2] = _pc.b;
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+    if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n * 2), 2));
+    if (!g.attributes.normal) g.computeVertexNormals();
+    return g;
+  }
+  function merge(parts) {
+    let total = 0; parts.forEach(p => total += p.attributes.position.count);
+    const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), col = new Float32Array(total * 3), uv = new Float32Array(total * 2);
+    let o = 0;
+    parts.forEach(p => {
+      const n = p.attributes.position.count;
+      pos.set(p.attributes.position.array.subarray(0, n * 3), o * 3);
+      nor.set(p.attributes.normal.array.subarray(0, n * 3), o * 3);
+      col.set(p.attributes.color.array.subarray(0, n * 3), o * 3);
+      uv.set(p.attributes.uv.array.subarray(0, n * 2), o * 2);
+      o += n; p.dispose();
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    return g;
+  }
+  // Bola yang "dipenyok" noise → gumpalan daun, batu, awan (tidak bulat sempurna)
+  function blob(wSeg, hSeg, amt, freq, seed) {
+    const g = new THREE.SphereGeometry(1, wSeg, hSeg), p = g.attributes.position, v = new THREE.Vector3();
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i);
+      const n = fbm(v.x * freq + v.z * freq * 0.7 + seed, v.y * freq - v.z * freq * 0.5 + seed * 1.7, 3);
+      v.multiplyScalar(1 + (n - 0.5) * 2 * amt);
+      p.setXYZ(i, v.x, v.y, v.z);
+    }
+    g.computeVertexNormals();
+    return g;
+  }
+  function roundedBox(w, h, d, r) {
+    const bev = 0.012, hw = w / 2 - bev, hd = d / 2 - bev, s = new THREE.Shape();
+    s.moveTo(-hw + r, -hd); s.lineTo(hw - r, -hd); s.quadraticCurveTo(hw, -hd, hw, -hd + r);
+    s.lineTo(hw, hd - r); s.quadraticCurveTo(hw, hd, hw - r, hd);
+    s.lineTo(-hw + r, hd); s.quadraticCurveTo(-hw, hd, -hw, hd - r);
+    s.lineTo(-hw, -hd + r); s.quadraticCurveTo(-hw, -hd, -hw + r, -hd);
+    const g = new THREE.ExtrudeGeometry(s, { depth: h - bev * 2, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 2, curveSegments: 3, steps: 1 });
+    g.rotateX(-Math.PI / 2); g.center();
+    return g;
+  }
+  function prismGeo(halfW, height, length) {
+    const s = new THREE.Shape(); s.moveTo(-halfW, 0); s.lineTo(halfW, 0); s.lineTo(0, height); s.lineTo(-halfW, 0);
+    const g = new THREE.ExtrudeGeometry(s, { depth: length, bevelEnabled: false, steps: 1 });
+    g.translate(0, 0, -length / 2);
+    return g;
+  }
+
+  // ── Util: tekstur prosedural (canvas) ──
+  function canvasTex(w, h, draw, repX, repY) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'), w, h);
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    if (repX) t.repeat.set(repX, repY || repX);
+    t.anisotropy = isMobile ? 1 : 4;
+    return t;
+  }
+  function drawWood(vertical) {
+    return function (x, w, h) {
+      x.fillStyle = '#ece6dc'; x.fillRect(0, 0, w, h);
+      for (let i = 0; i < 260; i++) {              // serat kayu
+        const a = Math.random() * h, len = 30 + Math.random() * 120, s = Math.random() * w;
+        x.strokeStyle = 'rgba(70,40,15,' + (0.04 + Math.random() * 0.12) + ')';
+        x.lineWidth = 0.6 + Math.random() * 1.4;
+        x.beginPath();
+        if (vertical) { x.moveTo(a, s); x.bezierCurveTo(a + 2, s + len * 0.3, a - 2, s + len * 0.6, a + 1, s + len); }
+        else { x.moveTo(s, a); x.bezierCurveTo(s + len * 0.3, a + 2, s + len * 0.6, a - 2, s + len, a + 1); }
+        x.stroke();
+      }
+      for (let i = 0; i < 4; i++) {                // sambungan papan
+        x.fillStyle = 'rgba(40,22,8,0.45)';
+        if (vertical) x.fillRect(i * w / 4, 0, 2, h); else x.fillRect(0, i * h / 4, w, 2);
+        x.fillStyle = 'rgba(255,255,255,0.18)';
+        if (vertical) x.fillRect(i * w / 4 + 2, 0, 1, h); else x.fillRect(0, i * h / 4 + 2, w, 1);
+      }
+      for (let i = 0; i < 5; i++) {                // mata kayu
+        const kx = Math.random() * w, ky = Math.random() * h;
+        x.strokeStyle = 'rgba(60,32,10,0.35)'; x.lineWidth = 1.2;
+        for (let r = 2; r < 8; r += 2.5) { x.beginPath(); x.ellipse(kx, ky, vertical ? r * 0.6 : r, vertical ? r : r * 0.6, 0, 0, 6.3); x.stroke(); }
+      }
+      for (let i = 0; i < 900; i++) {              // bercak lapuk
+        x.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.06)' : 'rgba(40,25,10,0.07)';
+        x.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+      }
+    };
+  }
+  const woodTex = canvasTex(256, 256, drawWood(false));
+  const barkTex = canvasTex(128, 128, drawWood(true), 2, 1);
+  const logTex = canvasTex(256, 256, drawWood(false), 1, 2);
+  const roofTex = canvasTex(128, 128, drawWood(true), 1.5, 1);
+  const groundTex = canvasTex(256, 256, function (x, w, h) {
+    x.fillStyle = '#cfcfcf'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 2600; i++) {
+      const px = Math.random() * w, py = Math.random() * h, l = 3 + Math.random() * 7;
+      x.strokeStyle = Math.random() > 0.5 ? 'rgba(255,255,235,0.22)' : 'rgba(30,60,20,0.2)';
+      x.lineWidth = 1; x.beginPath(); x.moveTo(px, py); x.lineTo(px + (Math.random() - 0.5) * 3, py - l); x.stroke();
+    }
+    for (let i = 0; i < 40; i++) {
+      const px = Math.random() * w, py = Math.random() * h, r = 8 + Math.random() * 22;
+      const g = x.createRadialGradient(px, py, 0, px, py, r);
+      g.addColorStop(0, Math.random() > 0.5 ? 'rgba(255,255,220,0.16)' : 'rgba(20,50,20,0.16)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = g; x.fillRect(px - r, py - r, r * 2, r * 2);
+    }
+  }, 30);
+  function radialTex(stops) {
+    const t = canvasTex(64, 64, function (x) {
+      const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      stops.forEach(s => g.addColorStop(s[0], s[1]));
+      x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+    });
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+    return t;
+  }
+  const softDotTex = radialTex([[0, 'rgba(255,255,255,1)'], [0.4, 'rgba(255,255,255,0.6)'], [1, 'rgba(255,255,255,0)']]);
+  const sunTex = radialTex([[0, 'rgba(255,255,245,1)'], [0.12, 'rgba(255,250,215,0.95)'], [0.3, 'rgba(255,236,170,0.35)'], [1, 'rgba(255,225,150,0)']]);
+  const blobShadowTex = radialTex([[0, 'rgba(10,30,10,0.5)'], [0.6, 'rgba(10,30,10,0.22)'], [1, 'rgba(10,30,10,0)']]);
+  const blobShadowMat = new THREE.MeshBasicMaterial({ map: blobShadowTex, transparent: true, depthWrite: false });
+  const blobShadowGeo = new THREE.PlaneGeometry(1, 1); blobShadowGeo.rotateX(-Math.PI / 2);
+  // Bayangan palsu (hanya mobile, karena shadow map dimatikan di sana)
+  function fakeShadow(parent, size, y) {
+    if (!isMobile) return;
+    const m = new THREE.Mesh(blobShadowGeo, blobShadowMat);
+    m.scale.set(size, 1, size); m.position.y = y || 0.025; m.renderOrder = 1; parent.add(m);
+  }
+  function shadow(m, receive) { if (!isMobile) { m.castShadow = true; if (receive) m.receiveShadow = true; } return m; }
+
+  // Material ber-angin: batang/bilah melentur dari pangkal, kepala bunga ikut ujung batang
+  function windify(mat, kind) {
+    mat.onBeforeCompile = function (sh) {
+      sh.uniforms.uTime = U.uTime;
+      sh.vertexShader = 'uniform float uTime;\n' + (kind === 'head' ? 'attribute float aH;\n' : '') + sh.vertexShader.replace('#include <project_vertex>', [
+        'vec4 mvPosition = vec4( transformed, 1.0 );',
+        'vec2 wRoot = vec2(0.0); float wAmt = 0.0;',
+        '#ifdef USE_INSTANCING',
+        '  mvPosition = instanceMatrix * mvPosition;',
+        '  wRoot = instanceMatrix[3].xz;',
+        (kind === 'head' ? '  wAmt = aH;' : '  wAmt = uv.y * uv.y * length(instanceMatrix[1].xyz);'),
+        '#endif',
+        'float wGust = 0.5 + 0.5 * sin(uTime * 0.35 + wRoot.x * 0.09 + wRoot.y * 0.06);',
+        'float wW = sin(uTime * 1.7 + wRoot.x * 0.5 + wRoot.y * 0.35) + 0.4 * sin(uTime * 3.3 + wRoot.x * 1.4 - wRoot.y * 1.1);',
+        'wAmt *= (0.25 + 0.75 * wGust);',
+        'mvPosition.x += wW * wAmt * 0.30 + wAmt * 0.14;',
+        'mvPosition.z += wW * wAmt * 0.14;',
+        'mvPosition.y -= abs(wW) * wAmt * 0.05;',
+        'mvPosition = modelViewMatrix * mvPosition;',
+        'gl_Position = projectionMatrix * mvPosition;'
+      ].join('\n'));
+    };
+    return mat;
+  }
+
+  // ── LANGIT: kubah gradasi + matahari berpendar ──
+  const SUN_DIR = new THREE.Vector3(24, 26, -18).normalize();
+  const HORIZON = new THREE.Color(0xa8d6f2);
+  scene.background = HORIZON;
+  scene.fog = new THREE.Fog(HORIZON.getHex(), 42, 125);
+  (function () {
+    const g = new THREE.SphereGeometry(160, 28, 16), p = g.attributes.position, c = new Float32Array(p.count * 3);
+    const col = new THREE.Color(), v = new THREE.Vector3();
+    const cM = new THREE.Color(0x5fa8ea), cZ = new THREE.Color(0x1f5fc8), cW = new THREE.Color(0xfff0c8);
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(p, i).normalize();
+      const e = Math.max(0, v.y);
+      col.copy(HORIZON).lerp(cM, sstep(0.0, 0.2, e)).lerp(cZ, sstep(0.12, 0.8, e));
+      col.lerp(cW, Math.pow(Math.max(0, v.dot(SUN_DIR)), 5) * 0.55);
+      c[i * 3] = col.r; c[i * 3 + 1] = col.g; c[i * 3 + 2] = col.b;
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+    const dome = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
+    dome.renderOrder = -10; scene.add(dome);
+  })();
+  const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: sunTex, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending }));
+  sunSprite.position.copy(SUN_DIR).multiplyScalar(110); sunSprite.scale.set(46, 46, 1); scene.add(sunSprite);
+
+  // ── CAHAYA: matahari hangat dari samping + langit biru mengisi bayangan ──
+  scene.add(new THREE.AmbientLight(0xfff5e0, 0.2));
+  scene.add(new THREE.HemisphereLight(0xa9d2ff, 0x4f7a35, 0.42));
+  const sun = new THREE.DirectionalLight(0xffedc8, 1.25);
+  sun.position.set(17, 22, 5);
   if (!isMobile) {
     sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
-    sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 60;
-    sun.shadow.camera.left = -20; sun.shadow.camera.right = 20;
-    sun.shadow.camera.top = 20; sun.shadow.camera.bottom = -20;
-    sun.shadow.bias = -0.0005;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 70;
+    sun.shadow.camera.left = -17; sun.shadow.camera.right = 17;
+    sun.shadow.camera.top = 17; sun.shadow.camera.bottom = -17;
+    sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03;
+    sun.shadow.radius = 3;
   } else {
     sun.castShadow = false;
   }
   scene.add(sun);
-  const fillL = new THREE.DirectionalLight(0x88ccff, 0.3);
-  fillL.position.set(-8, 12, -8);
+  const fillL = new THREE.DirectionalLight(0x9fd0ff, 0.2);
+  fillL.position.set(-10, 10, 12);
   scene.add(fillL);
 
-  // Visual sun + glow
-  const sunV = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfffbe0 }));
-  sunV.position.set(24, 26, -18); scene.add(sunV);
-  const glowV = new THREE.Mesh(new THREE.SphereGeometry(4, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfff8dc, transparent: true, opacity: 0.12 }));
-  glowV.position.copy(sunV.position); scene.add(glowV);
-
-  // ── GROUND ELEVATION HELPER ──
-  // Flat apiary meadow clearing in center (r <= 6.5), blending out to gentle hills (r >= 12)
-  function getGroundElevation(worldX, worldZ) {
-    const dist = Math.hypot(worldX, worldZ);
-    const blend = Math.min(1, Math.max(0, (dist - 6.5) / 5.5));
-    const localY = -worldZ;
-    const rawWave = Math.sin(worldX * 0.15) * 0.35 + Math.cos(localY * 0.2) * 0.25 + Math.sin(worldX * 0.5 + localY * 0.4) * 0.12;
-    return rawWave * blend;
-  }
-
-  // ── GROUND — vibrant green ──
-  const gSegs = isMobile ? 40 : 80;
-  const gGeo = new THREE.PlaneGeometry(100, 100, gSegs, gSegs);
-  const gPos = gGeo.getAttribute('position');
-  for (let i = 0; i < gPos.count; i++) {
-    const x = gPos.getX(i), y = gPos.getY(i);
-    gPos.setZ(i, getGroundElevation(x, -y));
-  }
-  gGeo.computeVertexNormals();
-  const ground = new THREE.Mesh(gGeo, new THREE.MeshStandardMaterial({ color: 0x38b764, roughness: 0.88 }));
-  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = !isMobile; scene.add(ground);
-
-  // ── SMOOTH ORGANIC MOUNTAINS ──
-  function createSmoothMountain(x, z, height, baseW, color) {
-    const pts = [];
-    const segments = isMobile ? 8 : 12;
-    for (let i = 0; i <= segments; i++) {
-      const t = i / segments;
-      const r = baseW * (1 - Math.pow(t, 1.3));
-      const y = t * height;
-      const wobble = Math.sin(t * 5 + x * 0.3 + z * 0.2) * baseW * 0.08;
-      pts.push(new THREE.Vector2(Math.max(0.01, r + wobble), y));
+  // ── TATA LETAK (dipakai tanah, rumput, jalan, kolam) ──
+  const POND = { x: 7, z: 5 };
+  const PATH_PTS = [[-2.8, -0.7], [-3.3, 0.1], [-3.0, 0.9], [-2.4, 1.5], [-1.5, 2.2], [-0.6, 2.6], [0.4, 2.8], [1.4, 2.5], [2.4, 2.1], [3.4, 1.8], [4.4, 2.4], [5.2, 3.0]];
+  function pondR(a) { return 1.55 * (1 + 0.16 * Math.sin(2 * a + 1.0) + 0.09 * Math.sin(3 * a + 0.5) + 0.05 * Math.sin(5 * a + 2.0)); }
+  function distToPath(x, z) {
+    let best = 1e9;
+    for (let i = 0; i < PATH_PTS.length - 1; i++) {
+      const ax = PATH_PTS[i][0], az = PATH_PTS[i][1], bx = PATH_PTS[i + 1][0], bz = PATH_PTS[i + 1][1];
+      const dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
+      const d = Math.hypot(x - ax - dx * t, z - az - dz * t);
+      if (d < best) best = d;
     }
-    const geo = new THREE.LatheGeometry(pts, isMobile ? 6 : (8 + Math.floor(Math.random() * 4)));
-    const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.9, flatShading: false });
-    const m = new THREE.Mesh(geo, mat);
-    m.position.set(x, -0.3, z);
-    m.rotation.y = Math.random() * Math.PI;
-    scene.add(m);
-
-    if (height > 7) {
-      const snowPts = [];
-      const sSegs = isMobile ? 4 : 6;
-      for (let i = 0; i <= sSegs; i++) {
-        const t = i / sSegs;
-        const r2 = baseW * 0.35 * (1 - Math.pow(t, 1.2));
-        snowPts.push(new THREE.Vector2(Math.max(0.01, r2), t * height * 0.22));
-      }
-      const sg = new THREE.LatheGeometry(snowPts, isMobile ? 5 : 6);
-      const sm = new THREE.Mesh(sg, new THREE.MeshStandardMaterial({ color: 0xf0f8ff, roughness: 0.6 }));
-      sm.position.set(x, height * 0.78 - 0.3, z);
-      sm.rotation.y = m.rotation.y;
-      scene.add(sm);
-    }
-    return m;
-  }
-
-  // Mountains ring — placed OUTSIDE the farm area
-  const mtColors = [0x3a7d44, 0x4a8a54, 0x2d6b38, 0x558b5e, 0x1f5c2a];
-  const mtFarColors = [0x2d5a36, 0x1a4d28, 0x3a6b42];
-
-  const mtCountInner = isMobile ? 8 : 20;
-  for (let i = 0; i < mtCountInner; i++) {
-    const angle = (i / mtCountInner) * Math.PI * 2;
-    const dist = 28 + Math.random() * 7;
-    const h = 3 + Math.random() * 5;
-    const w = 3 + Math.random() * 3;
-    createSmoothMountain(Math.sin(angle) * dist, Math.cos(angle) * dist, h, w, mtColors[i % mtColors.length]);
-  }
-  const mtCountOuter = isMobile ? 5 : 14;
-  for (let i = 0; i < mtCountOuter; i++) {
-    const angle = (i / mtCountOuter) * Math.PI * 2 + 0.15;
-    const dist = 38 + Math.random() * 12;
-    const h = 6 + Math.random() * 8;
-    const w = 4 + Math.random() * 5;
-    createSmoothMountain(Math.sin(angle) * dist, Math.cos(angle) * dist, h, w, mtFarColors[i % mtFarColors.length]);
-  }
-
-  // ── TREES — vibrant, placed outside r=7 from center ──
-  function mkTree(x, z, s) {
-    const g = new THREE.Group();
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1*s, 0.16*s, 1.3*s, 6), new THREE.MeshStandardMaterial({ color: 0x7a4a25, roughness: 0.85 }));
-    trunk.position.y = 0.65*s; if (!isMobile) trunk.castShadow = true; g.add(trunk);
-    const greens = [0x3ec95c, 0x2db84a, 0x45d468, 0x28a745];
-    [[0.65,1.3],[0.5,1.8],[0.3,2.2]].forEach(([r,h], i) => {
-      const f = new THREE.Mesh(new THREE.SphereGeometry(r*s, isMobile ? 5 : 7, isMobile ? 4 : 5), new THREE.MeshStandardMaterial({ color: greens[i % greens.length], roughness: 0.78 }));
-      f.position.y = h*s; if (!isMobile) f.castShadow = true; g.add(f);
-    });
-    g.position.set(x, 0, z); scene.add(g); return g;
-  }
-  function mkPine(x, z, s) {
-    const g = new THREE.Group();
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06*s,0.1*s,0.8*s,5), new THREE.MeshStandardMaterial({ color: 0x6b4a30 }));
-    trunk.position.set(0, 0.4*s, 0); if (!isMobile) trunk.castShadow = true; g.add(trunk);
-    for (let i = 0; i < (isMobile ? 3 : 4); i++) {
-      const c = new THREE.Mesh(new THREE.ConeGeometry((0.55-i*0.1)*s, 0.55*s, 5), new THREE.MeshStandardMaterial({ color: 0x1a8a3a, roughness: 0.82 }));
-      c.position.y = (0.8+i*0.42)*s; if (!isMobile) c.castShadow = true; g.add(c);
-    }
-    g.position.set(x, 0, z); scene.add(g);
-  }
-
-  const treeSpots = [];
-  const treeCount = isMobile ? 12 : 30;
-  for (let i = 0; i < treeCount; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 8 + Math.random() * 12;
-    const x = Math.sin(angle) * dist, z = Math.cos(angle) * dist;
-    treeSpots.push([x, z, 0.6 + Math.random() * 0.7]);
-  }
-  treeSpots.forEach(([x,z,s]) => Math.random() > 0.3 ? mkTree(x,z,s) : mkPine(x,z,s));
-
-  // ── ROCKS — outside r=5 ──
-  const rockCount = isMobile ? 5 : 10;
-  for (let i = 0; i < rockCount; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 5 + Math.random() * 10;
-    const x = Math.sin(angle) * dist, z = Math.cos(angle) * dist;
-    const s = 0.5 + Math.random() * 0.8;
-    const r = new THREE.Mesh(new THREE.DodecahedronGeometry(0.3*s, 0), new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 0.92, flatShading: true }));
-    r.position.set(x, 0.08*s, z); r.rotation.set(Math.random()*0.5, Math.random()*Math.PI, 0); r.scale.y = 0.55;
-    if (!isMobile) r.castShadow = true; scene.add(r);
-  }
-
-  // ── FLOWERS — vibrant, outside r=4 ──
-  const fColors = [0xff5ca8, 0xffd500, 0xff4444, 0xaa66ff, 0xff8c00, 0x00ccff, 0xff1493];
-  const flowerCount = isMobile ? 6 : 15;
-  for (let f = 0; f < flowerCount; f++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 4 + Math.random() * 10;
-    const fx = Math.sin(angle) * dist, fz = Math.cos(angle) * dist;
-    const g = new THREE.Group();
-    const petalNum = isMobile ? 4 : 6;
-    for (let i = 0; i < petalNum; i++) {
-      const a = (i/petalNum)*Math.PI*2, rad = 0.1+Math.random()*0.1;
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.01,0.2,3), new THREE.MeshStandardMaterial({ color: 0x38b764 }));
-      stem.position.set(Math.cos(a)*rad, 0.1, Math.sin(a)*rad); g.add(stem);
-      const pet = new THREE.Mesh(new THREE.SphereGeometry(0.04+Math.random()*0.02,4,3), new THREE.MeshStandardMaterial({ color: fColors[i%fColors.length] }));
-      pet.position.set(Math.cos(a)*rad, 0.24, Math.sin(a)*rad); g.add(pet);
-    }
-    g.position.set(fx, 0, fz); scene.add(g);
-  }
-
-  // ── GRASS TUFTS outside r=3 ──
-  const grassCount = isMobile ? 15 : 100;
-  const grassMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
-  for (let i = 0; i < grassCount; i++) {
-    const angle = Math.random() * Math.PI * 2, dist = 3 + Math.random() * 15;
-    const blade = new THREE.Mesh(new THREE.PlaneGeometry(0.06+Math.random()*0.05, 0.12+Math.random()*0.12), grassMat);
-    blade.position.set(Math.sin(angle)*dist, 0.06, Math.cos(angle)*dist);
-    blade.rotation.y = Math.random()*Math.PI; scene.add(blade);
-  }
-
-  // ── POND ──
-  const pond = new THREE.Mesh(new THREE.CircleGeometry(1.6, 24), new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.12, metalness: 0.3, transparent: true, opacity: 0.82 }));
-  pond.rotation.x = -Math.PI/2; pond.position.set(7, 0.06, 5); scene.add(pond);
-  for (let i = 0; i < 8; i++) {
-    const a = (i/8)*Math.PI*2;
-    const sr = new THREE.Mesh(new THREE.DodecahedronGeometry(0.12+Math.random()*0.08, 0), new THREE.MeshStandardMaterial({ color: 0x94a3b8, flatShading: true }));
-    sr.position.set(7+Math.cos(a)*1.7, 0.06, 5+Math.sin(a)*1.7); sr.scale.y = 0.5; scene.add(sr);
-  }
-
-  // ── BEEHIVES (Proudly grounded, elevated, volumetric 3D) ──
-  const hive3D = [], hiveWP = [];
-
-  function mkBeehive() {
-    const g = new THREE.Group();
-
-    // 1. Garden Stone Foundation Pad (Tatakan batu agar tidak mendem ke tanah)
-    const pad = new THREE.Mesh(
-      new THREE.BoxGeometry(1.3, 0.06, 1.1),
-      new THREE.MeshStandardMaterial({ color: 0x78716c, roughness: 0.92 })
-    );
-    pad.position.y = 0.03; // sits exactly from y=0 to y=0.06
-    pad.receiveShadow = true;
-    pad.castShadow = true;
-    g.add(pad);
-
-    // 2. Wooden Legs (Kaki Kayu Kokoh)
-    const legH = 0.28;
-    const legY = 0.06 + (legH / 2); // 0.20
-    [[-0.42,-0.32],[0.42,-0.32],[-0.42,0.32],[0.42,0.32]].forEach(([lx,lz]) => {
-      const leg = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.042, 0.048, legH, 6),
-        new THREE.MeshStandardMaterial({ color: 0x5c3317, roughness: 0.85 })
-      );
-      leg.position.set(lx, legY, lz);
-      leg.castShadow = true;
-      g.add(leg);
-    });
-
-    // 3. Bottom Floorboard / Base (Papan Dasar Sarang)
-    const base = new THREE.Mesh(
-      new THREE.BoxGeometry(1.16, 0.08, 0.96),
-      new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.8 })
-    );
-    base.position.y = 0.34 + 0.04; // 0.38
-    base.castShadow = true;
-    base.receiveShadow = true;
-    g.add(base);
-
-    // 4. Brood & Honey Boxes (Tiga Kotak Sarang Kayu Bertekstur Hangat)
-    const bCols = [0xd97706, 0xf59e0b, 0xfbbf24];
-    const boxH = 0.34;
-    const boxStartY = 0.42;
-    for (let i = 0; i < 3; i++) {
-      const curY = boxStartY + (i * boxH) + (boxH / 2);
-      const box = new THREE.Mesh(
-        new THREE.BoxGeometry(1.02, boxH - 0.02, 0.82),
-        new THREE.MeshStandardMaterial({ color: bCols[i], roughness: 0.68, metalness: 0.04 })
-      );
-      box.position.y = curY;
-      box.castShadow = true;
-      box.receiveShadow = true;
-      g.add(box);
-
-      // Wooden rim trim
-      const trim = new THREE.Mesh(
-        new THREE.BoxGeometry(1.06, 0.03, 0.86),
-        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.75 })
-      );
-      trim.position.y = curY + (boxH / 2) - 0.015;
-      trim.castShadow = true;
-      g.add(trim);
-
-      // Side cleats/handles
-      [-0.52, 0.52].forEach(hx => {
-        const handle = new THREE.Mesh(
-          new THREE.BoxGeometry(0.03, 0.04, 0.28),
-          new THREE.MeshStandardMaterial({ color: 0x5c2d0e })
-        );
-        handle.position.set(hx, curY, 0);
-        g.add(handle);
-      });
-    }
-
-    // 5. Entrance Slit on bottom box
-    const ent = new THREE.Mesh(
-      new THREE.BoxGeometry(0.36, 0.04, 0.02),
-      new THREE.MeshBasicMaterial({ color: 0x050505 })
-    );
-    ent.position.set(0, 0.46, 0.42);
-    g.add(ent);
-
-    // 6. Landing board (Bantalan Hinggap Lebah)
-    const lb = new THREE.Mesh(
-      new THREE.BoxGeometry(0.40, 0.025, 0.18),
-      new THREE.MeshStandardMaterial({ color: 0xa16207, roughness: 0.75 })
-    );
-    lb.position.set(0, 0.42, 0.50);
-    lb.rotation.x = -0.12;
-    lb.castShadow = true;
-    g.add(lb);
-
-    // 7. Inner Cover / Ceiling Plafon
-    const cap = new THREE.Mesh(
-      new THREE.BoxGeometry(1.18, 0.05, 0.98),
-      new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.7 })
-    );
-    cap.position.y = 1.465;
-    cap.castShadow = true;
-    g.add(cap);
-
-    // 8. Pitched Weather Roof (Atap Pelana Anti Hujan)
-    const roof = new THREE.Mesh(
-      new THREE.ConeGeometry(0.82, 0.42, 4),
-      new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.65 })
-    );
-    roof.position.y = 1.70;
-    roof.rotation.y = Math.PI / 4;
-    roof.castShadow = true;
-    g.add(roof);
-
-    // Roof top ridge cap
-    const ridge = new THREE.Mesh(
-      new THREE.BoxGeometry(0.12, 0.06, 0.12),
-      new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.6, roughness: 0.3 })
-    );
-    ridge.position.y = 1.92;
-    g.add(ridge);
-
-    return g;
+    return best;
   }
 
   // Organic / natural grid with slight random offsets for realism
@@ -1538,15 +1492,505 @@ window.cineZoomOut = function() {};
       z: oz + row * spacingZ - 0.3 + rz
     };
   }
+  const HPOS = HIVES_ARRAY.map((_, i) => hivePos(i, HIVES_ARRAY.length));
+
+  // Seberapa "gundul" suatu titik (0 = rumput lebat, 1 = tanah/bangunan/air)
+  function bareAt(x, z) {
+    let b = 1 - sstep(0.3, 0.75, distToPath(x, z));
+    for (let i = 0; i < HPOS.length; i++) b = Math.max(b, 1 - sstep(0.6, 1.05, Math.hypot(x - HPOS[i].x, z - HPOS[i].z)));
+    b = Math.max(b, 1 - sstep(2.2, 2.9, Math.hypot(x + 3.8, z + 2.4)));
+    const pa = Math.atan2(z - POND.z, x - POND.x);
+    b = Math.max(b, 1 - sstep(pondR(pa) * 1.02, pondR(pa) * 1.3, Math.hypot(x - POND.x, z - POND.z)));
+    return b;
+  }
+
+  // ── GROUND ELEVATION HELPER ──
+  // Padang datar di tengah (r <= 6.5), lalu bergelombang lembut dan naik ke kaki gunung
+  function getGroundElevation(worldX, worldZ) {
+    const dist = Math.hypot(worldX, worldZ);
+    const blend = sstep(6.5, 12, dist);
+    let h = Math.sin(worldX * 0.15) * 0.35 + Math.cos(worldZ * 0.2) * 0.25 + Math.sin(worldX * 0.5 - worldZ * 0.4) * 0.12;
+    h += (fbm(worldX * 0.11 + 20, worldZ * 0.11 + 7, 3) - 0.5) * 1.5;
+    h *= blend;
+    h += sstep(15, 34, dist) * (0.4 + 2.2 * fbm(worldX * 0.07 + 3, worldZ * 0.07 + 11, 3));
+    // tepi kolam dibuat rata agar air tidak melayang / tenggelam
+    h *= sstep(2.4, 4.2, Math.hypot(worldX - POND.x, worldZ - POND.z));
+    return h;
+  }
+
+  // ── TANAH: warna bervariasi + tekstur rumput + bayangan awan berjalan ──
+  const gSegs = isMobile ? 48 : 110;
+  const gGeo = new THREE.PlaneGeometry(100, 100, gSegs, gSegs);
+  const gPos = gGeo.getAttribute('position');
+  (function () {
+    const col = new Float32Array(gPos.count * 3), c = new THREE.Color();
+    const cDark = new THREE.Color(0x23803f), cLight = new THREE.Color(0x44b257), cDry = new THREE.Color(0x93b548), cMown = new THREE.Color(0x4fb863), cFar = new THREE.Color(0x236b3d);
+    for (let i = 0; i < gPos.count; i++) {
+      const x = gPos.getX(i), y = gPos.getY(i), z = -y;
+      gPos.setZ(i, getGroundElevation(x, z));
+      const d = Math.hypot(x, z);
+      c.copy(cDark).lerp(cLight, fbm(x * 0.09, z * 0.09, 4));
+      c.lerp(cDry, sstep(0.55, 0.8, fbm(x * 0.33 + 9, z * 0.33, 3)) * 0.45);
+      c.lerp(cMown, (1 - sstep(4, 8, d)) * 0.3);
+      c.lerp(cFar, sstep(18, 42, d) * 0.6);
+      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+    }
+    gGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  })();
+  gGeo.computeVertexNormals();
+  const groundMat = new THREE.MeshStandardMaterial({ vertexColors: true, map: groundTex, roughness: 0.94 });
+  groundMat.onBeforeCompile = function (sh) {
+    sh.uniforms.uTime = U.uTime;
+    sh.vertexShader = 'varying vec3 vWP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = [
+      'uniform float uTime; varying vec3 vWP;',
+      'float cH(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
+      'float cN(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);',
+      '  return mix(mix(cH(i), cH(i+vec2(1.,0.)), f.x), mix(cH(i+vec2(0.,1.)), cH(i+vec2(1.,1.)), f.x), f.y); }'
+    ].join('\n') + '\n' + sh.fragmentShader.replace('#include <color_fragment>', [
+      '#include <color_fragment>',
+      'vec2 cp = vWP.xz * 0.055 + uTime * vec2(0.022, 0.009);',
+      'float cl = cN(cp) * 0.65 + cN(cp * 2.1 + 7.0) * 0.35;',
+      'diffuseColor.rgb *= mix(0.74, 1.04, smoothstep(0.36, 0.62, cl));'
+    ].join('\n'));
+  };
+  const ground = new THREE.Mesh(gGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = !isMobile; scene.add(ground);
+
+  // Decal tanah: jalan setapak terinjak, tanah gundul di bawah sarang, tepi kolam
+  (function () {
+    const SIZE = 20, PX = isMobile ? 512 : 1024, k = PX / SIZE;
+    const tex = canvasTex(PX, PX, function (x) {
+      function dab(wx, wz, r, rgb, a) {
+        const cx = (wx + SIZE / 2) * k, cy = (wz + SIZE / 2) * k, rp = r * k;
+        const g = x.createRadialGradient(cx, cy, 0, cx, cy, rp);
+        g.addColorStop(0, 'rgba(' + rgb + ',' + a + ')'); g.addColorStop(0.55, 'rgba(' + rgb + ',' + (a * 0.55) + ')'); g.addColorStop(1, 'rgba(' + rgb + ',0)');
+        x.fillStyle = g; x.fillRect(cx - rp, cy - rp, rp * 2, rp * 2);
+      }
+      const DIRT = '150,112,70', DIRT2 = '122,90,55', SAND = '196,172,120';
+      for (let i = 0; i < PATH_PTS.length - 1; i++) {
+        const a = PATH_PTS[i], b = PATH_PTS[i + 1], n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.12);
+        for (let j = 0; j < n; j++) {
+          const t = j / n;
+          dab(a[0] + (b[0] - a[0]) * t + (Math.random() - 0.5) * 0.18, a[1] + (b[1] - a[1]) * t + (Math.random() - 0.5) * 0.18, 0.4 + Math.random() * 0.22, Math.random() > 0.4 ? DIRT : DIRT2, 0.34);
+        }
+      }
+      HPOS.forEach(p => { for (let j = 0; j < 9; j++) dab(p.x + (Math.random() - 0.5) * 0.7, p.z + 0.25 + (Math.random() - 0.5) * 0.8, 0.6 + Math.random() * 0.45, Math.random() > 0.5 ? DIRT : DIRT2, 0.3); });
+      for (let j = 0; j < 14; j++) dab(-2.9 + (Math.random() - 0.5) * 1.6, -0.7 + (Math.random() - 0.5) * 1.0, 0.6 + Math.random() * 0.4, DIRT, 0.2);
+      for (let a = 0; a < 6.283; a += 0.07) {
+        const r = pondR(a);
+        dab(POND.x + Math.cos(a) * r * 1.02, POND.z + Math.sin(a) * r * 1.02, 0.42 + Math.random() * 0.2, SAND, 0.3);
+        dab(POND.x + Math.cos(a) * r * 0.6, POND.z + Math.sin(a) * r * 0.6, 0.6, DIRT2, 0.5);
+      }
+      for (let i = 0; i < 260; i++) {            // kerikil & gumpalan tanah kecil
+        const wx = (Math.random() - 0.5) * 14, wz = (Math.random() - 0.5) * 12;
+        if (bareAt(wx, wz) > 0.4) dab(wx, wz, 0.04 + Math.random() * 0.07, Math.random() > 0.5 ? '90,66,40' : '200,185,150', 0.55);
+      }
+    });
+    tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+    const decal = new THREE.Mesh(new THREE.PlaneGeometry(SIZE, SIZE), new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    decal.rotation.x = -Math.PI / 2; decal.position.y = 0.012; decal.receiveShadow = !isMobile; decal.renderOrder = 0;
+    scene.add(decal);
+  })();
+
+  // ── PEGUNUNGAN: lereng beralur, hutan di kaki, batu di tengah, salju di puncak ──
+  const mountainMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96 });
+  const ROCK_C = new THREE.Color(0x7d8577), SNOW_C = new THREE.Color(0xf4f9ff);
+  function createSmoothMountain(x, z, height, baseW, color) {
+    const rs = isMobile ? 12 : 22, hs = isMobile ? 6 : 10;
+    const g = new THREE.ConeGeometry(baseW, height, rs, hs, true);
+    g.translate(0, height / 2, 0);
+    const p = g.attributes.position, col = new Float32Array(p.count * 3), c = new THREE.Color(), tint = new THREE.Color(color);
+    const sx = x * 0.37 + z * 0.11, snow = height > 7;
+    for (let i = 0; i < p.count; i++) {
+      const py = p.getY(i), t = Math.min(1, Math.max(0, py / height)), a = Math.atan2(p.getZ(i), p.getX(i)), ca = Math.cos(a), sa = Math.sin(a);
+      const prof = Math.pow(1 - t, 1.6) * 0.65 + (1 - t) * 0.35;
+      const ridge = fbm(ca * 1.6 + sx, sa * 1.6 + t * 2.2 + sx * 0.5, 4);
+      const r = baseW * 1.25 * prof * (0.7 + ridge * 0.65);
+      const y = py + (fbm(ca * 2.5 + sx + 5, sa * 2.5 + 3, 2) - 0.5) * height * 0.14 * Math.sin(Math.min(1, t) * Math.PI);
+      p.setXYZ(i, ca * r, y, sa * r);
+      c.copy(tint).multiplyScalar(0.8 + ridge * 0.45);
+      c.lerp(ROCK_C, sstep(0.38, 0.72, t + (ridge - 0.5) * 0.5) * 0.8);
+      if (snow) c.lerp(SNOW_C, sstep(0.66, 0.8, t + (ridge - 0.5) * 0.35));
+      col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+    }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    g.computeVertexNormals();
+    const m = new THREE.Mesh(g, mountainMat);
+    m.position.set(x, -0.6, z);
+    scene.add(m);
+    return m;
+  }
+
+  // Mountains ring — placed OUTSIDE the farm area
+  const mtColors = [0x3a7d44, 0x4a8a54, 0x2d6b38, 0x558b5e, 0x1f5c2a];
+  const mtFarColors = [0x2d5a36, 0x1a4d28, 0x3a6b42];
+  const mtCountInner = isMobile ? 8 : 20;
+  for (let i = 0; i < mtCountInner; i++) {
+    const angle = (i / mtCountInner) * Math.PI * 2 + rr(-0.08, 0.08);
+    const dist = 29 + rnd() * 7;
+    createSmoothMountain(Math.sin(angle) * dist, Math.cos(angle) * dist, 3 + rnd() * 5, 3.5 + rnd() * 3.5, mtColors[i % mtColors.length]);
+  }
+  const mtCountOuter = isMobile ? 5 : 14;
+  for (let i = 0; i < mtCountOuter; i++) {
+    const angle = (i / mtCountOuter) * Math.PI * 2 + 0.15;
+    const dist = 39 + rnd() * 11;
+    createSmoothMountain(Math.sin(angle) * dist, Math.cos(angle) * dist, 7 + rnd() * 8, 5 + rnd() * 5, mtFarColors[i % mtFarColors.length]);
+  }
+
+  // ── PEPOHONAN: batang melengkung, tajuk bergumpal, bergoyang ditiup angin ──
+  const foliageMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.86 });
+  const barkMat = new THREE.MeshStandardMaterial({ color: 0x8f6a46, map: barkTex, roughness: 0.93 });
+  const blobVars = [0, 1, 2].map(i => blob(isMobile ? 6 : 9, isMobile ? 4 : 6, 0.24, 1.3, i * 17.3 + 3));
+  const GREENS = [[0x237f3a, 0x4fbf5f], [0x1f7335, 0x3fa84e], [0x318c42, 0x86c94e], [0x1b6a30, 0x379a4f]].map(p => p.map(h => new THREE.Color(h)));
+  function trunkGeo(h, r0, r1, bx, bz) {
+    const g = new THREE.CylinderGeometry(r1, r0, h, 7, 5); g.translate(0, h / 2, 0);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const t = p.getY(i) / h, flare = 1 + Math.pow(1 - t, 6) * 0.7;
+      p.setX(i, p.getX(i) * flare + bx * t * t); p.setZ(i, p.getZ(i) * flare + bz * t * t);
+    }
+    g.computeVertexNormals();
+    return g;
+  }
+  function foliageColor(pal, y0, y1, seed) {
+    return function (x, y, z, c) {
+      c.copy(pal[0]).lerp(pal[1], vnoise(x * 1.6 + seed, z * 1.6 + y * 1.1));
+      c.multiplyScalar(0.5 + 0.6 * sstep(y0, y1, y));       // bawah teduh, atas kena matahari
+    };
+  }
+  function mkTree(x, z, s, tall) {
+    const g = new THREE.Group();
+    const h = (tall ? 1.9 : 1.25) * s, bx = rr(-0.2, 0.2) * s, bz = rr(-0.2, 0.2) * s;
+    g.add(shadow(new THREE.Mesh(trunkGeo(h, 0.15 * s, 0.07 * s, bx, bz), barkMat)));
+    const crown = new THREE.Group();
+    crown.position.set(bx * 0.67, h * 0.82, bz * 0.67);
+    const cw = (tall ? 0.55 : 0.88) * s, ch = (tall ? 1.5 : 0.95) * s, n = isMobile ? 4 : (tall ? 5 : 6);
+    const list = [[0, ch * 0.42, 0, cw * 0.78]];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + rr(-0.4, 0.4), rad = cw * rr(0.38, 0.62);
+      list.push([Math.cos(a) * rad, ch * rr(0.12, 0.72), Math.sin(a) * rad, cw * rr(0.42, 0.66)]);
+    }
+    list.push([rr(-0.1, 0.1) * s, ch * 0.92, rr(-0.1, 0.1) * s, cw * 0.5]);
+    const colFn = foliageColor(GREENS[Math.floor(rnd() * GREENS.length)], -cw * 0.3, ch + cw * 0.4, rnd() * 50);
+    const cm = shadow(new THREE.Mesh(merge(list.map(b => part(blobVars[Math.floor(rnd() * 3)], M([b[0], b[1], b[2]], [rr(0, 3), rr(0, 3), rr(0, 3)], [b[3], b[3] * rr(0.78, 0.95), b[3]]), colFn))), foliageMat));
+    crown.add(cm); g.add(crown);
+    const gy = getGroundElevation(x, z) - 0.05;
+    g.position.set(x, gy, z); g.rotation.y = rr(0, 6.28);
+    fakeShadow(g, cw * 3.2, 0.09);
+    scene.add(g);
+    swayers.push({ o: crown, x: x, z: z, amp: tall ? 0.055 : 0.038, ph: rnd() * 6.28 });
+    leafSources.push(new THREE.Vector3(x, gy + h * 0.82 + ch * 0.5, z));
+    return g;
+  }
+  const coneVars = [0, 1].map(seed => {
+    const g = new THREE.ConeGeometry(1, 1, isMobile ? 7 : 10, 1), p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const px = p.getX(i), pz = p.getZ(i);
+      if (p.getY(i) < -0.49 && Math.hypot(px, pz) > 0.5) {
+        const key = Math.round(Math.atan2(pz, px) * 8), k = 0.82 + 0.36 * h2(key, seed + 1);
+        p.setXYZ(i, px * k, -0.5 + (h2(key, seed + 9) - 0.65) * 0.2, pz * k);
+      }
+    }
+    g.computeVertexNormals();
+    return g;
+  });
+  const PINE_A = new THREE.Color(0x1c6b36), PINE_B = new THREE.Color(0x3a9a58);
+  function pineParts(s, tiers, y0) {
+    const parts = [];
+    for (let i = 0; i < tiers; i++) {
+      const r = (0.64 - i * (0.5 / tiers)) * s, hh = 0.64 * s, yc = y0 + (0.3 + i * 0.36) * s;
+      parts.push(part(coneVars[i % 2], M([0, yc, 0], [0, rr(0, 6.28), rr(-0.04, 0.04)], [r, hh, r]), function (x, y, z, c) {
+        c.copy(PINE_A).lerp(PINE_B, sstep(yc - hh / 2, yc + hh / 2, y)).multiplyScalar(0.72 + 0.1 * i);
+      }));
+    }
+    return parts;
+  }
+  function mkPine(x, z, s) {
+    const g = new THREE.Group();
+    const trunk = shadow(new THREE.Mesh(new THREE.CylinderGeometry(0.05 * s, 0.1 * s, 0.9 * s, 6), barkMat));
+    trunk.position.y = 0.45 * s; g.add(trunk);
+    const crown = new THREE.Group(); crown.position.y = 0.5 * s;
+    crown.add(shadow(new THREE.Mesh(merge(pineParts(s, isMobile ? 4 : 5, 0)), foliageMat)));
+    g.add(crown);
+    const gy = getGroundElevation(x, z) - 0.05;
+    g.position.set(x, gy, z);
+    fakeShadow(g, s * 1.9, 0.09);
+    scene.add(g);
+    swayers.push({ o: crown, x: x, z: z, amp: 0.03, ph: rnd() * 6.28 });
+    return g;
+  }
+  function spotFree(x, z, pad) {
+    if (z > 6.5 && Math.abs(x) < 5.5) return false;                       // jangan menutupi kamera
+    if (Math.hypot(x - POND.x, z - POND.z) < 3.2 + pad) return false;
+    if (Math.hypot(x + 3.8, z + 2.5) < 3.4 + pad) return false;
+    return true;
+  }
+  const treeCount = isMobile ? 13 : 34;
+  for (let i = 0, tries = 0; i < treeCount && tries < 400; tries++) {
+    const angle = rnd() * Math.PI * 2, dist = 8 + rnd() * 13;
+    const x = Math.sin(angle) * dist, z = Math.cos(angle) * dist;
+    if (!spotFree(x, z, 0.5)) continue;
+    const s = 0.75 + rnd() * 0.85, k = rnd();
+    if (k > 0.42) mkTree(x, z, s, false); else if (k > 0.22) mkTree(x, z, s, true); else mkPine(x, z, s * 1.15);
+    i++;
+  }
+  // Hutan pinus jauh di kaki gunung (1 draw call, instanced)
+  (function () {
+    const n = isMobile ? 50 : 170;
+    const geo = merge([part(new THREE.CylinderGeometry(0.05, 0.09, 0.5, 5), M([0, 0.25, 0]), 0x6b4a30)].concat(pineParts(1, 3, 0.35)));
+    const im = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }), n);
+    const d = new THREE.Object3D(), c = new THREE.Color();
+    for (let i = 0; i < n; i++) {
+      const a = rnd() * 6.283, r = 21 + rnd() * 9, x = Math.sin(a) * r, z = Math.cos(a) * r, s = rr(0.9, 1.9);
+      d.position.set(x, getGroundElevation(x, z) - 0.05, z); d.rotation.y = rnd() * 6.28; d.scale.set(s, s * rr(0.9, 1.25), s); d.updateMatrix();
+      im.setMatrixAt(i, d.matrix);
+      const k = rr(0.75, 1.15); im.setColorAt(i, c.setRGB(k, k * rr(0.95, 1.1), k));
+    }
+    scene.add(im);
+  })();
+  // Semak rendah di sekitar pagar & tepi padang
+  (function () {
+    const n = isMobile ? 6 : 16, parts = [];
+    for (let i = 0; i < n; i++) {
+      const a = rnd() * 6.283, r = 6.6 + rnd() * 6, x = Math.sin(a) * r, z = Math.cos(a) * r;
+      if (!spotFree(x, z, 0)) continue;
+      const gy = getGroundElevation(x, z), s = rr(0.35, 0.6), colFn = foliageColor(GREENS[i % GREENS.length], gy - s * 0.2, gy + s * 2.2, i * 3.1);
+      for (let j = 0; j < 3; j++) parts.push(part(blobVars[j], M([x + rr(-0.35, 0.35), gy + s * rr(0.3, 0.5), z + rr(-0.35, 0.35)], [0, rr(0, 6), 0], [s * rr(0.8, 1.2), s * rr(0.7, 0.9), s * rr(0.8, 1.2)]), colFn));
+    }
+    if (parts.length) scene.add(shadow(new THREE.Mesh(merge(parts), foliageMat)));
+  })();
+
+  // ── BATU: bongkah tak beraturan, berlumut di sisi atas ──
+  const rockVars = [0, 1].map(i => blob(7, 5, 0.3, 1.1, i * 31.7 + 11));
+  const ROCK_A = new THREE.Color(0x8b8d86), ROCK_B = new THREE.Color(0x6f7a52);
+  function rockPart(x, y, z, sx, sy, sz, seed) {
+    return part(rockVars[seed % 2], M([x, y, z], [rr(-0.3, 0.3), rr(0, 6.28), rr(-0.3, 0.3)], [sx, sy, sz]), function (px, py, pz, c) {
+      c.copy(ROCK_A).multiplyScalar(0.75 + 0.4 * vnoise(px * 5 + seed, pz * 5 + py * 4));
+      c.lerp(ROCK_B, sstep(y, y + sy * 0.9, py) * 0.6 * vnoise(px * 2 + seed, pz * 2));
+    });
+  }
+  (function () {
+    const parts = [], rockCount = isMobile ? 6 : 14;
+    for (let i = 0; i < rockCount; i++) {
+      const angle = rnd() * Math.PI * 2, dist = 5.2 + rnd() * 10;
+      const x = Math.sin(angle) * dist, z = Math.cos(angle) * dist;
+      if (!spotFree(x, z, -0.8) || bareAt(x, z) > 0.3) continue;
+      const s = 0.2 + rnd() * 0.32, gy = getGroundElevation(x, z);
+      parts.push(rockPart(x, gy + s * 0.25, z, s * rr(0.9, 1.4), s * rr(0.55, 0.8), s * rr(0.8, 1.2), i));
+      if (rnd() > 0.5) parts.push(rockPart(x + s * 1.1, gy + s * 0.1, z + rr(-0.2, 0.2), s * 0.5, s * 0.35, s * 0.45, i + 1));
+    }
+    for (let i = 0; i < 9; i++) {       // batu tepi kolam
+      const a = (i / 9) * 6.283 + rr(-0.2, 0.2), r = pondR(a) * rr(1.0, 1.12), s = rr(0.12, 0.26);
+      parts.push(rockPart(POND.x + Math.cos(a) * r, 0.03 + s * 0.2, POND.z + Math.sin(a) * r, s * rr(0.9, 1.3), s * 0.6, s, i + 20));
+    }
+    scene.add(shadow(new THREE.Mesh(merge(parts), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 })), true));
+  })();
+
+  // ── BUNGA LIAR: bergerombol, tiap rumpun satu warna, bergoyang (instanced) ──
+  (function () {
+    const patchCount = isMobile ? 9 : 24, perPatch = isMobile ? 9 : 13, max = patchCount * perPatch;
+    const fColors = [0xff6fb5, 0xffd83a, 0xff5a4f, 0xb07bff, 0xff9a2e, 0xffffff, 0x7cc8ff, 0xff3fa0];
+    const stemGeo = new THREE.CylinderGeometry(0.007, 0.011, 1, 4, 3); stemGeo.translate(0, 0.5, 0);
+    const petal = new THREE.SphereGeometry(1, 5, 3), headParts = [];
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * 6.283;
+      headParts.push(part(petal, M([Math.cos(a) * 0.62, 0.05, Math.sin(a) * 0.62], [0, -a, 0.25], [0.5, 0.13, 0.3]), 0xffffff));
+    }
+    headParts.push(part(petal, M([0, 0.1, 0], null, [0.34, 0.22, 0.34]), 0xffe27a));
+    const headGeo = merge(headParts);
+    const aH = new Float32Array(max);
+    const stems = new THREE.InstancedMesh(stemGeo, windify(new THREE.MeshLambertMaterial({ color: 0x3f9a4a }), 'blade'), max);
+    const heads = new THREE.InstancedMesh(headGeo, windify(new THREE.MeshLambertMaterial({ vertexColors: true }), 'head'), max);
+    const d = new THREE.Object3D(), c = new THREE.Color();
+    let n = 0;
+    for (let pI = 0, tries = 0; pI < patchCount && tries < 300; tries++) {
+      const a = rnd() * 6.283, r = 3.6 + rnd() * 11, cx = Math.sin(a) * r, cz = Math.cos(a) * r;
+      if (bareAt(cx, cz) > 0.2 || !spotFree(cx, cz, -1.2)) continue;
+      const col = fColors[Math.floor(rnd() * fColors.length)], spread = rr(0.5, 1.1);
+      flowerPatches.push(new THREE.Vector3(cx, getGroundElevation(cx, cz) + 0.42, cz));
+      for (let j = 0; j < perPatch; j++) {
+        const fa = rnd() * 6.283, fr = Math.sqrt(rnd()) * spread, x = cx + Math.cos(fa) * fr, z = cz + Math.sin(fa) * fr;
+        if (bareAt(x, z) > 0.5) continue;
+        const gy = getGroundElevation(x, z), h = rr(0.24, 0.48), hs = rr(0.06, 0.1);
+        d.position.set(x, gy, z); d.rotation.set(0, rnd() * 6.28, 0); d.scale.set(1, h, 1); d.updateMatrix(); stems.setMatrixAt(n, d.matrix);
+        d.position.set(x, gy + h, z); d.rotation.set(rr(-0.35, 0.35), rnd() * 6.28, rr(-0.35, 0.35)); d.scale.set(hs, hs, hs); d.updateMatrix(); heads.setMatrixAt(n, d.matrix);
+        const k = rr(0.85, 1.1); heads.setColorAt(n, c.set(col).multiplyScalar(k));
+        aH[n] = h; n++;
+      }
+      pI++;
+    }
+    headGeo.setAttribute('aH', new THREE.InstancedBufferAttribute(aH, 1));
+    stems.count = heads.count = n;
+    stems.frustumCulled = heads.frustumCulled = false;
+    scene.add(stems); scene.add(heads);
+  })();
+
+  // ── RUMPUT: ribuan rumpun melambai mengikuti hembusan angin (instanced + shader) ──
+  (function () {
+    const pos = [], uv = [], col = [], nor = [], idx = [], blades = 3, segs = 3;
+    for (let b = 0; b < blades; b++) {
+      const a = (b / blades) * Math.PI + 0.3, dx = Math.cos(a), dz = Math.sin(a), nx = -dz, nz = dx;
+      const lean = (b - 1) * 0.28 + 0.12, ox = nx * (b - 1) * 0.05, oz = nz * (b - 1) * 0.05, hgt = 1 - b * 0.14, base = pos.length / 3;
+      for (let s = 0; s <= segs; s++) {
+        const t = s / segs, hw = 0.045 * (1 - t * 0.9), cx = ox + nx * lean * t * t, cz = oz + nz * lean * t * t, k = 0.72 + 0.5 * t;
+        pos.push(cx - dx * hw, t * hgt, cz - dz * hw, cx + dx * hw, t * hgt, cz + dz * hw);
+        uv.push(0, t, 1, t); col.push(k, k, k, k, k, k); nor.push(0, 1, 0, 0, 1, 0);
+        if (s < segs) { const i0 = base + s * 2; idx.push(i0, i0 + 1, i0 + 2, i0 + 1, i0 + 3, i0 + 2); }
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.setIndex(idx);
+    const max = isMobile ? 2600 : 14000;
+    const grass = new THREE.InstancedMesh(geo, windify(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }), 'blade'), max);
+    const d = new THREE.Object3D(), c = new THREE.Color();
+    const gA = new THREE.Color(0x3aa653), gB = new THREE.Color(0x6bd070), gC = new THREE.Color(0xc0d860), gReed = new THREE.Color(0x3f8a3f);
+    let n = 0;
+    function put(x, z, h, w, color) {
+      d.position.set(x, getGroundElevation(x, z), z); d.rotation.y = rnd() * 6.28; d.scale.set(w, h, w); d.updateMatrix();
+      grass.setMatrixAt(n, d.matrix); grass.setColorAt(n, color); n++;
+    }
+    for (let tries = 0; n < max - 90 && tries < max * 3; tries++) {
+      const a = rnd() * 6.283, r = Math.sqrt(rnd()) * 21, x = Math.sin(a) * r, z = Math.cos(a) * r;
+      const bare = bareAt(x, z);
+      if (bare > 0.55 || rnd() < bare) continue;
+      if (fbm(x * 0.5 + 40, z * 0.5, 2) < 0.3) continue;                 // rumput tumbuh berkelompok
+      const tallness = 0.45 + 0.55 * sstep(3.5, 9, r);                    // tengah kebun lebih pendek (sering diinjak)
+      const h = rr(0.11, 0.3) * tallness * (0.7 + 0.6 * fbm(x * 0.3, z * 0.3 + 5, 2));
+      c.copy(gA).lerp(gB, fbm(x * 0.2 + 3, z * 0.2, 2)).lerp(gC, rnd() < 0.12 ? 0.6 : 0);
+      c.multiplyScalar(rr(0.85, 1.12));
+      put(x, z, h, rr(0.55, 0.95), c);
+    }
+    for (let i = 0; i < 90 && n < max; i++) {                             // alang-alang tepi kolam
+      const a = rnd() * 6.283; if (Math.sin(a * 2 + 1) < -0.2) continue;
+      const r = pondR(a) * rr(0.95, 1.22);
+      c.copy(gReed).multiplyScalar(rr(0.8, 1.15));
+      put(POND.x + Math.cos(a) * r, POND.z + Math.sin(a) * r, rr(0.55, 1.05), rr(0.9, 1.3), c);
+    }
+    grass.count = n; grass.frustumCulled = false;
+    scene.add(grass);
+  })();
+
+  // ── KOLAM: tepi tak beraturan, air bergradasi, riak, teratai ──
+  const pondRipples = [], lilyPads = [];
+  const pond = (function () {
+    const rings = 4, seg = 40, pos = [], col = [], idx = [], c = new THREE.Color();
+    const deep = new THREE.Color(0x1f7fb5), shallow = new THREE.Color(0x6fd3ea);
+    pos.push(0, 0, 0); col.push(deep.r, deep.g, deep.b);
+    for (let r = 1; r <= rings; r++) for (let s = 0; s < seg; s++) {
+      const a = (s / seg) * 6.283, k = r / rings, R = pondR(a) * k;
+      pos.push(Math.cos(a) * R, 0, Math.sin(a) * R);
+      c.copy(deep).lerp(shallow, k * k); col.push(c.r, c.g, c.b);
+    }
+    for (let s = 0; s < seg; s++) idx.push(0, 1 + (s + 1) % seg, 1 + s);
+    for (let r = 1; r < rings; r++) for (let s = 0; s < seg; s++) {
+      const a = 1 + (r - 1) * seg + s, b = 1 + (r - 1) * seg + (s + 1) % seg, e = a + seg, f = b + seg;
+      idx.push(a, b, e, b, f, e);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.08, metalness: 0.35, transparent: true, opacity: 0.86 }));
+    m.position.set(POND.x, 0.035, POND.z); m.receiveShadow = !isMobile; m.renderOrder = 2;
+    scene.add(m);
+    const ringGeo = new THREE.RingGeometry(0.9, 1, 28); ringGeo.rotateX(-Math.PI / 2);
+    for (let i = 0; i < 3; i++) {
+      const rp = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }));
+      rp.userData = { t: i * 1.3, dur: 3.6 }; rp.renderOrder = 3; rp.position.y = 0.045;
+      scene.add(rp); pondRipples.push(rp);
+    }
+    const padGeo = new THREE.CircleGeometry(1, 12, 0.35, 5.7); padGeo.rotateX(-Math.PI / 2);
+    const padMat = new THREE.MeshStandardMaterial({ color: 0x2f9b4e, roughness: 0.6, side: THREE.DoubleSide });
+    [[-0.5, 0.3, 0.2], [0.35, -0.45, 0.16], [0.6, 0.5, 0.13], [-0.2, -0.65, 0.12], [-0.75, -0.2, 0.1]].forEach((p, i) => {
+      const pad = new THREE.Mesh(padGeo, padMat);
+      pad.position.set(POND.x + p[0], 0.05, POND.z + p[1]); pad.scale.set(p[2], 1, p[2]); pad.rotation.y = i * 1.7;
+      pad.userData = { ph: i * 1.3, ry: i * 1.7 }; pad.renderOrder = 4;
+      scene.add(pad); lilyPads.push(pad);
+      if (i < 2) {
+        const fl = new THREE.Mesh(new THREE.SphereGeometry(0.3, 6, 4), new THREE.MeshStandardMaterial({ color: i ? 0xffffff : 0xff8fc4, roughness: 0.5 }));
+        fl.scale.y = 0.6; fl.position.set(0.15, 0.2, 0.1); pad.add(fl);
+      }
+    });
+    return m;
+  })();
+
+  // ── SARANG LEBAH: kotak Langstroth kayu, sudut membulat, atap pelana ──
+  const hive3D = [], hiveWP = [];
+  const hiveMat = new THREE.MeshStandardMaterial({ vertexColors: true, map: woodTex, roughness: 0.74, metalness: 0.02 });
+  const hiveBoxGeo = roundedBox(1.02, 0.32, 0.82, 0.04);
+  const hiveRoofGeo = prismGeo(0.6, 0.3, 0.98);
+  const unitBox = new THREE.BoxGeometry(1, 1, 1);
+  const unitCyl = new THREE.CylinderGeometry(0.9, 1, 1, 6);
+
+  function mkBeehive(idx) {
+    const g = new THREE.Group(), parts = [], S = function (k) { return seededRandom(idx * 13 + k); };
+    function box(x, y, z, w, h, d, color, rot) { parts.push(part(unitBox, M([x, y, z], rot || null, [w, h, d]), color)); }
+    const tone = 0.9 + S(1) * 0.2;                               // tiap sarang sedikit beda warna
+    const weather = function (hex, seed) {
+      const base = new THREE.Color(hex).multiplyScalar(tone);
+      return function (x, y, z, c) { c.copy(base).multiplyScalar(0.86 + 0.22 * vnoise(x * 7 + seed, y * 9 + z * 7)); };
+    };
+    const DARK = 0x6b3410, DARKER = 0x4a240b;
+
+    // 1. Batu pijakan pipih (tak beraturan)
+    parts.push(part(rockVars[idx % 2], M([0, 0.012, 0], [0, S(2) * 6, 0], [0.78, 0.03, 0.66]), function (x, y, z, c) { c.set(0x9a9080).multiplyScalar(0.8 + 0.3 * vnoise(x * 6, z * 6)); }));
+
+    // 2. Kaki kayu sedikit mengangkang + palang
+    [[-0.42, -0.32], [0.42, -0.32], [-0.42, 0.32], [0.42, 0.32]].forEach(([lx, lz]) => {
+      parts.push(part(unitCyl, M([lx * 1.04, 0.2, lz * 1.04], [lz > 0 ? 0.07 : -0.07, 0, lx > 0 ? -0.07 : 0.07], [0.05, 0.3, 0.05]), DARKER));
+    });
+    box(0, 0.3, -0.32, 0.98, 0.05, 0.06, DARKER); box(0, 0.3, 0.32, 0.98, 0.05, 0.06, DARKER);
+
+    // 3. Papan dasar + papan hinggap miring
+    box(0, 0.38, 0, 1.14, 0.06, 0.94, weather(0x8b5a2b, 1));
+    box(0, 0.4, 0.55, 0.5, 0.022, 0.26, weather(0xa16207, 2), [0.2, 0, 0]);
+
+    // 4. Tiga kotak sarang — ditumpuk tidak persis lurus, seperti buatan tangan
+    const bCols = [0xd97706, 0xf59e0b, 0xfbbf24];
+    const boxH = 0.34, boxStartY = 0.42;
+    for (let i = 0; i < 3; i++) {
+      const curY = boxStartY + (i * boxH) + (boxH / 2);
+      const jx = (S(10 + i) - 0.5) * 0.03, jz = (S(20 + i) - 0.5) * 0.03, jr = (S(30 + i) - 0.5) * 0.05;
+      parts.push(part(hiveBoxGeo, M([jx, curY, jz], [0, jr, 0]), weather(bCols[i], 3 + i)));
+      box(jx, curY + boxH / 2 - 0.008, jz, 1.035, 0.016, 0.835, DARK, [0, jr, 0]);           // celah antar kotak
+      box(jx, curY + 0.03, jz + 0.411, 0.22, 0.05, 0.014, DARKER, [0, jr, 0]);                // cekungan pegangan
+      box(jx, curY + 0.03, jz - 0.411, 0.22, 0.05, 0.014, DARKER, [0, jr, 0]);
+      box(jx + 0.511, curY + 0.03, jz, 0.014, 0.05, 0.2, DARKER, [0, jr, 0]);
+      box(jx - 0.511, curY + 0.03, jz, 0.014, 0.05, 0.2, DARKER, [0, jr, 0]);
+    }
+
+    // 5. Lubang masuk + bilah pengecil
+    box(0, 0.452, 0.413, 0.4, 0.04, 0.02, 0x070504);
+    box(-0.3, 0.452, 0.416, 0.18, 0.04, 0.02, DARK); box(0.3, 0.452, 0.416, 0.18, 0.04, 0.02, DARK);
+
+    // 6. Tutup teleskopik + atap pelana dengan teritis
+    box(0, 1.475, 0, 1.12, 0.07, 0.92, weather(0x8b4a14, 7));
+    parts.push(part(hiveRoofGeo, M([0, 1.51, 0]), weather(0xfbbf24, 8)));
+    const ra = Math.atan2(0.3, 0.6), roofCol = weather(0x92400e, 9);
+    box(0.345, 1.51 + 0.145, 0, 0.8, 0.032, 1.14, roofCol, [0, 0, -ra]);
+    box(-0.345, 1.51 + 0.145, 0, 0.8, 0.032, 1.14, roofCol, [0, 0, ra]);
+    box(0, 1.51 + 0.335, 0, 0.09, 0.04, 1.17, DARKER);
+
+    const m = new THREE.Mesh(merge(parts), hiveMat);
+    m.castShadow = true; m.receiveShadow = true;
+    g.add(m);
+    fakeShadow(g, 2.3, 0.03);
+    return g;
+  }
 
   // Collect all obstacle positions for collision avoidance
   const obstaclePositions = [];
 
   HIVES_ARRAY.forEach((hive, idx) => {
-    const h = mkBeehive();
-    const p = hivePos(idx, HIVES_ARRAY.length);
+    const h = mkBeehive(idx);
+    const p = HPOS[idx];
     // Add slight random rotation for organic feel
-    const rRot = (seededRandom(idx * 7 + 5) - 0.5) * 0.25;
+    const rRot = (seededRandom(idx * 7 + 5) - 0.5) * 0.3;
     h.position.set(p.x, 0, p.z);
     h.rotation.y = rRot;
     h.userData.hiveId = hive.id;
@@ -1559,86 +2003,172 @@ window.cineZoomOut = function() {};
   // Cabin obstacle
   obstaclePositions.push({ x: -3.8, z: -2.5, r: 1.6 });
 
-  // ── BEES (only near hives that have bees) ──
+  // ── LEBAH: terbang bebas — berkerumun di sarang, pergi ke bunga, pulang lagi ──
   const bees = [];
+  const beeBodyGeo = new THREE.SphereGeometry(0.06, 8, 6); beeBodyGeo.rotateX(Math.PI / 2); beeBodyGeo.scale(0.82, 0.78, 1.35);
+  const beeTex = canvasTex(8, 64, function (x) {
+    ['#2a1a08', '#2a1a08', '#f5a623', '#1a1208', '#f7b63a', '#1a1208', '#f5a623', '#1a1208'].forEach((c, i) => { x.fillStyle = c; x.fillRect(0, i * 8, 8, 8); });
+  });
+  const beeBodyMat = new THREE.MeshStandardMaterial({ map: beeTex, roughness: 0.6 });
+  const wingGeo = new THREE.PlaneGeometry(0.12, 0.06); wingGeo.rotateX(-Math.PI / 2); wingGeo.translate(0.06, 0, -0.01);
+  const wingMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false });
+  function mkBee(home, startX, startZ) {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(beeBodyGeo, beeBodyMat));
+    const wR = new THREE.Mesh(wingGeo, wingMat); wR.position.set(0.02, 0.04, 0); g.add(wR);
+    const wL = new THREE.Mesh(wingGeo, wingMat); wL.position.set(-0.02, 0.04, 0); wL.scale.x = -1; g.add(wL);
+    g.scale.setScalar(1.2);
+    g.userData = {
+      wL: wL, wR: wR, home: home, ph: rnd() * 6.28, st: 0, n: 2 + Math.floor(rnd() * 8), timer: 0, maxSpd: 1.3,
+      pos: new THREE.Vector3(startX, 0.9 + rnd(), startZ), vel: new THREE.Vector3(), target: new THREE.Vector3(startX, 1.2, startZ), flower: null
+    };
+    g.position.copy(g.userData.pos);
+    scene.add(g); bees.push(g);
+  }
   HIVES_ARRAY.forEach((hive, idx) => {
     const bc = parseInt(hive.bee_count) || 0;
     if (bc <= 0) return;
-    const p = hivePos(idx, HIVES_ARRAY.length);
-    const count = Math.min(bc, 4);
-    for (let i = 0; i < count; i++) {
-      const g = new THREE.Group();
-      const body = new THREE.Mesh(new THREE.SphereGeometry(0.06,8,6), new THREE.MeshStandardMaterial({ color: 0xf5a623 }));
-      body.scale.set(1,0.7,1.3); g.add(body);
-      for (let s = 0; s < 2; s++) {
-        const st = new THREE.Mesh(new THREE.TorusGeometry(0.055,0.012,4,8), new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
-        st.position.z = -0.02+s*0.04; st.rotation.x = Math.PI/2; g.add(st);
-      }
-      const wm = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.45, side: THREE.DoubleSide });
-      const wL = new THREE.Mesh(new THREE.PlaneGeometry(0.1,0.06), wm); wL.position.set(-0.06,0.04,0); wL.rotation.z = 0.3; g.add(wL);
-      const wR = new THREE.Mesh(new THREE.PlaneGeometry(0.1,0.06), wm); wR.position.set(0.06,0.04,0); wR.rotation.z = -0.3; g.add(wR);
-      g.userData = { wL, wR, phase: Math.random()*Math.PI*2, speed: 0.6+Math.random()*1.2, radius: 0.8+Math.random()*1.4, h: 0.9+Math.random()*0.8, cx: p.x, cz: p.z };
-      scene.add(g); bees.push(g);
-    }
+    const p = HPOS[idx], count = Math.min(bc, isMobile ? 4 : 6);
+    for (let i = 0; i < count; i++) mkBee({ x: p.x, z: p.z }, p.x + rr(-0.8, 0.8), p.z + rr(-0.3, 1.2));
   });
+  for (let i = 0; i < (isMobile ? 3 : 6); i++) mkBee(null, rr(-6, 6), rr(-4, 5));     // lebah liar
 
-  // Extra ambient bees
-  for (let i = 0; i < 4; i++) {
-    const g = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.05,6,4), new THREE.MeshStandardMaterial({ color: 0xf5a623 }));
-    body.scale.set(1,0.7,1.2); g.add(body);
-    const wm = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
-    const wL = new THREE.Mesh(new THREE.PlaneGeometry(0.08,0.05), wm); wL.position.set(-0.05,0.03,0); wL.rotation.z = 0.3; g.add(wL);
-    const wR = new THREE.Mesh(new THREE.PlaneGeometry(0.08,0.05), wm); wR.position.set(0.05,0.03,0); wR.rotation.z = -0.3; g.add(wR);
-    g.userData = { wL, wR, phase: Math.random()*Math.PI*2, speed: 0.3+Math.random()*0.6, radius: 4+Math.random()*6, h: 2+Math.random()*3, cx: (Math.random()-0.5)*8, cz: (Math.random()-0.5)*8 };
-    scene.add(g); bees.push(g);
+  function pickFlyTarget(d) {
+    const anyFlower = flowerPatches.length ? flowerPatches[Math.floor(Math.random() * flowerPatches.length)] : null;
+    if (!d.home) {                                   // pengembara: dari rumpun bunga ke rumpun bunga
+      if (anyFlower && Math.random() < 0.7) d.target.set(anyFlower.x + (Math.random() - 0.5), anyFlower.y + Math.random() * 0.4, anyFlower.z + (Math.random() - 0.5));
+      else d.target.set((Math.random() - 0.5) * 16, 0.6 + Math.random() * 2.4, (Math.random() - 0.5) * 12);
+      d.timer = 1.5 + Math.random() * 4; d.maxSpd = 1.2 + Math.random() * 1.4;
+      return;
+    }
+    if (d.st === 0) {                                // berkerumun di depan sarang
+      if (--d.n <= 0 && anyFlower) { d.st = 1; d.flower = anyFlower; d.target.copy(anyFlower); d.timer = 14; d.maxSpd = 2.7; }
+      else { d.target.set(d.home.x + (Math.random() - 0.5) * 1.8, 0.5 + Math.random() * 1.4, d.home.z + 0.3 + (Math.random() - 0.5) * 1.7); d.timer = 0.35 + Math.random() * 0.9; d.maxSpd = 1.4; }
+    } else if (d.st === 1) {                         // tiba di bunga
+      d.st = 2; d.n = 3 + Math.floor(Math.random() * 5); pickFlyTarget(d);
+    } else if (d.st === 2) {                         // mengisap nektar, pindah-pindah bunga
+      if (--d.n <= 0) { d.st = 3; d.target.set(d.home.x, 0.52, d.home.z + 0.55); d.timer = 14; d.maxSpd = 2.7; }
+      else { d.target.set(d.flower.x + (Math.random() - 0.5) * 1.2, d.flower.y + Math.random() * 0.2 - 0.05, d.flower.z + (Math.random() - 0.5) * 1.2); d.timer = 0.6 + Math.random() * 1.2; d.maxSpd = 0.7; }
+    } else {                                         // sampai di sarang
+      d.st = 0; d.n = 4 + Math.floor(Math.random() * 8); pickFlyTarget(d);
+    }
+  }
+  const _fv = new THREE.Vector3();
+  function updFlyer(o, t, dt, flutter) {
+    const d = o.userData;
+    d.timer -= dt;
+    if (d.timer <= 0 || d.pos.distanceToSquared(d.target) < 0.03) pickFlyTarget(d);
+    _fv.copy(d.target).sub(d.pos);
+    const dist = _fv.length() || 0.001;
+    _fv.multiplyScalar(d.maxSpd * Math.min(1, dist / 0.5 + 0.25) / dist);
+    d.vel.lerp(_fv, Math.min(1, dt * (flutter ? 1.6 : 4.5)));
+    d.pos.addScaledVector(d.vel, dt);
+    if (d.pos.y < 0.15) d.pos.y = 0.15;
+    o.position.copy(d.pos);
+    if (flutter) {                                   // kupu-kupu: naik-turun tak menentu
+      o.position.y += Math.sin(t * 6.5 + d.ph) * 0.09 + Math.sin(t * 2.3 + d.ph * 2) * 0.12;
+      o.position.x += Math.sin(t * 1.7 + d.ph) * 0.1;
+    } else {                                         // lebah: getar halus
+      o.position.x += Math.sin(t * 11 + d.ph) * 0.02; o.position.y += Math.sin(t * 13.7 + d.ph * 2) * 0.025; o.position.z += Math.cos(t * 9.3 + d.ph) * 0.02;
+    }
+    if (d.vel.x * d.vel.x + d.vel.z * d.vel.z > 0.004) {
+      let dy = Math.atan2(d.vel.x, d.vel.z) - o.rotation.y;
+      while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+      o.rotation.y += dy * Math.min(1, dt * 8);
+      o.rotation.z = -dy * 0.5;
+    }
+    o.rotation.x = -d.vel.y * 0.25;
   }
 
-  // ── BUTTERFLIES ──
+  // ── KUPU-KUPU ──
   const bflies = [];
-  for (let i = 0; i < 5; i++) {
-    const g = new THREE.Group();
-    const bc = [0xff69b4, 0xffa500, 0x87ceeb, 0xffd700, 0xaa66ff][i];
-    const wm = new THREE.MeshStandardMaterial({ color: bc, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
-    const wL = new THREE.Mesh(new THREE.PlaneGeometry(0.12,0.08), wm); wL.position.x = -0.06; g.add(wL);
-    const wR = new THREE.Mesh(new THREE.PlaneGeometry(0.12,0.08), wm); wR.position.x = 0.06; g.add(wR);
-    g.userData = { wL, wR, phase: Math.random()*Math.PI*2, speed: 0.3+Math.random()*0.5, radius: 3+Math.random()*5, h: 1+Math.random()*2.5, cx: (Math.random()-0.5)*12, cz: (Math.random()-0.5)*12 };
-    scene.add(g); bflies.push(g);
-  }
+  (function () {
+    const ws = new THREE.Shape();
+    ws.moveTo(0, 0.02); ws.bezierCurveTo(0.03, 0.1, 0.14, 0.12, 0.15, 0.05); ws.bezierCurveTo(0.15, 0.0, 0.06, -0.01, 0.04, -0.02);
+    ws.bezierCurveTo(0.1, -0.04, 0.1, -0.11, 0.05, -0.1); ws.bezierCurveTo(0.02, -0.09, 0, -0.05, 0, 0.02);
+    const g2 = new THREE.ShapeGeometry(ws, 5); g2.rotateX(-Math.PI / 2);
+    const bodyGeo = new THREE.CylinderGeometry(0.008, 0.006, 0.13, 4); bodyGeo.rotateX(Math.PI / 2);
+    const bodyMat = new THREE.MeshBasicMaterial({ color: 0x2a1c12 });
+    const cols = [0xff69b4, 0xffa500, 0x7ec8ff, 0xffd700, 0xb07bff, 0xffffff, 0xff7a3d];
+    for (let i = 0; i < (isMobile ? 4 : 7); i++) {
+      const g = new THREE.Group();
+      const wm = new THREE.MeshLambertMaterial({ color: cols[i % cols.length], side: THREE.DoubleSide, emissive: cols[i % cols.length], emissiveIntensity: 0.15 });
+      const wR = new THREE.Mesh(g2, wm); g.add(wR);
+      const wL = new THREE.Mesh(g2, wm); wL.scale.x = -1; g.add(wL);
+      g.add(new THREE.Mesh(bodyGeo, bodyMat));
+      const sx = rr(-7, 7), sz = rr(-5, 6);
+      g.userData = { wL: wL, wR: wR, home: null, ph: rnd() * 6.28, st: 0, n: 0, timer: 0, maxSpd: 0.8, pos: new THREE.Vector3(sx, 1, sz), vel: new THREE.Vector3(), target: new THREE.Vector3(sx, 1, sz), flower: null, slow: rr(0.4, 0.75) };
+      g.scale.setScalar(rr(1.0, 1.5));
+      scene.add(g); bflies.push(g);
+    }
+  })();
 
-  // ── CLOUDS ──
+  // ── BURUNG melintas ──
+  const birds = [];
+  (function () {
+    const wg = new THREE.BufferGeometry();
+    wg.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0.1, 0, 0, -0.08, 0.5, 0, -0.03], 3));
+    const bm = new THREE.MeshBasicMaterial({ color: 0x2b3440, side: THREE.DoubleSide });
+    const bodyGeo = new THREE.ConeGeometry(0.05, 0.34, 4); bodyGeo.rotateX(Math.PI / 2);
+    for (let i = 0; i < (isMobile ? 3 : 5); i++) {
+      const g = new THREE.Group();
+      const wR = new THREE.Mesh(wg, bm); g.add(wR);
+      const wL = new THREE.Mesh(wg, bm); wL.scale.x = -1; g.add(wL);
+      g.add(new THREE.Mesh(bodyGeo, bm));
+      g.userData = { wL: wL, wR: wR, a: i * 0.22 + (i > 2 ? 3 : 0), r: 15 + i * 1.3, h: 7.5 + (i % 3) * 0.9, spd: 0.13 + (i > 2 ? 0.03 : 0), ph: i * 1.9 };
+      scene.add(g); birds.push(g);
+    }
+  })();
+
+  // ── DAUN GUGUR terbawa angin ──
+  const leaves = [];
+  (function () {
+    if (!leafSources.length) return;
+    const lg = new THREE.PlaneGeometry(0.09, 0.055);
+    const mats = [0xb5d65a, 0xe2c044, 0xd98a2b, 0x7fc85c].map(c => new THREE.MeshLambertMaterial({ color: c, side: THREE.DoubleSide }));
+    for (let i = 0; i < (isMobile ? 6 : 16); i++) {
+      const m = new THREE.Mesh(lg, mats[i % mats.length]);
+      m.userData = { ph: rnd() * 6.28, wait: rnd() * 9, fall: rr(0.35, 0.6) };
+      m.visible = false; scene.add(m); leaves.push(m);
+    }
+  })();
+
+  // ── AWAN: gumpalan lembut, putih di atas, kebiruan di bawah ──
   const clouds = [];
-  function mkCloud(x,y,z,s) {
-    const g = new THREE.Group();
-    const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, transparent: true, opacity: 0.78 });
-    [[0,0,0,0.8],[-0.6,0.1,0.1,0.6],[0.5,0.15,-0.1,0.7],[-0.2,-0.1,0.2,0.5],[0.7,0.05,0.15,0.45]].forEach(([ox,oy,oz,r]) => {
-      const sp = new THREE.Mesh(new THREE.SphereGeometry(r*s,6,5), m);
-      sp.position.set(ox*s, oy*s, oz*s);
-      g.add(sp);
-    });
-    g.position.set(x,y,z); g.userData.speed = 0.012+Math.random()*0.02;
-    scene.add(g); return g;
+  const cloudMat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: 0x9fb4cc, emissiveIntensity: 0.45, transparent: true, opacity: 0.93 });
+  function mkCloud(x, y, z, s) {
+    const parts = [], n = isMobile ? 5 : 8, cTop = new THREE.Color(0xffffff), cBot = new THREE.Color(0xb9c9de);
+    const colFn = function (px, py, pz, c) { c.copy(cBot).lerp(cTop, sstep(-0.35 * s, 0.35 * s, py)); };
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1) - 0.5, r = (0.5 + 0.45 * (1 - Math.abs(t) * 1.6) + rr(-0.08, 0.12)) * s;
+      parts.push(part(blobVars[i % 3], M([t * 2.6 * s + rr(-0.15, 0.15) * s, rr(-0.05, 0.22) * s, rr(-0.45, 0.45) * s], [rr(0, 3), rr(0, 3), 0], [r * 1.15, r * 0.72, r]), colFn));
+    }
+    const m = new THREE.Mesh(merge(parts), cloudMat);
+    m.position.set(x, y, z); m.userData = { speed: 0.5 + rnd() * 0.6, y: y, ph: rnd() * 6.28 };
+    scene.add(m); return m;
   }
-  [[-12,14,-22,1.4],[8,15,-28,1.6],[18,13,-20,1.2],[-6,16,-30,1.8],[22,12,-16,1.0],[-18,14,-25,1.3],[0,17,-35,2.0]].forEach(([x,y,z,s]) => clouds.push(mkCloud(x,y,z,s)));
+  [[-12,14,-22,1.5],[8,15,-28,1.7],[18,13,-20,1.3],[-6,17,-32,2.0],[24,12,-16,1.1],[-20,14,-25,1.4],[0,18,-38,2.2],[-30,15,-12,1.6],[32,16,-30,1.9],[-36,13,-30,1.5]]
+    .slice(0, isMobile ? 6 : 10).forEach(([x,y,z,s]) => clouds.push(mkCloud(x,y,z,s)));
 
-  // ── POLLEN ──
-  const pGeo = new THREE.BufferGeometry(), pCnt = 70, pPos = new Float32Array(pCnt*3);
-  for (let i = 0; i < pCnt; i++) { pPos[i*3]=(Math.random()-0.5)*20; pPos[i*3+1]=0.3+Math.random()*5; pPos[i*3+2]=(Math.random()-0.5)*20; }
+  // ── SERBUK SARI melayang ──
+  const pGeo = new THREE.BufferGeometry(), pCnt = isMobile ? 45 : 90, pPos = new Float32Array(pCnt*3);
+  for (let i = 0; i < pCnt; i++) { pPos[i*3]=(Math.random()-0.5)*22; pPos[i*3+1]=0.3+Math.random()*5; pPos[i*3+2]=(Math.random()-0.5)*20; }
   pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-  scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xfde047, size: 0.06, transparent: true, opacity: 0.6 })));
+  scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xfff0a0, map: softDotTex, size: 0.11, transparent: true, opacity: 0.7, depthWrite: false })));
 
   // ══════════════════════════════════════════════════════════
   // GUBUK KAYU PETERNAK (RUSTIC TIMBER CABIN & DETAILED SCENE)
   // ══════════════════════════════════════════════════════════
   const chimneySmoke = [];
+  let cabinLanternLight = null;
   function createRusticCabin() {
     const cabin = new THREE.Group();
 
     const stoneMat = new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.95 });
     const woodDarkMat = new THREE.MeshStandardMaterial({ color: 0x5c2d0e, roughness: 0.85 });
-    const woodPlankMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.78 });
-    const woodLogMat = new THREE.MeshStandardMaterial({ color: 0xa16207, roughness: 0.75 });
-    const roofShingleMat = new THREE.MeshStandardMaterial({ color: 0x713f12, roughness: 0.68 });
+    const woodPlankMat = new THREE.MeshStandardMaterial({ color: 0x9a6634, map: woodTex, roughness: 0.8 });
+    const woodLogMat = new THREE.MeshStandardMaterial({ color: 0xb4721a, map: logTex, roughness: 0.78 });
+    const roofShingleMat = new THREE.MeshStandardMaterial({ color: 0x8a4f1c, map: roofTex, roughness: 0.8 });
 
     // 6 Foundation Pillars
     [[-1.6, -1.2], [0, -1.2], [1.6, -1.2], [-1.6, 1.2], [0, 1.2], [1.6, 1.2]].forEach(([px, pz]) => {
@@ -1739,6 +2269,7 @@ window.cineZoomOut = function() {};
     lanternG.add(lBody); lanternG.add(lGlow);
     const lLight = new THREE.PointLight(0xf59e0b, 0.85, 5);
     lanternG.add(lLight);
+    cabinLanternLight = lLight;
     lanternG.position.set(0.35, 2.38, 1.6);
     cabin.add(lanternG);
 
@@ -1748,11 +2279,13 @@ window.cineZoomOut = function() {};
     cabin.add(sign);
 
     // Pitched Roof
-    const roofMain = new THREE.Mesh(new THREE.ConeGeometry(2.7, 1.3, 4), roofShingleMat);
-    roofMain.position.set(0, 3.05, 0.1);
-    roofMain.rotation.y = Math.PI / 4;
-    roofMain.scale.set(1.15, 1, 0.95);
+    // Atap pelana (gable) dengan teritis menaungi teras
+    const roofGeo = prismGeo(2.05, 1.25, 4.5); roofGeo.rotateY(Math.PI / 2);
+    const roofMain = new THREE.Mesh(roofGeo, roofShingleMat);
+    roofMain.position.set(0, 2.55, 0.2);
     roofMain.castShadow = true;
+    const roofRidge = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.07, 0.16), woodDarkMat);
+    roofRidge.position.set(0, 3.8, 0.2); cabin.add(roofRidge);
     cabin.add(roofMain);
 
     // Stone Chimney
@@ -1771,7 +2304,7 @@ window.cineZoomOut = function() {};
         new THREE.SphereGeometry(0.12 + sm * 0.03, 6, 5),
         new THREE.MeshStandardMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.45 })
       );
-      sp.position.set(1.5, 4.2 + sm * 0.35, -0.6);
+      sp.position.set(1.5, 4.2 + sm * 0.29, -0.6);
       sp.userData = { initialY: 4.2, speed: 0.015 + Math.random() * 0.01, seed: sm };
       cabin.add(sp);
       chimneySmoke.push(sp);
@@ -1824,116 +2357,96 @@ window.cineZoomOut = function() {};
   }
   createRusticCabin();
 
-  // ── JALAN SETAPAK BATU MEANDER (STEPPING STONES) ──
+  // ── JALAN SETAPAK: batu pijakan tak beraturan di atas tanah yang terinjak ──
   function createMeadowPath() {
-    const stoneGeo = new THREE.CylinderGeometry(0.32, 0.38, 0.06, 7);
-    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.94, flatShading: true });
-    // Path routed AROUND hive area (not through it)
-    const pathPts = [
-      [-4.8, 0.04, -0.8],
-      [-4.0, 0.04, -0.4],
-      [-3.2, 0.04, 0.6],
-      [-2.4, 0.04, 1.5],
-      [-1.5, 0.04, 2.2],
-      [-0.6, 0.04, 2.6],
-      [0.4, 0.04, 2.8],
-      [1.4, 0.04, 2.5],
-      [2.4, 0.04, 2.1],
-      [3.4, 0.04, 1.8],
-      [4.4, 0.04, 2.4],
-      [5.2, 0.04, 3.0]
-    ];
-    pathPts.forEach(([px, py, pz]) => {
-      const stone = new THREE.Mesh(stoneGeo, stoneMat);
-      stone.position.set(px + (Math.random()-0.5)*0.12, py, pz + (Math.random()-0.5)*0.12);
-      stone.rotation.y = Math.random() * Math.PI;
-      stone.scale.set(0.85 + Math.random()*0.3, 0.7, 0.85 + Math.random()*0.3);
-      stone.receiveShadow = true;
-      scene.add(stone);
+    const parts = [];
+    PATH_PTS.forEach(([px, pz], i) => {
+      const s = rr(0.26, 0.38), tone = rr(0.8, 1.1);
+      parts.push(part(rockVars[i % 2], M([px + rr(-0.1, 0.1), 0.012, pz + rr(-0.1, 0.1)], [0, rr(0, 6.28), 0], [s * rr(0.9, 1.25), 0.05, s * rr(0.8, 1.1)]), function (x, y, z, c) {
+        c.set(0xa3a8a6).multiplyScalar(tone * (0.8 + 0.3 * vnoise(x * 8, z * 8)));
+      }));
+      if (i % 3 === 1) parts.push(part(rockVars[0], M([px + rr(0.3, 0.45), 0.01, pz + rr(-0.3, 0.3)], [0, rr(0, 6), 0], [0.12, 0.035, 0.1]), 0x8f948f));
     });
+    const m = new THREE.Mesh(merge(parts), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }));
+    m.receiveShadow = !isMobile; m.castShadow = !isMobile;
+    scene.add(m);
   }
   createMeadowPath();
 
-  // ── PAGAR KAYU PEDESAAN (RUSTIC SPLIT-RAIL FENCES) ──
+  // ── PAGAR KAYU PEDESAAN: tiang agak miring, palang tidak persis sejajar ──
   function createFences() {
-    const postMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.88 });
-    const railMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.82 });
     const fencePosts = [
-      [-10, -5], [-7.5, -5.5], [-5, -6], [-2.5, -6.2], [0, -6.5], [2.5, -6.2], [5, -6], [7.5, -5.5], [10, -5]
+      [-12.2, 0.8], [-11.6, -2.2], [-10, -5], [-7.5, -5.5], [-5, -6], [-2.5, -6.2], [0, -6.5], [2.5, -6.2], [5, -6], [7.5, -5.5], [10, -5], [11.6, -2.2], [12.2, 0.8]
     ];
-    for (let i = 0; i < fencePosts.length; i++) {
-      const [fx, fz] = fencePosts[i];
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.085, 1.1, 5), postMat);
-      post.position.set(fx, 0.55, fz);
-      post.castShadow = true;
-      scene.add(post);
-
-      if (i < fencePosts.length - 1) {
-        const [nx, nz] = fencePosts[i + 1];
-        const dist = Math.hypot(nx - fx, nz - fz);
-        const ang = Math.atan2(nx - fx, nz - fz);
-        [0.4, 0.78].forEach(ry => {
-          const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, dist, 4), railMat);
-          rail.rotation.x = Math.PI / 2;
-          rail.rotation.z = -ang;
-          rail.position.set((fx + nx) / 2, ry, (fz + nz) / 2);
-          rail.castShadow = true;
-          scene.add(rail);
-        });
-      }
+    const parts = [], tops = [], postGeo = new THREE.CylinderGeometry(0.8, 1, 1, 6);
+    const tint = function (hex, seed) { const b = new THREE.Color(hex); return function (x, y, z, c) { c.copy(b).multiplyScalar(0.78 + 0.4 * vnoise(x * 3 + seed, y * 6 + z * 3)); }; };
+    fencePosts.forEach(([fx, fz], i) => {
+      const gy = getGroundElevation(fx, fz), hgt = rr(1.0, 1.2), tx = rr(-0.07, 0.07), tz = rr(-0.07, 0.07);
+      parts.push(part(postGeo, M([fx, gy + hgt / 2 - 0.08, fz], [tx, rr(0, 3), tz], [0.085, hgt, 0.085]), tint(0x8a5a2c, i)));
+      tops.push(new THREE.Vector3(fx, gy, fz));
+    });
+    for (let i = 0; i < tops.length - 1; i++) {
+      [0.38, 0.76].forEach((ry, k) => {
+        const a = tops[i].clone(), b = tops[i + 1].clone();
+        a.y += ry + rr(-0.05, 0.05); b.y += ry + rr(-0.05, 0.05);
+        const dir = b.clone().sub(a).normalize(); a.addScaledVector(dir, -0.12); b.addScaledVector(dir, 0.12);
+        parts.push(part(unitBox, Mseg(a, b, 0.065), tint(k ? 0xa2672f : 0x93571f, i * 2 + k)));
+      });
     }
+    const m = new THREE.Mesh(merge(parts), new THREE.MeshStandardMaterial({ vertexColors: true, map: barkTex, roughness: 0.9 }));
+    m.castShadow = !isMobile; m.receiveShadow = !isMobile;
+    scene.add(m);
   }
   createFences();
 
-  // ── BUNGA MATAHARI MEGAH (TALL BLOOMING SUNFLOWERS) ──
+  // ── BUNGA MATAHARI: batang melengkung, kepala menghadap matahari, mengangguk ditiup angin ──
   function createSunflowers() {
-    const stemMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.8 });
-    const petalMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.6 });
-    const coreMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.95 });
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.75, side: THREE.DoubleSide });
-
     const allSpots = [
-      [-9.2, -3.8, 2.1], [-8.6, -4.2, 1.8], [-6.2, -4.5, 2.3], [-4.0, -5.2, 2.0],
-      [3.2, -5.0, 1.9], [5.5, -4.8, 2.2], [7.0, -4.2, 2.4], [8.4, -3.5, 1.8]
+      [-9.2, -3.8, 2.1], [-8.6, -4.5, 1.8], [-7.7, -3.9, 1.6], [-6.2, -4.7, 2.3], [-5.3, -5.2, 1.9], [-1.4, -5.4, 2.0], [-0.4, -5.7, 1.7],
+      [3.2, -5.0, 1.9], [4.3, -5.3, 2.3], [5.5, -4.8, 2.2], [6.3, -4.9, 1.7], [7.0, -4.2, 2.4], [8.4, -3.5, 1.8], [9.3, -3.9, 2.1]
     ];
-    const spots = isMobile ? [allSpots[0], allSpots[2], allSpots[5], allSpots[7]] : allSpots;
-    const leafCount = isMobile ? 2 : 4;
-    const petalCount = isMobile ? 8 : 16;
+    const spots = isMobile ? allSpots.filter((_, i) => i % 3 === 0) : allSpots;
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, side: THREE.DoubleSide });
+    const sph = new THREE.SphereGeometry(1, 6, 4), petalCount = isMobile ? 10 : 15;
+    const STEM = new THREE.Color(0x2f9a45), LEAF = new THREE.Color(0x1f8a3c), PET_A = new THREE.Color(0xffc21a), PET_B = new THREE.Color(0xff9d0a);
+    const sunYaw = Math.atan2(sun.position.x, sun.position.z);
 
-    spots.forEach(([sx, sz, sh]) => {
-      const g = new THREE.Group();
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.055, sh, 5), stemMat);
-      stem.position.y = sh / 2;
-      if (!isMobile) stem.castShadow = true; g.add(stem);
-
+    spots.forEach(([sx, sz, sh], si) => {
+      const g = new THREE.Group(), bend = rr(0.1, 0.28);
+      // batang + daun (1 mesh)
+      const sg = new THREE.CylinderGeometry(0.03, 0.05, sh, 5, 5); sg.translate(0, sh / 2, 0);
+      const sp = sg.attributes.position;
+      for (let i = 0; i < sp.count; i++) { const t = sp.getY(i) / sh; sp.setZ(i, sp.getZ(i) + bend * t * t); }
+      sg.computeVertexNormals();
+      const parts = [part(sg, null, function (x, y, z, c) { c.copy(STEM).multiplyScalar(0.8 + 0.3 * y / sh); })];
+      const leafCount = isMobile ? 3 : 5;
       for (let l = 0; l < leafCount; l++) {
-        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.22, 4, 3), leafMat);
-        leaf.scale.set(1.4, 0.15, 0.8);
-        const lY = 0.5 + l * 0.45;
-        const lRot = (l % 2 === 0 ? 1 : -1) * 0.4;
-        leaf.position.set(Math.sin(lRot)*0.25, lY, Math.cos(lRot)*0.25);
-        leaf.rotation.z = lRot;
-        g.add(leaf);
+        const t = 0.22 + l * (0.6 / leafCount), ly = t * sh, la = l * 2.4 + si, lr = 0.2 + (1 - t) * 0.12;
+        parts.push(part(sph, M([Math.cos(la) * lr, ly, bend * t * t + Math.sin(la) * lr], [0.25, -la, -0.35], [lr * 1.25, 0.02, lr * 0.75]), function (x, y, z, c) { c.copy(LEAF).multiplyScalar(0.8 + 0.5 * vnoise(x * 6, z * 6)); }));
       }
+      g.add(shadow(new THREE.Mesh(merge(parts), mat)));
 
+      // kepala bunga (1 mesh): dua lingkar kelopak + cakram biji + kelopak hijau belakang
+      const hp = [];
+      for (let ring = 0; ring < 2; ring++) for (let p = 0; p < petalCount; p++) {
+        const a = (p / petalCount) * 6.283 + ring * (Math.PI / petalCount), rad = 0.3 - ring * 0.04;
+        hp.push(part(sph, M([Math.cos(a) * rad, Math.sin(a) * rad, 0.01 + ring * 0.015], [0, 0, a], [0.15, 0.045, 0.012]), function (x, y, z, c) { c.copy(PET_A).lerp(PET_B, sstep(0.36, 0.16, Math.hypot(x, y)) + ring * 0.15); }));
+      }
+      hp.push(part(sph, M([0, 0, 0.02], null, [0.19, 0.19, 0.05]), function (x, y, z, c) { const r = Math.hypot(x, y); c.set(0x3a1d06).lerp(new THREE.Color(0x8a5a14), sstep(0.06, 0.18, r) * (0.5 + 0.5 * vnoise(x * 60, y * 60))); }));
+      hp.push(part(sph, M([0, 0, -0.03], null, [0.24, 0.24, 0.04]), 0x2c8a3c));
       const head = new THREE.Group();
-      head.position.y = sh;
-      head.rotation.x = 0.28;
-
-      const core = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.06, isMobile ? 8 : 12), coreMat);
-      core.rotation.x = Math.PI / 2;
-      head.add(core);
-
-      for (let p = 0; p < petalCount; p++) {
-        const pAng = (p / petalCount) * Math.PI * 2;
-        const pet = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.28, 4), petalMat);
-        pet.position.set(Math.cos(pAng) * 0.24, Math.sin(pAng) * 0.24, 0);
-        pet.rotation.z = pAng - Math.PI / 2;
-        head.add(pet);
-      }
+      head.position.set(0, sh, bend);
+      const hm = shadow(new THREE.Mesh(merge(hp), mat)); head.add(hm);
       g.add(head);
-      g.position.set(sx, 0, sz);
+
+      g.position.set(sx, getGroundElevation(sx, sz) - 0.03, sz);
+      g.rotation.y = sunYaw + rr(-0.35, 0.35);           // semua menghadap matahari
+      head.rotation.x = -0.25;
+      const sc = rr(0.9, 1.1); g.scale.setScalar(sc);
       scene.add(g);
+      swayers.push({ o: g, x: sx, z: sz, amp: 0.045, ph: rnd() * 6.28 });
+      swayers.push({ o: head, x: sx + 3, z: sz, amp: 0.09, ph: rnd() * 6.28, baseX: -0.25 });
+      flowerPatches.push(new THREE.Vector3(sx, sh * sc + 0.1, sz + 0.3));
     });
   }
   createSunflowers();
@@ -2403,52 +2916,117 @@ window.cineZoomOut = function() {};
     lookTarget.set(camCurrent.lx, camCurrent.ly, camCurrent.lz);
     camera.lookAt(lookTarget);
 
-    // Bees
-    bees.forEach(b => {
-      const d = b.userData, tt = t*d.speed+d.phase;
-      b.position.set(d.cx+Math.sin(tt)*d.radius, d.h+Math.sin(tt*2.5)*0.3, d.cz+Math.cos(tt)*d.radius);
-      b.rotation.y = tt+Math.PI/2;
-      d.wL.rotation.z = 0.3+Math.sin(t*35)*0.35; d.wR.rotation.z = -0.3-Math.sin(t*35)*0.35;
-    });
+    // Jam angin untuk shader rumput/bunga + bayangan awan di tanah
+    U.uTime.value = t;
 
-    // Butterflies
-    bflies.forEach(bf => {
-      const d = bf.userData, tt = t*d.speed+d.phase;
-      bf.position.set(d.cx+Math.sin(tt)*d.radius, d.h+Math.sin(tt*1.5)*0.4, d.cz+Math.cos(tt*0.8)*d.radius);
-      bf.rotation.y = tt; d.wL.rotation.z = Math.sin(t*8)*0.6; d.wR.rotation.z = -Math.sin(t*8)*0.6;
-    });
+    // Tajuk pohon & bunga matahari bergoyang mengikuti hembusan angin
+    for (let i = 0; i < swayers.length; i++) {
+      const s = swayers[i], w = windAt(t, s.x, s.z);
+      s.o.rotation.z = (w + 0.35) * s.amp;
+      s.o.rotation.x = (s.baseX || 0) + Math.sin(t * 0.8 + s.ph) * s.amp * 0.6 + w * s.amp * 0.4;
+    }
 
-    // Clouds
-    clouds.forEach(c => { c.position.x += c.userData.speed; if (c.position.x > 30) c.position.x = -30; });
+    // Lebah — terbang bebas antara sarang dan bunga
+    for (let i = 0; i < bees.length; i++) {
+      const b = bees[i], d = b.userData;
+      updFlyer(b, t, _dt, false);
+      const f = Math.sin(t * 60 + d.ph) * 0.7;
+      d.wR.rotation.z = 0.25 + f; d.wL.rotation.z = -0.25 - f;
+    }
 
-    // Pollen
+    // Kupu-kupu — mengepak lalu melayang sebentar
+    for (let i = 0; i < bflies.length; i++) {
+      const bf = bflies[i], d = bf.userData;
+      d.maxSpd = d.slow + 0.5;
+      updFlyer(bf, t, _dt, true);
+      const glide = Math.sin(t * 0.9 + d.ph) > 0.75 ? 0.25 : 1;
+      const f = 0.55 + Math.sin(t * 11 + d.ph) * 0.75 * glide;
+      d.wR.rotation.z = f; d.wL.rotation.z = -f;
+    }
+
+    // Burung berputar di atas lembah
+    for (let i = 0; i < birds.length; i++) {
+      const b = birds[i], d = b.userData, a = d.a + t * d.spd;
+      b.position.set(Math.sin(a) * d.r * 1.25, d.h + Math.sin(t * 0.4 + d.ph) * 0.8, Math.cos(a) * d.r - 4);
+      b.rotation.y = a + Math.PI / 2; b.rotation.z = -0.25;
+      const gl = Math.sin(t * 0.5 + d.ph) > 0.55 ? 0.15 : 1;
+      const f = Math.sin(t * 7 + d.ph) * 0.7 * gl + 0.1;
+      d.wR.rotation.z = f; d.wL.rotation.z = -f;
+    }
+
+    // Daun gugur
+    for (let i = 0; i < leaves.length; i++) {
+      const l = leaves[i], d = l.userData;
+      if (!l.visible) {
+        d.wait -= _dt;
+        if (d.wait <= 0) { l.position.copy(leafSources[Math.floor(Math.random() * leafSources.length)]); l.position.x += Math.random() - 0.5; l.visible = true; }
+        continue;
+      }
+      const w = windAt(t, l.position.x, l.position.z);
+      l.position.x += (0.5 + w * 0.6 + Math.sin(t * 2.2 + d.ph) * 0.5) * _dt;
+      l.position.z += Math.cos(t * 1.7 + d.ph) * 0.45 * _dt;
+      l.position.y -= d.fall * (0.7 + 0.5 * Math.sin(t * 2.2 + d.ph)) * _dt;
+      l.rotation.x += _dt * 2.6; l.rotation.z += _dt * 1.9;
+      if (l.position.y < getGroundElevation(l.position.x, l.position.z) + 0.03) { l.visible = false; d.wait = 2 + Math.random() * 9; }
+    }
+
+    // Awan bergerak pelan + naik-turun halus
+    for (let i = 0; i < clouds.length; i++) {
+      const c = clouds[i], d = c.userData;
+      c.position.x += d.speed * _dt; if (c.position.x > 46) c.position.x = -46;
+      c.position.y = d.y + Math.sin(t * 0.15 + d.ph) * 0.35;
+    }
+
+    // Serbuk sari terbawa angin
     const pp = pGeo.getAttribute('position');
-    for (let i = 0; i < pCnt; i++) { let y = pp.getY(i)+0.004; if (y > 6) { y = 0.2; pp.setX(i, (Math.random()-0.5)*20); } pp.setY(i, y); }
+    for (let i = 0; i < pCnt; i++) {
+      let x = pp.getX(i) + (0.25 + Math.sin(t * 0.7 + i) * 0.2) * _dt, y = pp.getY(i) + (0.18 + Math.sin(t * 1.3 + i * 2.1) * 0.25) * _dt;
+      if (y > 6 || x > 11) { y = 0.2 + Math.random(); x = (Math.random() - 0.5) * 22 - 2; }
+      pp.setX(i, x); pp.setY(i, y);
+    }
     pp.needsUpdate = true;
 
-    // Pond shimmer
-    pond.material.opacity = 0.78 + Math.sin(t*1.5)*0.04;
+    // Kolam: kilau, riak melebar, teratai mengapung
+    pond.material.opacity = 0.84 + Math.sin(t * 1.5) * 0.04;
+    for (let i = 0; i < pondRipples.length; i++) {
+      const r = pondRipples[i], d = r.userData;
+      d.t += _dt;
+      if (d.t > d.dur) {
+        d.t = 0; const a = Math.random() * 6.283, rad = Math.random() * 0.7;
+        r.position.x = POND.x + Math.cos(a) * rad; r.position.z = POND.z + Math.sin(a) * rad;
+      }
+      const k = d.t / d.dur, s = 0.08 + k * 0.6;
+      r.scale.set(s, 1, s); r.material.opacity = (1 - k) * 0.4 * Math.min(1, k * 8);
+    }
+    for (let i = 0; i < lilyPads.length; i++) {
+      const p = lilyPads[i];
+      p.position.y = 0.05 + Math.sin(t * 1.2 + p.userData.ph) * 0.006;
+      p.rotation.y = p.userData.ry + Math.sin(t * 0.3 + p.userData.ph) * 0.25;
+    }
 
-    // Hive bounce + idle
-    hive3D.forEach((obj, i) => {
+    // Sarang memantul saat diketuk (squash & stretch)
+    hive3D.forEach((obj) => {
       if (obj.userData.bounceT !== undefined) {
         obj.userData.bounceT += 0.08;
-        if (obj.userData.bounceT < Math.PI) obj.position.y = Math.sin(obj.userData.bounceT)*0.25;
-        else { obj.position.y = 0; delete obj.userData.bounceT; }
-      } else { obj.rotation.y = Math.sin(t*0.4+i)*0.015; }
-    });
-
-    // Chimney smoke drift
-    chimneySmoke.forEach((sp) => {
-      sp.position.y += sp.userData.speed;
-      sp.position.x += Math.sin(t * 1.2 + sp.userData.seed) * 0.004;
-      const s = 1 + (sp.position.y - sp.userData.initialY) * 0.35;
-      sp.scale.set(s, s, s);
-      if (sp.position.y > sp.userData.initialY + 2.4) {
-        sp.position.y = sp.userData.initialY;
-        sp.position.x = 1.5;
+        if (obj.userData.bounceT < Math.PI) {
+          const b = Math.sin(obj.userData.bounceT);
+          obj.position.y = b * 0.25;
+          obj.scale.set(1 - b * 0.05, 1 + b * 0.09, 1 - b * 0.05);
+        } else { obj.position.y = 0; obj.scale.set(1, 1, 1); delete obj.userData.bounceT; }
       }
     });
+
+    // Asap cerobong: membesar, memudar, dan condong terbawa angin
+    chimneySmoke.forEach((sp) => {
+      sp.position.y += sp.userData.speed;
+      const prog = (sp.position.y - sp.userData.initialY) / 2.4;
+      sp.position.x = 1.5 + prog * prog * 0.9 + Math.sin(t * 1.2 + sp.userData.seed) * 0.06 * prog;
+      const s = 1 + prog * 1.6;
+      sp.scale.set(s, s, s);
+      sp.material.opacity = 0.5 * (1 - prog) * Math.min(1, prog * 6);
+      if (prog > 1) sp.position.y = sp.userData.initialY;
+    });
+    if (cabinLanternLight) cabinLanternLight.intensity = 0.8 + Math.sin(t * 9) * 0.06 + Math.sin(t * 23.7) * 0.05;
 
     // ═══ BEEKEEPER STATE MACHINE (Wander + Harvest) ═══
     if (beekeeperMesh) {
