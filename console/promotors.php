@@ -104,6 +104,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
+    // Payout All Pending Salaries for a Promotor (date < CURDATE() AND is_paid = 0)
+    // Hari ini TIDAK dihitung dalam gaji pending
+    if ($action === 'pay_pending_salaries') {
+        $user_id = (int)($_POST['user_id'] ?? 0);
+        $admin_note = trim($_POST['admin_note'] ?? '');
+        
+        if ($user_id <= 0) {
+            $flash = "User promotor tidak valid."; $flashType = 'error';
+        } else {
+            $pdo->beginTransaction();
+            try {
+                // Lock pending rows strictly before today
+                $stmt = $pdo->prepare("
+                    SELECT * FROM promotor_daily_targets 
+                    WHERE user_id = ? AND date < CURDATE() AND is_paid = 0
+                    FOR UPDATE
+                ");
+                $stmt->execute([$user_id]);
+                $pending_targets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                if (empty($pending_targets)) {
+                    throw new \Exception("Tidak ada riwayat target gaji pending sebelum hari ini untuk promotor tersebut.");
+                }
+                
+                $total_pay = 0.0;
+                $paid_count = 0;
+                $paid_dates = [];
+                
+                $update_stmt = $pdo->prepare("UPDATE promotor_daily_targets SET is_paid = 1, paid_amount = ? WHERE id = ?");
+                
+                foreach ($pending_targets as $pt) {
+                    $earned = (float)round(($pt['salary_rate'] * min(100.0, (float)$pt['percentage'])) / 100.0);
+                    if ($earned > 0) {
+                        $total_pay += $earned;
+                        $paid_count++;
+                        $paid_dates[] = date('d/m/Y', strtotime($pt['date']));
+                        $update_stmt->execute([$earned, $pt['id']]);
+                    } else {
+                        // Selesaikan target dengan earned 0 agar tidak tertahan pending terus
+                        $update_stmt->execute([0.00, $pt['id']]);
+                    }
+                }
+                
+                if ($total_pay <= 0) {
+                    throw new \Exception("Total akumulasi gaji pending adalah Rp 0 (pencapaian target 0%).");
+                }
+                
+                // Credit to promotor's balance_wd
+                $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ? WHERE id = ?")->execute([$total_pay, $user_id]);
+                
+                // Fetch username & account for logging
+                $u_stmt = $pdo->prepare("SELECT username, bank_name, account_number, account_name FROM users WHERE id = ?");
+                $u_stmt->execute([$user_id]);
+                $p_user = $u_stmt->fetch(PDO::FETCH_ASSOC);
+                $username = $p_user['username'] ?? 'Promotor';
+                
+                $pdo->commit();
+                
+                // Send Telegram Notification
+                $dates_str = implode(', ', $paid_dates);
+                $msg = "<b>💸 GABUNGAN GAJI PENDING PROMOTOR DICAIRKAN</b>\n"
+                     . "👤 Promotor: <b>@{$username}</b>\n"
+                     . "📅 Periode ({$paid_count} Hari): {$dates_str}\n"
+                     . "💰 Total Gaji Dicairkan: <b>" . format_rp($total_pay) . "</b>\n"
+                     . "🏦 Rekening: " . ($p_user['bank_name'] ?? '-') . " (" . ($p_user['account_number'] ?? '-') . " a/n " . ($p_user['account_name'] ?? '-') . ")\n"
+                     . ($admin_note !== '' ? "📝 Catatan Admin: {$admin_note}\n" : "")
+                     . "✅ Status: Berhasil ditambahkan langsung ke Saldo Penarikan.";
+                send_telegram_notif($pdo, $msg, [], 'log');
+                
+                $flash = "Berhasil mencairkan total gaji pending sebesar " . format_rp($total_pay) . " (" . $paid_count . " hari target) untuk promotor @{$username} ke Saldo Penarikan!";
+            } catch (\Throwable $e) {
+                $pdo->rollBack();
+                $flash = "Gagal mencairkan gaji pending: " . $e->getMessage(); $flashType = 'error';
+            }
+        }
+    }
+    
     // Save Global Flat Rates
     if ($action === 'save_global_rates') {
         if (isset($_POST['promotor_per_member_bonus'])) {
@@ -122,8 +199,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Fetch active promotors
-$promotors = $pdo->query("SELECT id, username, email, referral_code, balance_wd, balance_dep, total_earned, promotor_target_deposits, promotor_target_regs, promotor_salary_rate, is_referral_active, created_at FROM users WHERE is_promotor=1 ORDER BY username ASC")->fetchAll();
+// Fetch active promotors with banking info
+$promotors = $pdo->query("
+    SELECT id, username, email, whatsapp, bank_name, account_number, account_name,
+           referral_code, balance_wd, balance_dep, total_earned, 
+           promotor_target_deposits, promotor_target_regs, promotor_salary_rate, 
+           is_referral_active, created_at 
+    FROM users 
+    WHERE is_promotor=1 
+    ORDER BY username ASC
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch pending salary summary per promotor (date < CURDATE() AND is_paid = 0)
+// Hari ini TIDAK dihitung dalam gaji pending
+$pending_stmt = $pdo->query("
+    SELECT 
+        user_id,
+        COALESCE(SUM(ROUND((salary_rate * LEAST(100.0, percentage)) / 100.0)), 0) as total_pending,
+        COUNT(CASE WHEN ROUND((salary_rate * LEAST(100.0, percentage)) / 100.0) > 0 THEN 1 END) as pending_days,
+        MIN(date) as oldest_pending_date,
+        MAX(date) as newest_pending_date
+    FROM promotor_daily_targets
+    WHERE date < CURDATE() AND is_paid = 0
+    GROUP BY user_id
+");
+$pending_by_user = [];
+foreach ($pending_stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $pending_by_user[(int)$row['user_id']] = [
+        'total' => (float)$row['total_pending'],
+        'days' => (int)$row['pending_days'],
+        'oldest_date' => $row['oldest_pending_date'],
+        'newest_date' => $row['newest_pending_date'],
+    ];
+}
+
+// Fetch detailed list of pending targets for modal display
+$pending_logs_stmt = $pdo->query("
+    SELECT pt.*, u.username, u.bank_name, u.account_number, u.account_name
+    FROM promotor_daily_targets pt
+    JOIN users u ON u.id = pt.user_id
+    WHERE pt.date < CURDATE() AND pt.is_paid = 0 AND ROUND((pt.salary_rate * LEAST(100.0, pt.percentage)) / 100.0) > 0
+    ORDER BY pt.date DESC
+");
+$pending_logs_by_user = [];
+foreach ($pending_logs_stmt->fetchAll(PDO::FETCH_ASSOC) as $pl) {
+    $uid = (int)$pl['user_id'];
+    $earned = (float)round(($pl['salary_rate'] * min(100.0, (float)$pl['percentage'])) / 100.0);
+    $pl['earned'] = $earned;
+    $pending_logs_by_user[$uid][] = $pl;
+}
+
+// Global metrics for header cards
+$global_pending_total = 0.0;
+$global_pending_count = 0;
+$global_promotor_wd_total = 0.0;
+foreach ($promotors as $p) {
+    $p_id = (int)$p['id'];
+    $global_promotor_wd_total += (float)$p['balance_wd'];
+    if (isset($pending_by_user[$p_id]) && $pending_by_user[$p_id]['total'] > 0) {
+        $global_pending_total += $pending_by_user[$p_id]['total'];
+        $global_pending_count++;
+    }
+}
+$all_time_paid_total = (float)$pdo->query("SELECT COALESCE(SUM(paid_amount), 0) FROM promotor_daily_targets WHERE is_paid = 1")->fetchColumn();
 
 // Fetch potential promotors (non-promotors) for selection
 $eligible_users = $pdo->query("SELECT id, username FROM users WHERE is_promotor=0 ORDER BY username ASC")->fetchAll();
@@ -713,8 +851,8 @@ if ($tab === 'commission_panel') {
             SELECT 
                 COALESCE(SUM(CASE WHEN is_paid = 1 THEN paid_amount ELSE 0 END), 0) as total_paid,
                 COALESCE(SUM(CASE WHEN is_paid = 1 THEN 1 ELSE 0 END), 0) as count_paid,
-                COALESCE(SUM(CASE WHEN is_paid = 0 AND percentage > 0 THEN (salary_rate * LEAST(100, percentage) / 100) ELSE 0 END), 0) as total_pending,
-                COALESCE(SUM(CASE WHEN is_paid = 0 AND percentage > 0 THEN 1 ELSE 0 END), 0) as count_pending,
+                COALESCE(SUM(CASE WHEN is_paid = 0 AND date < CURDATE() AND percentage > 0 THEN (salary_rate * LEAST(100, percentage) / 100) ELSE 0 END), 0) as total_pending,
+                COALESCE(SUM(CASE WHEN is_paid = 0 AND date < CURDATE() AND percentage > 0 THEN 1 ELSE 0 END), 0) as count_pending,
                 COALESCE(SUM(CASE WHEN percentage >= 100 THEN 1 ELSE 0 END), 0) as count_100
             FROM promotor_daily_targets 
             WHERE user_id = ?
@@ -801,60 +939,202 @@ require __DIR__ . '/partials/header.php';
 
 <?php if ($tab === 'list'): ?>
 <!-- LIST TAB -->
+
+<!-- 4 KPI SUMMARY CARDS FOR PROMOTORS -->
+<div class="row g-3 mb-4">
+  <div class="col-xl-3 col-md-6">
+    <div class="c-card p-3 h-100" style="background:#131522;border:1px solid #282c4b;border-radius:12px;">
+      <div style="font-size:11px;color:#a5b4fc;font-weight:700;text-transform:uppercase;margin-bottom:4px;">👥 Total Promotor Aktif</div>
+      <div style="font-size:22px;font-weight:800;color:#fff;"><?= count($promotors) ?> <span style="font-size:13px;color:#888;">Akun</span></div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Mitra promotor resmi LebahCuan</div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="c-card p-3 h-100" style="background:#131522;border:1.5px solid <?= $global_pending_total > 0 ? '#d97706' : '#282c4b' ?>;border-radius:12px;box-shadow:<?= $global_pending_total > 0 ? '0 0 16px rgba(245,158,11,0.2)' : 'none' ?>;">
+      <div style="font-size:11px;color:#fbbf24;font-weight:700;text-transform:uppercase;margin-bottom:4px;">⏳ Total Gaji Pending (Sebelum Hari Ini)</div>
+      <div style="font-size:22px;font-weight:800;color:#fbbf24;"><?= format_rp($global_pending_total) ?></div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:2px;">
+        <?php if ($global_pending_count > 0): ?>
+          <span class="badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);">Menunggu dicairkan (<?= $global_pending_count ?> promotor)</span>
+        <?php else: ?>
+          <span class="badge" style="background:rgba(16,185,129,0.2);color:#4ade80;border:1px solid rgba(16,185,129,0.4);">Semua riwayat telah lunas</span>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="c-card p-3 h-100" style="background:#131522;border:1px solid #282c4b;border-radius:12px;">
+      <div style="font-size:11px;color:#6ee7b7;font-weight:700;text-transform:uppercase;margin-bottom:4px;">💸 Total Gaji Telah Dibayar</div>
+      <div style="font-size:22px;font-weight:800;color:#4CAF82;"><?= format_rp($all_time_paid_total) ?></div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Akumulasi pencairan target all-time</div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6">
+    <div class="c-card p-3 h-100" style="background:#131522;border:1px solid #282c4b;border-radius:12px;">
+      <div style="font-size:11px;color:#93c5fd;font-weight:700;text-transform:uppercase;margin-bottom:4px;">💼 Saldo WD Promotor (Total)</div>
+      <div style="font-size:22px;font-weight:800;color:#38bdf8;"><?= format_rp($global_promotor_wd_total) ?></div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Saldo siap ditarik oleh promotor</div>
+    </div>
+  </div>
+</div>
+
 <div class="c-card">
-  <div class="c-card-header"><span class="c-card-title">Daftar Promotor Aktif</span></div>
+  <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <span class="c-card-title">Daftar Promotor Aktif &amp; Status Payout Gaji</span>
+      <div style="font-size:11.5px;color:#888;margin-top:1px;">Pantau performa target, rekening bank, saldo, serta eksekusi pembayaran gaji pending</div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);font-size:11px;padding:5px 9px;">
+        💡 Hari ini (<?= date('d M Y') ?>) target masih berjalan &amp; tidak masuk pending
+      </span>
+    </div>
+  </div>
   <div class="c-card-body p-0">
     <div class="table-responsive">
-      <table class="c-table table table-dark table-striped table-hover mb-0" style="font-size: 13.5px;">
+      <table class="c-table table table-dark table-striped table-hover mb-0" style="font-size: 13px;">
         <thead>
           <tr>
-            <th>Promotor</th>
-            <th>Referral Code</th>
-            <th>Target Depo</th>
-            <th>Target Registrasi</th>
-            <th>Rate Gaji Harian</th>
-            <th class="text-end">Aksi</th>
+            <th>Promotor &amp; Rekening</th>
+            <th>Referral</th>
+            <th>Target Harian</th>
+            <th>Rate Harian</th>
+            <th>Gaji Pending (Sebelum Hari Ini)</th>
+            <th>Saldo WD</th>
+            <th class="text-end">Aksi Pembayaran &amp; Kelola</th>
           </tr>
         </thead>
         <tbody>
           <?php if (!empty($promotors)): ?>
-            <?php foreach ($promotors as $p): ?>
+            <?php foreach ($promotors as $p): 
+              $p_id = (int)$p['id'];
+              $p_pending = $pending_by_user[$p_id] ?? ['total' => 0.0, 'days' => 0, 'oldest_date' => null, 'newest_date' => null];
+              $p_history = $pending_logs_by_user[$p_id] ?? [];
+              $has_pending = ($p_pending['total'] > 0);
+              $pending_modal_payload = [
+                  'user_id' => $p['id'],
+                  'username' => $p['username'],
+                  'bank_name' => $p['bank_name'] ?: 'Belum diisi',
+                  'account_number' => $p['account_number'] ?: '-',
+                  'account_name' => $p['account_name'] ?: '-',
+                  'balance_wd' => (float)$p['balance_wd'],
+                  'total_pending' => (float)$p_pending['total'],
+                  'pending_days' => (int)$p_pending['days'],
+                  'history' => $p_history
+              ];
+            ?>
               <tr style="vertical-align: middle;">
                 <td>
-                  <strong style="color: #fff;"><?= htmlspecialchars($p['username']) ?></strong>
-                  <div style="font-size: 11px; color: #666;"><?= htmlspecialchars($p['email']) ?></div>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" style="width:34px;height:34px;background:linear-gradient(135deg,#f59e0b,#b45309);font-size:13.5px;flex-shrink:0;">
+                      <?= strtoupper(substr($p['username'], 0, 1)) ?>
+                    </div>
+                    <div>
+                      <a href="users.php?search=<?= urlencode($p['username']) ?>" target="_blank" class="fw-bold text-white text-decoration-none" style="font-size:13.5px;">
+                        @<?= htmlspecialchars($p['username']) ?>
+                      </a>
+                      <div style="font-size: 11px; color: #888;">ID #<?= $p['id'] ?> &bull; <?= htmlspecialchars($p['email']) ?></div>
+                      <?php if (!empty($p['bank_name'])): ?>
+                        <div style="font-size: 11px; color: #4ade80; margin-top:2px;">
+                          🏦 <?= htmlspecialchars($p['bank_name']) ?>: <strong><?= htmlspecialchars($p['account_number']) ?></strong> (a/n <?= htmlspecialchars($p['account_name']) ?>)
+                        </div>
+                      <?php else: ?>
+                        <div style="font-size: 10.5px; color: #f87171; margin-top:2px;">⚠️ Rekening belum dilengkapi</div>
+                      <?php endif; ?>
+                    </div>
+                  </div>
                 </td>
-                <td><code><?= htmlspecialchars($p['referral_code']) ?></code></td>
-                <td style="color: #4CAF82; font-weight: 700;"><?= format_rp((float)$p['promotor_target_deposits']) ?></td>
-                <td><?= number_format((int)$p['promotor_target_regs']) ?> member</td>
-                <td style="color: #FF6B35; font-weight: 700;"><?= format_rp((float)$p['promotor_salary_rate']) ?></td>
+                <td>
+                  <div><code><?= htmlspecialchars($p['referral_code']) ?></code></div>
+                  <span class="badge <?= $p['is_referral_active'] ? 'bg-success' : 'bg-danger' ?>" style="font-size:10px;margin-top:3px;">
+                    <?= $p['is_referral_active'] ? 'Aktif ✅' : 'Nonaktif 🛑' ?>
+                  </span>
+                </td>
+                <td>
+                  <div style="color: #4CAF82; font-weight: 700; font-size:12px;">Depo: <?= format_rp((float)$p['promotor_target_deposits']) ?></div>
+                  <div style="color: #aaa; font-size: 11.5px;">Reg: <?= number_format((int)$p['promotor_target_regs']) ?> member</div>
+                </td>
+                <td style="color: #FF6B35; font-weight: 700;">
+                  <?= format_rp((float)$p['promotor_salary_rate']) ?>
+                  <div style="font-size:10px;color:#888">per 100% target</div>
+                </td>
+                <td>
+                  <?php if ($has_pending): ?>
+                    <div style="color: #fbbf24; font-weight: 800; font-size: 14.5px; letter-spacing: -0.3px;">
+                      <?= format_rp($p_pending['total']) ?>
+                    </div>
+                    <div style="margin-top: 3px;">
+                      <span class="badge" style="background:rgba(245,158,11,0.25);color:#fbbf24;border:1px solid rgba(245,158,11,0.45);font-size:10px;padding:3px 7px;">
+                        ⏳ <?= $p_pending['days'] ?> Hari Tertunda
+                      </span>
+                    </div>
+                    <div style="font-size: 9.5px; color:#94a3b8; margin-top:2px;">
+                      *Sebelum hari ini
+                    </div>
+                  <?php else: ?>
+                    <span class="badge" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);font-size:11px;padding:4px 8px;">
+                      ✓ Rp 0 (Lunas)
+                    </span>
+                    <div style="font-size: 9.5px; color:#666; margin-top:2px;">
+                      Tidak ada pending
+                    </div>
+                  <?php endif; ?>
+                </td>
+                <td>
+                  <strong style="color: #38bdf8; font-size:13px;"><?= format_rp((float)$p['balance_wd']) ?></strong>
+                  <div style="font-size:10.5px;color:#888;">Earned: <?= format_rp((float)$p['total_earned']) ?></div>
+                </td>
                 <td class="text-end">
-                  <a href="?tab=commission_panel&promotor_id=<?= $p['id'] ?>" class="btn btn-sm text-white me-1" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:6px;font-size:11px">
-                    🌳 Panel Jaringan
-                  </a>
-                  <a href="?tab=members&promotor_id=<?= $p['id'] ?>" class="btn btn-sm btn-primary text-white me-1" style="border:none;border-radius:6px;font-size:11px">
-                    👥 Downlines
-                  </a>
-                  <button class="btn btn-sm btn-info text-white me-1" style="border:none;border-radius:6px;font-size:11px"
-                          onclick="openEditModal(<?= htmlspecialchars(json_encode($p)) ?>)">
-                    ✏️ Edit Target
-                  </button>
-                  <form method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin ' + (<?= $p['is_referral_active'] ? "'menghentikan'" : "'mengaktifkan'" ?>) + ' referral promotor ini?');">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="toggle_referral">
-                    <input type="hidden" name="user_id" value="<?= $p['id'] ?>">
-                    <input type="hidden" name="new_val" value="<?= $p['is_referral_active'] ? 0 : 1 ?>">
-                    <button type="submit" class="btn btn-sm <?= $p['is_referral_active'] ? 'btn-warning' : 'btn-success' ?> text-white me-1" style="border:none;border-radius:6px;font-size:11px">
-                      <?= $p['is_referral_active'] ? '🛑 Stop Referral' : '✅ Aktifkan Referral' ?>
-                    </button>
-                  </form>
-                  <button class="btn btn-sm btn-danger" style="border:none;border-radius:6px;font-size:11px"
-                          onclick="confirmRemove(<?= $p['id'] ?>, '<?= htmlspecialchars($p['username']) ?>')">
-                    ❌ Nonaktifkan
-                  </button>
+                  <div class="d-flex flex-column align-items-end gap-1">
+                    <?php if ($has_pending): ?>
+                      <button class="btn btn-sm text-dark fw-bold w-100" 
+                              style="background:linear-gradient(135deg,#f59e0b,#fbbf24);border:none;border-radius:6px;font-size:11.5px;box-shadow:0 0 10px rgba(245,158,11,0.4);padding:5px 9px;"
+                              onclick='openPendingModal(<?= json_encode($pending_modal_payload, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>)'>
+                        💸 Bayar Gaji Pending (<?= format_rp($p_pending['total']) ?>)
+                      </button>
+                    <?php endif; ?>
+                    <div class="d-flex gap-1 flex-wrap justify-content-end">
+                      <?php if ($has_pending): ?>
+                        <button class="btn btn-sm btn-outline-warning" style="font-size:10.5px;padding:3px 7px;border-radius:6px;"
+                                title="Lihat list rincian riwayat pending"
+                                onclick='openPendingModal(<?= json_encode($pending_modal_payload, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>)'>
+                          📜 Rincian (<?= $p_pending['days'] ?>)
+                        </button>
+                      <?php endif; ?>
+                      <a href="?tab=commission_panel&promotor_id=<?= $p['id'] ?>" class="btn btn-sm text-white" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:6px;font-size:10.5px;padding:3px 7px;">
+                        🌳 Jaringan
+                      </a>
+                      <a href="?tab=members&promotor_id=<?= $p['id'] ?>" class="btn btn-sm btn-primary text-white" style="border:none;border-radius:6px;font-size:10.5px;padding:3px 7px;">
+                        👥 Downline
+                      </a>
+                      <button class="btn btn-sm btn-info text-white" style="border:none;border-radius:6px;font-size:10.5px;padding:3px 7px;"
+                              onclick="openEditModal(<?= htmlspecialchars(json_encode($p)) ?>)">
+                        ✏️ Edit
+                      </button>
+                      <form method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin ' + (<?= $p['is_referral_active'] ? "'menghentikan'" : "'mengaktifkan'" ?>) + ' referral promotor ini?');">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="toggle_referral">
+                        <input type="hidden" name="user_id" value="<?= $p['id'] ?>">
+                        <input type="hidden" name="new_val" value="<?= $p['is_referral_active'] ? 0 : 1 ?>">
+                        <button type="submit" class="btn btn-sm <?= $p['is_referral_active'] ? 'btn-warning' : 'btn-success' ?> text-white" style="border:none;border-radius:6px;font-size:10.5px;padding:3px 7px;">
+                          <?= $p['is_referral_active'] ? '🛑 Stop' : '✅ Aktif' ?>
+                        </button>
+                      </form>
+                      <button class="btn btn-sm btn-danger" style="border:none;border-radius:6px;font-size:10.5px;padding:3px 7px;"
+                              onclick="confirmRemove(<?= $p['id'] ?>, '<?= htmlspecialchars($p['username']) ?>')">
+                        ❌ Cabut
+                      </button>
+                    </div>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>
+          <?php else: ?>
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">
+                Belum ada promotor aktif yang terdaftar.
+              </td>
+            </tr>
           <?php endif; ?>
         </tbody>
       </table>
@@ -1631,9 +1911,18 @@ setTimeout(runSim, 100);
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($logs as $log): ?>
+          <?php foreach ($logs as $log): 
+            $is_today_log = ($log['date'] === date('Y-m-d'));
+            $earned = (float)round(($log['salary_rate'] * min(100.0, (float)$log['percentage'])) / 100.0);
+            $is_pending = (!$log['is_paid'] && !$is_today_log && $earned > 0);
+          ?>
             <tr style="vertical-align: middle;">
-              <td class="fw-bold" style="color: #fff;"><?= htmlspecialchars($log['date']) ?></td>
+              <td>
+                <span class="fw-bold" style="color: #fff;"><?= htmlspecialchars($log['date']) ?></span>
+                <?php if ($is_today_log): ?>
+                  <span class="badge" style="background:#0284c7;color:#fff;font-size:9.5px;margin-left:4px;">Live Hari Ini</span>
+                <?php endif; ?>
+              </td>
               <td><strong>@<?= htmlspecialchars($log['username']) ?></strong></td>
               <td>
                 <span class="badge <?= (float)$log['percentage'] >= 100 ? 'b-success' : 'b-warn' ?>" style="font-size: 11px; padding: 4px 8px; border-radius: 6px;">
@@ -1650,29 +1939,37 @@ setTimeout(runSim, 100);
               </td>
               <td>
                 <div style="font-size:11px;color:#aaa">Rate: <?= format_rp((float)$log['salary_rate']) ?></div>
-                <?php 
-                $earned = (float)round(($log['salary_rate'] * min(100.0, (float)$log['percentage'])) / 100.0);
-                if ($log['is_paid']): ?>
+                <?php if ($log['is_paid']): ?>
                   <div style="font-weight:700;color:#4CAF82;font-size:12.5px">Paid: <?= format_rp((float)$log['paid_amount']) ?></div>
                 <?php else: ?>
-                  <div style="font-weight:700;color:#FF6B35;font-size:12.5px">Earned: <?= format_rp($earned) ?></div>
+                  <div style="font-weight:700;color:<?= $is_today_log ? '#38bdf8' : '#FF6B35' ?>;font-size:12.5px">
+                    <?= $is_today_log ? 'Live' : 'Earned' ?>: <?= format_rp($earned) ?>
+                  </div>
                 <?php endif; ?>
               </td>
               <td>
                 <?php if ($log['is_paid']): ?>
                   <span class="badge b-success" style="padding: 4px 8px; border-radius: 6px;">Paid ✅</span>
-                <?php elseif ($earned > 0): ?>
-                  <span class="badge b-warn" style="padding: 4px 8px; border-radius: 6px; background:#FF6B35; color:#fff">Ready ⏳</span>
+                <?php elseif ($is_today_log): ?>
+                  <span class="badge" style="padding: 4px 8px; border-radius: 6px; background:rgba(2,132,199,0.25); color:#38bdf8; border:1px solid rgba(2,132,199,0.45);">
+                    Berjalan 🔄
+                  </span>
+                <?php elseif ($is_pending): ?>
+                  <span class="badge" style="padding: 4px 8px; border-radius: 6px; background:#f59e0b; color:#fff;">
+                    Pending ⏳
+                  </span>
                 <?php else: ?>
                   <span class="badge b-neutral" style="padding: 4px 8px; border-radius: 6px; background:#444; color:#aaa">0% ❌</span>
                 <?php endif; ?>
               </td>
               <td class="text-end">
-                <?php if (!$log['is_paid'] && $earned > 0): ?>
+                <?php if ($is_pending): ?>
                   <button class="btn btn-sm btn-success text-white" style="border:none;border-radius:6px;font-size:11px;background:#4CAF82"
                           onclick="openPayoutModal(<?= $log['id'] ?>, '<?= htmlspecialchars($log['username']) ?>', '<?= date('d M Y', strtotime($log['date'])) ?>', '<?= format_rp($earned) ?>', '<?= number_format((float)$log['percentage'], 1) ?>%')">
                     💸 Bayar Gaji
                   </button>
+                <?php elseif ($is_today_log): ?>
+                  <span style="font-size:10.5px;color:#0284c7;">Target Live</span>
                 <?php else: ?>
                   <span style="font-size: 11px; color:#555">—</span>
                 <?php endif; ?>
@@ -1839,6 +2136,121 @@ setTimeout(runSim, 100);
   </div>
 </div>
 
+<!-- Modal Display Gaji Pending & List History & Form Bayar -->
+<div class="modal fade" id="pendingSalaryModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="background:#151824;border:1px solid #d97706;box-shadow:0 12px 36px rgba(0,0,0,0.6);">
+      <form method="POST" id="form-pay-pending">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="pay_pending_salaries">
+        <input type="hidden" name="user_id" id="ps_user_id">
+        
+        <div class="modal-header" style="background:linear-gradient(135deg,rgba(217,119,6,0.2),rgba(180,83,9,0.3));border-bottom:1px solid rgba(217,119,6,0.3);">
+          <div>
+            <h6 class="modal-title fw-bold text-white d-flex align-items-center gap-2">
+              <span style="font-size:20px;">💸</span> Pencairan Gaji Pending Promotor: <span id="ps_modal_username" style="color:#fbbf24;"></span>
+            </h6>
+            <div style="font-size:11.5px;color:#cbd5e1;margin-top:2px;">
+              Akumulasi riwayat target harian sebelum hari ini yang belum dicairkan.
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        
+        <div class="modal-body p-4">
+          <!-- Banner Ringkasan Gaji & Rekening -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="p-3 rounded h-100" style="background:#0f111a;border:1.5px solid #d97706;">
+                <div style="font-size:11px;font-weight:700;color:#fde047;text-transform:uppercase;margin-bottom:4px;">
+                  ⏳ Total Gaji Pending (Sebelum Hari Ini)
+                </div>
+                <div id="ps_total_pending_display" style="font-size:26px;font-weight:900;color:#fbbf24;line-height:1.1;">
+                  Rp 0
+                </div>
+                <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">
+                  Gabungan dari <strong id="ps_pending_days_display" style="color:#fff;">0</strong> hari target selesai
+                </div>
+                <div style="font-size:10px;color:#f59e0b;margin-top:6px;border-top:1px dashed #2d3149;padding-top:4px;">
+                  ℹ️ <em>Target hari ini (<?= date('d M Y') ?>) tidak dihitung karena masih berlangsung.</em>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="p-3 rounded h-100" style="background:#0f111a;border:1px solid #282c4b;">
+                <div style="font-size:11px;font-weight:700;color:#93c5fd;text-transform:uppercase;margin-bottom:4px;">
+                  🏦 Rekening Penerima Pencairan
+                </div>
+                <div id="ps_bank_info" style="font-size:12.5px;color:#fff;line-height:1.4;">
+                  <!-- dynamically filled -->
+                </div>
+                <div style="font-size:11px;color:#94a3b8;margin-top:6px;">
+                  Saldo Penarikan Saat Ini: <strong id="ps_current_balance_wd" style="color:#38bdf8;">Rp 0</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: List History Hari Target Pending -->
+          <div class="mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h6 class="fw-bold mb-0 text-white" style="font-size:13px;">
+                📜 Rincian Riwayat Tanggal Target Pending:
+              </h6>
+              <span class="badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);font-size:10.5px;" id="ps_history_badge">
+                0 Hari
+              </span>
+            </div>
+            <div class="table-responsive" style="max-height:240px;overflow-y:auto;border:1px solid #23283c;border-radius:8px;">
+              <table class="table table-dark table-sm table-hover mb-0" style="font-size:12px;">
+                <thead style="position:sticky;top:0;background:#1a1d2d;z-index:1;">
+                  <tr>
+                    <th>Tanggal Target</th>
+                    <th>Target vs Realisasi Depo</th>
+                    <th>Target vs Realisasi Reg</th>
+                    <th>Persentase</th>
+                    <th class="text-end">Gaji Diperoleh</th>
+                  </tr>
+                </thead>
+                <tbody id="ps_history_tbody">
+                  <!-- dynamically filled -->
+                </tbody>
+                <tfoot style="background:#131522;font-weight:700;">
+                  <tr>
+                    <td colspan="4" class="text-end" style="color:#aaa;">TOTAL GAJI PENDING DICAIRKAN:</td>
+                    <td class="text-end" style="color:#fbbf24;font-size:13px;" id="ps_history_tfoot_total">Rp 0</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Catatan Admin & Verifikasi -->
+          <div class="p-3 rounded mb-2" style="background:#0f111a;border:1px solid #23283c;">
+            <label class="c-label mb-1" style="font-size:11.5px;color:#cbd5e1;">Catatan Admin (Opsional):</label>
+            <input type="text" name="admin_note" class="c-form-control" placeholder="Contoh: Pencairan via Transfer Bank / E-Wallet pada <?= date('d M Y') ?>" style="font-size:12.5px;">
+            <div style="font-size:10.5px;color:#64748b;margin-top:4px;">
+              Catatan ini akan disertakan dalam notifikasi Telegram log keuangan.
+            </div>
+          </div>
+          
+          <div class="alert mb-0 mt-3" style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:#86efac;font-size:11.5px;border-radius:8px;">
+            <i class="ph-bold ph-shield-check me-1"></i> Setelah tombol di bawah diklik, status target pada tanggal-tanggal di atas akan otomatis ditandai <strong>LUNAS (Paid)</strong> dan nominal total akan langsung dikreditkan ke <strong>Saldo Penarikan (WD)</strong> promotor.
+          </div>
+        </div>
+
+        <div class="modal-footer border-0" style="background:#10121c;">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+          <button type="submit" class="btn btn-sm text-dark fw-bold" id="ps_submit_btn" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);border:none;box-shadow:0 0 10px rgba(245,158,11,0.4);padding:6px 14px;">
+            ✅ Konfirmasi &amp; Bayar Gaji Pending
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
 function openAddModal() {
   document.getElementById('modal-title').textContent = '➕ Tambah Promotor Baru';
@@ -1891,6 +2303,53 @@ function openPayoutModal(lid, uname, date, amount, pct) {
   document.getElementById('pay_pct').textContent = pct;
   
   new bootstrap.Modal(document.getElementById('payoutModal')).show();
+}
+
+function openPendingModal(data) {
+  document.getElementById('ps_user_id').value = data.user_id;
+  document.getElementById('ps_modal_username').textContent = '@' + data.username;
+  document.getElementById('ps_total_pending_display').textContent = 'Rp ' + parseFloat(data.total_pending).toLocaleString('id-ID');
+  document.getElementById('ps_pending_days_display').textContent = data.pending_days;
+  document.getElementById('ps_current_balance_wd').textContent = 'Rp ' + parseFloat(data.balance_wd).toLocaleString('id-ID');
+  document.getElementById('ps_history_badge').textContent = data.pending_days + ' Hari Target';
+  document.getElementById('ps_history_tfoot_total').textContent = 'Rp ' + parseFloat(data.total_pending).toLocaleString('id-ID');
+
+  // Bank Info
+  let bankHtml = '';
+  if (data.bank_name && data.account_number && data.account_number !== '-') {
+    bankHtml = `<strong>${data.bank_name}</strong> - <code>${data.account_number}</code><br>a/n <strong>${data.account_name}</strong>`;
+  } else {
+    bankHtml = `<span style="color:#f87171;">⚠️ Rekening belum dilengkapi oleh promotor</span>`;
+  }
+  document.getElementById('ps_bank_info').innerHTML = bankHtml;
+
+  // History Rows
+  let tbody = document.getElementById('ps_history_tbody');
+  tbody.innerHTML = '';
+  if (data.history && data.history.length > 0) {
+    data.history.forEach(item => {
+      let tr = document.createElement('tr');
+      let earned = parseFloat(item.earned || 0);
+      let pct = parseFloat(item.percentage || 0);
+      let actDepo = parseFloat(item.actual_deposits || 0);
+      let tgtDepo = parseFloat(item.target_deposits || 0);
+      
+      tr.innerHTML = `
+        <td class="fw-bold text-white">${item.date}</td>
+        <td>Rp ${actDepo.toLocaleString('id-ID')} / ${tgtDepo.toLocaleString('id-ID')}</td>
+        <td>${item.actual_regs} / ${item.target_regs} member</td>
+        <td><span class="badge ${pct >= 100 ? 'bg-success' : 'bg-warning text-dark'}">${pct.toFixed(1)}%</span></td>
+        <td class="text-end fw-bold" style="color:#4CAF82;">Rp ${earned.toLocaleString('id-ID')}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } else {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">Tidak ada riwayat pending.</td></tr>`;
+  }
+
+  document.getElementById('ps_submit_btn').textContent = `✅ Konfirmasi & Bayar Gaji Pending (Rp ${parseFloat(data.total_pending).toLocaleString('id-ID')})`;
+
+  new bootstrap.Modal(document.getElementById('pendingSalaryModal')).show();
 }
 </script>
 

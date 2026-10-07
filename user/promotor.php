@@ -77,6 +77,30 @@ $today_target = $t_stmt->fetch() ?: [
 ];
 $today_earned = (float)round(($today_target['salary_rate'] * min(100.0, (float)$today_target['percentage'])) / 100.0);
 
+// 3b. Fetch Pending Salary (Hari ini TIDAK dihitung, akumulasi riwayat target date < CURDATE() yang is_paid = 0)
+$pending_stmt = $pdo->prepare("
+    SELECT 
+        COALESCE(SUM(ROUND((salary_rate * LEAST(100.0, percentage)) / 100.0)), 0) as total_pending_salary,
+        COUNT(CASE WHEN ROUND((salary_rate * LEAST(100.0, percentage)) / 100.0) > 0 THEN 1 END) as pending_days,
+        MIN(date) as oldest_pending_date,
+        MAX(date) as newest_pending_date
+    FROM promotor_daily_targets 
+    WHERE user_id = ? AND date < CURDATE() AND is_paid = 0
+");
+$pending_stmt->execute([$user['id']]);
+$pending_row = $pending_stmt->fetch(PDO::FETCH_ASSOC) ?: ['total_pending_salary' => 0, 'pending_days' => 0];
+$pending_salary = (float)($pending_row['total_pending_salary'] ?? 0);
+$pending_days   = (int)($pending_row['pending_days'] ?? 0);
+
+// Fetch list of pending history logs for detail display
+$pending_history_stmt = $pdo->prepare("
+    SELECT * FROM promotor_daily_targets 
+    WHERE user_id = ? AND date < CURDATE() AND is_paid = 0 AND ROUND((salary_rate * LEAST(100.0, percentage)) / 100.0) > 0
+    ORDER BY date DESC
+");
+$pending_history_stmt->execute([$user['id']]);
+$pending_history_list = $pending_history_stmt->fetchAll(PDO::FETCH_ASSOC);
+
 // Calculate all-time average daily target percentage achieved
 $avg_stmt = $pdo->prepare("SELECT COALESCE(AVG(percentage), 0) FROM promotor_daily_targets WHERE user_id=?");
 $avg_stmt->execute([$user['id']]);
@@ -382,6 +406,180 @@ body {
   font-weight: 800;
   color: #64748b;
   margin-top: 5px;
+}
+
+/* ── VIP PENDING SALARY CARD ── */
+.p-card-pending-salary {
+  background: linear-gradient(145deg, #fffdf8 0%, #fef3c7 40%, #fde68a 100%);
+  border: 3px solid #b45309;
+  border-radius: 20px;
+  padding: 16px 14px 14px;
+  box-shadow: 0 6px 0 #92400e, 0 12px 24px rgba(180,83,9,0.18);
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.p-card-pending-salary::after {
+  content: '';
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  width: 85px;
+  height: 85px;
+  background: url('/assets/game/bee_golden.png') no-repeat center center / contain;
+  opacity: 0.1;
+  pointer-events: none;
+}
+.p-pending-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 2;
+}
+.p-pending-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #78350f;
+  background: rgba(255,255,255,0.75);
+  border: 1.5px solid #d97706;
+  padding: 3px 9px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.p-pending-badge {
+  font-size: 10px;
+  font-weight: 900;
+  padding: 3px 9px;
+  border-radius: 10px;
+}
+.p-pending-badge.active {
+  background: #fef08a;
+  color: #854d0e;
+  border: 1.5px solid #ca8a04;
+  box-shadow: 0 0 8px rgba(234,179,8,0.3);
+}
+.p-pending-badge.settled {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1.5px solid #86efac;
+}
+.p-pending-val-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 2;
+}
+.p-pending-val {
+  font-size: 27px;
+  font-weight: 900;
+  color: #92400e;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+}
+.p-pending-val span.curr {
+  font-size: 16px;
+  color: #78350f;
+  font-weight: 800;
+}
+.p-btn-pending-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 2px solid #b45309;
+  color: #92400e;
+  font-size: 10.5px;
+  font-weight: 900;
+  padding: 5px 11px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #92400e;
+  transition: all 0.12s ease;
+}
+.p-btn-pending-detail:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 #92400e;
+}
+.p-pending-desc {
+  font-size: 11px;
+  font-weight: 700;
+  color: #78350f;
+  line-height: 1.45;
+  background: rgba(255,255,255,0.7);
+  border: 1.5px solid rgba(217,119,6,0.35);
+  border-radius: 12px;
+  padding: 9px 12px;
+  position: relative;
+  z-index: 2;
+}
+.p-pending-note {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  color: #b45309;
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px dashed rgba(217,119,6,0.3);
+}
+.p-pending-breakdown {
+  margin-top: 10px;
+  background: #ffffff;
+  border: 2px solid #b45309;
+  border-radius: 14px;
+  padding: 11px 12px;
+  box-shadow: 0 3px 0 #b45309;
+  position: relative;
+  z-index: 2;
+}
+.p-breakdown-title {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #78350f;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.p-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.p-breakdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-radius: 10px;
+  font-size: 11px;
+}
+.p-b-date {
+  font-weight: 900;
+  color: #78350f;
+}
+.p-b-sub {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #92400e;
+}
+.p-b-amt {
+  font-weight: 900;
+  color: #059669;
+  font-size: 12px;
+  text-align: right;
 }
 
 /* ── QUICK METRICS GRID ── */
@@ -815,6 +1013,63 @@ body {
     </div>
   </div>
 
+  <!-- KARTU GAJI PENDING (HARI INI TIDAK DIHITUNG) -->
+  <div class="p-card-pending-salary">
+    <div class="p-pending-head">
+      <div class="p-pending-tag">
+        <i class="ph-fill ph-hourglass-high"></i> Total Gaji Pending
+      </div>
+      <?php if ($pending_days > 0): ?>
+        <span class="p-pending-badge active">⏳ <?= $pending_days ?> Hari Tertunda</span>
+      <?php else: ?>
+        <span class="p-pending-badge settled">✓ Lunas Semua</span>
+      <?php endif; ?>
+    </div>
+
+    <div class="p-pending-val-row">
+      <div class="p-pending-val">
+        <span class="curr">Rp</span> <?= number_format($pending_salary, 0, ',', '.') ?>
+      </div>
+      <?php if (!empty($pending_history_list)): ?>
+        <button type="button" class="p-btn-pending-detail" onclick="togglePendingDetail()">
+          <i class="ph-bold ph-list-dashes"></i> Rincian Hari
+        </button>
+      <?php endif; ?>
+    </div>
+    
+    <div class="p-pending-desc">
+      <?php if ($pending_salary > 0): ?>
+        Akumulasi komisi dari <strong><?= $pending_days ?> hari</strong> target sebelumnya yang telah selesai dan sedang menunggu pencairan oleh Admin ke Saldo Penarikan.
+      <?php else: ?>
+        Tidak ada gaji pending dari hari-hari sebelumnya. Semua riwayat target telah lunas dicairkan ke Saldo Penarikan.
+      <?php endif; ?>
+      <span class="p-pending-note">
+        <i class="ph-bold ph-info"></i> Catatan: Hari ini (<?= date('d M Y') ?>) tidak dihitung dalam gaji pending karena target harian masih berlangsung.
+      </span>
+    </div>
+
+    <?php if (!empty($pending_history_list)): ?>
+    <div id="pending-breakdown-box" class="p-pending-breakdown" style="display:none;">
+      <div class="p-breakdown-title">
+        <i class="ph-bold ph-clock-counter-clockwise"></i> Riwayat Tanggal Gaji Pending (Belum Cair):
+      </div>
+      <div class="p-breakdown-list">
+        <?php foreach ($pending_history_list as $plog): 
+          $plog_earned = (float)round(($plog['salary_rate'] * min(100.0, (float)$plog['percentage'])) / 100.0);
+        ?>
+        <div class="p-breakdown-item">
+          <div>
+            <div class="p-b-date"><?= date('d M Y', strtotime($plog['date'])) ?></div>
+            <div class="p-b-sub">Capaian: <?= number_format((float)$plog['percentage'], 1) ?>% &bull; <?= number_format((int)$plog['actual_regs']) ?> Reg &bull; <?= format_rp((float)$plog['actual_deposits']) ?> Depo</div>
+          </div>
+          <div class="p-b-amt">+<?= format_rp($plog_earned) ?></div>
+        </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <?php endif; ?>
+  </div>
+
   <!-- SEGMENTED TAB BAR -->
   <div class="p-tab-bar">
     <button type="button" class="p-tab-btn active" onclick="switchTab('tab-stats')">
@@ -840,20 +1095,38 @@ body {
       </div>
     <?php else: ?>
       <div class="p-card-list">
-        <?php foreach ($history_logs as $log): ?>
+        <?php foreach ($history_logs as $log): 
+          $is_today_log = ($log['date'] === date('Y-m-d'));
+          $log_earned = (float)round(($log['salary_rate'] * min(100.0, (float)$log['percentage'])) / 100.0);
+        ?>
         <div class="p-list-item">
-          <div class="p-list-ico amber"><i class="ph-bold ph-calendar-check"></i></div>
+          <div class="p-list-ico <?= $log['is_paid'] ? 'emerald' : ($is_today_log ? 'purple' : ($log_earned > 0 ? 'amber' : 'purple')) ?>">
+            <i class="ph-bold <?= $log['is_paid'] ? 'ph-check-circle' : ($is_today_log ? 'ph-arrows-clockwise' : ($log_earned > 0 ? 'ph-hourglass-high' : 'ph-x-circle')) ?>"></i>
+          </div>
           <div class="p-list-main">
-            <div class="p-list-title"><?= date('d M Y', strtotime($log['date'])) ?></div>
+            <div class="p-list-title">
+              <?= date('d M Y', strtotime($log['date'])) ?>
+              <?php if ($is_today_log): ?>
+                <span style="font-size:9px;color:#0284c7;background:#e0f2fe;border:1px solid #bae6fd;padding:1px 5px;border-radius:5px;margin-left:4px;">HARI INI</span>
+              <?php endif; ?>
+            </div>
             <div class="p-list-sub">
-              Target: <?= number_format((int)$log['actual_regs']) ?>/<?= number_format((int)$log['target_regs']) ?> Member
+              Capaian: <?= number_format((float)$log['percentage'], 1) ?>% &bull; <?= number_format((int)$log['actual_regs']) ?>/<?= number_format((int)$log['target_regs']) ?> Member
             </div>
           </div>
           <div class="p-list-right">
-            <div class="p-list-amt"><?= format_rp((float)$log['salary_rate']) ?></div>
-            <span class="p-pill-status <?= $log['is_paid'] ? 'success' : 'warn' ?>">
-              <?= $log['is_paid'] ? 'DIBAYAR' : 'PROSES' ?>
-            </span>
+            <div class="p-list-amt" style="color:<?= $log['is_paid'] ? '#059669' : ($log_earned > 0 ? '#b45309' : '#64748b') ?>;">
+              <?= format_rp($log['is_paid'] && (float)$log['paid_amount'] > 0 ? (float)$log['paid_amount'] : $log_earned) ?>
+            </div>
+            <?php if ($is_today_log): ?>
+              <span class="p-pill-status" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">BERJALAN</span>
+            <?php elseif ($log['is_paid']): ?>
+              <span class="p-pill-status success">DIBAYAR</span>
+            <?php elseif ($log_earned > 0): ?>
+              <span class="p-pill-status warn">PENDING</span>
+            <?php else: ?>
+              <span class="p-pill-status" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;">0% TERCAPAI</span>
+            <?php endif; ?>
           </div>
         </div>
         <?php endforeach; ?>
@@ -1031,6 +1304,14 @@ function switchTab(tabId) {
   if (activeBtn) activeBtn.classList.add('active');
   const targetPane = document.getElementById(tabId);
   if (targetPane) targetPane.classList.add('active');
+}
+
+// Toggle Pending Breakdown Box
+function togglePendingDetail() {
+  const box = document.getElementById('pending-breakdown-box');
+  if (box) {
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  }
 }
 
 // Downline Client Pagination
