@@ -237,11 +237,12 @@ $where = "";
 $params = [];
 if ($q !== '') {
     if (is_numeric($q)) {
-        $where = "WHERE u.id = ? OR u.username LIKE ? OR u.email LIKE ?";
-        $params = [(int)$q, "%{$q}%", "%{$q}%"];
+        $where = "WHERE u.id = ? OR u.username LIKE ? OR u.email LIKE ? OR u.referral_code LIKE ? OR u.referred_by LIKE ?";
+        $params = [(int)$q, "%{$q}%", "%{$q}%", "%{$q}%", "%{$q}%"];
     } else {
-        $where = "WHERE u.username LIKE ? OR u.email LIKE ?";
-        $params = ["%{$q}%", "%{$q}%"];
+        $cleanQ = ltrim($q, '@');
+        $where = "WHERE u.username LIKE ? OR u.email LIKE ? OR u.referral_code LIKE ? OR u.referred_by LIKE ?";
+        $params = ["%{$cleanQ}%", "%{$cleanQ}%", "%{$cleanQ}%", "%{$cleanQ}%"];
     }
 }
 
@@ -252,7 +253,18 @@ $totalPages = ceil($total / $limit) ?: 1;
 if ($page > $totalPages) $page = $totalPages;
 
 $offset = ($page - 1) * $limit;
-$stmt = $pdo->prepare("SELECT u.*, m.name as membership_name FROM users u LEFT JOIN memberships m ON m.id=u.membership_id $where ORDER BY u.created_at DESC LIMIT $limit OFFSET $offset");
+$stmt = $pdo->prepare("
+    SELECT u.*, 
+           m.name as membership_name,
+           upline.id as upline_id,
+           upline.username as upline_username
+    FROM users u 
+    LEFT JOIN memberships m ON m.id = u.membership_id 
+    LEFT JOIN users upline ON (upline.referral_code = u.referred_by OR upline.username = u.referred_by)
+    $where 
+    ORDER BY u.created_at DESC 
+    LIMIT $limit OFFSET $offset
+");
 $stmt->execute($params);
 $users = $stmt->fetchAll();
 
@@ -478,9 +490,13 @@ require __DIR__ . '/partials/header.php';
                 <div style="font-size:10px;color:#64748b;margin-top:3px">Permanen</div>
               <?php endif; ?>
             </div>
-            <?php if (!empty($u['referred_by'])): ?>
-              <div style="font-size:10px;color:#64748b;margin-top:2px">
-                Upline: <span style="color:#cbd5e1"><?= htmlspecialchars($u['referred_by']) ?></span>
+            <?php if (!empty($u['upline_username'])): ?>
+              <div style="font-size:11px;margin-top:3px;" title="Pemilik Kode Referral: <?= htmlspecialchars($u['referred_by']) ?> (ID: #<?= $u['upline_id'] ?>)">
+                <span style="color:#64748b;">Reff:</span> <a href="users.php?q=<?= urlencode($u['upline_username']) ?>" style="color:#38bdf8;text-decoration:none;font-weight:700;">@<?= htmlspecialchars($u['upline_username']) ?></a>
+              </div>
+            <?php elseif (!empty($u['referred_by'])): ?>
+              <div style="font-size:10.5px;color:#64748b;margin-top:3px;">
+                <span style="color:#64748b;">Reff:</span> <span style="color:#94a3b8;">@<?= htmlspecialchars($u['referred_by']) ?></span>
               </div>
             <?php endif; ?>
           </td>
@@ -802,7 +818,7 @@ require __DIR__ . '/partials/header.php';
             </div>
             <div class="col-md-6">
               <div class="c-form-group mb-3">
-                <label class="c-label">Diundang Oleh (Referred By Code)</label>
+                <label class="c-label">Diundang Oleh (Kode Reff) <span id="eu-ref-owner-badge" class="badge" style="background:rgba(56,189,248,0.15);color:#38bdf8;font-size:10px;margin-left:4px;display:none;"></span></label>
                 <input type="text" name="referred_by" id="eu-ref-by" class="c-form-control" placeholder="Kode referral pengundang (opsional)">
               </div>
             </div>
@@ -1042,6 +1058,15 @@ function editUser(u) {
   // Tab 5: Referral & Promotor
   document.getElementById('eu-ref-code').value         = u.referral_code || '';
   document.getElementById('eu-ref-by').value           = u.referred_by || '';
+  const refOwnerBadge = document.getElementById('eu-ref-owner-badge');
+  if (refOwnerBadge) {
+    if (u.upline_username) {
+      refOwnerBadge.textContent = 'Pemilik: @' + u.upline_username;
+      refOwnerBadge.style.display = 'inline-block';
+    } else {
+      refOwnerBadge.style.display = 'none';
+    }
+  }
   document.getElementById('eu-is-ref-active').value    = u.is_referral_active !== undefined ? u.is_referral_active : 1;
   document.getElementById('eu-is-promo').value         = u.is_promotor !== undefined ? u.is_promotor : 0;
   document.getElementById('eu-promo-salary').value     = u.promotor_salary_rate !== undefined ? u.promotor_salary_rate : 0;

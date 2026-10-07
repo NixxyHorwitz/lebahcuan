@@ -10,7 +10,16 @@ if (!$uid) {
 }
 
 // Get user info
-$stmt = $pdo->prepare("SELECT u.*, m.name as membership_name FROM users u LEFT JOIN memberships m ON m.id=u.membership_id WHERE u.id=?");
+$stmt = $pdo->prepare("
+    SELECT u.*, 
+           m.name as membership_name,
+           upline.id as upline_id,
+           upline.username as upline_username
+    FROM users u 
+    LEFT JOIN memberships m ON m.id=u.membership_id 
+    LEFT JOIN users upline ON (upline.referral_code = u.referred_by OR upline.username = u.referred_by)
+    WHERE u.id=?
+");
 $stmt->execute([$uid]);
 $u = $stmt->fetch();
 if (!$u) {
@@ -101,8 +110,14 @@ require __DIR__ . '/partials/header.php';
           <tr><td style="color:#888">Bank</td><td><?= htmlspecialchars($u['bank_name'] ?: '-') ?></td></tr>
           <tr><td style="color:#888">No. Rek</td><td><?= htmlspecialchars($u['account_number'] ?: '-') ?></td></tr>
           <tr><td style="color:#888">A.N.</td><td><?= htmlspecialchars($u['account_name'] ?: '-') ?></td></tr>
-          <tr><td style="color:#888">Referral Code</td><td><?= htmlspecialchars($u['referral_code']) ?></td></tr>
-          <tr><td style="color:#888">Referred By</td><td><?= htmlspecialchars($u['referred_by'] ?: '-') ?></td></tr>
+          <tr><td style="color:#888">Pemilik Reff</td><td>
+            <?php if (!empty($u['upline_username'])): ?>
+              <a href="user_detail.php?id=<?= $u['upline_id'] ?>" style="color:#38bdf8;font-weight:700;text-decoration:none;">@<?= htmlspecialchars($u['upline_username']) ?></a>
+              <span style="color:#64748b;font-size:11px;">(Kode: <?= htmlspecialchars($u['referred_by']) ?>)</span>
+            <?php else: ?>
+              <?= htmlspecialchars($u['referred_by'] ?: '-') ?>
+            <?php endif; ?>
+          </td></tr>
           <tr><td style="color:#888">Terdaftar</td><td><?= date('d M Y H:i', strtotime($u['created_at'])) ?></td></tr>
         </table>
 
