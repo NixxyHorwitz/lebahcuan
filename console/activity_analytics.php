@@ -224,6 +224,123 @@ try {
         if ($score > $peakScore) { $peakScore = $score; $peakHour = $h; }
     }
 
+    // ── 4B. AKUMULASI USER ONLINE PER JAM (00:00 - 23:00) ─────────────
+    $hourlyOnline = array_fill(0, 24, ['unique_users' => 0, 'page_hits' => 0]);
+    $stmtHOnline = $pdo->query("
+        SELECT HOUR(created_at) as h, COUNT(DISTINCT user_id) as u_cnt, COUNT(*) as pv_cnt 
+        FROM page_views 
+        WHERE user_id IS NOT NULL AND {$dateCondition} 
+        GROUP BY h
+    ")->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($stmtHOnline as $row) {
+        $h = (int)$row['h'];
+        $hourlyOnline[$h]['unique_users'] = (int)$row['u_cnt'];
+        $hourlyOnline[$h]['page_hits']    = (int)$row['pv_cnt'];
+    }
+
+    // Cari Akumulasi Online Terbanyak (Peak Online Record)
+    $peakOnlineHour  = 0;
+    $peakOnlineCount = 0;
+    $peakOnlineHits  = 0;
+    $totalHourlyOnlineUniqueSum = 0;
+    $activeHourCount = 0;
+
+    foreach ($hourlyOnline as $h => $d) {
+        if ($d['unique_users'] > $peakOnlineCount) {
+            $peakOnlineCount = $d['unique_users'];
+            $peakOnlineHour  = $h;
+            $peakOnlineHits  = $d['page_hits'];
+        }
+        if ($d['unique_users'] > 0) {
+            $totalHourlyOnlineUniqueSum += $d['unique_users'];
+            $activeHourCount++;
+        }
+    }
+    $avgOnlinePerHour = $activeHourCount > 0 ? round($totalHourlyOnlineUniqueSum / $activeHourCount, 1) : 0;
+
+    // ── 4C. SEGMENTASI & DISTRIBUSI TIER KEAKTIFAN PENGGUNA ───────────
+    $tierQuery = $pdo->query("
+        SELECT 
+            u.id, u.username, u.email, u.last_seen, u.balance_wd, u.balance_dep,
+            COALESCE(m.name, 'Free') as membership_name,
+            COALESCE(wh.cnt, 0) as watch_count,
+            COALESCE(dep.dep_sum, 0) as dep_sum,
+            COALESCE(pv.pv_count, 0) as pv_count,
+            TIMESTAMPDIFF(SECOND, u.last_seen, NOW()) as seconds_ago,
+            (
+                (COALESCE(pv.pv_count, 0) * 1) + 
+                (COALESCE(wh.cnt, 0) * 8) + 
+                (COALESCE(dep.dep_count, 0) * 25) +
+                (CASE 
+                    WHEN u.last_seen >= DATE_SUB(NOW(), INTERVAL 5 MINUTE) THEN 60 
+                    WHEN u.last_seen >= DATE_SUB(NOW(), INTERVAL 1 HOUR) THEN 40
+                    WHEN u.last_seen >= DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 20
+                    WHEN u.last_seen >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 10 
+                    ELSE 0 END)
+            ) as activity_score
+        FROM users u
+        LEFT JOIN memberships m ON m.id = u.membership_id
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) as cnt 
+            FROM watch_history 
+            WHERE watched_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) 
+            GROUP BY user_id
+        ) wh ON wh.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) as dep_count, SUM(amount) as dep_sum 
+            FROM deposits 
+            WHERE status IN ('confirmed','approved') 
+            GROUP BY user_id
+        ) dep ON dep.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) as pv_count 
+            FROM page_views 
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) 
+            GROUP BY user_id
+        ) pv ON pv.user_id = u.id
+        ORDER BY activity_score DESC, u.last_seen DESC
+    ");
+
+    $tierDist = [
+        'mythic'   => ['count' => 0, 'min_score' => 150, 'name' => 'Mythic Sultan', 'color' => '#fbbf24', 'bg' => 'linear-gradient(135deg, #d97706, #b45309)', 'badge_class' => 'bg-warning text-dark', 'icon' => '👑', 'desc' => 'Skor ≥ 150 (Kontributor Misi & Depo Utama)'],
+        'platinum' => ['count' => 0, 'min_score' => 60,  'name' => 'Platinum Star', 'color' => '#38bdf8', 'bg' => 'linear-gradient(135deg, #0284c7, #0369a1)', 'badge_class' => 'bg-info text-white', 'icon' => '💎', 'desc' => 'Skor 60 - 149 (Pengguna Sangat Aktif)'],
+        'gold'     => ['count' => 0, 'min_score' => 20,  'name' => 'Gold Active',   'color' => '#facc15', 'bg' => 'linear-gradient(135deg, #ca8a04, #a16207)', 'badge_class' => 'bg-warning text-dark', 'icon' => '🌟', 'desc' => 'Skor 20 - 59 (Aktivitas Reguler)'],
+        'silver'   => ['count' => 0, 'min_score' => 1,   'name' => 'Silver Regular', 'color' => '#94a3b8', 'bg' => 'linear-gradient(135deg, #475569, #334155)', 'badge_class' => 'bg-secondary text-white', 'icon' => '⚡', 'desc' => 'Skor 1 - 19 (Pengguna Casual)'],
+        'dormant'  => ['count' => 0, 'min_score' => 0,   'name' => 'Dormant Inactive', 'color' => '#64748b', 'bg' => 'linear-gradient(135deg, #1e293b, #0f172a)', 'badge_class' => 'bg-dark text-secondary', 'icon' => '💤', 'desc' => 'Skor 0 (Belum Ada Interaksi Baru)'],
+    ];
+
+    $topPlatformUsers = [];
+    $totalTierUsersCount = 0;
+
+    while ($row = $tierQuery->fetch(PDO::FETCH_ASSOC)) {
+        $totalTierUsersCount++;
+        $score = (int)$row['activity_score'];
+        
+        if ($score >= 150) {
+            $tierDist['mythic']['count']++;
+            $tierKey = 'mythic';
+        } elseif ($score >= 60) {
+            $tierDist['platinum']['count']++;
+            $tierKey = 'platinum';
+        } elseif ($score >= 20) {
+            $tierDist['gold']['count']++;
+            $tierKey = 'gold';
+        } elseif ($score >= 1) {
+            $tierDist['silver']['count']++;
+            $tierKey = 'silver';
+        } else {
+            $tierDist['dormant']['count']++;
+            $tierKey = 'dormant';
+        }
+
+        if (count($topPlatformUsers) < 10) {
+            $row['tier_key'] = $tierKey;
+            $row['tier_meta'] = $tierDist[$tierKey];
+            $topPlatformUsers[] = $row;
+        }
+    }
+
     // ── 5. LIVE RECENT ACTIVITY STREAM (50 Terkini) ───────────────────
     $activityStream = [];
 
@@ -462,20 +579,20 @@ require __DIR__ . '/partials/header.php';
     </div>
   </div>
 
-  <!-- 4. JAM SIBUK & VELOCITY CARD -->
+  <!-- 4. JAM SIBUK & REKOR ONLINE TERBANYAK -->
   <div class="col-xl-3 col-md-6">
     <div class="c-stat h-100 position-relative overflow-hidden" style="border-top:3px solid #a855f7;background:#101321;">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <div class="c-stat__lbl" style="color:#a855f7;">⚡ Jam Puncak Aktivitas</div>
+        <div class="c-stat__lbl" style="color:#a855f7;">🔥 Puncak Online Terbanyak</div>
         <div class="c-stat__icon" style="background:rgba(168,85,247,0.15);color:#a855f7;font-size:16px;">⏰</div>
       </div>
-      <div class="c-stat__val" style="color:#a855f7;"><?= sprintf("%02d:00 - %02d:00", $peakHour, ($peakHour+1)%24) ?></div>
+      <div class="c-stat__val" style="color:#a855f7;font-size:22px;"><?= sprintf("%02d:00 - %02d:00", $peakOnlineHour, ($peakOnlineHour+1)%24) ?></div>
       <div class="d-flex align-items-center justify-content-between mt-3 pt-2" style="border-top:1px solid rgba(255,255,255,0.06);font-size:11.5px;">
-        <span class="text-secondary">Waktu Indonesia Barat (WIB)</span>
-        <span class="badge" style="background:rgba(168,85,247,0.15);color:#d8b4fe;">🔥 Paling Ramai</span>
+        <span class="text-white fw-bold"><i class="bi bi-people-fill text-info"></i> <?= number_format($peakOnlineCount) ?> user online</span>
+        <span class="badge" style="background:rgba(168,85,247,0.15);color:#d8b4fe;">🔥 <?= number_format($peakOnlineHits) ?> hits</span>
       </div>
       <div style="font-size:10.5px;color:#64748b;margin-top:3px;">
-        Kombinasi nonton, deposit &amp; pageview tertinggi
+        Avg aktif: <strong><?= $avgOnlinePerHour ?></strong> user/jam · Waktu WIB
       </div>
     </div>
   </div>
@@ -660,6 +777,214 @@ require __DIR__ . '/partials/header.php';
           </div>
           <?php endforeach; endif; ?>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── AKUMULASI USER ONLINE PER JAM (24 JAM WIB) ── -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="c-card">
+      <div class="c-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span style="font-size:18px;">🕒</span>
+          <span class="c-card-title">Akumulasi User Online Per Jam (00:00 - 23:00 WIB) — <?= htmlspecialchars($rangeTitle) ?></span>
+          <span class="badge rounded-pill" style="background:rgba(16,185,129,0.15);color:#34d399;font-size:11px;font-weight:700;">
+            🔥 Puncak: <?= sprintf("%02d:00 - %02d:00 WIB", $peakOnlineHour, ($peakOnlineHour+1)%24) ?> (<?= $peakOnlineCount ?> User Online)
+          </span>
+        </div>
+        <div class="d-flex align-items-center gap-3" style="font-size:11px;color:#94a3b8;">
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#10b981;margin-right:4px;"></span> User Unik</span>
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(56,189,248,0.4);margin-right:4px;"></span> Total Hits</span>
+        </div>
+      </div>
+      <div class="c-card-body p-3">
+        <!-- 24 Hours Timeline Grid -->
+        <div class="d-flex gap-2 overflow-auto pb-2" style="scrollbar-width:thin;">
+          <?php 
+          $maxOnlineSlot = max(1, $peakOnlineCount);
+          for ($h = 0; $h <= 23; $h++): 
+            $uCnt = $hourlyOnline[$h]['unique_users'];
+            $pHits = $hourlyOnline[$h]['page_hits'];
+            $isPeak = ($h === $peakOnlineHour && $uCnt > 0);
+            $barHeight = min(100, max(6, round(($uCnt / $maxOnlineSlot) * 100)));
+            $hourLabel = sprintf("%02d:00", $h);
+          ?>
+          <div class="text-center p-2 rounded-3 flex-shrink-0" style="min-width:68px;background:<?= $isPeak ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.02)' ?>;border:1px solid <?= $isPeak ? '#a855f7' : 'rgba(255,255,255,0.06)' ?>;position:relative;">
+            <?php if ($isPeak): ?>
+            <div class="position-absolute top-0 start-50 translate-middle">
+              <span class="badge bg-warning text-dark px-1 py-0" style="font-size:8px;font-weight:800;">PEAK</span>
+            </div>
+            <?php endif; ?>
+            <div class="small fw-bold text-white mb-1" style="font-size:11px;"><?= $hourLabel ?></div>
+            
+            <!-- Mini Bar Indicator -->
+            <div class="d-flex align-items-end justify-content-center my-2" style="height:48px;background:rgba(0,0,0,0.25);border-radius:4px;padding:2px;">
+              <div style="width:18px;height:<?= $barHeight ?>%;background:<?= $isPeak ? 'linear-gradient(180deg, #c084fc, #9333ea)' : ($uCnt > 0 ? 'linear-gradient(180deg, #34d399, #059669)' : 'rgba(255,255,255,0.1)') ?>;border-radius:3px;transition:height 0.3s ease;"></div>
+            </div>
+
+            <div class="fw-bold <?= $uCnt > 0 ? ($isPeak ? 'text-warning' : 'text-success') : 'text-secondary' ?>" style="font-size:12px;">
+              <?= $uCnt ?> <span style="font-size:9.5px;font-weight:normal;">user</span>
+            </div>
+            <div class="text-secondary" style="font-size:9.5px;">
+              <?= $pHits ?> hits
+            </div>
+          </div>
+          <?php endfor; ?>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SEGMENTASI & ANALISIS TIER KEAKTIFAN PENGGUNA ── -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="c-card">
+      <div class="c-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span style="font-size:20px;">👑</span>
+          <span class="c-card-title">Segmentasi &amp; Analisis Tier Keaktifan Pengguna</span>
+          <span class="badge rounded-pill" style="background:rgba(245,158,11,0.2);color:#fbbf24;font-size:11px;">
+            Total <?= number_format($totalTierUsersCount) ?> Pengguna Tersegmentasi
+          </span>
+        </div>
+        <div class="text-secondary small" style="font-size:11px;">
+          Sistem penilaian otomatis: Pageviews (1 pt) + Misi Nonton (8 pt) + Deposit (25 pt) + Bonus Login Aktif
+        </div>
+      </div>
+
+      <div class="c-card-body p-3">
+        <!-- 5 Tier Stat Cards -->
+        <div class="row g-2 mb-3">
+          <?php foreach ($tierDist as $tKey => $tier): 
+            $pct = $totalTierUsersCount > 0 ? round(($tier['count'] / $totalTierUsersCount) * 100, 1) : 0;
+          ?>
+          <div class="col-6 col-md">
+            <div class="p-3 rounded-3 text-center h-100" style="background:#0b0e18;border:1px solid rgba(255,255,255,0.06);">
+              <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
+                <span style="font-size:16px;"><?= $tier['icon'] ?></span>
+                <span class="fw-bold" style="color:<?= $tier['color'] ?>;font-size:12px;"><?= $tier['name'] ?></span>
+              </div>
+              <h4 class="mb-0 fw-bold text-white"><?= number_format($tier['count']) ?></h4>
+              <div class="text-secondary small mb-1" style="font-size:11px;"><?= $pct ?>% populasi</div>
+              <span class="badge" style="background:rgba(255,255,255,0.05);color:#94a3b8;font-size:9.5px;"><?= $tier['desc'] ?></span>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        </div>
+
+        <!-- Stacked Tier Population Progress Bar -->
+        <div class="progress mb-4" style="height:8px;background:#131826;border-radius:4px;overflow:hidden;">
+          <?php foreach ($tierDist as $tKey => $tier): 
+            $pct = $totalTierUsersCount > 0 ? round(($tier['count'] / $totalTierUsersCount) * 100, 1) : 0;
+            if ($pct <= 0) continue;
+          ?>
+          <div class="progress-bar" role="progressbar" style="width:<?= $pct ?>%;background:<?= $tier['color'] ?>;" title="<?= $tier['name'] ?>: <?= $tier['count'] ?> (<?= $pct ?>%)"></div>
+          <?php endforeach; ?>
+        </div>
+
+        <!-- Leaderboard Table: Top 10 Bintang Platform -->
+        <div class="rounded-3 overflow-hidden" style="border:1px solid #1f2538;background:#0d101d;">
+          <div class="p-2.5 px-3 border-bottom d-flex align-items-center justify-content-between" style="border-color:#1c2236 !important;background:#141724;">
+            <div class="d-flex align-items-center gap-2">
+              <span class="text-warning fw-bold">🏆 Top 10 Bintang Platform Paling Aktif</span>
+              <span class="badge" style="background:rgba(255,255,255,0.08);color:#94a3b8;font-size:10px;">Leaderboard Keaktifan</span>
+            </div>
+            <a href="/console/users.php" class="btn btn-sm btn-link text-warning p-0" style="font-size:11.5px;text-decoration:none;">Buka Manajemen Pengguna &rarr;</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 align-middle" style="font-size:12px;background:transparent;">
+              <thead style="background:#0a0c14;color:#94a3b8;font-size:11px;text-transform:uppercase;">
+                <tr>
+                  <th style="width:60px;text-align:center;">Rank</th>
+                  <th style="min-width:200px;">Pengguna / Akun</th>
+                  <th style="min-width:130px;">Tier Keaktifan</th>
+                  <th style="min-width:120px;">Skor Platform</th>
+                  <th style="min-width:210px;">Rincian Interaksi</th>
+                  <th style="min-width:140px;">Status Terakhir</th>
+                  <th style="width:110px;text-align:center;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php 
+                $maxPlatformScore = !empty($topPlatformUsers) ? max(1, (int)$topPlatformUsers[0]['activity_score']) : 1;
+                foreach ($topPlatformUsers as $idx => $pu): 
+                  $rNum = $idx + 1;
+                  $tMeta = $pu['tier_meta'];
+                  $pScore = (int)$pu['activity_score'];
+                  $scorePct = min(100, round(($pScore / $maxPlatformScore) * 100));
+                  $secAgo = (int)($pu['seconds_ago'] ?? 999999);
+                  $isOnlineNow = ($secAgo < 300);
+                ?>
+                <tr>
+                  <td class="text-center">
+                    <?php if ($rNum === 1): ?>
+                      <span class="badge" style="background:#f59e0b;color:#000;font-weight:800;font-size:12px;">🥇 #1</span>
+                    <?php elseif ($rNum === 2): ?>
+                      <span class="badge" style="background:#94a3b8;color:#000;font-weight:800;font-size:12px;">🥈 #2</span>
+                    <?php elseif ($rNum === 3): ?>
+                      <span class="badge" style="background:#d97706;color:#fff;font-weight:800;font-size:12px;">🥉 #3</span>
+                    <?php else: ?>
+                      <span class="fw-bold text-secondary">#<?= $rNum ?></span>
+                    <?php endif; ?>
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" style="width:28px;height:28px;font-size:11px;background:#1e293b;border:1px solid <?= $tMeta['color'] ?>;">
+                        <?= strtoupper(substr($pu['username'], 0, 1)) ?>
+                      </div>
+                      <div>
+                        <div class="fw-bold text-white"><?= htmlspecialchars($pu['username']) ?> <span class="text-secondary fw-normal" style="font-size:10px;">(#<?= (int)$pu['id'] ?>)</span></div>
+                        <div class="text-secondary" style="font-size:11px;"><?= htmlspecialchars($pu['email']) ?></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" style="background:<?= $tMeta['bg'] ?>;color:#fff;font-size:10px;font-weight:600;">
+                      <?= $tMeta['icon'] ?> <?= $tMeta['name'] ?>
+                    </span>
+                  </td>
+                  <td>
+                    <div class="fw-bold" style="color:<?= $tMeta['color'] ?>;font-size:13px;"><?= number_format($pScore) ?> pts</div>
+                    <div class="progress mt-1" style="height:4px;background:#1a1d27;border-radius:2px;">
+                      <div class="progress-bar" role="progressbar" style="width:<?= $scorePct ?>%;background:<?= $tMeta['color'] ?>;"></div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="d-flex flex-wrap gap-2 text-secondary" style="font-size:11px;">
+                      <span title="Kunjungan Halaman"><i class="bi bi-eye text-info"></i> <?= number_format((int)$pu['pv_count']) ?> views</span>
+                      <span title="Misi Video Ditonton"><i class="bi bi-play-circle text-warning"></i> <?= number_format((int)$pu['watch_count']) ?> watch</span>
+                      <span title="Total Deposit"><i class="bi bi-wallet2 text-success"></i> Rp <?= number_format((float)$pu['dep_sum'], 0, ',', '.') ?></span>
+                    </div>
+                  </td>
+                  <td>
+                    <?php if ($isOnlineNow): ?>
+                      <span class="badge" style="background:rgba(16,185,129,0.15);color:#34d399;font-size:10px;"><span class="online-dot me-1"></span> Online Live</span>
+                    <?php else: ?>
+                      <span class="badge" style="background:rgba(148,163,184,0.1);color:#94a3b8;font-size:10px;">
+                        <?= !empty($pu['last_seen']) ? date('d/m H:i', strtotime($pu['last_seen'])) : '-' ?>
+                      </span>
+                    <?php endif; ?>
+                  </td>
+                  <td class="text-center">
+                    <div class="d-flex align-items-center justify-content-center gap-1">
+                      <a href="/console/user_detail.php?id=<?= $pu['id'] ?>" class="btn btn-sm" style="background:#132e27;color:#6ee7b7;border:1px solid #1e4d41;font-size:10.5px;padding:2px 6px;border-radius:4px;text-decoration:none;" title="Profil">
+                        👁️
+                      </a>
+                      <a href="/console/users.php?q=<?= urlencode($pu['username']) ?>" class="btn btn-sm" style="background:#1e293b;color:#cbd5e1;border:1px solid #334155;font-size:10.5px;padding:2px 6px;border-radius:4px;text-decoration:none;" title="Edit / Kelola">
+                        ✏️
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -932,6 +1257,13 @@ document.addEventListener('DOMContentLoaded', function() {
       data: {
         labels: hours,
         datasets: [
+          {
+            label: 'User Online Unik',
+            data: <?= json_encode(array_column($hourlyOnline, 'unique_users')) ?>,
+            backgroundColor: '#10b981',
+            borderRadius: 4,
+            stack: 'combined'
+          },
           {
             label: 'Nonton Video',
             data: hourlyWatches,
