@@ -2,7 +2,7 @@
 
   <style>
   /* ══════════════════════════════════════════════════════
-     FLOATING HONEY DOCK WITH HEXAGONAL NOTCH
+     CLAYMORPHISM FLOATING HONEY DOCK WITH VOLUMETRIC PLAY GEM
      ══════════════════════════════════════════════════════ */
   .bottom-nav {
     position: fixed !important;
@@ -11,23 +11,26 @@
     transform: translateX(-50%) !important;
     width: calc(100% - 24px) !important;
     max-width: 440px !important;
-    background: rgba(255, 255, 255, 0.96) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 2.5px solid #78350f !important;
-    border-radius: 28px !important;
-    box-shadow: 0 8px 24px -4px rgba(120, 53, 15, 0.22), 0 4.5px 0 #78350f !important;
+    background: #ffffff !important;
+    border: 2px solid rgba(255, 255, 255, 0.95) !important;
+    border-radius: 36px !important;
+    box-shadow: 
+      0 16px 36px rgba(120, 53, 15, 0.16),
+      0 4px 12px rgba(0, 0, 0, 0.05),
+      inset 3px 3px 6px rgba(255, 255, 255, 1),
+      inset -4px -4px 8px rgba(180, 83, 9, 0.08) !important;
     display: grid !important;
     grid-template-columns: 1fr 1fr 1.25fr 1fr 1fr !important;
     align-items: center !important;
-    height: 64px !important;
-    padding: 0 6px !important;
+    height: 66px !important;
+    padding: 0 8px !important;
     z-index: 9999 !important;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
   }
 
-  body { padding-bottom: 96px !important; }
+  body { padding-bottom: 98px !important; }
 
-  /* NAV ITEMS */
+  /* CLAY NAV ITEMS */
   .nav-item {
     display: flex !important;
     flex-direction: column !important;
@@ -38,25 +41,25 @@
     font-size: 10px !important;
     font-weight: 800 !important;
     font-family: 'Nunito', sans-serif !important;
-    gap: 2px !important;
-    height: 48px !important;
-    border-radius: 14px !important;
-    transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    gap: 3px !important;
+    height: 50px !important;
+    border-radius: 20px !important;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
     position: relative;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
   }
   .nav-item:active {
-    transform: translateY(2px) scale(0.96) !important;
+    transform: scale(0.92) !important;
   }
   .nav-item i {
-    font-size: 21px !important;
+    font-size: 22px !important;
     color: #92400e !important;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.15s !important;
   }
 
-  /* ACTIVE STATE */
+  /* ACTIVE STATE - CLAY PILL ACCENT */
   .nav-item.active {
     color: #78350f !important;
     font-weight: 900 !important;
@@ -64,19 +67,20 @@
   .nav-item.active i {
     color: #d97706 !important;
     transform: scale(1.15) !important;
+    filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.35));
   }
   .nav-item.active::after {
     content: '';
     position: absolute;
     bottom: 2px;
-    width: 14px;
-    height: 3px;
-    background: #f59e0b;
-    border-radius: 4px;
-    border: 1px solid #78350f;
+    width: 16px;
+    height: 4px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-radius: 999px;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.4), inset 1px 1px 2px rgba(255, 255, 255, 0.7);
   }
 
-  /* CENTER PLAY BUTTON (3D HALO BADGE) */
+  /* CENTER PLAY BUTTON (CLAY HONEY GEM) */
   .nav-item--play {
     position: relative !important;
     overflow: visible !important;
@@ -91,31 +95,42 @@
     flex-direction: column;
     align-items: center;
     position: relative;
-    margin-top: -20px; /* Elevated cleanly above dock */
+    margin-top: -22px; /* Elevated smoothly above clay dock */
   }
   .nav-play-btn {
-    width: 50px; height: 50px;
-    background: linear-gradient(135deg, #fde047 0%, #f59e0b 50%, #d97706 100%) !important;
-    border-radius: 17px;
-    border: 2.5px solid #78350f !important;
+    width: 52px; height: 52px;
+    background: linear-gradient(145deg, #fde047 0%, #f59e0b 55%, #d97706 100%) !important;
+    border-radius: 22px !important;
+    border: 3px solid rgba(255, 255, 255, 0.95) !important;
     display: flex; align-items: center; justify-content: center;
     position: relative;
     z-index: 5;
-    box-shadow: 0 0 0 3px #ffffff, 0 3.5px 0 3px #78350f, 0 8px 16px rgba(180,83,9,0.3) !important;
-    transition: transform 0.12s, box-shadow 0.12s;
+    box-shadow: 
+      0 12px 24px rgba(245, 158, 11, 0.42),
+      0 3px 8px rgba(0, 0, 0, 0.06),
+      inset 4px 4px 8px rgba(255, 255, 255, 0.8),
+      inset -4px -4px 8px rgba(180, 83, 9, 0.35) !important;
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s !important;
   }
   .nav-item--play:active .nav-play-btn {
-    transform: translateY(2px) scale(0.96);
-    box-shadow: 0 0 0 3px #ffffff, 0 1.5px 0 3px #78350f !important;
+    transform: translateY(3px) scale(0.93) !important;
+    box-shadow: 
+      0 4px 10px rgba(245, 158, 11, 0.3),
+      inset 3px 3px 6px rgba(180, 83, 9, 0.4),
+      inset -2px -2px 4px rgba(255, 255, 255, 0.5) !important;
   }
   .nav-item--play.active .nav-play-btn {
-    background: linear-gradient(135deg, #fef08a 0%, #fbbf24 60%, #ea580c 100%) !important;
-    box-shadow: 0 0 0 3px #ffffff, 0 3.5px 0 3px #78350f, 0 0 14px rgba(245,158,11,0.6) !important;
+    background: linear-gradient(145deg, #fef08a 0%, #fbbf24 60%, #ea580c 100%) !important;
+    box-shadow: 
+      0 14px 28px rgba(245, 158, 11, 0.55),
+      0 0 16px rgba(251, 191, 36, 0.6),
+      inset 4px 4px 8px rgba(255, 255, 255, 0.9),
+      inset -4px -4px 8px rgba(180, 83, 9, 0.4) !important;
   }
   .nav-play-btn img {
-    width: 28px; height: 28px;
+    width: 30px; height: 30px;
     object-fit: contain;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.22));
     animation: navBeeWiggle 3.5s ease-in-out infinite;
   }
   @keyframes navBeeWiggle {
@@ -140,7 +155,7 @@
 
   /* Floating contact adjustment */
   .float-contact-wrap {
-    bottom: <?= ($activePage ?? '') === 'farm' && ($farmSubPage ?? '') === 'meadow' ? '154px' : '88px' ?> !important;
+    bottom: <?= ($activePage ?? '') === 'farm' && ($farmSubPage ?? '') === 'meadow' ? '154px' : '90px' ?> !important;
   }
   </style>
 
@@ -195,22 +210,39 @@ $_fsvg = [
 ?>
 <style>
 .float-contact-wrap {
-  position: fixed; bottom: 82px; right: 14px;
+  position: fixed; bottom: 86px; right: 14px;
   z-index: 500; display: flex; flex-direction: column;
-  align-items: flex-end; gap: 10px;
+  align-items: flex-end; gap: 12px;
 }
 .float-btn {
-  width: 52px; height: 52px; border-radius: 18px;
-  border: 3px solid #fff;
-  box-shadow: 0 5px 0 rgba(0,0,0,0.18), 0 8px 16px rgba(0,0,0,0.1);
+  width: 52px; height: 52px; border-radius: 22px;
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    0 12px 24px rgba(0, 0, 0, 0.16),
+    0 3px 8px rgba(0, 0, 0, 0.06),
+    inset 3px 3px 6px rgba(255, 255, 255, 0.75),
+    inset -4px -4px 8px rgba(0, 0, 0, 0.2);
   display: flex; align-items: center; justify-content: center;
-  text-decoration: none; transition: transform 0.1s, box-shadow 0.1s;
+  text-decoration: none; transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s;
   overflow: hidden; position: relative;
 }
-.float-btn::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50%; background: linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 100%); pointer-events: none; }
-.float-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,0.15); }
+.float-btn:active {
+  transform: translateY(2px) scale(0.94);
+  box-shadow: 
+    0 4px 10px rgba(0, 0, 0, 0.12),
+    inset 3px 3px 6px rgba(0, 0, 0, 0.25),
+    inset -2px -2px 4px rgba(255, 255, 255, 0.5);
+}
 .float-btn img { width: 100%; height: 100%; object-fit: cover; }
-.float-btn__label { position: absolute; right: 62px; top: 50%; transform: translateY(-50%); background: #0f172a; color: #fff; font-size: 11px; font-weight: 900; white-space: nowrap; padding: 6px 12px; border-radius: 12px; border: 2px solid #1e293b; box-shadow: 0 4px 0 rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); margin-right: -10px; font-family: 'Nunito', sans-serif; }
+.float-btn__label {
+  position: absolute; right: 64px; top: 50%; transform: translateY(-50%);
+  background: #1e2230; color: #fff; font-size: 11px; font-weight: 800;
+  white-space: nowrap; padding: 6px 14px; border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.25), inset 2px 2px 4px rgba(255,255,255,0.15);
+  opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  margin-right: -10px; font-family: 'Nunito', sans-serif;
+}
 .float-btn:hover .float-btn__label { opacity: 1; margin-right: 0; }
 </style>
 <div class="float-contact-wrap" id="float-contacts">
@@ -276,15 +308,19 @@ $_fsvg = [
   100% { transform: scale(1.05); opacity: 0; }
 }
 
-/* Floating Tour Popover Card */
+/* Floating Tour Popover Card - Clay Style */
 #lebah-tour-popover {
   position: fixed;
   z-index: 99999;
   background: #ffffff;
-  border: 3px solid #78350f;
-  border-radius: 22px;
-  box-shadow: 0 8px 0 #78350f, 0 20px 40px rgba(0,0,0,0.5);
-  padding: 15px 15px 13px;
+  border: 2.5px solid rgba(255, 255, 255, 0.95);
+  border-radius: 28px;
+  box-shadow: 
+    0 24px 50px rgba(120, 53, 15, 0.22),
+    0 6px 16px rgba(0, 0, 0, 0.08),
+    inset 4px 4px 10px rgba(255, 255, 255, 1),
+    inset -5px -5px 12px rgba(180, 83, 9, 0.08);
+  padding: 18px 18px 15px;
   max-width: 370px;
   width: calc(100vw - 28px);
   box-sizing: border-box;
@@ -312,11 +348,12 @@ $_fsvg = [
   gap: 5px;
   font-size: 10px;
   font-weight: 900;
-  padding: 3px 9px;
-  border-radius: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
   background: #fef3c7;
   color: #b45309;
-  border: 1.5px solid #fde68a;
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.1), inset 1px 1px 3px rgba(255, 255, 255, 0.8);
   letter-spacing: 0.2px;
 }
 .tour-pop-step-count {
@@ -325,21 +362,26 @@ $_fsvg = [
   color: #94a3b8;
 }
 .tour-pop-close {
-  background: transparent;
+  background: #f1f5f9;
   border: none;
-  font-size: 17px;
-  color: #94a3b8;
+  font-size: 15px;
+  color: #64748b;
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 8px;
-  line-height: 1;
-  transition: color 0.15s;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: inset 1px 1px 3px rgba(255,255,255,1), 0 2px 6px rgba(0,0,0,0.06);
+  transition: all 0.15s;
 }
 .tour-pop-close:hover {
   color: #ef4444;
+  background: #fee2e2;
 }
 .tour-pop-title {
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 900;
   color: #78350f;
   margin-bottom: 4px;
@@ -353,61 +395,64 @@ $_fsvg = [
   font-weight: 700;
   color: #475569;
   line-height: 1.45;
-  margin-bottom: 8px;
+  margin-bottom: 9px;
 }
 .tour-pop-tip {
   background: #fffbeb;
   border: 1.5px solid #fef08a;
-  border-radius: 12px;
-  padding: 6px 10px;
+  border-radius: 16px;
+  padding: 8px 12px;
   font-size: 10.5px;
   font-weight: 800;
   color: #92400e;
-  margin-bottom: 11px;
+  margin-bottom: 12px;
   display: flex;
   align-items: flex-start;
-  gap: 5px;
+  gap: 6px;
   line-height: 1.35;
+  box-shadow: inset 2px 2px 5px rgba(255,255,255,0.8), inset -2px -2px 5px rgba(245,158,11,0.08);
 }
 .tour-pop-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding-top: 9px;
+  padding-top: 10px;
   border-top: 1.5px dashed #f1f5f9;
 }
 .tour-pop-dots {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 .tour-pop-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #cbd5e1;
   transition: all 0.2s ease;
 }
 .tour-pop-dot.active {
-  width: 16px;
-  border-radius: 4px;
-  background: #d97706;
+  width: 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.4);
 }
 .tour-pop-nav-btns {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 .btn-tour-nav-prev {
-  background: #f1f5f9;
-  border: 2px solid #cbd5e1;
+  background: #f8fafc;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
   color: #475569;
   font-size: 11px;
   font-weight: 800;
-  padding: 6px 11px;
-  border-radius: 10px;
+  padding: 7px 13px;
+  border-radius: 14px;
   cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06), inset 2px 2px 4px rgba(255,255,255,1), inset -2px -2px 4px rgba(0,0,0,0.04);
   transition: all 0.15s ease;
   display: inline-flex;
   align-items: center;
@@ -418,31 +463,31 @@ $_fsvg = [
   cursor: not-allowed;
   pointer-events: none;
 }
+.btn-tour-nav-prev:active {
+  transform: scale(0.95);
+}
 .btn-tour-nav-next {
-  background: linear-gradient(180deg, #f59e0b, #d97706);
-  border: 2px solid #78350f;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
   color: #ffffff;
   font-size: 11.5px;
   font-weight: 900;
-  padding: 6px 14px;
-  border-radius: 10px;
+  padding: 7px 16px;
+  border-radius: 14px;
   cursor: pointer;
-  box-shadow: 0 2.5px 0 #78350f;
-  text-shadow: 0 1px 1px #78350f;
+  box-shadow: 0 8px 16px rgba(245, 158, 11, 0.38), inset 3px 3px 6px rgba(255, 255, 255, 0.7), inset -3px -3px 6px rgba(180, 83, 9, 0.3);
   display: inline-flex;
   align-items: center;
   gap: 5px;
   transition: all 0.15s ease;
 }
 .btn-tour-nav-next.finish {
-  background: linear-gradient(180deg, #10b981, #059669);
-  border-color: #064e3b;
-  box-shadow: 0 2.5px 0 #064e3b;
-  text-shadow: 0 1px 1px #064e3b;
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.38), inset 3px 3px 6px rgba(255, 255, 255, 0.7), inset -3px -3px 6px rgba(6, 78, 59, 0.3);
 }
 .btn-tour-nav-next:active {
-  transform: translateY(2px);
-  box-shadow: 0 0 0 #78350f;
+  transform: scale(0.95);
+  box-shadow: 0 3px 8px rgba(245, 158, 11, 0.25);
 }
 </style>
 

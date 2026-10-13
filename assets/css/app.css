@@ -1,9 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
 
-/* =============================================
-   LebahCuan — Premium Amber Honey & Bee Tycoon UI
-   Palette: Rich Amber, Golden Honey & Dark Chocolate
-   ============================================= */
 :root {
   --ink:         #451a03; /* Rich dark roasted honey/brown text */
   --text-muted:  #78350f;
@@ -167,7 +163,7 @@ body {
 .bal-dropdown__row--dep{background:#fff;}
 .bal-dropdown__lbl{font-weight:700;color:#4a90a4;}
 .bal-dropdown__val{font-weight:900;color:#0c4a6e;}
-.bal-dropdown__link{display:block;padding:10px 14px;font-size:11px;font-weight:900;color:#0891b2;text-decoration:none;text-align:center;background:#e0f9ff;};}
+.bal-dropdown__link{display:block;padding:10px 14px;font-size:11px;font-weight:900;color:#0891b2;text-decoration:none;text-align:center;background:#e0f9ff;};
 .bal-dropdown__link:hover{background:#ffe4e6;}
 
 .slider-captcha { margin-bottom: 14px; }
