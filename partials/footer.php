@@ -6,29 +6,29 @@
      ══════════════════════════════════════════════════════ */
   .bottom-nav {
     position: fixed !important;
-    bottom: 12px !important;
+    bottom: 8px !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    width: calc(100% - 24px) !important;
-    max-width: 440px !important;
+    width: calc(100% - 20px) !important;
+    max-width: 430px !important;
     background: #ffffff !important;
-    border: 2px solid rgba(255, 255, 255, 0.95) !important;
-    border-radius: 36px !important;
+    border: 1.5px solid #fed7aa !important;
+    border-radius: 28px !important;
     box-shadow: 
-      0 16px 36px rgba(120, 53, 15, 0.16),
-      0 4px 12px rgba(0, 0, 0, 0.05),
-      inset 3px 3px 6px rgba(255, 255, 255, 1),
-      inset -4px -4px 8px rgba(180, 83, 9, 0.08) !important;
+      0 12px 28px rgba(120, 53, 15, 0.15),
+      0 3px 8px rgba(0, 0, 0, 0.04),
+      inset 2px 2px 4px #ffffff,
+      inset -2px -2px 4px rgba(217, 119, 6, 0.07) !important;
     display: grid !important;
     grid-template-columns: 1fr 1fr 1.25fr 1fr 1fr !important;
     align-items: center !important;
-    height: 66px !important;
-    padding: 0 8px !important;
+    height: 56px !important;
+    padding: 0 6px !important;
     z-index: 9999 !important;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
   }
 
-  body { padding-bottom: 98px !important; }
+  body { padding-bottom: 78px !important; }
 
   /* CLAY NAV ITEMS */
   .nav-item {
@@ -38,12 +38,12 @@
     justify-content: center !important;
     text-decoration: none !important;
     color: #92400e !important;
-    font-size: 10px !important;
+    font-size: 9px !important;
     font-weight: 800 !important;
     font-family: 'Nunito', sans-serif !important;
-    gap: 3px !important;
-    height: 50px !important;
-    border-radius: 20px !important;
+    gap: 2px !important;
+    height: 44px !important;
+    border-radius: 16px !important;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
     position: relative;
     background: transparent !important;
@@ -54,7 +54,7 @@
     transform: scale(0.92) !important;
   }
   .nav-item i {
-    font-size: 22px !important;
+    font-size: 20px !important;
     color: #92400e !important;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.15s !important;
   }
@@ -66,21 +66,21 @@
   }
   .nav-item.active i {
     color: #d97706 !important;
-    transform: scale(1.15) !important;
+    transform: scale(1.12) !important;
     filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.35));
   }
   .nav-item.active::after {
     content: '';
     position: absolute;
-    bottom: 2px;
-    width: 16px;
-    height: 4px;
+    bottom: 1px;
+    width: 14px;
+    height: 3px;
     background: linear-gradient(135deg, #f59e0b, #d97706);
     border-radius: 999px;
-    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.4), inset 1px 1px 2px rgba(255, 255, 255, 0.7);
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.4);
   }
 
-  /* CENTER PLAY BUTTON (CLAY HONEY GEM) */
+  /* CENTER PLAY BUTTON (CLAY HONEY GEM - BORDER TEGAS) */
   .nav-item--play {
     position: relative !important;
     overflow: visible !important;
@@ -95,42 +95,42 @@
     flex-direction: column;
     align-items: center;
     position: relative;
-    margin-top: -22px; /* Elevated smoothly above clay dock */
+    margin-top: -18px;
   }
   .nav-play-btn {
-    width: 52px; height: 52px;
+    width: 46px; height: 46px;
     background: linear-gradient(145deg, #fde047 0%, #f59e0b 55%, #d97706 100%) !important;
-    border-radius: 22px !important;
-    border: 3px solid rgba(255, 255, 255, 0.95) !important;
+    border-radius: 18px !important;
+    border: 2px solid #b45309 !important;
     display: flex; align-items: center; justify-content: center;
     position: relative;
     z-index: 5;
     box-shadow: 
-      0 12px 24px rgba(245, 158, 11, 0.42),
-      0 3px 8px rgba(0, 0, 0, 0.06),
-      inset 4px 4px 8px rgba(255, 255, 255, 0.8),
-      inset -4px -4px 8px rgba(180, 83, 9, 0.35) !important;
+      0 10px 20px rgba(245, 158, 11, 0.4),
+      0 2px 6px rgba(0, 0, 0, 0.05),
+      inset 3px 3px 6px rgba(255, 255, 255, 0.8),
+      inset -3px -3px 6px rgba(180, 83, 9, 0.35) !important;
     transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s !important;
   }
   .nav-item--play:active .nav-play-btn {
-    transform: translateY(3px) scale(0.93) !important;
+    transform: translateY(2px) scale(0.94) !important;
     box-shadow: 
       0 4px 10px rgba(245, 158, 11, 0.3),
-      inset 3px 3px 6px rgba(180, 83, 9, 0.4),
-      inset -2px -2px 4px rgba(255, 255, 255, 0.5) !important;
+      inset 2px 2px 4px rgba(180, 83, 9, 0.4),
+      inset -1px -1px 3px rgba(255, 255, 255, 0.5) !important;
   }
   .nav-item--play.active .nav-play-btn {
     background: linear-gradient(145deg, #fef08a 0%, #fbbf24 60%, #ea580c 100%) !important;
     box-shadow: 
-      0 14px 28px rgba(245, 158, 11, 0.55),
-      0 0 16px rgba(251, 191, 36, 0.6),
-      inset 4px 4px 8px rgba(255, 255, 255, 0.9),
-      inset -4px -4px 8px rgba(180, 83, 9, 0.4) !important;
+      0 12px 24px rgba(245, 158, 11, 0.5),
+      0 0 14px rgba(251, 191, 36, 0.55),
+      inset 3px 3px 6px rgba(255, 255, 255, 0.9),
+      inset -3px -3px 6px rgba(180, 83, 9, 0.4) !important;
   }
   .nav-play-btn img {
-    width: 30px; height: 30px;
+    width: 26px; height: 26px;
     object-fit: contain;
-    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.22));
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
     animation: navBeeWiggle 3.5s ease-in-out infinite;
   }
   @keyframes navBeeWiggle {
@@ -140,11 +140,11 @@
   }
 
   .nav-play-label {
-    font-size: 9.5px;
+    font-size: 8.5px;
     font-weight: 900;
     color: #78350f;
     font-family: 'Nunito', sans-serif;
-    margin-top: 3px;
+    margin-top: 2px;
     letter-spacing: -0.2px;
     position: relative;
     z-index: 6;
@@ -155,7 +155,7 @@
 
   /* Floating contact adjustment */
   .float-contact-wrap {
-    bottom: <?= ($activePage ?? '') === 'farm' && ($farmSubPage ?? '') === 'meadow' ? '154px' : '90px' ?> !important;
+    bottom: <?= ($activePage ?? '') === 'farm' && ($farmSubPage ?? '') === 'meadow' ? '144px' : '76px' ?> !important;
   }
   </style>
 

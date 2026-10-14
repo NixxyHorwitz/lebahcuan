@@ -113,13 +113,13 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
 html, body { margin: 0; padding: 0; width: 100%; overflow-x: hidden; }
 body {
   font-family: 'Nunito', 'Inter', sans-serif !important;
-  background: #fef8ee !important;
+  background: #f7f4ee !important;
   background-image:
-    radial-gradient(#fde68a 1.8px, transparent 1.8px),
-    radial-gradient(#fde68a 1.8px, transparent 1.8px) !important;
-  background-size: 28px 28px !important;
-  background-position: 0 0, 14px 14px !important;
-  padding-bottom: 96px !important;
+    radial-gradient(#fde68a 1.5px, transparent 1.5px),
+    radial-gradient(#fde68a 1.5px, transparent 1.5px) !important;
+  background-size: 26px 26px !important;
+  background-position: 0 0, 13px 13px !important;
+  padding-bottom: 86px !important;
   -webkit-font-smoothing: antialiased;
   color: #451a03;
 }
@@ -131,89 +131,94 @@ i[class^="ph-"] {
 }
 .app-shell { width: 100%; max-width: 480px; margin: 0 auto; }
 
-/* ══ TOPBAR — AMBER HONEY GRADIENT ══ */
-/* ══ TOPBAR — REMADE AMBER HONEY GAME HUD ══ */
+/* ══ COMPACT CLAY TOPBAR ══ */
 .topbar {
   position: sticky; top: 0; z-index: 1000;
   width: 100%;
-  height: 60px;
-  background: linear-gradient(135deg, #b45309 0%, #d97706 45%, #f59e0b 100%);
-  border-bottom: 3.5px solid #78350f;
-  box-shadow: 0 4px 16px rgba(120, 53, 15, 0.28);
+  height: 52px;
+  background: linear-gradient(135deg, #b45309 0%, #d97706 40%, #f59e0b 100%);
+  border-bottom: 2px solid #92400e;
+  box-shadow: 
+    0 4px 14px rgba(120, 53, 15, 0.22),
+    inset 0 2px 3px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 3px rgba(120, 53, 15, 0.3);
   display: flex;
   align-items: center;
-  position: sticky;
 }
 
 .topbar__inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 10px;
   height: 100%;
   width: 100%;
+  gap: 8px;
 }
 
 /* ── Brand & Mascot ── */
 .tb-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   text-decoration: none;
   flex-shrink: 0;
 }
 .tb-mascot-box {
-  width: 38px; height: 38px;
-  background: #fffbeb;
-  border: 2.5px solid #78350f;
-  border-radius: 13px;
-  box-shadow: 0 3px 0 #78350f;
+  width: 32px; height: 32px;
+  background: #ffffff;
+  border: 1.5px solid #fed7aa;
+  border-radius: 10px;
+  box-shadow: 
+    0 3px 8px rgba(120, 53, 15, 0.2),
+    inset 2px 2px 4px #ffffff,
+    inset -2px -2px 4px rgba(217, 119, 6, 0.12);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
 }
 .tb-mascot-img {
-  width: 28px; height: 28px;
+  width: 23px; height: 23px;
   object-fit: contain;
   animation: tbBeeFloat 2.6s ease-in-out infinite;
 }
 @keyframes tbBeeFloat {
   0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-3px) rotate(4deg); }
+  50% { transform: translateY(-2px) rotate(4deg); }
 }
 
 .tb-brand-info {
   display: flex;
   flex-direction: column;
-  line-height: 1.1;
+  line-height: 1.05;
 }
 .tb-brand-name {
-  font-size: 16.5px;
+  font-size: 15px;
   font-weight: 900;
   color: #ffffff;
-  text-shadow: 0 2px 0 #78350f;
+  text-shadow: 0 1.5px 2px rgba(120, 53, 15, 0.6);
   letter-spacing: -0.3px;
 }
 .tb-brand-name em {
   font-style: normal;
   color: #fef08a;
-  text-shadow: 0 2px 0 #78350f;
+  text-shadow: 0 1.5px 2px rgba(120, 53, 15, 0.6);
 }
 .tb-brand-tag {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 900;
   color: #78350f;
-  background: #fde68a;
+  background: #fef08a;
   padding: 1px 5px;
-  border-radius: 6px;
-  border: 1px solid #78350f;
+  border-radius: 5px;
+  border: 1px solid #d97706;
   width: fit-content;
-  margin-top: 2px;
-  box-shadow: 0 1px 0 #78350f;
+  margin-top: 1px;
+  box-shadow: inset 1px 1px 2px #fff;
   text-transform: uppercase;
   letter-spacing: 0.2px;
 }
@@ -222,67 +227,73 @@ i[class^="ph-"] {
 .tb-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-shrink: 0;
 }
 
-/* ── Saldo Capsule ── */
+/* ── Saldo Capsule (Clay Pill dengan Border Tegas) ── */
 .tb-saldo-capsule {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: #fffbeb;
-  border: 2.5px solid #78350f;
-  border-radius: 16px;
-  padding: 3px 7px 3px 5px;
-  box-shadow: 0 3px 0 #78350f;
+  background: #ffffff;
+  border: 1.5px solid #fed7aa;
+  border-radius: 999px;
+  padding: 3px 8px 3px 4px;
+  box-shadow: 
+    0 3px 8px rgba(120, 53, 15, 0.16),
+    inset 2px 2px 4px #ffffff,
+    inset -2px -2px 4px rgba(217, 119, 6, 0.1);
   cursor: pointer;
   user-select: none;
-  transition: transform 0.1s, box-shadow 0.1s;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s;
 }
 .tb-saldo-capsule:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 #78350f;
+  transform: translateY(2px) scale(0.96);
+  box-shadow: 
+    0 1px 4px rgba(120, 53, 15, 0.14),
+    inset 1px 1px 2px rgba(217, 119, 6, 0.15);
 }
 .tb-saldo-icon {
-  width: 24px; height: 24px;
+  width: 22px; height: 22px;
   background: linear-gradient(135deg, #fde047, #f59e0b);
-  border: 1.5px solid #78350f;
+  border: 1.2px solid #ffffff;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px;
+  font-size: 11.5px;
   color: #78350f;
   flex-shrink: 0;
-  box-shadow: 0 1px 0 #78350f;
+  box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(217, 119, 6, 0.3);
 }
 .tb-saldo-texts {
   display: flex;
   flex-direction: column;
-  line-height: 1.1;
+  line-height: 1.05;
 }
 .tb-saldo-lbl {
-  font-size: 7.5px;
+  font-size: 7px;
   font-weight: 900;
   color: #92400e;
   letter-spacing: 0.3px;
   text-transform: uppercase;
 }
 .tb-saldo-val {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 900;
   color: #78350f;
   white-space: nowrap;
 }
 .tb-saldo-plus {
-  width: 16px; height: 16px;
-  background: #fde68a;
-  border: 1.5px solid #78350f;
-  border-radius: 6px;
+  width: 15px; height: 15px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 9px;
+  font-size: 8.5px;
   color: #78350f;
   font-weight: 900;
-  transition: transform 0.2s;
+  box-shadow: inset 1px 1px 2px #fff;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .tb-saldo-capsule.active .tb-saldo-plus {
   transform: rotate(180deg);
@@ -290,41 +301,47 @@ i[class^="ph-"] {
 
 /* ── Buttons (Bell & Avatar) ── */
 .tb-btn-icon {
-  width: 36px; height: 36px;
-  background: #fffbeb;
-  border: 2.5px solid #78350f;
-  border-radius: 12px;
-  box-shadow: 0 3px 0 #78350f;
+  width: 32px; height: 32px;
+  background: #ffffff;
+  border: 1.5px solid #fed7aa;
+  border-radius: 11px;
+  box-shadow: 
+    0 3px 8px rgba(120, 53, 15, 0.16),
+    inset 2px 2px 4px #ffffff,
+    inset -2px -2px 4px rgba(217, 119, 6, 0.1);
   display: flex; align-items: center; justify-content: center;
   color: #78350f;
   text-decoration: none;
   position: relative;
   font-weight: 900;
-  font-size: 17px;
+  font-size: 15px;
   flex-shrink: 0;
-  transition: transform 0.1s, box-shadow 0.1s;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .tb-btn-icon:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 #78350f;
+  transform: translateY(2px) scale(0.94);
+  box-shadow: 
+    0 1px 3px rgba(120, 53, 15, 0.14),
+    inset 1px 1px 2px rgba(217, 119, 6, 0.15);
 }
 .tb-avatar {
-  background: linear-gradient(135deg, #fde68a, #f59e0b);
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
   color: #78350f;
-  font-size: 14.5px;
+  font-size: 13px;
+  border: 1.5px solid #fcd34d;
 }
 .tb-badge-count {
   position: absolute;
-  top: -5px; right: -5px;
-  background: #dc2626;
+  top: -4px; right: -4px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: #fff;
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 900;
-  min-width: 17px; height: 17px;
-  border-radius: 10px;
-  padding: 0 4px;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 0 rgba(0,0,0,0.25);
+  min-width: 16px; height: 16px;
+  border-radius: 999px;
+  padding: 0 3px;
+  border: 1.5px solid #fff;
+  box-shadow: 0 2px 5px rgba(220, 38, 38, 0.4);
   display: none;
   align-items: center; justify-content: center;
   line-height: 1;
@@ -332,44 +349,44 @@ i[class^="ph-"] {
 
 /* Guest buttons */
 .tb-login-btn {
-  background: #fffbeb;
-  border: 2px solid #78350f;
-  border-radius: 10px;
-  padding: 6px 12px;
+  background: #ffffff;
+  border: 1.5px solid #fed7aa;
+  border-radius: 999px;
+  padding: 5px 10px;
   color: #78350f;
   font-weight: 900;
-  font-size: 12px;
+  font-size: 11px;
   text-decoration: none;
-  box-shadow: 0 2px 0 #78350f;
+  box-shadow: 0 3px 6px rgba(120, 53, 15, 0.15), inset 1px 1px 2px #fff;
 }
 .tb-reg-btn {
-  background: #fde68a;
-  border: 2px solid #78350f;
-  border-radius: 10px;
-  padding: 6px 12px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border: 1.5px solid #fde68a;
+  border-radius: 999px;
+  padding: 5px 10px;
   color: #78350f;
   font-weight: 900;
-  font-size: 12px;
+  font-size: 11px;
   text-decoration: none;
-  box-shadow: 0 2px 0 #78350f;
+  box-shadow: 0 3px 6px rgba(217, 119, 6, 0.25), inset 1px 1px 2px rgba(255, 255, 255, 0.7);
 }
 
 @media (max-width: 360px) {
   .tb-brand-tag { display: none; }
   .tb-saldo-lbl { display: none; }
   .tb-saldo-capsule { padding: 3px 5px; }
-  .tb-btn-icon { width: 32px; height: 32px; font-size: 15px; }
-  .tb-brand-name { font-size: 15px; }
-  .tb-mascot-box { width: 34px; height: 34px; }
-  .tb-mascot-img { width: 24px; height: 24px; }
+  .tb-btn-icon { width: 30px; height: 30px; font-size: 14px; }
+  .tb-brand-name { font-size: 14px; }
+  .tb-mascot-box { width: 29px; height: 29px; }
+  .tb-mascot-img { width: 20px; height: 20px; }
 }
 
-/* ── WALLET POPOVER DRAWER ── */
+/* ── WALLET POPOVER DRAWER (CLAYMORPHISM COMPACT) ── */
 .tb-wallet-backdrop {
   display: none;
   position: fixed; inset: 0;
-  background: rgba(69, 26, 3, 0.45);
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  background: rgba(69, 26, 3, 0.4);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
   z-index: 9998;
   animation: tbFadeIn .2s ease;
 }
@@ -378,21 +395,25 @@ i[class^="ph-"] {
 .tb-wallet-popover {
   display: none;
   position: fixed;
-  top: 68px; left: 50%;
+  top: 58px; left: 50%;
   transform: translateX(-50%);
-  width: calc(100% - 24px); max-width: 440px;
-  background: #fffbeb;
-  border: 3px solid #78350f;
-  border-radius: 20px;
-  box-shadow: 0 8px 0 #78350f, 0 16px 36px rgba(120, 53, 15, 0.35);
+  width: calc(100% - 20px); max-width: 420px;
+  background: #fffdfa;
+  border: 2px solid #fed7aa;
+  border-radius: 22px;
+  box-shadow: 
+    0 16px 36px rgba(120, 53, 15, 0.24),
+    0 4px 10px rgba(0, 0, 0, 0.04),
+    inset 3px 3px 7px #ffffff,
+    inset -3px -3px 7px rgba(217, 119, 6, 0.08);
   z-index: 9999;
   overflow: hidden;
-  animation: tbPopIn .25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: tbPopIn .22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .tb-wallet-popover.open { display: block; }
 
 @keyframes tbPopIn {
-  from { transform: translateX(-50%) translateY(-10px) scale(0.96); opacity: 0; }
+  from { transform: translateX(-50%) translateY(-8px) scale(0.97); opacity: 0; }
   to { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
 }
 @keyframes tbFadeIn {
@@ -402,103 +423,112 @@ i[class^="ph-"] {
 
 .twp-header {
   background: linear-gradient(135deg, #f59e0b, #d97706);
-  padding: 12px 16px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 2.5px solid #78350f;
+  border-bottom: 1.5px solid #b45309;
   color: #fff;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4);
 }
 .twp-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   display: flex;
   align-items: center;
   gap: 6px;
-  text-shadow: 0 1.5px 0 #78350f;
+  text-shadow: 0 1px 2px rgba(120, 53, 15, 0.5);
 }
 .twp-close {
-  background: #78350f;
-  color: #fde68a;
-  border: 1.5px solid #fff;
+  background: #ffffff;
+  color: #78350f;
+  border: 1.5px solid #fed7aa;
   border-radius: 8px;
-  width: 26px; height: 26px;
+  width: 24px; height: 24px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px rgba(120, 53, 15, 0.15), inset 1px 1px 2px #fff;
+  transition: transform 0.1s;
 }
+.twp-close:active { transform: scale(0.9); }
 
 .twp-body {
-  padding: 14px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .twp-card {
   background: #ffffff;
-  border: 2px solid #78350f;
-  border-radius: 14px;
-  padding: 10px 12px;
+  border: 1.5px solid #fed7aa;
+  border-radius: 16px;
+  padding: 8px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  box-shadow: 0 3px 0 #78350f;
+  gap: 8px;
+  box-shadow: 
+    0 4px 10px rgba(120, 53, 15, 0.06),
+    inset 2px 2px 4px #ffffff,
+    inset -2px -2px 4px rgba(217, 119, 6, 0.05);
 }
 .twp-card-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .twp-card-icon {
-  width: 36px; height: 36px;
+  width: 32px; height: 32px;
   border-radius: 10px;
-  border: 1.5px solid #78350f;
+  border: 1.2px solid #fed7aa;
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
+  font-size: 16px;
   flex-shrink: 0;
-  box-shadow: 0 2px 0 #78350f;
+  box-shadow: 0 2px 6px rgba(120, 53, 15, 0.1), inset 1px 1px 2px #ffffff;
 }
-.twp-card-icon.wd { background: #d1fae5; color: #065f46; }
-.twp-card-icon.dep { background: #fef3c7; color: #b45309; }
-.twp-card-icon.honey { background: #fed7aa; color: #9a3412; }
+.twp-card-icon.wd { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+.twp-card-icon.dep { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+.twp-card-icon.honey { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
 
 .twp-card-info {
   display: flex;
   flex-direction: column;
 }
 .twp-card-lbl {
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 800;
   color: #92400e;
   text-transform: uppercase;
+  line-height: 1.1;
 }
 .twp-card-val {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   color: #78350f;
+  line-height: 1.2;
 }
 
 .twp-card-btn {
-  padding: 6px 12px;
-  border-radius: 10px;
-  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 10.5px;
   font-weight: 900;
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: 0 2px 0 rgba(0,0,0,0.25);
-  transition: transform 0.1s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1), inset 1px 1px 2px rgba(255,255,255,0.7);
+  transition: transform 0.12s;
+  display: inline-flex; align-items: center; gap: 3px;
 }
-.twp-card-btn:active { transform: translateY(2px); box-shadow: none; }
-.twp-card-btn.wd { background: #10b981; color: #fff; border: 1.5px solid #065f46; }
-.twp-card-btn.dep { background: #f59e0b; color: #78350f; border: 1.5px solid #78350f; }
-.twp-card-btn.honey { background: #f97316; color: #fff; border: 1.5px solid #7c2d12; }
+.twp-card-btn:active { transform: translateY(1px) scale(0.95); }
+.twp-card-btn.wd { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: 1px solid #34d399; }
+.twp-card-btn.dep { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: 1px solid #fde68a; }
+.twp-card-btn.honey { background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; border: 1px solid #fdba74; }
 
 .twp-footer {
-  padding: 0 14px 14px;
+  padding: 0 12px 10px;
   display: flex;
   justify-content: center;
 }
@@ -506,15 +536,17 @@ i[class^="ph-"] {
   width: 100%;
   text-align: center;
   background: #fef08a;
-  border: 2px solid #78350f;
+  border: 1.5px solid #fcd34d;
   border-radius: 12px;
-  padding: 8px 12px;
-  font-size: 11.5px;
+  padding: 7px 10px;
+  font-size: 11px;
   font-weight: 900;
   color: #78350f;
   text-decoration: none;
-  box-shadow: 0 3px 0 #78350f;
+  box-shadow: 0 3px 8px rgba(120, 53, 15, 0.12), inset 1px 1px 2px #ffffff;
+  transition: transform 0.12s;
 }
+.twp-farm-link:active { transform: scale(0.97); }
 </style>
 </head>
 <body>
